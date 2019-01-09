@@ -2,4 +2,36 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
   </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="Updating\" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--<PackageReference Include="ILRepack" Version="2.0.16">
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="ILRepack.MSBuild.Task" Version="1.0.9">
+      <PrivateAssets>All</PrivateAssets>
+    </PackageReference>-->
+    <PackageReference Include="NuGet.Packaging" Version="4.9.2">
+    </PackageReference>
+    <PackageReference Include="System.Net.Http" Version="4.3.4">
+    </PackageReference>
+  </ItemGroup>
+
+  <!--<Target Name="ILRepack" AfterTargets="Build">
+
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\Snap.Core.dll" />
+      <InputAssemblies Include="$(OutputPath)\Snap.Update.dll" />
+    </ItemGroup>
+
+    <ILRepack
+      Parallel="true"
+      Internalize="true"
+      InputAssemblies="@(InputAssemblies)"
+      TargetKind="Exe"
+      OutputFile="$(OutputPath)\Update.exe" />
+
+  </Target>-->
+
 </Project>

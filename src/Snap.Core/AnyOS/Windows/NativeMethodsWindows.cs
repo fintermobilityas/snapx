@@ -1,8 +1,26 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Snap.Core.AnyOS.Windows
 {
+    [Flags]
+    internal enum ProcessAccess : uint {
+        All = 0x001F0FFF,
+        Terminate = 0x00000001,
+        CreateThread = 0x00000002,
+        VirtualMemoryOperation = 0x00000008,
+        VirtualMemoryRead = 0x00000010,
+        VirtualMemoryWrite = 0x00000020,
+        DuplicateHandle = 0x00000040,
+        CreateProcess = 0x000000080,
+        SetQuota = 0x00000100,
+        SetInformation = 0x00000200,
+        QueryInformation = 0x00000400,
+        QueryLimitedInformation = 0x00001000,
+        Synchronize = 0x00100000
+    }
+
     internal static class NativeMethodsWindows
     {        
         [DllImport("version.dll", SetLastError = true)]
@@ -23,5 +41,29 @@ namespace Snap.Core.AnyOS.Windows
             string pSubBlock, 
             out IntPtr pValue, 
             out int len);
+
+        
+        [DllImport("psapi.dll", SetLastError=true)]
+        internal static extern bool EnumProcesses(
+            IntPtr pProcessIds, // pointer to allocated DWORD array
+            int cb,
+            out int pBytesReturned);
+
+        [DllImport("kernel32.dll", SetLastError=true)]
+        internal static extern bool QueryFullProcessImageName(
+            IntPtr hProcess, 
+            [In] int justPassZeroHere,
+            [Out] StringBuilder lpImageFileName, 
+            [In] [MarshalAs(UnmanagedType.U4)] ref int nSize);
+
+        [DllImport("kernel32.dll", SetLastError=true)]
+        internal static extern IntPtr OpenProcess(
+            ProcessAccess processAccess,
+            bool bInheritHandle,
+            int processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        internal static extern bool CloseHandle(IntPtr hHandle);
+
     }
 }

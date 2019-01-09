@@ -17,6 +17,7 @@ namespace Snap.Core.AnyOS
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory,
             string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
+        void KillAllProcessesInDirectory(string rootAppDirectory);
     }
 
     public sealed class SnapOs : ISnapOs
@@ -110,6 +111,16 @@ namespace Snap.Core.AnyOS
             }
 
             return _snapOsWindows.GetAllSnapAwareApps(directory, minimumVersion);
+        }
+
+        public void KillAllProcessesInDirectory(string rootAppDirectory)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            _snapOsWindows.KillAllProcessesInDirectory(rootAppDirectory);
         }
     }
 }

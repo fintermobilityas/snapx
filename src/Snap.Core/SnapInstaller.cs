@@ -81,6 +81,7 @@ namespace Snap.Core
 
             if (_snapFilesystem.DirectoryExists(rootAppDirectory))
             {
+                _snapOs.KillAllProcessesInDirectory(rootAppDirectory);
                 this.Log().Info($"Nuking existing root app directory: {rootAppDirectory}.");
                 await _snapFilesystem.DeleteDirectoryOrJustGiveUpAsync(rootAppDirectory);
                 this.Log().Info($"Successfully nuked root app directory.");

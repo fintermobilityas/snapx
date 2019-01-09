@@ -5,6 +5,7 @@
         <AssemblyName>Snap.Core</AssemblyName>
         <PackageId>Snap.Core</PackageId>
         <Description>A portable application updater for .NET core applications running on either Windows or Unix.</Description>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
       <Compile Remove="bin\**" />

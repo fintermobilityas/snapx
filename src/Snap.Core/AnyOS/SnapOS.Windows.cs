@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using Mono.Cecil;
 using NuGet.Packaging;
@@ -21,6 +23,7 @@ namespace Snap.Core.AnyOS
     {
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
+        void KillAllProcessesInDirectory(string rootAppDirectory);
     }
 
     public sealed class SnapOsWindows : ISnapOsWindows, IEnableLogger
@@ -342,5 +345,83 @@ namespace Snap.Core.AnyOS
             this.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
             this.Log().Info("Finished shortcut successfully");
         }
+
+        public void KillAllProcessesInDirectory(string rootAppDirectory)
+        {
+            var ourExe = Assembly.GetEntryAssembly();
+            var ourExePath = ourExe?.Location;
+
+            EnumerateProcesses()
+                .Where(tuple =>
+                {
+
+                    // Processes we can't query will have an empty process name, we can't kill them
+                    // anyways
+                    if (tuple == null || string.IsNullOrWhiteSpace(tuple.Item1)) return false;
+
+                    // Files that aren't in our root app directory are untouched
+                    if (!tuple.Item1.StartsWith(rootAppDirectory, StringComparison.OrdinalIgnoreCase)) return false;
+
+                    // Never kill our own EXE
+                    if (ourExePath != null && tuple.Item1.Equals(ourExePath, StringComparison.OrdinalIgnoreCase)) return false;
+
+                    var name = Path.GetFileName(tuple.Item1).ToLowerInvariant();
+                    return name != "snap.exe" && name != "update.exe";
+                })
+                .ForEach(x =>
+                {
+                    try
+                    {
+                        this.WarnIfThrows(() => Process.GetProcessById(x.Item2).Kill());
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                });
+        }
+
+        public unsafe List<Tuple<string, int>> EnumerateProcesses()
+        {
+            int bytesReturned = 0;
+            var pids = new int[2048];
+
+            fixed (int* p = pids)
+            {
+                if (!NativeMethodsWindows.EnumProcesses((IntPtr)p, sizeof(int) * pids.Length, out bytesReturned))
+                {
+                    throw new Win32Exception("Failed to enumerate processes");
+                }
+
+                if (bytesReturned < 1) throw new Exception("Failed to enumerate processes");
+            }
+
+            return Enumerable.Range(0, bytesReturned / sizeof(int))
+                .Where(i => pids[i] > 0)
+                .Select(i =>
+                {
+                    try
+                    {
+                        var hProcess = NativeMethodsWindows.OpenProcess(ProcessAccess.QueryLimitedInformation, false, pids[i]);
+                        if (hProcess == IntPtr.Zero) throw new Win32Exception();
+
+                        var sb = new StringBuilder(256);
+                        var capacity = sb.Capacity;
+                        if (!NativeMethodsWindows.QueryFullProcessImageName(hProcess, 0, sb, ref capacity))
+                        {
+                            throw new Win32Exception();
+                        }
+
+                        NativeMethodsWindows.CloseHandle(hProcess);
+                        return Tuple.Create(sb.ToString(), pids[i]);
+                    }
+                    catch (Exception)
+                    {
+                        return Tuple.Create(default(string), pids[i]);
+                    }
+                })
+                .ToList();
+        }
+
     }
 }

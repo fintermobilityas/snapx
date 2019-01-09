@@ -1,14 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
-  <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
+        <RootNamespace>Snap.Core</RootNamespace>
+        <AssemblyName>Snap.Core</AssemblyName>
+        <PackageId>Snap.Core</PackageId>
+        <Description>A portable application updater for .NET core applications running on either Windows or Unix.</Description>
+    </PropertyGroup>
+    <ItemGroup>
+      <Compile Remove="bin\**" />
+      <Compile Remove="nupkgs\**" />
+      <Compile Remove="obj\**" />
+      <EmbeddedResource Remove="bin\**" />
+      <EmbeddedResource Remove="nupkgs\**" />
+      <EmbeddedResource Remove="obj\**" />
+      <None Remove="bin\**" />
+      <None Remove="nupkgs\**" />
+      <None Remove="obj\**" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NuGet.Packaging" Version="4.9.2">
-    </PackageReference>
-    <PackageReference Include="System.Net.Http" Version="4.3.4">
-    </PackageReference>
-    <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Mono.Cecil" Version="0.10.1" />
+        <PackageReference Include="NuGet.Packaging" Version="4.9.2" />
+        <PackageReference Include="Splat" Version="5.3.3" />
+        <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
+        <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0" />
+    </ItemGroup>
 
 </Project>

@@ -4,6 +4,13 @@ namespace Snap.Core.Tests
 {
     public class SnapFormatReaderTests
     {
+        readonly SnapFilesystem _snapFilesystem;
+
+        public SnapFormatReaderTests()
+        {
+            _snapFilesystem = new SnapFilesystem(new SnapCryptoProvider());
+        }
+
         [Fact]
         public void TestReadFromString()
         {
@@ -53,7 +60,7 @@ apps:
            source: build/$snapName/$snapChannelName/$snapRid/$snapFramework
 ";
 
-            var reader = new SnapFormatReader();
+            var reader = new SnapFormatReader(_snapFilesystem);
             var snaps = reader.ReadFromString(yaml);
             Assert.NotNull(snaps);
             Assert.Equal(2,snaps.Apps.Count);

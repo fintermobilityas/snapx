@@ -22,6 +22,5 @@ namespace Snap
         internal static extern bool AttachConsole(int pid);
         
         [DllImport("kernel32.dll", EntryPoint = "GetStdHandle")]
-        internal static extern IntPtr GetStdHandle(StandardHandles nStdHandle);
-    }
+        internal static extern IntPtr GetStdHandle(StandardHandles nStdHandle);    }
 }

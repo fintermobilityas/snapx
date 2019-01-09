@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -10,42 +11,63 @@ using NuGet.Packaging;
 
 namespace Snap.Core
 {
-    public interface ISnapExtractor : IDisposable
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public interface ISnapExtractor
     {
-        Task ExtractAsync(string destination, CancellationToken cancellationToken, ILogger logger = null);
-    } 
+        PackageArchiveReader ReadPackage(string nupkg);
+        Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken, ILogger logger = null);
+        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken, ILogger logger = null);
+    }
 
     public sealed class SnapExtractor : ISnapExtractor
     {
-        readonly PackageArchiveReader _packageArchiveReader;
-        readonly ZipArchive _zipArchive;
+        readonly ISnapFilesystem _snapFilesystem;
 
-        public SnapExtractor(string nupkgPath)
+        public SnapExtractor(ISnapFilesystem snapFilesystem)
         {
-            _zipArchive = new ZipArchive(File.OpenRead(nupkgPath));
-            _packageArchiveReader = new PackageArchiveReader(_zipArchive);
+            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
         }
 
-        public Task ExtractAsync(string destination, CancellationToken cancellationToken, ILogger logger = null)
+        public PackageArchiveReader ReadPackage(string nupkg)
         {
+            if (string.IsNullOrEmpty(nupkg)) throw new ArgumentException("Value cannot be null or empty.", nameof(nupkg));
+
+            var stream = File.OpenRead(nupkg);
+            var zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
+            return new PackageArchiveReader(zipArchive);
+        }
+
+        public Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken, ILogger logger = null)
+        {
+            if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
 
-            if (!Directory.Exists(destination))
+            using (var packageArchiveReader = ReadPackage(nupkg))
             {
-                Directory.CreateDirectory(destination);
+                return ExtractAsync(packageArchiveReader, destination, cancellationToken, logger);
             }
+        }
+
+        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken, ILogger logger = null)
+        {
+            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            if (destination == null) throw new ArgumentNullException(nameof(destination));
+
+            // TODO: Change to "netcoreapp" when support for writing/publishing nuget packages has landed.
+            // Right now we are using Squirrel packages.
+            const string netTargetFrameworkMoniker = "net45";
 
             string ExtractFile(string sourcePath, string targetPath, Stream sourceStream)
             {
                 var pathSeperator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
 
-                targetPath = targetPath.Replace($"{pathSeperator}lib{pathSeperator}net45", string.Empty);
+                targetPath = targetPath.Replace($"{pathSeperator}lib{pathSeperator}{netTargetFrameworkMoniker}", string.Empty);
 
                 if (targetPath.EndsWith(pathSeperator))
                 {
-                    if (!Directory.Exists(targetPath))
+                    if (!_snapFilesystem.DirectoryExists(targetPath))
                     {
-                        Directory.CreateDirectory(targetPath);
+                        _snapFilesystem.CreateDirectory(targetPath);
                     }
 
                     return targetPath;
@@ -59,15 +81,17 @@ namespace Snap.Core
                 return targetPath;
             }
 
-            var files = _packageArchiveReader.GetFiles().Where(x => x.StartsWith("lib/net45")).ToList();
+            var files = packageArchiveReader.GetFiles().Where(x => x.StartsWith($"lib/{netTargetFrameworkMoniker}")).ToList();
+            if (!files.Any())
+            {
+                return false;
+            }
 
-            return _packageArchiveReader.CopyFilesAsync(destination, files, ExtractFile, logger ?? NullLogger.Instance, cancellationToken);
-        }
+            _snapFilesystem.CreateDirectoryIfNotExists(destination);
 
-        public void Dispose()
-        {
-            _packageArchiveReader.Dispose();
-            _zipArchive.Dispose();
+            await packageArchiveReader.CopyFilesAsync(destination, files, ExtractFile, logger ?? NullLogger.Instance, cancellationToken);
+
+            return true;
         }
     }
 }

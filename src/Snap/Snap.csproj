@@ -1,20 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>snap</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
-    <LangVersion>7.3</LangVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
+        <RootNamespace>Snap</RootNamespace>
+        <AssemblyName>Snap</AssemblyName>
+        <PackageId>dotnet-snap</PackageId>
+        <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
+        <IsPackable>true</IsPackable>
+        <PackAsTool>true</PackAsTool>
+        <ToolCommandName>dotnet-snap</ToolCommandName>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Mono.Options" Version="5.3.0.1" />
-  </ItemGroup>
+    <ItemGroup>
+      <Compile Remove="bin\**" />
+      <Compile Remove="nupkgs\**" />
+      <Compile Remove="obj\**" />
+      <EmbeddedResource Remove="bin\**" />
+      <EmbeddedResource Remove="nupkgs\**" />
+      <EmbeddedResource Remove="obj\**" />
+      <None Remove="bin\**" />
+      <None Remove="nupkgs\**" />
+      <None Remove="obj\**" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Snap.Core\Snap.Core.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <Content Include="..\..\tools\rcedit.exe" Pack="True" Link="rcedit.exe" PackagePath="\tools\rcedit.exe">
+            <Visible>false</Visible>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Mono.Options" Version="5.3.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Snap.Core\Snap.Core.csproj" />
+    </ItemGroup>
 
 </Project>

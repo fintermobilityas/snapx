@@ -70,6 +70,8 @@ namespace Snap.Core
         public SnapFeedSourceType SourceType { get; set; }
         [YamlMember(Alias = "source")]
         public Uri SourceUri { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -125,17 +127,24 @@ namespace Snap.Core
     }
 
     public sealed class SnapFormatReader : ISnapFormatReader
-    {        
+    {
+        readonly ISnapFilesystem _snapFilesystem;
+
+        public SnapFormatReader(ISnapFilesystem snapFilesystem)
+        {
+            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+        }
+
         public async Task<Snaps> ReadFromDiskAsync(string snapPkgFilename, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(snapPkgFilename)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(snapPkgFilename));
 
-            if (!File.Exists(snapPkgFilename))
+            if (!_snapFilesystem.FileExists(snapPkgFilename))
             {
                 return null;
             }
 
-            var yaml = await File.ReadAllTextAsync(snapPkgFilename, cancellationToken);
+            var yaml = await _snapFilesystem.ReadAllTextAsync(snapPkgFilename, cancellationToken);
 
             return Parse(yaml);
         }

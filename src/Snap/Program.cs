@@ -72,13 +72,13 @@ namespace Snap
                         return -1;
                     }
 
-                    Console.WriteLine(Sha512(sha512FileName));
+                    Console.WriteLine(SnapSha512(sha512FileName));
 
                     return 0;
             }
         }
 
-        static string Sha512(string absoluteFilename)
+        static string SnapSha512(string absoluteFilename)
         {
             string GenerateSha512(byte[] bytes)
             {

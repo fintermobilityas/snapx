@@ -91,13 +91,13 @@ namespace Snap.Core
             _snapFilesystem.CreateDirectory(rootAppDirectory);
             this.Log().Info("Successfully created root app directory.");
 
-            var packagesDir = GetRootPackagesDirectory(rootAppDirectory);
-            this.Log().Info($"Creating packages directory: {packagesDir}.");
-            _snapFilesystem.CreateDirectory(packagesDir);
+            var rootPackagesDirectory = GetRootPackagesDirectory(rootAppDirectory);
+            this.Log().Info($"Creating packages directory: {rootPackagesDirectory}.");
+            _snapFilesystem.CreateDirectory(rootPackagesDirectory);
             this.Log().Info("Successfully created packages directory.");
 
             var nupkgFilename = Path.GetFileName(nupkgAbsoluteFilename);
-            var dstNupkgFilename = Path.Combine(packagesDir, nupkgFilename);
+            var dstNupkgFilename = Path.Combine(rootPackagesDirectory, nupkgFilename);
             this.Log().Info($"Copying nupkg {nupkgAbsoluteFilename} to {dstNupkgFilename}.");
             await _snapFilesystem.CopyFileAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
             this.Log().Info("Successfully copied nupkg.");

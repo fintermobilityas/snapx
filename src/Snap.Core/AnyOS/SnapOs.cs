@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,8 @@ using NuGet.Packaging;
 
 namespace Snap.Core.AnyOS
 {
-    public interface ISnapOS
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public interface ISnapOs
     {
         Task<Tuple<int, string>> InvokeProcessAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<Tuple<int, string>> InvokeProcessAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
@@ -17,7 +19,7 @@ namespace Snap.Core.AnyOS
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
     }
 
-    public sealed class SnapOs : ISnapOS
+    public sealed class SnapOs : ISnapOs
     {
         readonly ISnapOsWindows _snapOsWindows;
 
@@ -31,21 +33,21 @@ namespace Snap.Core.AnyOS
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
 
-            var psi = new ProcessStartInfo(fileName, arguments);
+            var processStartInfo = new ProcessStartInfo(fileName, arguments);
             if (Environment.OSVersion.Platform != PlatformID.Win32NT && fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {
-                psi = new ProcessStartInfo("wine", fileName + " " + arguments);
+                processStartInfo = new ProcessStartInfo("wine", fileName + " " + arguments);
             }
 
-            psi.UseShellExecute = false;
-            psi.WindowStyle = ProcessWindowStyle.Hidden;
-            psi.ErrorDialog = false;
-            psi.CreateNoWindow = true;
-            psi.RedirectStandardOutput = true;
-            psi.RedirectStandardError = true;
-            psi.WorkingDirectory = workingDirectory;
+            processStartInfo.UseShellExecute = false;
+            processStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            processStartInfo.ErrorDialog = false;
+            processStartInfo.CreateNoWindow = true;
+            processStartInfo.RedirectStandardOutput = false;
+            processStartInfo.RedirectStandardError = false;
+            processStartInfo.WorkingDirectory = workingDirectory;
 
-            return InvokeProcessAsync(psi, cancellationToken);
+            return InvokeProcessAsync(processStartInfo, cancellationToken);
         }
 
         public async Task<Tuple<int, string>> InvokeProcessAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken)
@@ -60,7 +62,10 @@ namespace Snap.Core.AnyOS
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (pi.WaitForExit(2000)) return;
+                    if (pi.WaitForExit(2000))
+                    {
+                        return;
+                    }
                 }
 
                 if (!cancellationToken.IsCancellationRequested)

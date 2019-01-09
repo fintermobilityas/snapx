@@ -37,9 +37,9 @@ namespace Snap.Core
     {
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapFilesystem _snapFilesystem;
-        readonly ISnapOS _snapOs;
+        readonly ISnapOs _snapOs;
 
-        public SnapInstaller(ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapOS snapOs)
+        public SnapInstaller(ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapOs snapOs)
         {
             _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
             _snapFilesystem = snapFilesystem;

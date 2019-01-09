@@ -6,7 +6,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Mono.Cecil;
 using NuGet.Packaging;
@@ -60,10 +59,10 @@ namespace Snap.Core.AnyOS
                     authors ?? packageId
                 };
 
-                var prodName = possibleCompanyNames.First(x => !string.IsNullOrWhiteSpace(x));
-                var pkgName = possibleProductNames.First(x => !string.IsNullOrWhiteSpace(x));
+                var productName = possibleCompanyNames.First(x => !string.IsNullOrWhiteSpace(x));
+                var packageName = possibleProductNames.First(x => !string.IsNullOrWhiteSpace(x));
 
-                return GetLinkTarget(location, pkgName, prodName);
+                return GetLinkTarget(location, packageName, productName);
             }
 
             string GetLinkTarget(SnapShortcutLocation location, string title, string applicationName, bool createDirectoryIfNecessary = true)
@@ -101,7 +100,10 @@ namespace Snap.Core.AnyOS
 
             foreach (var f in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
             {
-                if (!locations.HasFlag(f)) continue;
+                if (!locations.HasFlag(f))
+                {
+                    continue;
+                }
 
                 var file = LinkTargetForVersionInfo(f, fileVerInfo);
                 var fileExists = _snapFilesystem.FileExists(file);
@@ -233,7 +235,11 @@ namespace Snap.Core.AnyOS
 
         static int? GetPeSnapAwareVersion(string executable)
         {
-            if (!File.Exists(executable)) return null;
+            if (!File.Exists(executable))
+            {
+                return null;
+            }
+
             var fullname = Path.GetFullPath(executable);
 
             return SnapUtility.Retry(() =>
@@ -274,12 +280,6 @@ namespace Snap.Core.AnyOS
 
         static int? GetVersionBlockSnapAwareValue(string executable)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // TODO
-                throw new PlatformNotSupportedException();
-            }
-
             var size = NativeMethodsWindows.GetFileVersionInfoSize(executable, IntPtr.Zero);
 
             // Nice try, buffer overflow

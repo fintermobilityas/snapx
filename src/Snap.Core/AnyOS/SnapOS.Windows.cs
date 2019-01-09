@@ -351,6 +351,13 @@ namespace Snap.Core.AnyOS
             var ourExe = Assembly.GetEntryAssembly();
             var ourExePath = ourExe?.Location;
 
+            // Do not kill processes from folders that starts with the same name as current package.
+            // E.g. processes in folder "MyApp" should not be killed if "MyAp" is installed.
+            if (!rootAppDirectory.EndsWith("\\"))
+            {
+                rootAppDirectory += "\\";
+            }
+
             EnumerateProcesses()
                 .Where(tuple =>
                 {

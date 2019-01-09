@@ -86,9 +86,9 @@ namespace Snap.Core.AnyOS
                         break;
                 }
 
-                if (createDirectoryIfNecessary && !Directory.Exists(dir))
+                if (createDirectoryIfNecessary)
                 {
-                    Directory.CreateDirectory(dir);
+                    _snapFilesystem.CreateDirectoryIfNotExists(dir);
                 }
 
                 return Path.Combine(dir, title + ".lnk");
@@ -123,7 +123,7 @@ namespace Snap.Core.AnyOS
                 {
                     _snapFilesystem.DeleteFile(file);
 
-                    var target = Path.Combine(rootAppDirectory, exeName);
+                    var target = Path.Combine(rootAppInstallDirectory, exeName);
                     shellLink = new ShellLink
                     {
                         Target = target,

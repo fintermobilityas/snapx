@@ -176,8 +176,8 @@ namespace Snap.Core
                         .CreateShortcutsForExecutable(
                             nuspecReader, 
                             rootAppDirectory,
+                            rootAppInstallDirectory,
                             absoluteExeFilename,
-                            null,
                             null,
                             SnapShortcutLocation.Desktop | SnapShortcutLocation.StartMenu,
                             null, 
@@ -188,7 +188,7 @@ namespace Snap.Core
 
             if (!isInitialInstall || silentInstall) return;
 
-            var firstRunParam = isInitialInstall ? "--snap-firstrun" : "";
+            var firstRunParam = isInitialInstall ? "--snap-firstrun" : string.Empty;
             allSnapAwareApps
                 .Select(exe =>
                 {

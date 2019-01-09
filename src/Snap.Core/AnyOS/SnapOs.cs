@@ -94,7 +94,7 @@ namespace Snap.Core.AnyOS
                 throw new PlatformNotSupportedException();
             }
 
-            _snapOsWindows.CreateShortcutsForExecutable(nuspecReader, rootAppDirectory, rootAppDirectory, exeName, icon, locations, programArguments, updateOnly, cancellationToken);
+            _snapOsWindows.CreateShortcutsForExecutable(nuspecReader, rootAppDirectory, rootAppInstallDirectory, exeName, icon, locations, programArguments, updateOnly, cancellationToken);
         }
 
         public List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1)

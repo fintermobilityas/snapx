@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using NuGet.Common;
 using NuGet.Packaging;
 
-namespace Snap.Core.Packaging
+namespace Snap.Core
 {
     public interface ISnapExtractor : IDisposable
     {

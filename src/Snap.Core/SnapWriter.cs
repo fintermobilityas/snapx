@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Snap.Core.Packaging
+namespace Snap.Core
 {
     public interface ISnapWriter : IDisposable
     {

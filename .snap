@@ -1,0 +1,18 @@
+snap:
+	name: myapp
+	nuspec: myapp.nuspec
+	version: 1.0.0
+
+feeds:
+	myget: https://www.myget.org/F/youpark-apps/auth/942b0759-07b0-4d01-9e16-60caec282701/api/v3/index.json
+	
+channels:
+	netcoreapp2.2:
+		win10-x64:
+			test:
+				feed: myget
+				source: build/$SnapName/$SnapChannelName/$SnapRid/$SnapTargetFramework
+		ubuntu.18.04:
+			test:
+				feed: myget
+				source: build/$SnapName/$SnapChannelName/$SnapRid/$SnapTargetFramework

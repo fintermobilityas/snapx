@@ -122,7 +122,10 @@ namespace Snap
 
                     try
                     {
-                        Console.Error.WriteLine(snapFilesystem.Sha512(sha512FileName));
+                        using (var fileStream = new FileStream(sha512FileName, FileMode.Open, FileAccess.Read))
+                        {
+                            Console.Error.WriteLine(fileStream);
+                        }
                         return 0;
                     }
                     catch (Exception e)

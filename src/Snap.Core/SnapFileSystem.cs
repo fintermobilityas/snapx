@@ -20,6 +20,7 @@ namespace Snap.Core
         void CreateDirectoryIfNotExists(string directory);
         bool DirectoryExists(string directory);
         string Sha512(string filename);
+        string Sha512(Stream stream);
         IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
         IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
         Task CopyFileAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
@@ -89,6 +90,12 @@ namespace Snap.Core
             var fileContentBytes = File.ReadAllBytes(filename);
 
             return _snapCryptoProvider.Sha512(fileContentBytes);
+        }
+
+        public string Sha512(Stream stream)
+        {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            return _snapCryptoProvider.Sha512(stream);
         }
 
         public IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath)

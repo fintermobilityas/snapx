@@ -1,42 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Mono.Options;
+using CommandLine;
 using Snap.Core;
 using Snap.Core.AnyOS;
+using Snap.Options;
 using Splat;
 
 namespace Snap
 {
-
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public enum SnapAction
-    {
-        Help,
-        ListApps,
-        ListFeeds,
-        PackApp,
-        PublishApp,
-        Sha512,
-        CleanInstallLocalNupkg,
-        Version
-    }
-
     internal class Program
     {
         static long _consoleCreated;
 
-        static async Task<int> Main(string[] args)
+        static int Main(string[] args)
         {
             try
             {
-                return await MainImplAsync(args);
+                return MainImplAsync(args);
             }
             catch (Exception e)
             {
@@ -45,7 +30,7 @@ namespace Snap
             }
         }
 
-        static async Task<int> MainImplAsync(IEnumerable<string> args)
+        static int MainImplAsync(IEnumerable<string> args)
         {
             var snapCryptoProvider = new SnapCryptoProvider();
             var snapFilesystem = new SnapFilesystem(snapCryptoProvider);
@@ -56,131 +41,123 @@ namespace Snap
             using (var logger = new SnapSetupLogLogger(false) {Level = LogLevel.Info})
             {
                 Locator.CurrentMutable.Register(() => logger, typeof(ILogger));
-                return await MainAsync(args, snapExtractor, snapFilesystem, snapInstaller);
+                return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller);
             }
         }
 
-        static async Task<int> MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller)
+        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
+            
+            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions>(args)
+                .MapResult(
+                    (ListOptions opts) => SnapList(opts, snapFilesystem).Result,
+                    (Sha512Options opts) => SnapSha512(opts, snapFilesystem),
+                    (InstallNupkgOptions opts) => SnapInstall(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
+                    errs =>
+                    {
+                        EnsureConsole();
+                        return 1;
+                    });            
+        }
 
-            var snapAction = SnapAction.Help;
-            string sha512FileName = null;
-            string installNupkgFilename = null;
-
-            var opts = new OptionSet
+        static async Task<int> SnapInstall(InstallNupkgOptions installNupkgOptions, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
+        {
+            if (installNupkgOptions.Filename == null)
             {
-                "Usage: dotnet snap [OPTS]",
-                "Manages snap packages",
-                "",
-                "Commands",
-                {
-                    "install-nupkg=", "Install app from a local nuget package", v =>
-                    {
-                        snapAction = SnapAction.CleanInstallLocalNupkg;
-                        installNupkgFilename = v == null ? null : Path.GetFullPath(v);
-                    }
-                },
-                {"pack", "Package app", v => { snapAction = SnapAction.PackApp; }},
-                {"publish", "Package and publish app", v => { snapAction = SnapAction.PublishApp; }},
-                {
-                    "sha512=", "Calculate a SHA-512 for a given file", v =>
-                    {
-                        snapAction = SnapAction.Sha512;
-                        sha512FileName = v;
-                    }
-                },
-                "Generic",
-                {"list-apps", "List available apps", v => { snapAction = SnapAction.ListApps; }},
-                {"list-feeds", "List available feeds", v => { snapAction = SnapAction.ListFeeds; }},
-                {"version", "Current tool version", v => { snapAction = SnapAction.Version; }},
-                "",
-                "Options:",
-                {"h|?|help", "Display Help and exit", _ => { }}
-            };
+                return -1;
+            }
 
-            opts.Parse(args);
-
-            var currentDirectory = Directory.GetCurrentDirectory();
-
-            switch (snapAction)
+            var nupkgFilename = installNupkgOptions.Filename;
+            if (nupkgFilename == null || !snapFilesystem.FileExists(nupkgFilename))
             {
-                default:
-                    EnsureConsole();
-                    opts.WriteOptionDescriptions(Console.Out);
-                    return 0;
-                case SnapAction.ListApps:
-                    return await SnapListApps(currentDirectory, snapFilesystem);
-                case SnapAction.ListFeeds:
-                    return await SnapListFeeds(currentDirectory, snapFilesystem);
-                case SnapAction.Sha512:
-                    if (sha512FileName == null || !snapFilesystem.FileExists(sha512FileName))
-                    {
-                        Console.Error.WriteLine($"File not found: {sha512FileName}.");
-                        return -1;
-                    }
+                Console.Error.WriteLine($"File not found: {nupkgFilename}.");
+                return -1;
+            }
 
-                    try
-                    {
-                        using (var fileStream = new FileStream(sha512FileName, FileMode.Open, FileAccess.Read))
-                        {
-                            Console.Error.WriteLine(fileStream);
-                        }
-                        return 0;
-                    }
-                    catch (Exception e)
-                    {
-                        Console.Error.WriteLine($"Error computing SHA512-checksum for filename: {sha512FileName}. Error: {e.Message}.");
-                        return -1;
-                    }
+            var sw = new Stopwatch();
+            sw.Reset();
+            sw.Restart();
+            Console.WriteLine($"Clean install of local nupkg: {nupkgFilename}.");
 
-                case SnapAction.CleanInstallLocalNupkg:
-                    if (installNupkgFilename == null || !snapFilesystem.FileExists(installNupkgFilename))
-                    {
-                        Console.Error.WriteLine($"File not found: {installNupkgFilename}.");
-                        return -1;
-                    }
+            try
+            {
+                var packageArchiveReader = snapExtractor.ReadPackage(nupkgFilename);
+                if (packageArchiveReader == null)
+                {
+                    Console.Error.WriteLine($"Unknown error reading nupkg: {nupkgFilename}.");
+                    return -1;
+                }
 
-                    var sw = new Stopwatch();
-                    sw.Reset();
-                    sw.Restart();
-                    Console.WriteLine($"Clean install of local nupkg: {installNupkgFilename}.");
+                var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
+                var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
-                    try
-                    {
-                        var packageArchiveReader = snapExtractor.ReadPackage(installNupkgFilename);
-                        if (packageArchiveReader == null)
-                        {
-                            Console.Error.WriteLine($"Unknown error reading nupkg: {installNupkgFilename}.");
-                            return -1;
-                        }
+                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None);
 
-                        var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
-                        var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
+                Console.WriteLine($"Succesfully installed local nupkg in {sw.Elapsed.TotalSeconds:F} seconds.");
 
-                        await snapInstaller.CleanInstallFromDiskAsync(installNupkgFilename, rootAppDirectory, CancellationToken.None);
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"Unknown error while installing local nupkg: {nupkgFilename}. Message: {e.Message}.");
+                return -1;
+            }
 
-                        Console.WriteLine($"Succesfully installed local nupkg in {sw.Elapsed.TotalSeconds:F} seconds.");
-                    }
-                    catch (Exception e)
-                    {
-                        Console.Error.WriteLine($"Unknown error while installing local nupkg: {installNupkgFilename}. Message: {e.Message}.");
-                        return -1;
-                    }
+            return -1;
+        }
 
-                    return 0;
-                case SnapAction.Version:
-                    Console.WriteLine(GetVersion());
-                    return 0;
+        static int SnapSha512(Sha512Options sha512Options, ISnapFilesystem snapFilesystem)
+        {
+            if (sha512Options.Filename == null || !snapFilesystem.FileExists(sha512Options.Filename))
+            {
+                Console.Error.WriteLine($"File not found: {sha512Options.Filename}.");
+                return -1;
+            }
+
+            try
+            {
+                using (var fileStream = new FileStream(sha512Options.Filename, FileMode.Open, FileAccess.Read))
+                {
+                    Console.WriteLine(snapFilesystem.Sha512(fileStream));
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"Error computing SHA512-checksum for filename: {sha512Options.Filename}. Error: {e.Message}.");
+                return -1;
             }
         }
 
-        static async Task<int> SnapListFeeds(string currentDirectory, ISnapFilesystem snapFilesystem)
+        static async Task<int> SnapList(ListOptions listOptions, ISnapFilesystem snapFilesystem)
         {
-            var snapPkgFileName = Path.Combine(currentDirectory, ".snap");
+            var snapPkgFileName = default(string);
+
+            if (listOptions.Directory != null)
+            {
+                snapPkgFileName = listOptions.Directory.EndsWith(".snap") ? 
+                    Path.GetFullPath(listOptions.Directory) : Path.Combine(Path.GetFullPath(listOptions.Directory), ".snap");
+            }            
+
+            if (listOptions.Apps)
+            {
+                return await SnapListApps(snapPkgFileName, snapFilesystem);
+            }
+
+            if (listOptions.Feeds)
+            {
+                return await SnapListFeeds(snapPkgFileName, snapFilesystem);
+            }
+
+            return -1;
+        }
+
+        static async Task<int> SnapListFeeds(string snapPkgFileName, ISnapFilesystem snapFilesystem)
+        {
             if (!File.Exists(snapPkgFileName))
             {
-                Console.Error.WriteLine("Error: A .snap file does not exist in current directory.");
+                Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;
             }
 
@@ -212,12 +189,11 @@ namespace Snap
             return 0;
         }
 
-        static async Task<int> SnapListApps(string currentDirectory, ISnapFilesystem snapFilesystem)
+        static async Task<int> SnapListApps(string snapPkgFileName, ISnapFilesystem snapFilesystem)
         {
-            var snapPkgFileName = Path.Combine(currentDirectory, ".snap");
             if (!File.Exists(snapPkgFileName))
             {
-                Console.Error.WriteLine("Error: A .snap file does not exist in current directory.");
+                Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;
             }
 
@@ -263,10 +239,5 @@ namespace Snap
             NativeMethodsWindows.GetStdHandle(StandardHandles.StdErrorHandle);
             NativeMethodsWindows.GetStdHandle(StandardHandles.StdOutputHandle);
         }
-
-        static string GetVersion() => typeof(Program)
-            .Assembly
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            .InformationalVersion;
     }
 }

@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\Snap.Core\Snap.Core.Deps.targets" />
+    <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
-        <RootNamespace>Snap</RootNamespace>
-        <AssemblyName>Snap</AssemblyName>
+        <RootNamespace>Snap.Tool</RootNamespace>
+        <AssemblyName>Snap.Tool</AssemblyName>
         <PackageId>dotnet-snap</PackageId>
         <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
         <IsPackable>true</IsPackable>
@@ -35,10 +35,9 @@
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.4.3" />
     </ItemGroup>
-    
 
     <ItemGroup>
-        <ProjectReference Include="..\Snap.Core\Snap.Core.csproj" />
+      <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\Snap.Core\Snap.Core.Deps.targets" />
+    <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
@@ -27,7 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Snap.Core\Snap.Core.csproj" />
+      <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
 </Project>

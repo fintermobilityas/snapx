@@ -65,10 +65,9 @@ namespace Snap
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
-            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions, ReleasifyOptions, PublishOptions>(args)
+            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions, ReleasifyOptions>(args)
                 .MapResult(
                     (ReleasifyOptions opts) => SnapReleasify(opts),
-                    (PublishOptions opts) => SnapPublish(opts),
                     (ListOptions opts) => SnapList(opts, snapFilesystem).Result,
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem),
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
@@ -80,11 +79,6 @@ namespace Snap
         }
 
         static int SnapReleasify(ReleasifyOptions releasifyOptions)
-        {
-            return -1;
-        }
-
-        static int SnapPublish(PublishOptions publishOptions)
         {
             return -1;
         }

@@ -1,30 +1,97 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+
+    <Import Project="Snap.Core.Deps.targets" />
+
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
+        <TargetFrameworks>netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
         <RootNamespace>Snap.Core</RootNamespace>
         <AssemblyName>Snap.Core</AssemblyName>
         <PackageId>Snap.Core</PackageId>
         <Description>A portable application updater for .NET core applications running on either Windows or Unix.</Description>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <IAmSnapCore>true</IAmSnapCore>
+        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
+        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
+        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
+        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
+        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
+        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
     </PropertyGroup>
+
     <ItemGroup>
-      <Compile Remove="bin\**" />
-      <Compile Remove="nupkgs\**" />
-      <Compile Remove="obj\**" />
-      <EmbeddedResource Remove="bin\**" />
-      <EmbeddedResource Remove="nupkgs\**" />
-      <EmbeddedResource Remove="obj\**" />
-      <None Remove="bin\**" />
-      <None Remove="nupkgs\**" />
-      <None Remove="obj\**" />
+        <Compile Remove="bin\**" />
+        <Compile Remove="nupkgs\**" />
+        <Compile Remove="obj\**" />
+        <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="nupkgs\**" />
+        <EmbeddedResource Remove="obj\**" />
+        <None Remove="bin\**" />
+        <None Remove="nupkgs\**" />
+        <None Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Mono.Cecil" Version="0.10.1" />
-        <PackageReference Include="NuGet.Packaging" Version="4.9.2" />
-        <PackageReference Include="Splat" Version="5.3.3" />
-        <PackageReference Include="System.Drawing.Common" Version="4.5.1" />
-        <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0" />
+        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.3">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
+
+    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true'">
+
+        <PropertyGroup>
+            <WorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</WorkingDirectory>
+        </PropertyGroup>
+
+        <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
+            <InputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
+        </ItemGroup>
+
+        <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
+            <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+        </ItemGroup>
+
+        <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+            <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+        </ItemGroup>
+
+        <ItemGroup>
+            <InputAssemblies Include="Mono.Cecil.dll" />
+            <InputAssemblies Include="Mono.Cecil.Mdb.dll" />
+            <InputAssemblies Include="Mono.Cecil.Pdb.dll" />
+            <InputAssemblies Include="Mono.Cecil.Rocks.dll" />
+            <InputAssemblies Include="Newtonsoft.Json.dll" />
+            <InputAssemblies Include="NuGet.Common.dll" />
+            <InputAssemblies Include="NuGet.Configuration.dll" />
+            <InputAssemblies Include="NuGet.Frameworks.dll" />
+            <InputAssemblies Include="NuGet.Packaging.Core.dll" />
+            <InputAssemblies Include="NuGet.Packaging.dll" />
+            <InputAssemblies Include="NuGet.Versioning.dll" />
+            <InputAssemblies Include="Splat.dll" />
+            <InputAssemblies Include="System.Drawing.Common.dll" />
+            <InputAssemblies Include="YamlDotNet.NetCore.dll" />
+            <InputAssemblies Include="NuGet.Versioning.dll" />
+            <InputAssemblies Include="Snap.Core.dll" />
+        </ItemGroup>
+
+        <ItemGroup>
+            <InternalizeExcludeAssemblies Include="NuGet.Versioning.SemanticVersion" />
+        </ItemGroup>
+
+        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="@(InputAssemblies)" InternalizeExcludeAssemblies="@(InternalizeExcludeAssemblies)" WorkingDirectory="$(WorkingDirectory)" />
+
+    </Target>
 
 </Project>

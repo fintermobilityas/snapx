@@ -35,13 +35,11 @@ apps:
          - rid: win10-x64
            framework: netcoreapp2.2
            feed: myfeedname
-           source: build/$snapName/$snapChannelName/$snapRid/$snapFramework
        - name: staging
          configurations: 
          - rid: win10-x64
            framework: netcoreapp2.2
            feed: myfeedname
-           source: build/$snapName/$snapChannelName/$snapRid/$snapFramework
   - name: myapp2
     nuspec: myapp2.nuspec
     version: 1.0.0
@@ -51,13 +49,11 @@ apps:
          - rid: win10-x64
            framework: netcoreapp2.2
            feed: myfeedname
-           source: build/$snapName/$snapChannelName/$snapRid/$snapFramework
        - name: staging
          configurations: 
          - rid: win10-x64
            framework: netcoreapp2.2
            feed: myfeedname
-           source: build/$snapName/$snapChannelName/$snapRid/$snapFramework
 ";
 
             var reader = new SnapFormatReader(_snapFilesystem);
@@ -94,7 +90,6 @@ apps:
             var app1Channel1Configuration = app1Channel1.Configurations[0];
             Assert.Equal("myfeedname", app1Channel1Configuration.Feed);
             Assert.Equal("win10-x64", app1Channel1Configuration.RuntimeIdentifier);
-            Assert.Equal("build/$snapName/$snapChannelName/$snapRid/$snapFramework", app1Channel1Configuration.SourceDirectory);
             Assert.Equal("netcoreapp2.2", app1Channel1Configuration.TargetFramework);
             
             var app2 = snaps.Apps[1];
@@ -111,7 +106,6 @@ apps:
             var app2Channel1Configuration = app2Channel1.Configurations[0];
             Assert.Equal("myfeedname", app2Channel1Configuration.Feed);
             Assert.Equal("win10-x64", app2Channel1Configuration.RuntimeIdentifier);
-            Assert.Equal("build/$snapName/$snapChannelName/$snapRid/$snapFramework", app2Channel1Configuration.SourceDirectory);
             Assert.Equal("netcoreapp2.2", app2Channel1Configuration.TargetFramework);
         }
     }

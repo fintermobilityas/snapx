@@ -8,5 +8,7 @@ namespace Snap.Options
         public ListOptions ListVerb { get; set; }
         public Sha512Options Sha512Verb { get; set; }
         public InstallNupkgOptions InstallNupkgVerb { get; set; }
+        public ReleasifyOptions ReleasifyVerb { get; set; }
+        public PublishOptions PublishVerb { get; set; }
     }
 }

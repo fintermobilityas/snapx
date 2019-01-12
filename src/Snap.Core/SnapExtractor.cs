@@ -53,8 +53,6 @@ namespace Snap.Core
             if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
 
-            // TODO: Change to "netcoreapp" when support for writing/publishing nuget packages has landed.
-            // Right now we are using Squirrel packages.
             const string netTargetFrameworkMoniker = "net45";
 
             string ExtractFile(string sourcePath, string targetPath, Stream sourceStream)

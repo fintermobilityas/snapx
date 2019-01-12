@@ -3,8 +3,10 @@
     <Import Project="..\Snap.Core\Snap.Core.Deps.targets" />
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+        <RootAssemblyNamespace>Snap.Update</RootAssemblyNamespace>
+        <AssemblyName>Snap.Update</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

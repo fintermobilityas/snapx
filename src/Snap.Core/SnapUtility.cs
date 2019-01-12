@@ -33,6 +33,7 @@ namespace Snap.Core
         {
             return CreateGuidFromHash(text, IsoOidNamespace);
         }
+
         public static Guid CreateGuidFromHash(byte[] data)
         {
             return CreateGuidFromHash(data, IsoOidNamespace);
@@ -106,6 +107,30 @@ namespace Snap.Core
                     retries--;
                     Thread.Sleep(250);
                 }
+            }
+        }
+    }
+
+    static class Disposable
+    {
+        public static IDisposable Create(Action action)
+        {
+            return new AnonDisposable(action);
+        }
+
+        class AnonDisposable : IDisposable
+        {
+            static readonly Action DummyBlock = () => { };
+            Action _block;
+
+            public AnonDisposable(Action b)
+            {
+                _block = b;
+            }
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _block, DummyBlock)();
             }
         }
     }

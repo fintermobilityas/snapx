@@ -17,14 +17,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <LangVersion>7.3</LangVersion>
     <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>       
-
-	<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
-	
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <GenerateFullPaths Condition="'$(VSCODE_PID)' != ''">true</GenerateFullPaths>
-
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).build\obj\$(MSBuildProjectName)</BaseIntermediateOutputPath>
-    <BaseOutputPath>$(MSBuildThisFileDirectory).build\bin\$(MSBuildProjectName)</BaseOutputPath>
+	<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>	
   </PropertyGroup>
 
 </Project>

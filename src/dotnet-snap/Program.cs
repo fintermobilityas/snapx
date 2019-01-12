@@ -6,6 +6,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using NuGet.Versioning;
+using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.AnyOS;
 using Snap.Options;
@@ -37,6 +39,20 @@ namespace Snap
             var snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
             var snapExtractor = new SnapExtractor(snapFilesystem);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
+            var snapPack = new SnapPack(snapFilesystem);
+
+            //var packProgressSource = new ProgressSource();
+            //packProgressSource.Progress += (sender, i) => { Console.WriteLine($"{i}%"); };
+
+            //var snapPackDetails = new SnapPackDetails
+            //{
+            //    NuspecBaseDirectory = @"C:\Users\peters\Documents\GitHub\snap\.build\bin\Snap\Debug\netcoreapp2.2",                
+
+            //    CurrentVersion = new SemanticVersion(1, 0, 0),
+            //    ProgressSource = packProgressSource,
+            //};
+
+            //var test = snapPack.PackAsync(snapPackDetails).Result;
 
             using (var logger = new SnapSetupLogLogger(false) {Level = LogLevel.Info})
             {
@@ -49,11 +65,13 @@ namespace Snap
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
-            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions>(args)
+            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions, ReleasifyOptions, PublishOptions>(args)
                 .MapResult(
+                    (ReleasifyOptions opts) => SnapReleasify(opts),
+                    (PublishOptions opts) => SnapPublish(opts),
                     (ListOptions opts) => SnapList(opts, snapFilesystem).Result,
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem),
-                    (InstallNupkgOptions opts) => SnapInstall(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
+                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
                     {
                         EnsureConsole();
@@ -61,7 +79,17 @@ namespace Snap
                     });            
         }
 
-        static async Task<int> SnapInstall(InstallNupkgOptions installNupkgOptions, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
+        static int SnapReleasify(ReleasifyOptions releasifyOptions)
+        {
+            return -1;
+        }
+
+        static int SnapPublish(PublishOptions publishOptions)
+        {
+            return -1;
+        }
+
+        static async Task<int> SnapInstallNupkg(InstallNupkgOptions installNupkgOptions, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
         {
             if (installNupkgOptions.Filename == null)
             {
@@ -78,8 +106,6 @@ namespace Snap
             var sw = new Stopwatch();
             sw.Reset();
             sw.Restart();
-            Console.WriteLine($"Clean install of local nupkg: {nupkgFilename}.");
-
             try
             {
                 var packageArchiveReader = snapExtractor.ReadPackage(nupkgFilename);
@@ -90,21 +116,28 @@ namespace Snap
                 }
 
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
+
+                Console.WriteLine($"Installing {packageIdentity.Id}.");
+
                 var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
-                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None);
+                var progressSource = new ProgressSource();
+                progressSource.Progress += (sender, i) =>
+                {
+                    Console.WriteLine($"{i}%");
+                };
 
-                Console.WriteLine($"Succesfully installed local nupkg in {sw.Elapsed.TotalSeconds:F} seconds.");
+                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None, progressSource);
+
+                Console.WriteLine($"Succesfully installed {packageIdentity.Id} in {sw.Elapsed.TotalSeconds:F} seconds.");
 
                 return 0;
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Unknown error while installing local nupkg: {nupkgFilename}. Message: {e.Message}.");
+                Console.Error.WriteLine($"Unknown error while installing: {nupkgFilename}. Message: {e.Message}.");
                 return -1;
             }
-
-            return -1;
         }
 
         static int SnapSha512(Sha512Options sha512Options, ISnapFilesystem snapFilesystem)
@@ -155,7 +188,7 @@ namespace Snap
 
         static async Task<int> SnapListFeeds(string snapPkgFileName, ISnapFilesystem snapFilesystem)
         {
-            if (!File.Exists(snapPkgFileName))
+            if (!snapFilesystem.FileExists(snapPkgFileName))
             {
                 Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;
@@ -191,7 +224,7 @@ namespace Snap
 
         static async Task<int> SnapListApps(string snapPkgFileName, ISnapFilesystem snapFilesystem)
         {
-            if (!File.Exists(snapPkgFileName))
+            if (!snapFilesystem.FileExists(snapPkgFileName))
             {
                 Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;

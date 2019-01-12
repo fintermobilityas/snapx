@@ -80,6 +80,7 @@ namespace Snap.Core
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public sealed class SnapChannelConfiguration
     {
         [YamlMember(Alias = "framework")]
@@ -87,8 +88,8 @@ namespace Snap.Core
         [YamlMember(Alias = "rid")]
         public string RuntimeIdentifier { get; set; }
         public string Feed { get; set; }
-        [YamlMember(Alias = "source")]
-        public string SourceDirectory { get; set; }
+        [YamlMember(Alias = "msbuildproperties")]
+        public string MSBuildProperties { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -118,12 +119,14 @@ namespace Snap.Core
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapFormatReader
     {
         Task<Snaps> ReadFromDiskAsync(string snapPkgFilename, CancellationToken cancellationToken);
         Snaps ReadFromString(string snapPkgYamlContents);
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapFormatReader : ISnapFormatReader
     {
         readonly ISnapFilesystem _snapFilesystem;

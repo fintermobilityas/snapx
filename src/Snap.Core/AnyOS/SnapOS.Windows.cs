@@ -176,7 +176,7 @@ namespace Snap.Core.AnyOS
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar");
 
-            if (!Directory.Exists(taskbarPath))
+            if (!_snapFilesystem.DirectoryExists(taskbarPath))
             {
                 this.Log().Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping...");
                 return;
@@ -236,9 +236,9 @@ namespace Snap.Core.AnyOS
                 .ToList();
         }
 
-        static int? GetPeSnapAwareVersion(string executable)
+        int? GetPeSnapAwareVersion(string executable)
         {
-            if (!File.Exists(executable))
+            if (!_snapFilesystem.FileExists(executable))
             {
                 return null;
             }

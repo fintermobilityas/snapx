@@ -7,5 +7,14 @@ namespace Snap.Core.Attributes
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapAwareAttribute : Attribute
     {
+
+    }
+
+
+    [AttributeUsage(AttributeTargets.Assembly)]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public sealed class SnapAttribute : Attribute
+    {
+        public SnapApp App { get; set; }
     }
 }

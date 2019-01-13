@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Attributes;
 using YamlDotNet.Serialization;
@@ -10,8 +10,8 @@ namespace Snap
 {
     internal interface ISnapSpecsWriter
     {
-        AssemblyDefinition BuildSnapAppSpecAssembly(SnapApp app, List<SnapFeed> feeds, string channelName);
-        string ToSnapAppSpecYamlString(SnapApp app, List<SnapFeed> feeds, string channel);
+        AssemblyDefinition BuildSnapAppSpecAssembly(SnapAppSpec snapAppSpec);
+        string ToSnapAppSpecYamlString(SnapAppSpec snapAppSpec);
     }
 
     internal sealed class SnapSpecsWriter : ISnapSpecsWriter
@@ -22,14 +22,18 @@ namespace Snap
             .WithTypeConverter(new UriYamlTypeConverter())
             .Build();
 
-        public AssemblyDefinition BuildSnapAppSpecAssembly(SnapApp app, List<SnapFeed> feeds, string channelName)
+        public AssemblyDefinition BuildSnapAppSpecAssembly([NotNull] SnapAppSpec snapAppSpec)
         {
-            var yamlSnapAppSpecStr = ToSnapAppSpecYamlString(app, feeds, channelName);
+            if (snapAppSpec == null) throw new ArgumentNullException(nameof(snapAppSpec));
+
+            var yamlSnapAppSpecStr = ToSnapAppSpecYamlString(snapAppSpec);
 
             const string snapAppSpecLibraryName = "SnapAppSpec";
 
+            var currentVersion = snapAppSpec.Version;
+
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(snapAppSpecLibraryName, new Version(app.Version.Major, app.Version.Minor, app.Version.Patch)), snapAppSpecLibraryName, ModuleKind.Dll);
+                new AssemblyNameDefinition(snapAppSpecLibraryName, new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Patch)), snapAppSpecLibraryName, ModuleKind.Dll);
 
             var mainModule = assembly.MainModule;
 
@@ -44,16 +48,9 @@ namespace Snap
             return assembly;
         }
 
-        public string ToSnapAppSpecYamlString(SnapApp app, List<SnapFeed> feeds, string channel)
+        public string ToSnapAppSpecYamlString([NotNull] SnapAppSpec snapAppSpec)
         {
-            if (app == null) throw new ArgumentNullException(nameof(app));
-            if (feeds == null) throw new ArgumentNullException(nameof(feeds));
-            var snapAppSpec = new SnapAppSpec
-            {
-                App = app,
-                Feeds = feeds,
-                Channel = channel
-            };
+            if (snapAppSpec == null) throw new ArgumentNullException(nameof(snapAppSpec));
             return YamlSerializer.Serialize(snapAppSpec);
         }
     }

@@ -14,7 +14,7 @@ namespace Snap
         public SemanticVersion CurrentVersion { get; set; }
         public string AppName { get; set; }
         public string ChannelName { get; set; }
-        public SnapChannelConfiguration ChannelConfiguration { get; set; }
+        public SnapTargetFramework TargetFramework { get; set; }
         public SnapFeed Feed { get; set; }
         public string NuspecBaseDirectory { get; set; }
         public string NuspecFilename { get; set; }

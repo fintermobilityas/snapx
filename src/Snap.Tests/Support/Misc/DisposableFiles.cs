@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Snap.Tests.Support.Misc
 {
-    class DisposableFiles : IDisposable
+    internal class DisposableFiles : IDisposable
     {
         readonly IReadOnlyCollection<string> _filenames;
 

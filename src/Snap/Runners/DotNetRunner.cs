@@ -75,12 +75,12 @@ namespace Snap.Runners
             }
         }
 
-        static async Task ConsumeStreamReaderAsync(StreamReader reader, StringBuilder lines)
+        static async Task ConsumeStreamReaderAsync(TextReader textReader, StringBuilder lines)
         {
             await Task.Yield();
 
             string line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            while ((line = await textReader.ReadLineAsync()) != null)
             {
                 lines.AppendLine(line);
             }

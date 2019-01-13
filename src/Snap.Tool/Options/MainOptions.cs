@@ -3,7 +3,7 @@
 namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    class MainOptions
+    internal class MainOptions
     {
         public ListOptions ListVerb { get; set; }
         public Sha512Options Sha512Verb { get; set; }

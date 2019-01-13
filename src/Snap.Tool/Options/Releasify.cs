@@ -5,7 +5,7 @@ namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("releasify", HelpText = "Create a new release for a given snap app")]
-    class ReleasifyOptions : BaseSubOptions
+    internal class ReleasifyOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Snap app name", Required = true)]
         public string App { get; set; }

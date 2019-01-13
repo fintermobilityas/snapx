@@ -92,7 +92,7 @@ namespace Snap.Tool
             var nupkgFilename = installNupkgOptions.Filename;
             if (nupkgFilename == null || !snapFilesystem.FileExists(nupkgFilename))
             {
-                Console.Error.WriteLine($"File not found: {nupkgFilename}.");
+                Console.Error.WriteLine($"Unable to find nupkg: {nupkgFilename}.");
                 return -1;
             }
 
@@ -208,7 +208,7 @@ namespace Snap.Tool
 
             foreach (var feed in snapAppsSpec.Feeds)
             {
-                Console.WriteLine($"Name: {feed.SourceType}. Type: {feed.SourceType}. Source: {feed.SourceUri}");
+                Console.WriteLine($"Name: {feed.Name}. Protocol version: {feed.ProtocolVersion}. Source: {feed.SourceUri}.");
             }
 
             return 0;
@@ -243,7 +243,7 @@ namespace Snap.Tool
             foreach (var app in snapAppsSpec.Apps)
             {
                 var channels = app.Channels.Select(x => x.Name).ToList();
-                Console.WriteLine($"Name: {app.Name}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");
+                Console.WriteLine($"Name: {app.Id}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");
             }
 
             return 0;

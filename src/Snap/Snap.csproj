@@ -74,6 +74,7 @@
             <InputAssemblies Include="NuGet.Packaging.Core.dll" />
             <InputAssemblies Include="NuGet.Packaging.dll" />
             <InputAssemblies Include="NuGet.Versioning.dll" />
+            <InputAssemblies Include="NuGet.Protocol.dll" />
             <InputAssemblies Include="Splat.dll" />
             <InputAssemblies Include="System.Drawing.Common.dll" />
             <InputAssemblies Include="YamlDotNet.NetCore.dll" />
@@ -81,6 +82,7 @@
             <InputAssemblies Include="FasterFlect.NETStandard.dll" />
             <InputAssemblies Include="Jetbrains.Annotations" />
             <InputAssemblies Include="ILRepack.NETStandard.dll" />
+            <InputAssemblies Include="LibLog.dll" />
             <InputAssemblies Include="Snap.Core.dll" />
         </ItemGroup>
 

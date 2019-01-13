@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Snap.Tests.Support.Misc
 {
-    class DisposableTestDirectory : IDisposable
+    internal class DisposableTestDirectory : IDisposable
     {
         readonly string _testDirectory;
 

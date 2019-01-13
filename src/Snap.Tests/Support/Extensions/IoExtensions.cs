@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Snap.Tests.Support.Extensions
 {
-    static class IoExtensions
+    internal static class IoExtensions
     {
         public static void DeleteFileSafe(this string filename)
         {

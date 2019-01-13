@@ -111,7 +111,7 @@ namespace Snap
         }
     }
 
-    static class Disposable
+    internal static class Disposable
     {
         public static IDisposable Create(Action action)
         {

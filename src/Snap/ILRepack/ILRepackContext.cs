@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using ILRepacking;
 using Mono.Cecil;
 
 namespace Snap.ILRepack

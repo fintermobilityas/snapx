@@ -13,18 +13,18 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-using Mono.Cecil;
-using Mono.Collections.Generic;
+
 using System.Collections.Generic;
 using System.Linq;
-using Snap.ILRepack;
+using Mono.Cecil;
+using Mono.Collections.Generic;
 
 // ReSharper disable once CheckNamespace
-namespace ILRepacking
+namespace Snap.ILRepack
 {
     internal class ReflectionHelper
     {
-        private readonly IRepackContext _repack;
+        readonly IRepackContext _repack;
 
         internal ReflectionHelper(IRepackContext repack)
         {

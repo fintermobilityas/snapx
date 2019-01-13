@@ -3,7 +3,7 @@
 namespace Snap.Tool.Options
 {
     [Verb("list", HelpText = "Show installed apps, feeds etc.")]
-    class ListOptions : BaseSubOptions
+    internal class ListOptions : BaseSubOptions
     {
         [Option('d', "Directory", HelpText = "Path to snap folder (Can be relative or absolute)", Required = false)]
         public string Directory { get; set; }

@@ -1,13 +1,10 @@
-﻿using Mono.Cecil;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using Fasterflect;
-using Mono.Cecil.Metadata;
+using Mono.Cecil;
 
-namespace ILRepacking
+namespace Snap.ILRepack
 {
     internal class MappingHandler
     {
@@ -35,8 +32,8 @@ namespace ILRepacking
             }
         }
 
-        private readonly IDictionary<Pair, TypeDefinition> mappings = new Dictionary<Pair, TypeDefinition>();
-        private readonly IDictionary<Pair, TypeReference> exportMappings = new Dictionary<Pair, TypeReference>();
+        readonly IDictionary<Pair, TypeDefinition> mappings = new Dictionary<Pair, TypeDefinition>();
+        readonly IDictionary<Pair, TypeReference> exportMappings = new Dictionary<Pair, TypeReference>();
 
         internal TypeDefinition GetRemappedType(TypeReference r)
         {
@@ -64,12 +61,12 @@ namespace ILRepacking
             }
         }
 
-        private static Pair GetTypeKey(TypeReference reference)
+        static Pair GetTypeKey(TypeReference reference)
         {
             return GetTypeKey(reference.Scope, reference.FullName);
         }
 
-        private static Pair GetTypeKey(IMetadataScope scope, String fullName)
+        static Pair GetTypeKey(IMetadataScope scope, String fullName)
         {
             return new Pair(GetScopeName(scope), fullName, scope);
         }
@@ -92,7 +89,7 @@ namespace ILRepacking
             throw new Exception("Unsupported scope: "+ scope);
         }
 
-        private TypeReference GetRootReference(TypeReference type)
+        TypeReference GetRootReference(TypeReference type)
         {
             TypeReference other;
             if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))

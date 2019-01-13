@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Mono.Cecil;
+using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Tests.Support.Extensions;
 using Snap.Tests.Support.Misc;
@@ -13,44 +16,34 @@ namespace Snap.Tests.Support
     {
         public string WorkingDirectory => Directory.GetCurrentDirectory();
 
-        public (SnapApp app, List<SnapFeed> feeds) BuildSnapAppSpec()
+        public SnapAppSpec BuildSnapAppSpec([NotNull] string channelName = "test")
         {
-            var snapApp = new SnapApp
+            if (channelName == null) throw new ArgumentNullException(nameof(channelName));
+
+            var feed = new SnapFeed
             {
-                Name = "mysnapapp",
+                Name = "nuget.org",
+                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                ProtocolVersion = SnapFeedProtocolVersion.NugetV3
+            };
+
+            return new SnapAppSpec
+            {
+                Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Channels = new List<SnapChannel>
+                Feed = feed,
+                Channel = new SnapChannel
                 {
-                    new SnapChannel
-                    {
-                        Name = "test",
-                        Configurations = new List<SnapChannelConfiguration>
-                        {
-                            new SnapChannelConfiguration
-                            {
-                                TargetFramework = "net45",
-                                Feed = "myget", 
-                                RuntimeIdentifier = "test", 
-                                MSBuildProperties = "test"
-                            }
-                        }
-                    }
+                    Name = channelName,
+                    Feed = feed.Name
+                },
+                TargetFramework = new SnapTargetFramework
+                {
+                    Name = "netcoreapp2.1",
+                    RuntimeIdentifier = "win7-x64",
+                    OsPlatform = OSPlatform.Windows.ToString()
                 }
             };
-
-            var snapFeeds = new List<SnapFeed>
-            {
-                new SnapFeed
-                {
-                    Name = "myget",
-                    SourceType = SnapFeedSourceType.Nuget,
-                    SourceUri = new Uri("https://example.org"),
-                    Username = "myusername",
-                    Password = "mypassword"
-                }
-            };
-
-            return (snapApp, snapFeeds);
         }
 
         public void WriteAssemblies(string workingDirectory, List<AssemblyDefinition> assemblyDefinitions, bool disposeAssemblyDefinitions = false)

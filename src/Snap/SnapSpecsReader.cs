@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using YamlDotNet.Core;
@@ -57,51 +55,50 @@ namespace Snap
         }
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public enum SnapFeedSourceType
+    public enum SnapFeedProtocolVersion
     {
-        Nuget
+        NotSupported = 0,
+        NugetV2 = 1,
+        NugetV3 = 2
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapFeed
     {
         public string Name { get; set; }
-        [YamlMember(Alias = "type")]
-        public SnapFeedSourceType SourceType { get; set; }
         [YamlMember(Alias = "source")]
         public Uri SourceUri { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        [YamlMember(Alias = "version")]
+        public SnapFeedProtocolVersion ProtocolVersion { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapChannel
     {
         public string Name { get; set; }
-        public List<SnapChannelConfiguration> Configurations { get; set; }
+        public string Feed { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public sealed class SnapChannelConfiguration
+    public sealed class SnapTargetFramework
     {
         [YamlMember(Alias = "framework")]
-        public string TargetFramework { get; set; }
+        public string Name { get; set; }
         [YamlMember(Alias = "rid")]
         public string RuntimeIdentifier { get; set; }
-        public string Feed { get; set; }
-        [YamlMember(Alias = "msbuildproperties")]
-        public string MSBuildProperties { get; set; }
+        public string OsPlatform { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapApp
     {
-        public string Name { get; set; }
-        public string Nuspec { get; set; }
+        public string Id { get; set; }
         public SemanticVersion Version { get; set; }
         public List<SnapChannel> Channels { get; set; }
+        public List<SnapTargetFramework> Configurations { get; set; }
 
         public SnapApp()
         {
@@ -124,9 +121,11 @@ namespace Snap
 
     public sealed class SnapAppSpec
     {
-        public List<SnapFeed> Feeds { get; set; }
-        public SnapApp App { get; set; }
-        public string Channel { get; set; }
+        public string Id { get; set; }
+        public SemanticVersion Version { get; set; }
+        public SnapChannel Channel { get; set; }
+        public SnapFeed Feed { get; set; }
+        public SnapTargetFramework TargetFramework {get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]

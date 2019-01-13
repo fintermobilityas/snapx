@@ -12,7 +12,7 @@ using Snap.Extensions;
 using Snap.Update;
 using Splat;
 
-namespace Snap
+namespace Snap.Core
 {
     [Flags]
     internal enum SnapShortcutLocation

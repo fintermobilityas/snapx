@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Snap.Extensions;
 using Splat;
 
-namespace Snap
+namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapFilesystem

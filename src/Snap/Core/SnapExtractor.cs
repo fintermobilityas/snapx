@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using NuGet.Common;
 using NuGet.Packaging;
 
-namespace Snap
+namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapExtractor

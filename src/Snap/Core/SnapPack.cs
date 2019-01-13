@@ -8,7 +8,7 @@ using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.Update;
 
-namespace Snap
+namespace Snap.Core
 {
     internal sealed class SnapPackDetails
     {

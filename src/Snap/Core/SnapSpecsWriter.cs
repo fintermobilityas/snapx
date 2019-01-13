@@ -6,7 +6,7 @@ using Snap.Attributes;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Snap
+namespace Snap.Core
 {
     internal interface ISnapSpecsWriter
     {

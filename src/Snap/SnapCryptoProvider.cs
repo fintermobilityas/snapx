@@ -6,13 +6,13 @@ using System.Text;
 
 namespace Snap
 {
-    public interface ISnapCryptoProvider
+    internal interface ISnapCryptoProvider
     {
         string Sha512(byte[] content);
         string Sha512(Stream content);
     }
 
-    public sealed class SnapCryptoProvider : ISnapCryptoProvider
+    internal sealed class SnapCryptoProvider : ISnapCryptoProvider
     {
         public string Sha512(byte[] content)
         {

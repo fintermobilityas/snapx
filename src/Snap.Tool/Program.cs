@@ -9,6 +9,7 @@ using CommandLine;
 using Snap.AnyOS;
 using Snap.Tool.AnyOS;
 using Snap.Tool.Options;
+using Snap.Update;
 using Splat;
 
 namespace Snap.Tool

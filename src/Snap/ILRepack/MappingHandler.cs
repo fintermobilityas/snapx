@@ -10,35 +10,34 @@ namespace Snap.ILRepack
     {
         struct Pair : IEquatable<Pair>
         {
-            readonly string scope;
-            readonly string name;
-            public readonly IMetadataScope MetadataScope;
+            readonly string _scope;
+            readonly string _name;
+            public readonly IMetadataScope _metadataScope;
 
             public Pair(string scope, string name, IMetadataScope metadataScope)
             {
-                this.scope = scope;
-                this.name = name;
-                MetadataScope = metadataScope;
+                _scope = scope;
+                _name = name;
+                _metadataScope = metadataScope;
             }
 
             public override int GetHashCode()
             {
-                return scope.GetHashCode() + name.GetHashCode();
+                return _scope.GetHashCode() + _name.GetHashCode();
             }
 
             public bool Equals(Pair p)
             {
-                return p.scope == scope && p.name == name;
+                return p._scope == _scope && p._name == _name;
             }
         }
 
-        readonly IDictionary<Pair, TypeDefinition> mappings = new Dictionary<Pair, TypeDefinition>();
-        readonly IDictionary<Pair, TypeReference> exportMappings = new Dictionary<Pair, TypeReference>();
+        readonly IDictionary<Pair, TypeDefinition> _mappings = new Dictionary<Pair, TypeDefinition>();
+        readonly IDictionary<Pair, TypeReference> _exportMappings = new Dictionary<Pair, TypeReference>();
 
         internal TypeDefinition GetRemappedType(TypeReference r)
         {
-            TypeDefinition other;
-            if (r.Scope != null && mappings.TryGetValue(GetTypeKey(r), out other))
+            if (r.Scope != null && _mappings.TryGetValue(GetTypeKey(r), out var other))
             {
                 return other;
             }
@@ -49,15 +48,15 @@ namespace Snap.ILRepack
         {
             if (orig.Scope != null)
             {
-                mappings[GetTypeKey(orig)] = renamed;
+                _mappings[GetTypeKey(orig)] = renamed;
             }
         }
 
-        internal void StoreExportedType(IMetadataScope scope, String fullName, TypeReference exportedTo)
+        internal void StoreExportedType(IMetadataScope scope, string fullName, TypeReference exportedTo)
         {
             if (scope != null)
             {
-                exportMappings[GetTypeKey(scope, fullName)] = exportedTo;
+                _exportMappings[GetTypeKey(scope, fullName)] = exportedTo;
             }
         }
 
@@ -66,64 +65,73 @@ namespace Snap.ILRepack
             return GetTypeKey(reference.Scope, reference.FullName);
         }
 
-        static Pair GetTypeKey(IMetadataScope scope, String fullName)
+        static Pair GetTypeKey(IMetadataScope scope, string fullName)
         {
             return new Pair(GetScopeName(scope), fullName, scope);
         }
 
         internal static string GetScopeName(IMetadataScope scope)
         {
-            if (scope is AssemblyNameReference)
-                return ((AssemblyNameReference)scope).Name;
-            if (scope is ModuleDefinition)
-                return ((ModuleDefinition) scope).Assembly.Name.Name;
-            throw new Exception("Unsupported scope: " + scope);
+            switch (scope)
+            {
+                case AssemblyNameReference assemblyNameReference:
+                    return assemblyNameReference.Name;
+                case ModuleDefinition moduleDefinition:
+                    return moduleDefinition.Assembly.Name.Name;
+                default:
+                    throw new Exception("Unsupported scope: " + scope);
+            }
         }
 
         internal static string GetScopeFullName(IMetadataScope scope)
         {
-            if (scope is AssemblyNameReference)
-                return ((AssemblyNameReference)scope).FullName;
-            if (scope is ModuleDefinition)
-                return ((ModuleDefinition)scope).Assembly.Name.FullName;
-            throw new Exception("Unsupported scope: "+ scope);
+            switch (scope)
+            {
+                case AssemblyNameReference assemblyNameReference:
+                    return assemblyNameReference.FullName;
+                case ModuleDefinition moduleDefinition:
+                    return moduleDefinition.Assembly.Name.FullName;
+                default:
+                    throw new Exception("Unsupported scope: "+ scope);
+            }
         }
 
         TypeReference GetRootReference(TypeReference type)
         {
-            TypeReference other;
-            if (type.Scope != null && exportMappings.TryGetValue(GetTypeKey(type), out other))
+            if (type.Scope == null || !_exportMappings.TryGetValue(GetTypeKey(type), out var other))
             {
-                var next = GetRootReference(other);
-                return next ?? other;
+                return null;
             }
-            return null;
+
+            var next = GetRootReference(other);
+            return next ?? other;
         }
 
         public TypeReference GetExportedRemappedType(TypeReference type)
         {
-            TypeReference other = GetRootReference(type);
-            if (other != null)
+            var other = GetRootReference(type);
+            if (other == null)
             {
-                // ElementType is used when serializing the Assembly.
-                // It should match the actual type (e.g., Boolean for System.Boolean). But because of forwarded types, this is not known at read time, thus having to fix it here.
-                var etype = type.GetFieldValue("etype");
-                if (etype != (object) 0x0)
-                {
-                    other.SetFieldValue("etype", etype);
-                }
-
-                // when reading forwarded types, we don't know if they are value types, fix that later on
-                if (type.IsValueType && !other.IsValueType)
-                    other.IsValueType = true;
-                return other;
+                return null;
             }
-            return null;
+
+            // ElementType is used when serializing the Assembly.
+            // It should match the actual type (e.g., Boolean for System.Boolean). But because of forwarded types, this is not known at read time, thus having to fix it here.
+            var etype = type.GetFieldValue("etype");
+            if (etype != (object) 0x0)
+            {
+                other.SetFieldValue("etype", etype);
+            }
+
+            // when reading forwarded types, we don't know if they are value types, fix that later on
+            if (type.IsValueType && !other.IsValueType)
+                other.IsValueType = true;
+            return other;
         }
 
         internal T GetOrigTypeScope<T>(TypeDefinition nt) where T : class, IMetadataScope
         {
-            return mappings.Where(p => p.Value == nt).Select(p => p.Key.MetadataScope).FirstOrDefault() as T;
+            return _mappings.Where(p => p.Value == nt).Select(p => p.Key._metadataScope).FirstOrDefault() as T;
         }
     }
 }

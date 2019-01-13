@@ -6,7 +6,7 @@ using Splat;
 
 namespace Snap
 {
-    public sealed class SnapSetupLogLogger : ILogger, IDisposable
+    internal sealed class SnapSetupLogLogger : ILogger, IDisposable
     {
         readonly TextWriter _inner;
         readonly object _gate = 42;
@@ -14,7 +14,7 @@ namespace Snap
 
         public SnapSetupLogLogger(bool saveInTemp)
         {
-            for (int i=0; i < 10; i++) {
+            for (var i=0; i < 10; i++) {
                 try {
                     var dir = saveInTemp ?
                         Path.GetTempPath() :

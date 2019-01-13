@@ -10,7 +10,7 @@ using NuGet.Packaging;
 namespace Snap.AnyOS
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapOs
+    internal interface ISnapOs
     {
         Task<Tuple<int, string>> InvokeProcessAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<Tuple<int, string>> InvokeProcessAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
@@ -20,7 +20,7 @@ namespace Snap.AnyOS
         void KillAllProcessesInDirectory(string rootAppDirectory);
     }
 
-    public sealed class SnapOs : ISnapOs
+    internal sealed class SnapOs : ISnapOs
     {
         readonly ISnapOsWindows _snapOsWindows;
 

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Snap.Runners
 {
-    public class RunStatus
+    internal class RunStatus
     {
         public string Output { get; }
         public string Errors { get; }
@@ -27,12 +27,12 @@ namespace Snap.Runners
         
     }
 
-    public interface IDotNetRunner
+    internal interface IDotNetRunner
     {
         RunStatus Run(string workingDirectory, string[] arguments);
     }
 
-    public class DotNetRunner : IDotNetRunner
+    internal class DotNetRunner : IDotNetRunner
     {
         public RunStatus Run(string workingDirectory, string[] arguments)
         {

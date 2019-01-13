@@ -12,7 +12,7 @@ using Splat;
 namespace Snap
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapFilesystem
+    internal interface ISnapFilesystem
     {
         IDisposable WithTempDirectory(out string path, string baseDirectory = null);
         IDisposable WithTempFile(out string path, string baseDirectory = null);
@@ -35,7 +35,7 @@ namespace Snap
         Task DeleteDirectoryOrJustGiveUpAsync(string directory);
     }
 
-    public sealed class SnapFilesystem : ISnapFilesystem, IEnableLogger
+    internal sealed class SnapFilesystem : ISnapFilesystem, IEnableLogger
     {
         readonly ISnapCryptoProvider _snapCryptoProvider;
 

@@ -12,14 +12,14 @@ using NuGet.Packaging;
 namespace Snap
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapExtractor
+    internal interface ISnapExtractor
     {
         PackageArchiveReader ReadPackage(string nupkg);
         Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken, ILogger logger = null);
         Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken, ILogger logger = null);
     }
 
-    public sealed class SnapExtractor : ISnapExtractor
+    internal sealed class SnapExtractor : ISnapExtractor
     {
         readonly ISnapFilesystem _snapFilesystem;
 

@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Snap
 {
-    public static class SnapUtility
+    internal static class SnapUtility
     {
         /// <summary>
         /// The namespace for ISO OIDs (from RFC 4122, Appendix C).
@@ -24,7 +24,7 @@ namespace Snap
 
         static void SwapBytes(byte[] guid, int left, int right)
         {
-            byte temp = guid[left];
+            var temp = guid[left];
             guid[left] = guid[right];
             guid[right] = temp;
         }
@@ -47,7 +47,7 @@ namespace Snap
         public static Guid CreateGuidFromHash(byte[] nameBytes, Guid namespaceId)
         {
             // convert the namespace UUID to network order (step 3)
-            byte[] namespaceBytes = namespaceId.ToByteArray();
+            var namespaceBytes = namespaceId.ToByteArray();
             SwapByteOrder(namespaceBytes);
 
             // comput the hash of the name space ID concatenated with the 
@@ -97,7 +97,7 @@ namespace Snap
 
             while (true) {
                 try {
-                    T ret = block();
+                    var ret = block();
                     return ret;
                 } catch (Exception) {
                     if (retries == 0) {

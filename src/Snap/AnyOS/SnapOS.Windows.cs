@@ -19,14 +19,14 @@ using Splat;
 namespace Snap.AnyOS
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapOsWindows
+    internal interface ISnapOsWindows
     {
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         void KillAllProcessesInDirectory(string rootAppDirectory);
     }
 
-    public sealed class SnapOsWindows : ISnapOsWindows, IEnableLogger
+    internal sealed class SnapOsWindows : ISnapOsWindows, IEnableLogger
     {
         readonly ISnapFilesystem _snapFilesystem;
 
@@ -390,7 +390,7 @@ namespace Snap.AnyOS
 
         public unsafe List<Tuple<string, int>> EnumerateProcesses()
         {
-            int bytesReturned = 0;
+            var bytesReturned = 0;
             var pids = new int[2048];
 
             fixed (int* p = pids)

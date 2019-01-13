@@ -52,7 +52,7 @@ namespace Snap.ILRepack
             if (count == 0)
                 return true;
 
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
                 if (!AreSame(a[i].ParameterType, b[i].ParameterType))
                     return false;
 
@@ -102,7 +102,7 @@ namespace Snap.ILRepack
             if (a.GenericArguments.Count != b.GenericArguments.Count)
                 return false;
 
-            for (int i = 0; i < a.GenericArguments.Count; i++)
+            for (var i = 0; i < a.GenericArguments.Count; i++)
                 if (!AreSame(a.GenericArguments[i], b.GenericArguments[i]))
                     return false;
 
@@ -139,7 +139,7 @@ namespace Snap.ILRepack
         {
             if (a.Count != b.Count)
                 return false;
-            for (int i = 0; i < a.Count; i++)
+            for (var i = 0; i < a.Count; i++)
             {
                 if (!AreSame(a[i], b[i]))
                     return false;

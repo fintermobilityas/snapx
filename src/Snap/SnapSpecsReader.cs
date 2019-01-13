@@ -12,7 +12,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Snap
 {
-    public sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
+    internal sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
     {
         public bool Accepts(Type type)
         {
@@ -33,7 +33,7 @@ namespace Snap
         }
     }
 
-    public sealed class UriYamlTypeConverter : IYamlTypeConverter
+    internal sealed class UriYamlTypeConverter : IYamlTypeConverter
     {
         public bool Accepts(Type type)
         {
@@ -129,7 +129,7 @@ namespace Snap
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapSpecsReader
+    internal interface ISnapSpecsReader
     {
         SnapAppsSpec GetSnapAppsSpecFromStream(MemoryStream stream);
         SnapAppsSpec GetSnapAppsSpecFromYamlString(string yamlString);
@@ -137,7 +137,7 @@ namespace Snap
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class SnapSpecsReader : ISnapSpecsReader
+    internal sealed class SnapSpecsReader : ISnapSpecsReader
     {
         static readonly Deserializer Deserializer = new DeserializerBuilder()
             .WithNamingConvention(new CamelCaseNamingConvention())

@@ -9,12 +9,13 @@ using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Extensions;
+using Snap.Update;
 using Splat;
 
 namespace Snap
 {
     [Flags]
-    public enum SnapShortcutLocation
+    internal enum SnapShortcutLocation
     {
         StartMenu = 1 << 0,
         Desktop = 1 << 1,
@@ -26,31 +27,14 @@ namespace Snap
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface IProgressSource
-    {
-        event EventHandler<int> Progress;
-        void Raise(int i);
-    }
-
-    public sealed class ProgressSource : IProgressSource
-    {
-        public event EventHandler<int> Progress;
-
-        public void Raise(int i)
-        {
-            Progress?.Invoke(this, i);
-        }
-    }
-
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapInstaller
+    internal interface ISnapInstaller
     {
         string GetRootApplicationInstallationDirectory(string rootAppDirectory, SemanticVersion version);
         string GetRootPackagesDirectory(string rootAppDirectory);
         Task CleanInstallFromDiskAsync(string nupkgAbsoluteFilename, string rootAppDirectory, CancellationToken cancellationToken, IProgressSource progressSource = null);
     }
 
-    public sealed class SnapInstaller : ISnapInstaller, IEnableLogger
+    internal sealed class SnapInstaller : ISnapInstaller, IEnableLogger
     {
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapFilesystem _snapFilesystem;

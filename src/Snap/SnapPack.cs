@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Versioning;
+using Snap.Update;
 
 namespace Snap
 {
-    public sealed class SnapPackDetails
+    internal sealed class SnapPackDetails
     {
         public SemanticVersion CurrentVersion { get; set; }
         public string AppName { get; set; }
@@ -23,12 +24,12 @@ namespace Snap
         public IProgressSource ProgressSource {get; set; }
     }
 
-    public interface ISnapPack
+    internal interface ISnapPack
     {
         Task<string> PackAsync(SnapPackDetails snapPackDetails);
     }
 
-    public sealed class SnapPack : ISnapPack
+    internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;
 

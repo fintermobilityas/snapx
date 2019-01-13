@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JetBrains.Annotations;
 using Mono.Cecil;
 
 namespace Snap.Reflection
@@ -31,9 +32,9 @@ namespace Snap.Reflection
     {
         readonly AssemblyDefinition _assembly;
 
-        public CecilAssemblyReflector(AssemblyDefinition assembly)
+        public CecilAssemblyReflector([NotNull] AssemblyDefinition assembly)
         {
-            _assembly = assembly;
+            _assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
         }
 
         public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
@@ -79,9 +80,9 @@ namespace Snap.Reflection
     {
         readonly TypeDefinition _type;
 
-        public CecilTypeReflector(TypeDefinition type)
+        public CecilTypeReflector([NotNull] TypeDefinition type)
         {
-            _type = type;
+            _type = type ?? throw new ArgumentNullException(nameof(type));
         }
 
         public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
@@ -108,9 +109,9 @@ namespace Snap.Reflection
         readonly CustomAttribute _attribute;
         IDictionary<string, string> _values;
 
-        public CecilAttributeReflector(CustomAttribute attribute)
+        public CecilAttributeReflector([NotNull] CustomAttribute attribute)
         {
-            _attribute = attribute;
+            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
         }
 
         public IDictionary<string, string> Values

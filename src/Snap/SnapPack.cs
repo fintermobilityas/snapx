@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -8,7 +7,7 @@ using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Versioning;
 
-namespace Snap.Core
+namespace Snap
 {
     public sealed class SnapPackDetails
     {

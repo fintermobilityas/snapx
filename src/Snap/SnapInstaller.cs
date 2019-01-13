@@ -7,11 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Packaging;
 using NuGet.Versioning;
-using Snap.Core.AnyOS;
-using Snap.Core.Extensions;
+using Snap.AnyOS;
+using Snap.Extensions;
 using Splat;
 
-namespace Snap.Core
+namespace Snap
 {
     [Flags]
     public enum SnapShortcutLocation
@@ -121,7 +121,7 @@ namespace Snap.Core
             var nupkgFilename = Path.GetFileName(nupkgAbsoluteFilename);
             var dstNupkgFilename = Path.Combine(rootPackagesDirectory, nupkgFilename);
             this.Log().Info($"Copying nupkg {nupkgAbsoluteFilename} to {dstNupkgFilename}.");
-            await _snapFilesystem.CopyFileAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
+            await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
             this.Log().Info("Successfully copied nupkg.");
 
             progressSource?.Raise(50);

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using NuGet.Common;
 using NuGet.Packaging;
 
-namespace Snap.Core
+namespace Snap
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapExtractor
@@ -63,15 +63,12 @@ namespace Snap.Core
 
                 if (targetPath.EndsWith(pathSeperator))
                 {
-                    if (!_snapFilesystem.DirectoryExists(targetPath))
-                    {
-                        _snapFilesystem.CreateDirectory(targetPath);
-                    }
+                    _snapFilesystem.CreateDirectoryIfNotExists(targetPath);
 
                     return targetPath;
                 }
 
-                using (var targetStream = File.OpenWrite(targetPath))
+                using (var targetStream = new FileStream(targetPath, FileMode.CreateNew, FileAccess.Write))
                 {
                     sourceStream.CopyTo(targetStream);
                 }

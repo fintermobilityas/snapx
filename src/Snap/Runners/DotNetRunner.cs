@@ -8,7 +8,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Snap.Core.Runners
+namespace Snap.Runners
 {
     public class RunStatus
     {

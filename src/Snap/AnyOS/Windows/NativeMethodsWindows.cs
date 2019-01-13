@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Snap.Core.AnyOS.Windows
+namespace Snap.AnyOS.Windows
 {
     [Flags]
     internal enum ProcessAccess : uint {

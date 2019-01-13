@@ -6,10 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Snap.Core.Extensions;
+using Snap.Extensions;
 using Splat;
 
-namespace Snap.Core
+namespace Snap
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapFilesystem
@@ -28,7 +28,8 @@ namespace Snap.Core
         string Sha512(Stream stream);
         IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
         IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
-        Task CopyFileAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
+        Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
+        Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         void DeleteDirectory(string directory);
         Task DeleteDirectoryAsync(string directory);
         Task DeleteDirectoryOrJustGiveUpAsync(string directory);
@@ -204,7 +205,7 @@ namespace Snap.Core
             return Directory.EnumerateFiles(rootPath, "*", SearchOption.AllDirectories);
         }
 
-        public async Task CopyFileAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
+        public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
         {
             if (sourcePath == null) throw new ArgumentNullException(nameof(sourcePath));
             if (destinationPath == null) throw new ArgumentNullException(nameof(destinationPath));
@@ -212,11 +213,11 @@ namespace Snap.Core
             using (Stream source = File.OpenRead(sourcePath))
             using (Stream destination = File.Create(destinationPath))
             {
-                byte[] buffer = new byte[8096];
-
-                while (true)
+                var buffer = new byte[8096];
+                
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    int bytesRead = await source.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                    var bytesRead = await source.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
                     if (bytesRead == 0)
                     {
                         break;
@@ -225,6 +226,38 @@ namespace Snap.Core
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        public async Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            if (!FileExists(filename))
+            {
+                throw new FileNotFoundException(filename);
+            }
+
+            var dstStream = new MemoryStream();
+
+            using (Stream srcStream = File.OpenRead(filename))
+            {
+                var buffer = new byte[8096];
+                
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+
+                    await dstStream.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            dstStream.Seek(0, SeekOrigin.Begin);
+
+            return dstStream;
         }
 
         public void DeleteDirectory(string directory)

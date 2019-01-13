@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 
-namespace Snap.Options
+namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("releasify", HelpText = "Create a new release for a given snap app")]

@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Snap.Options
+namespace Snap.Tool.Options
 {
     [Verb("install-nupkg", HelpText = "Install app from a local nuget package")]
     class InstallNupkgOptions : BaseSubOptions

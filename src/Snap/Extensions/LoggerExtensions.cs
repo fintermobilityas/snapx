@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Splat;
 
-namespace Snap.Core.Extensions
+namespace Snap.Extensions
 {
     internal static class LoggerExtensions
     {

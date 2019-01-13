@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 
-namespace Snap.Core.Extensions
+namespace Snap.Extensions
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class StringExtensions

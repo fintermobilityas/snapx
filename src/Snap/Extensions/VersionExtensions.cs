@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 using NuGet.Versioning;
 
-namespace Snap.Core.Extensions
+namespace Snap.Extensions
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public static class VersionExtensions

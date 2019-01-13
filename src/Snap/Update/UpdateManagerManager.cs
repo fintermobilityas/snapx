@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Snap.Core.Update
+namespace Snap.Update
 {
     public sealed class SnapReleaseEntry
     {

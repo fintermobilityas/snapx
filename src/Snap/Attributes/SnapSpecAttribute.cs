@@ -5,8 +5,8 @@ namespace Snap.Attributes
 {
     [AttributeUsage(AttributeTargets.Assembly)]
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class SnapAwareAttribute : Attribute
+    internal sealed class SnapSpecAttribute : Attribute
     {
-
+        public string YamlString { get; set; }
     }
 }

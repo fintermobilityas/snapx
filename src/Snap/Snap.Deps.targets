@@ -1,4 +1,13 @@
 <Project>
+    <PropertyGroup>
+        <LangVersion>7.3</LangVersion>
+        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
+        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
+        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
+        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
+        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
+        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+    </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.1">
             <PrivateAssets>all</PrivateAssets>
@@ -13,6 +22,20 @@
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="FasterFlect.NETStandard" Version="1.0.9">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Jetbrains.Annotations" Version="2018.2.1">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="ILRepack.NETStandard" Version="2.0.4">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+        <PackageReference Include="System.ValueTuple" Version="4.5.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

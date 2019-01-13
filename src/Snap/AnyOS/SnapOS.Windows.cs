@@ -12,11 +12,11 @@ using System.Threading;
 using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Versioning;
-using Snap.Core.AnyOS.Windows;
-using Snap.Core.Extensions;
+using Snap.AnyOS.Windows;
+using Snap.Extensions;
 using Splat;
 
-namespace Snap.Core.AnyOS
+namespace Snap.AnyOS
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapOsWindows

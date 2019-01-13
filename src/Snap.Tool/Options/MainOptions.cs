@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Snap.Options
+namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     class MainOptions

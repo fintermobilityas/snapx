@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NuGet.Versioning;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Snap.Core
+namespace Snap
 {
     public sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
     {
@@ -107,67 +110,65 @@ namespace Snap.Core
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class Snaps 
+    public sealed class SnapAppsSpec 
     {
         public List<SnapFeed> Feeds { get; set; }
         public List<SnapApp> Apps { get; set; }
 
-        public Snaps()
+        public SnapAppsSpec()
         {
             Feeds = new List<SnapFeed>();
             Apps = new List<SnapApp>();
         }
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapFormatReader
+    public sealed class SnapAppSpec
     {
-        Task<Snaps> ReadFromDiskAsync(string snapPkgFilename, CancellationToken cancellationToken);
-        Snaps ReadFromString(string snapPkgYamlContents);
+        public List<SnapFeed> Feeds { get; set; }
+        public SnapApp App { get; set; }
+        public string Channel { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class SnapFormatReader : ISnapFormatReader
+    public interface ISnapSpecsReader
     {
-        readonly ISnapFilesystem _snapFilesystem;
+        SnapAppsSpec GetSnapAppsSpecFromStream(MemoryStream stream);
+        SnapAppsSpec GetSnapAppsSpecFromYamlString(string yamlString);
+        SnapAppSpec GetSnapAppSpecFromYamlString(string yamlString);
+    }
 
-        public SnapFormatReader(ISnapFilesystem snapFilesystem)
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public sealed class SnapSpecsReader : ISnapSpecsReader
+    {
+        static readonly Deserializer Deserializer = new DeserializerBuilder()
+            .WithNamingConvention(new CamelCaseNamingConvention())
+            .WithTypeConverter(new SemanticVersionYamlTypeConverter())
+            .WithTypeConverter(new UriYamlTypeConverter())
+            .Build();
+
+        public SnapAppsSpec GetSnapAppsSpecFromStream(MemoryStream stream)
         {
-            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            return GetSnapAppsSpecFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
         }
 
-        public async Task<Snaps> ReadFromDiskAsync(string snapPkgFilename, CancellationToken cancellationToken)
+        public SnapAppsSpec GetSnapAppsSpecFromYamlString(string yamlString)
         {
-            if (string.IsNullOrWhiteSpace(snapPkgFilename)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(snapPkgFilename));
+            if (string.IsNullOrWhiteSpace(yamlString)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(yamlString));
 
-            if (!_snapFilesystem.FileExists(snapPkgFilename))
-            {
-                return null;
-            }
-
-            var yaml = await _snapFilesystem.ReadAllTextAsync(snapPkgFilename, cancellationToken);
-
-            return Parse(yaml);
+            return DeserializeSnapAppsSpec(yamlString);
         }
 
-        public Snaps ReadFromString(string snapPkgYamlContents)
+        public SnapAppSpec GetSnapAppSpecFromYamlString([NotNull] string yamlString)
         {
-            if (string.IsNullOrWhiteSpace(snapPkgYamlContents)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(snapPkgYamlContents));
-
-            return Parse(snapPkgYamlContents);
+            if (string.IsNullOrWhiteSpace(yamlString)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(yamlString));
+            return Deserializer.Deserialize<SnapAppSpec>(yamlString);
         }
 
-        Snaps Parse(string content)
+        SnapAppsSpec DeserializeSnapAppsSpec(string content)
         {
             if (string.IsNullOrWhiteSpace(content)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(content));
 
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(new CamelCaseNamingConvention())
-                .WithTypeConverter(new SemanticVersionYamlTypeConverter())
-                .WithTypeConverter(new UriYamlTypeConverter())
-                .Build();
-
-            return deserializer.Deserialize<Snaps>(content);
+            return Deserializer.Deserialize<SnapAppsSpec>(content);
         }
     }
 }

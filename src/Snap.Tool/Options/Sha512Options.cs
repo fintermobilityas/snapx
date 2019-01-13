@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Snap.Options
+namespace Snap.Tool.Options
 {
     [Verb("sha512", HelpText = "Calculate SHA-512 for a given file")]
     class Sha512Options : BaseSubOptions

@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace Snap.Options
+namespace Snap.Tool.Options
 {
     [Verb("list", HelpText = "Show installed apps, feeds etc.")]
     class ListOptions : BaseSubOptions

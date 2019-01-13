@@ -1,4 +1,5 @@
 ﻿// Resharper disable all
+
 using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -6,7 +7,7 @@ using System.Text;
 
 // All of this code is from http://vbaccelerator.com/home/NET/Code/Libraries/Shell_Projects/Creating_and_Modifying_Shortcuts/article.asp
 
-namespace Snap.Core.AnyOS.Windows
+namespace Snap.AnyOS.Windows
 {
     /// <summary>
     /// Summary description for ShellLink.

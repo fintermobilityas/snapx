@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using Splat;
 
-namespace Snap.Core
+namespace Snap
 {
     public sealed class SnapSetupLogLogger : ILogger, IDisposable
     {

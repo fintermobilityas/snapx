@@ -1,18 +1,18 @@
 using Xunit;
 
-namespace Snap.Core.Tests
+namespace Snap.Tests
 {
-    public class SnapFormatReaderTests
+    public class SnapSpecsReaderTests
     {
-        readonly SnapFilesystem _snapFilesystem;
+        readonly ISnapSpecsReader _snapSpecsReader;
 
-        public SnapFormatReaderTests()
+        public SnapSpecsReaderTests()
         {
-            _snapFilesystem = new SnapFilesystem(new SnapCryptoProvider());
+            _snapSpecsReader = new SnapSpecsReader();
         }
 
         [Fact]
-        public void TestReadFromString()
+        public void TestGetSnapAppsSpecFromYamlString()
         {
             const string yaml = @"
 feeds:
@@ -56,27 +56,26 @@ apps:
            feed: myfeedname
 ";
 
-            var reader = new SnapFormatReader(_snapFilesystem);
-            var snaps = reader.ReadFromString(yaml);
-            Assert.NotNull(snaps);
-            Assert.Equal(2,snaps.Apps.Count);
-            Assert.Equal(2, snaps.Feeds.Count);
+            var snapAppsSpec = _snapSpecsReader.GetSnapAppsSpecFromYamlString(yaml);
+            Assert.NotNull(snapAppsSpec);
+            Assert.Equal(2,snapAppsSpec.Apps.Count);
+            Assert.Equal(2, snapAppsSpec.Feeds.Count);
 
-            var feed1 = snaps.Feeds[0];
+            var feed1 = snapAppsSpec.Feeds[0];
             Assert.Equal(SnapFeedSourceType.Nuget, feed1.SourceType);
             Assert.Equal("myfeedname", feed1.Name);
             Assert.Equal("https://test/", feed1.SourceUri.ToString());
             Assert.Equal("myusername", feed1.Username);
             Assert.Equal("mypassword", feed1.Password);
 
-            var feed2 = snaps.Feeds[1];
+            var feed2 = snapAppsSpec.Feeds[1];
             Assert.Equal(SnapFeedSourceType.Nuget, feed2.SourceType);
             Assert.Equal("myfeedname2", feed2.Name);
             Assert.Equal("https://test2/", feed2.SourceUri.ToString());
             Assert.Null(feed2.Username);
             Assert.Null(feed2.Password);
 
-            var app1 = snaps.Apps[0];
+            var app1 = snapAppsSpec.Apps[0];
             Assert.Equal("myapp1", app1.Name);
             Assert.Equal("myapp1.nuspec", app1.Nuspec);
             Assert.Equal("1.0.0", app1.Version.ToFullString());
@@ -92,7 +91,7 @@ apps:
             Assert.Equal("win10-x64", app1Channel1Configuration.RuntimeIdentifier);
             Assert.Equal("netcoreapp2.2", app1Channel1Configuration.TargetFramework);
             
-            var app2 = snaps.Apps[1];
+            var app2 = snapAppsSpec.Apps[1];
             Assert.Equal("myapp2", app2.Name);
             Assert.Equal("myapp2.nuspec", app2.Nuspec);
             Assert.Equal("1.0.0", app2.Version.ToFullString());

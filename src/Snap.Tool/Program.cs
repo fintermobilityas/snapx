@@ -6,14 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using NuGet.Versioning;
 using Snap.AnyOS;
-using Snap.Core;
-using Snap.Core.AnyOS;
-using Snap.Options;
+using Snap.Tool.AnyOS;
+using Snap.Tool.Options;
 using Splat;
 
-namespace Snap
+namespace Snap.Tool
 {
     internal class Program
     {
@@ -40,6 +38,7 @@ namespace Snap
             var snapExtractor = new SnapExtractor(snapFilesystem);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
             var snapPack = new SnapPack(snapFilesystem);
+            var snapSpecsReader = new SnapSpecsReader();
 
             //var packProgressSource = new ProgressSource();
             //packProgressSource.Progress += (sender, i) => { Console.WriteLine($"{i}%"); };
@@ -57,18 +56,18 @@ namespace Snap
             using (var logger = new SnapSetupLogLogger(false) {Level = LogLevel.Info})
             {
                 Locator.CurrentMutable.Register(() => logger, typeof(ILogger));
-                return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller);
+                return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader);
             }
         }
 
-        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller)
+        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
             return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions, ReleasifyOptions>(args)
                 .MapResult(
                     (ReleasifyOptions opts) => SnapReleasify(opts),
-                    (ListOptions opts) => SnapList(opts, snapFilesystem).Result,
+                    (ListOptions opts) => SnapList(opts, snapFilesystem, snapSpecsReader).Result,
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem),
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
@@ -157,7 +156,7 @@ namespace Snap
             }
         }
 
-        static async Task<int> SnapList(ListOptions listOptions, ISnapFilesystem snapFilesystem)
+        static async Task<int> SnapList(ListOptions listOptions, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
         {
             var snapPkgFileName = default(string);
 
@@ -169,18 +168,18 @@ namespace Snap
 
             if (listOptions.Apps)
             {
-                return await SnapListApps(snapPkgFileName, snapFilesystem);
+                return await SnapListApps(snapPkgFileName, snapFilesystem, snapSpecsReader);
             }
 
             if (listOptions.Feeds)
             {
-                return await SnapListFeeds(snapPkgFileName, snapFilesystem);
+                return await SnapListFeeds(snapPkgFileName, snapFilesystem, snapSpecsReader);
             }
 
             return -1;
         }
 
-        static async Task<int> SnapListFeeds(string snapPkgFileName, ISnapFilesystem snapFilesystem)
+        static async Task<int> SnapListFeeds(string snapPkgFileName, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
         {
             if (!snapFilesystem.FileExists(snapPkgFileName))
             {
@@ -188,13 +187,12 @@ namespace Snap
                 return -1;
             }
 
-            var snapFormatReader = new SnapFormatReader(snapFilesystem);
-
-            Snaps snaps;
+            SnapAppsSpec snapAppsSpec;
             try
             {
-                snaps = await snapFormatReader.ReadFromDiskAsync(snapPkgFileName, CancellationToken.None);
-                if (snaps == null)
+                var snapAppSpecYamlStr = await snapFilesystem.ReadAllTextAsync(snapPkgFileName, CancellationToken.None);
+                snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppSpecYamlStr);
+                if (snapAppsSpec == null)
                 {
                     Console.Error.WriteLine(".snap file not found in current directory.");
                     return -1;
@@ -206,9 +204,9 @@ namespace Snap
                 return -1;
             }
 
-            Console.WriteLine($"Feeds ({snaps.Feeds.Count}):");
+            Console.WriteLine($"Feeds ({snapAppsSpec.Feeds.Count}):");
 
-            foreach (var feed in snaps.Feeds)
+            foreach (var feed in snapAppsSpec.Feeds)
             {
                 Console.WriteLine($"Name: {feed.SourceType}. Type: {feed.SourceType}. Source: {feed.SourceUri}");
             }
@@ -216,7 +214,7 @@ namespace Snap
             return 0;
         }
 
-        static async Task<int> SnapListApps(string snapPkgFileName, ISnapFilesystem snapFilesystem)
+        static async Task<int> SnapListApps(string snapPkgFileName, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
         {
             if (!snapFilesystem.FileExists(snapPkgFileName))
             {
@@ -224,13 +222,12 @@ namespace Snap
                 return -1;
             }
 
-            var snapFormatReader = new SnapFormatReader(snapFilesystem);
-
-            Snaps snaps;
+            SnapAppsSpec snapAppsSpec;
             try
             {
-                snaps = await snapFormatReader.ReadFromDiskAsync(snapPkgFileName, CancellationToken.None);
-                if (snaps == null)
+                var snapAppsSpecYamlStr = await snapFilesystem.ReadAllTextAsync(snapPkgFileName, CancellationToken.None);
+                snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppsSpecYamlStr);
+                if (snapAppsSpec == null)
                 {
                     Console.Error.WriteLine(".snap file not found in current directory.");
                     return -1;
@@ -242,8 +239,8 @@ namespace Snap
                 return -1;
             }
 
-            Console.WriteLine($"Snaps ({snaps.Apps.Count}):");
-            foreach (var app in snaps.Apps)
+            Console.WriteLine($"Snaps ({snapAppsSpec.Apps.Count}):");
+            foreach (var app in snapAppsSpec.Apps)
             {
                 var channels = app.Channels.Select(x => x.Name).ToList();
                 Console.WriteLine($"Name: {app.Name}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");

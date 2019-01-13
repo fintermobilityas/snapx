@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
-namespace Snap.AnyOS
+namespace Snap.Tool.AnyOS
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public enum StandardHandles

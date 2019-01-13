@@ -11,12 +11,6 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
-        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
-        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
-        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
-        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
-        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
-        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -65,6 +59,7 @@
 
         <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
             <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+            <InputAssemblies Include="System.ValueTuple.dll" />
         </ItemGroup>
 
         <ItemGroup>
@@ -83,6 +78,9 @@
             <InputAssemblies Include="System.Drawing.Common.dll" />
             <InputAssemblies Include="YamlDotNet.NetCore.dll" />
             <InputAssemblies Include="NuGet.Versioning.dll" />
+            <InputAssemblies Include="FasterFlect.NETStandard.dll" />
+            <InputAssemblies Include="Jetbrains.Annotations" />
+            <InputAssemblies Include="ILRepack.NETStandard.dll" />
             <InputAssemblies Include="Snap.Core.dll" />
         </ItemGroup>
 

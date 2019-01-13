@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
-namespace Snap.Core
+namespace Snap
 {
     public static class SnapUtility
     {

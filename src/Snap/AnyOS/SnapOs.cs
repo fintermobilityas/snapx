@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Packaging;
 
-namespace Snap.Core.AnyOS
+namespace Snap.AnyOS
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapOs

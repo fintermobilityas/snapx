@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Snap.Core.Extensions
+namespace Snap.Extensions
 {
     internal static class EnumerableExtensions
     {

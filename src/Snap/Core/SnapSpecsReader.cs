@@ -50,7 +50,7 @@ namespace Snap.Core
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            var uriStr = ((Uri) value).ToString();
+            var uriStr = ((Uri)value).ToString();
             emitter.Emit(new Scalar(uriStr));
         }
     }
@@ -85,8 +85,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public sealed class SnapTargetFramework
     {
-        [YamlMember(Alias = "framework")]
-        public string Name { get; set; }
+        public string Framework { get; set; }
         [YamlMember(Alias = "rid")]
         public string RuntimeIdentifier { get; set; }
         public string OsPlatform { get; set; }
@@ -107,7 +106,7 @@ namespace Snap.Core
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class SnapAppsSpec 
+    public sealed class SnapAppsSpec
     {
         public List<SnapFeed> Feeds { get; set; }
         public List<SnapApp> Apps { get; set; }
@@ -125,7 +124,9 @@ namespace Snap.Core
         public SemanticVersion Version { get; set; }
         public SnapChannel Channel { get; set; }
         public SnapFeed Feed { get; set; }
-        public SnapTargetFramework TargetFramework {get; set; }
+        public SnapTargetFramework TargetFramework { get; set; }
+        public List<SnapChannel> AvailableChannels { get; set; }
+        public bool IsDelta { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]

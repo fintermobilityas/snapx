@@ -19,17 +19,18 @@ namespace Snap.Extensions
         internal static string GetNugetUpstreamPackageId([NotNull] this SnapAppSpec snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.Id}-{snapApp.TargetFramework.OsPlatform}-{snapApp.TargetFramework.Name}{snapApp.TargetFramework.RuntimeIdentifier}";
+            var fullOrDelta = !snapApp.IsDelta ? "full" : "delta";
+            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Channel.Name}-{snapApp.TargetFramework.OsPlatform}-{snapApp.TargetFramework.Framework}-{snapApp.TargetFramework.RuntimeIdentifier}".ToLowerInvariant();
         }
 
         internal static INuGetPackageSources GetNugetSourcesFromFeed([NotNull] this SnapFeed snapFeed)
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
 
-            var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, false)
+            var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false)
             {
-                IsEnabled = true,
-                IsMachineWide = false
+                IsMachineWide = false,                
+                IsOfficial = true
             };
 
             if (snapFeed.Username != null && snapFeed.Password != null)

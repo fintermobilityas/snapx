@@ -28,22 +28,25 @@ namespace Snap.Tests.Support
                 ProtocolVersion = SnapFeedProtocolVersion.NugetV3
             };
 
+            var channel = new SnapChannel
+            {
+                Name = channelName,
+                Feed = feed.Name
+            };
+
             return new SnapAppSpec
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
                 Feed = feed,
-                Channel = new SnapChannel
-                {
-                    Name = channelName,
-                    Feed = feed.Name
-                },
+                Channel = channel,
                 TargetFramework = new SnapTargetFramework
                 {
-                    Name = "netcoreapp2.1",
+                    Framework = "netcoreapp2.1",
                     RuntimeIdentifier = "win7-x64",
-                    OsPlatform = OSPlatform.Windows.ToString()
-                }
+                    OsPlatform = OSPlatform.Windows.ToString()                    
+                },
+                AvailableChannels = new List<SnapChannel> { channel }
             };
         }
 

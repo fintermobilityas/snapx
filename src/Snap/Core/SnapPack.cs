@@ -5,21 +5,15 @@ using System.IO;
 using System.Threading.Tasks;
 using NuGet.Frameworks;
 using NuGet.Packaging;
-using NuGet.Versioning;
 using Snap.Update;
 
 namespace Snap.Core
 {
     internal sealed class SnapPackDetails
     {
-        public SemanticVersion CurrentVersion { get; set; }
-        public string AppName { get; set; }
-        public string ChannelName { get; set; }
-        public SnapTargetFramework TargetFramework { get; set; }
-        public SnapFeed Feed { get; set; }
+        public SnapAppSpec Spec { get; set; }
         public string NuspecBaseDirectory { get; set; }
         public string NuspecFilename { get; set; }
-        public IReadOnlyDictionary<string, string> MsBuildProperties { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
         public IProgressSource ProgressSource {get; set; }
     }
@@ -54,7 +48,7 @@ namespace Snap.Core
 
             var properties = new Dictionary<string, string>
             {
-                {"version", snapPackDetails.CurrentVersion.ToFullString()},
+                {"version", snapPackDetails.Spec.Version.ToFullString()},
                 {"snapfolder", snapPackDetails.NuspecBaseDirectory}
             };
 

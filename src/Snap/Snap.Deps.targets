@@ -1,27 +1,19 @@
 <Project>
     <PropertyGroup>
-        <LangVersion>7.3</LangVersion>
-        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
-        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
-        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
-        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
-        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
-        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+        <NugetVersion Condition="$(IsNetFullFramework)">4.9.2</NugetVersion>
+        <NugetVersion Condition="!$(IsNetFullFramework)">4.9.2</NugetVersion>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="NuGet.Packaging" Version="4.9.2">
+        <PackageReference Include="NuGet.Packaging" Version="$(NugetVersion)">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="NuGet.Protocol" Version="4.9.2">
+        <PackageReference Include="NuGet.Protocol" Version="$(NugetVersion)">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Splat" Version="5.3.3">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-        <PackageReference Include="System.Drawing.Common" Version="4.5.1">
+        <PackageReference Include="System.Drawing.Common" Version="4.5.1" Condition="'$(IsNetFullFramework)' == 'false'">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0">
@@ -33,9 +25,6 @@
         <PackageReference Include="Jetbrains.Annotations" Version="2018.2.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="ILRepack.NETStandard" Version="2.0.4">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
         <PackageReference Include="LibLog" Version="5.0.5">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
@@ -44,5 +33,6 @@
         <PackageReference Include="System.ValueTuple" Version="4.5.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <Reference Include="System.Drawing.dll" />
     </ItemGroup>
 </Project>

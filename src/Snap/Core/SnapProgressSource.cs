@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Snap.Core.Update.Update
+namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface IProgressSource
+    public interface ISnapProgressSource
     {
         event EventHandler<int> Progress;
         void Raise(int i);
     }
 
-    public sealed class ProgressSource : IProgressSource
+    public sealed class SnapProgressSource : ISnapProgressSource
     {
         public event EventHandler<int> Progress;
 

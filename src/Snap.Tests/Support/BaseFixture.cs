@@ -1,18 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.NuGet;
 using Snap.Tests.Support.Extensions;
 using Snap.Tests.Support.Misc;
+using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Tests.Support
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class BaseFixture
     {
         public string WorkingDirectory => Directory.GetCurrentDirectory();
@@ -25,7 +30,7 @@ namespace Snap.Tests.Support
             {
                 Name = "nuget.org",
                 SourceUri = new Uri(NuGetConstants.V3FeedUrl),
-                ProtocolVersion = SnapFeedProtocolVersion.NugetV3
+                ProtocolVersion = NuGetProtocolVersion.NugetV3
             };
 
             var channel = new SnapChannel

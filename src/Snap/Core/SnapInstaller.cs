@@ -9,13 +9,12 @@ using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Extensions;
-using Snap.Update;
-using Splat;
+using Snap.Logging;
 
 namespace Snap.Core
 {
     [Flags]
-    internal enum SnapShortcutLocation
+    public enum SnapShortcutLocation
     {
         StartMenu = 1 << 0,
         Desktop = 1 << 1,
@@ -31,11 +30,13 @@ namespace Snap.Core
     {
         string GetRootApplicationInstallationDirectory(string rootAppDirectory, SemanticVersion version);
         string GetRootPackagesDirectory(string rootAppDirectory);
-        Task CleanInstallFromDiskAsync(string nupkgAbsoluteFilename, string rootAppDirectory, CancellationToken cancellationToken, IProgressSource progressSource = null);
+        Task CleanInstallFromDiskAsync(string nupkgAbsoluteFilename, string rootAppDirectory, CancellationToken cancellationToken, ISnapProgressSource snapProgressSource = null);
     }
 
-    internal sealed class SnapInstaller : ISnapInstaller, IEnableLogger
+    internal sealed class SnapInstaller : ISnapInstaller
     {
+        static readonly ILog Logger = LogProvider.For<SnapInstaller>();
+
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapOs _snapOs;
@@ -60,75 +61,69 @@ namespace Snap.Core
             return Path.Combine(rootAppDirectory, "packages");
         }
 
-
-        public Task CleanInstallFromDiskAsync(string nupkgAbsoluteFilename, string rootAppDirectory, CancellationToken cancellationToken, IProgressSource progressSource = null)
+        public Task CleanInstallFromDiskAsync(string nupkgAbsoluteFilename, string rootAppDirectory, CancellationToken cancellationToken, ISnapProgressSource snapProgressSource = null)
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            return CleanInstallAsync(rootAppDirectory, nupkgAbsoluteFilename, _snapExtractor.ReadPackage(nupkgAbsoluteFilename), cancellationToken, progressSource);
+            return CleanInstallAsync(rootAppDirectory, nupkgAbsoluteFilename, _snapExtractor.ReadPackage(nupkgAbsoluteFilename), cancellationToken, snapProgressSource);
         }
 
-        public async Task CleanInstallAsync(string rootAppDirectory, string nupkgAbsoluteFilename, PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken, IProgressSource progressSource = null)
+        public async Task CleanInstallAsync(string rootAppDirectory, string nupkgAbsoluteFilename, PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken, ISnapProgressSource snapProgressSource = null)
         {
             if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
 
-            progressSource?.Raise(0);
-            this.Log().Info($"Attempting to open nupkg archive: {nupkgAbsoluteFilename}.");
+            snapProgressSource?.Raise(0);
+            Logger.Info($"Attempting to open nupkg archive: {nupkgAbsoluteFilename}.");
             var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(cancellationToken);
             var packageIdentity = await packageArchiveReader.GetIdentityAsync(cancellationToken);
-            this.Log().Info($"Successfully opened nupkg archive: {nupkgAbsoluteFilename}.");
 
-            this.Log().Info($"Installing snap id: {packageIdentity.Id}. Version: {packageIdentity.Version}.");
+            Logger.Info($"Installing snap id: {packageIdentity.Id}. " +
+                        $"Version: {packageIdentity.Version}. ");
 
-            progressSource?.Raise(10);
+            snapProgressSource?.Raise(10);
             if (_snapFilesystem.DirectoryExists(rootAppDirectory))
             {
                 _snapOs.KillAllProcessesInDirectory(rootAppDirectory);
-                this.Log().Info($"Nuking existing root app directory: {rootAppDirectory}.");
+                Logger.Info($"Nuking existing root app directory: {rootAppDirectory}.");
                 await _snapFilesystem.DeleteDirectoryOrJustGiveUpAsync(rootAppDirectory);
-                this.Log().Info($"Successfully nuked root app directory.");
             }
 
-            progressSource?.Raise(20);
-            this.Log().Info($"Creating root app directory: {rootAppDirectory}.");
+            snapProgressSource?.Raise(20);
+            Logger.Info($"Creating root app directory: {rootAppDirectory}.");
             _snapFilesystem.CreateDirectory(rootAppDirectory);
-            this.Log().Info("Successfully created root app directory.");
 
-            progressSource?.Raise(30);
+            snapProgressSource?.Raise(30);
             var rootPackagesDirectory = GetRootPackagesDirectory(rootAppDirectory);
-            this.Log().Info($"Creating packages directory: {rootPackagesDirectory}.");
+            Logger.Info($"Creating packages directory: {rootPackagesDirectory}.");
             _snapFilesystem.CreateDirectory(rootPackagesDirectory);
-            this.Log().Info("Successfully created packages directory.");
 
-            progressSource?.Raise(40);
+            snapProgressSource?.Raise(40);
             var nupkgFilename = Path.GetFileName(nupkgAbsoluteFilename);
             var dstNupkgFilename = Path.Combine(rootPackagesDirectory, nupkgFilename);
-            this.Log().Info($"Copying nupkg {nupkgAbsoluteFilename} to {dstNupkgFilename}.");
+            Logger.Info($"Copying nupkg to {dstNupkgFilename}.");
             await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
-            this.Log().Info("Successfully copied nupkg.");
 
-            progressSource?.Raise(50);
+            snapProgressSource?.Raise(50);
             var rootAppInstallDirectory = GetRootApplicationInstallationDirectory(rootAppDirectory, packageIdentity.Version);
-            this.Log().Info($"Creating root app install directory: {rootAppInstallDirectory}.");
+            Logger.Info($"Creating root app install directory: {rootAppInstallDirectory}.");
             _snapFilesystem.CreateDirectory(rootAppInstallDirectory);
-            this.Log().Info("Successfully created root app install directory.");
 
-            progressSource?.Raise(60);
-            this.Log().Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
+            snapProgressSource?.Raise(60);
+            Logger.Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
             if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, cancellationToken))
             {
-                this.Log().Error("Unknown error when attempting to extract nupkg.");
+                Logger.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
                 return;
             }
-            this.Log().Info($"Successfully extracted nupkg to root app install directory: {rootAppInstallDirectory}.");
 
-            progressSource?.Raise(70);
-            this.Log().Info("Performing post install tasks.");
+            snapProgressSource?.Raise(70);
+
+            Logger.Info("Performing post install tasks.");
             await InvokePostInstall(cancellationToken, nuspecReader,
                 rootAppDirectory, rootAppInstallDirectory, packageIdentity.Version, true, true, false);
-            this.Log().Info("Post install tasks completed succesfully.");
-            progressSource?.Raise(100);
+
+            snapProgressSource?.Raise(100);
         }
 
         async Task InvokePostInstall(CancellationToken cancellationToken, NuspecReader nuspecReader,
@@ -143,16 +138,20 @@ namespace Snap.Core
 
             var allSnapAwareApps = _snapOs.GetAllSnapAwareApps(rootAppInstallDirectory);
 
-            this.Log().Info("Snap Enabled Apps: [{0}]", string.Join(",", allSnapAwareApps));
+            Logger.Info($"Snap enabled apps ({allSnapAwareApps.Count}): {string.Join(",", allSnapAwareApps)}");
 
             // For each app, run the install command in-order and wait
-            if (!firstRunOnly)
+            var cancelInvokeProcessesAfterTs = TimeSpan.FromSeconds(15);
+
+            if (!firstRunOnly && allSnapAwareApps.Count > 0)
             {
+                Logger.Info($"Invoking {allSnapAwareApps.Count} processes with arguments: {args}. They have {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds to complete before we continue.");
+
                 await allSnapAwareApps.ForEachAsync(async exe =>
                 {
                     using (var cts = new CancellationTokenSource())
                     {
-                        cts.CancelAfter(15 * 1000);
+                        cts.CancelAfter(cancelInvokeProcessesAfterTs);
 
                         try
                         {
@@ -160,7 +159,7 @@ namespace Snap.Core
                         }
                         catch (Exception ex)
                         {
-                            this.Log().ErrorException("Couldn't run Snap hook, continuing: " + exe, ex);
+                            Logger.ErrorException($"Couldn't run Snap hook: {args}, continuing: {exe}.", ex);
                         }
                     }
                 }, 1 /* at a time */);
@@ -170,7 +169,7 @@ namespace Snap.Core
             // *don't* wait for them, since they're probably the main EXE
             if (allSnapAwareApps.Count == 0)
             {
-                this.Log().Warn("No apps are marked as Snap-aware! Going to run them all");
+                Logger.Warn("No apps are marked as Snap-aware! Going to run them all");
 
                 allSnapAwareApps = appInstallDirectoryInfo.EnumerateFiles()
                     .Where(x => x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
@@ -197,19 +196,31 @@ namespace Snap.Core
                 });
             }
 
-            if (!isInitialInstall || silentInstall) return;
+            if (!isInitialInstall || silentInstall || allSnapAwareApps.Count <= 0)
+            {
+                return;
+            }
 
             var firstRunParam = isInitialInstall ? "--snap-firstrun" : string.Empty;
-            allSnapAwareApps
-                .Select(exe =>
+
+            Logger.Info($"Invoking {allSnapAwareApps.Count} processes with arguments: {firstRunParam}. They have {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds to complete before we continue.");
+
+            await allSnapAwareApps.ForEachAsync(async exe =>
+            {
+                using (var cts = new CancellationTokenSource())
                 {
-                    var exeWorkingDirectory = Path.GetDirectoryName(exe);
-                    return new ProcessStartInfo(exe, firstRunParam)
+                    cts.CancelAfter(cancelInvokeProcessesAfterTs);
+
+                    try
                     {
-                        WorkingDirectory = exeWorkingDirectory
-                    };
-                })
-                .ForEach(info => Process.Start(info));
+                        await _snapOs.InvokeProcessAsync(exe, firstRunParam, cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.ErrorException($"Couldn't run Snap hook. Arguments: {firstRunParam}, continuing: {exe}.", ex);
+                    }
+                }
+            }, 1 /* at a time */);
         }
 
     }

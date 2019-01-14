@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Snap.Core;
 using Snap.Tests.Support;
-using Snap.Update;
 using Xunit;
 
 namespace Snap.Tests

@@ -1,33 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using NuGet.Common;
 using Snap.AnyOS;
+using Snap.AnyOS.Windows;
 using Snap.Core;
+using Snap.Core.Logging;
 using Snap.Tool.AnyOS;
 using Snap.Tool.Options;
-using Snap.Update;
-using Splat;
+using NativeMethodsWindows = Snap.Tool.AnyOS.NativeMethodsWindows;
+using Snap.Logging;
+
+using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Tool
 {
     internal class Program
     {
+        private static readonly ILog Logger = LogProvider.For<Program>(); 
+
         static long _consoleCreated;
 
         static int Main(string[] args)
         {
             try
             {
+                LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(LogLevel.Info));
                 return MainImplAsync(args);
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine(e);
+                Logger.ErrorException("Program failed unexpectedly", e);
                 return -1;
             }
         }
@@ -35,7 +44,7 @@ namespace Snap.Tool
         static int MainImplAsync(IEnumerable<string> args)
         {
             var snapCryptoProvider = new SnapCryptoProvider();
-            var snapFilesystem = new SnapFilesystem(snapCryptoProvider);
+            var snapFilesystem = new SnapFilesystem();
             var snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
             var snapExtractor = new SnapExtractor(snapFilesystem);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
@@ -43,7 +52,7 @@ namespace Snap.Tool
             var snapSpecsReader = new SnapSpecsReader();
 
             //var packProgressSource = new ProgressSource();
-            //packProgressSource.Progress += (sender, i) => { Console.WriteLine($"{i}%"); };
+            //packProgressSource.Progress += (sender, i) => { Logger.Info($"{i}%"); };
 
             //var snapPackDetails = new SnapPackDetails
             //{
@@ -55,14 +64,10 @@ namespace Snap.Tool
 
             //var test = snapPack.PackAsync(snapPackDetails).Result;
 
-            using (var logger = new SnapSetupLogLogger(false) {Level = LogLevel.Info})
-            {
-                Locator.CurrentMutable.Register(() => logger, typeof(ILogger));
-                return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader);
-            }
+            return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
         }
 
-        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader)
+        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
@@ -70,7 +75,7 @@ namespace Snap.Tool
                 .MapResult(
                     (ReleasifyOptions opts) => SnapReleasify(opts),
                     (ListOptions opts) => SnapList(opts, snapFilesystem, snapSpecsReader).Result,
-                    (Sha512Options opts) => SnapSha512(opts, snapFilesystem),
+                    (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
                     {
@@ -94,7 +99,7 @@ namespace Snap.Tool
             var nupkgFilename = installNupkgOptions.Filename;
             if (nupkgFilename == null || !snapFilesystem.FileExists(nupkgFilename))
             {
-                Console.Error.WriteLine($"Unable to find nupkg: {nupkgFilename}.");
+                Logger.Error($"Unable to find nupkg: {nupkgFilename}.");
                 return -1;
             }
 
@@ -106,40 +111,31 @@ namespace Snap.Tool
                 var packageArchiveReader = snapExtractor.ReadPackage(nupkgFilename);
                 if (packageArchiveReader == null)
                 {
-                    Console.Error.WriteLine($"Unknown error reading nupkg: {nupkgFilename}.");
+                    Logger.Error($"Unknown error reading nupkg: {nupkgFilename}.");
                     return -1;
                 }
 
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
-
-                Console.WriteLine($"Installing {packageIdentity.Id}.");
-
                 var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
-                var progressSource = new ProgressSource();
-                progressSource.Progress += (sender, i) =>
-                {
-                    Console.WriteLine($"{i}%");
-                };
+                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None);
 
-                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None, progressSource);
-
-                Console.WriteLine($"Succesfully installed {packageIdentity.Id} in {sw.Elapsed.TotalSeconds:F} seconds.");
+                Logger.Info($"Succesfully installed {packageIdentity.Id} in {sw.Elapsed.TotalSeconds:F} seconds.");
 
                 return 0;
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Unknown error while installing: {nupkgFilename}. Message: {e.Message}.");
+                Logger.ErrorException($"Unknown error while installing: {nupkgFilename}.", e);
                 return -1;
             }
         }
 
-        static int SnapSha512(Sha512Options sha512Options, ISnapFilesystem snapFilesystem)
+        static int SnapSha512(Sha512Options sha512Options, ISnapFilesystem snapFilesystem, ISnapCryptoProvider snapCryptoProvider)
         {
             if (sha512Options.Filename == null || !snapFilesystem.FileExists(sha512Options.Filename))
             {
-                Console.Error.WriteLine($"File not found: {sha512Options.Filename}.");
+                Logger.Error($"File not found: {sha512Options.Filename}.");
                 return -1;
             }
 
@@ -147,13 +143,13 @@ namespace Snap.Tool
             {
                 using (var fileStream = new FileStream(sha512Options.Filename, FileMode.Open, FileAccess.Read))
                 {
-                    Console.WriteLine(snapFilesystem.Sha512(fileStream));
+                    Logger.Info(snapCryptoProvider.Sha512(fileStream));
                 }
                 return 0;
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Error computing SHA512-checksum for filename: {sha512Options.Filename}. Error: {e.Message}.");
+                Logger.Error($"Error computing SHA512-checksum for filename: {sha512Options.Filename}.", e);
                 return -1;
             }
         }
@@ -185,7 +181,7 @@ namespace Snap.Tool
         {
             if (!snapFilesystem.FileExists(snapPkgFileName))
             {
-                Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
+                Logger.Error($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;
             }
 
@@ -196,21 +192,21 @@ namespace Snap.Tool
                 snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppSpecYamlStr);
                 if (snapAppsSpec == null)
                 {
-                    Console.Error.WriteLine(".snap file not found in current directory.");
+                    Logger.Error(".snap file not found in current directory.");
                     return -1;
                 }
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Error parsing .snap. Message: {e.Message}");
+                Logger.Error("Error parsing .snap file.", e);
                 return -1;
             }
 
-            Console.WriteLine($"Feeds ({snapAppsSpec.Feeds.Count}):");
+            Logger.Info($"Feeds ({snapAppsSpec.Feeds.Count}):");
 
             foreach (var feed in snapAppsSpec.Feeds)
             {
-                Console.WriteLine($"Name: {feed.Name}. Protocol version: {feed.ProtocolVersion}. Source: {feed.SourceUri}.");
+                Logger.Info($"Name: {feed.Name}. Protocol version: {feed.ProtocolVersion}. Source: {feed.SourceUri}.");
             }
 
             return 0;
@@ -220,7 +216,7 @@ namespace Snap.Tool
         {
             if (!snapFilesystem.FileExists(snapPkgFileName))
             {
-                Console.Error.WriteLine($"Error: Unable to find .snap in path {snapPkgFileName}.");
+                Logger.Error($"Error: Unable to find .snap in path {snapPkgFileName}.");
                 return -1;
             }
 
@@ -231,21 +227,21 @@ namespace Snap.Tool
                 snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppsSpecYamlStr);
                 if (snapAppsSpec == null)
                 {
-                    Console.Error.WriteLine(".snap file not found in current directory.");
+                    Logger.Error(".snap file not found in current directory.");
                     return -1;
                 }
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Error parsing .snap. Message: {e.Message}");
+                Logger.Error("Error parsing .snap file.", e);
                 return -1;
             }
 
-            Console.WriteLine($"Snaps ({snapAppsSpec.Apps.Count}):");
+            Logger.Info($"Snaps ({snapAppsSpec.Apps.Count}):");
             foreach (var app in snapAppsSpec.Apps)
             {
                 var channels = app.Channels.Select(x => x.Name).ToList();
-                Console.WriteLine($"Name: {app.Id}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");
+                Logger.Info($"Name: {app.Id}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");
             }
 
             return 0;

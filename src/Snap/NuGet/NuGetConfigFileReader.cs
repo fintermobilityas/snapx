@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Configuration;
-using Splat;
+using Snap.Logging;
+
+#if NET45
+using Snap.Extensions;
+#endif
 
 namespace Snap.NuGet
 {
@@ -12,8 +16,10 @@ namespace Snap.NuGet
         NuGetPackageSources ReadNugetSources(string workingDirectory);
     }
 
-    internal class NuGetConfigFileReader : INugetConfigFileReader, IEnableLogger
+    internal class NuGetConfigFileReader : INugetConfigFileReader
     {        
+        static readonly ILog Logger = LogProvider.For<NuGetConfigFileReader>();
+
         public NuGetPackageSources ReadNugetSources([NotNull] string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -22,7 +28,7 @@ namespace Snap.NuGet
 
             foreach (var file in settings.GetConfigFilePaths())
             {
-                this.Log().Info($"Reading file {file} for package sources.");
+                Logger.Info($"Reading file {file} for package sources.");
             }
 
             var enabledSources = SettingsUtility.GetEnabledSources(settings).ToList();
@@ -36,7 +42,7 @@ namespace Snap.NuGet
 
             foreach (var source in sources)
             {
-                this.Log().Info(
+                Logger.Info(
                     $"Read [{source.Name}] : {source.SourceUri} from file: {source.Source}.");
             }
 

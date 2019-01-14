@@ -40,4 +40,8 @@
       <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
+    </ItemGroup>
+
 </Project>

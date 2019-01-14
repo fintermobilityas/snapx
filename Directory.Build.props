@@ -1,23 +1,50 @@
 <Project>
 
-  <Import Project="version.props" />
+    <Import Project="version.props" />
 
-  <PropertyGroup>
-	<Authors>Peter Rekdal Sunde</Authors>
-    <Product>dotnet-snap</Product>
-    <Copyright>Copyright © Peter Rekdal Sunde</Copyright>
-    <NeutralLanguage>en-US</NeutralLanguage>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/peters/dotnet-snap</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/peters/dotnet-snap.git</RepositoryUrl>
-    <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md#v$(VersionPrefix.Replace('.','')) for release notes.</PackageReleaseNotes>
-    <RepositoryType>git</RepositoryType>
-    <IsPackable>false</IsPackable>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
-    <LangVersion>7.3</LangVersion>
-    <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>       
-	<GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>	
-  </PropertyGroup>
+    <PropertyGroup>
+        <Authors>Peter Rekdal Sunde</Authors>
+        <Product>Snap</Product>
+        <Copyright>Copyright © Peter Rekdal Sunde</Copyright>
+        <NeutralLanguage>en-US</NeutralLanguage>
+        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+        <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+        <PackageProjectUrl>https://github.com/peters/snap</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/peters/snap.git</RepositoryUrl>
+        <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md#v$(VersionPrefix.Replace('.','')) for release notes.</PackageReleaseNotes>
+        <RepositoryType>git</RepositoryType>
+        <IsPackable>false</IsPackable>
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+        <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
+        <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+    </PropertyGroup>
+	
+	<PropertyGroup>
+        <LangVersion>7.3</LangVersion>	
+	</PropertyGroup>
 
+    <PropertyGroup>
+        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
+        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
+        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
+        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
+        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
+        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+    </PropertyGroup>
+	
+    <PropertyGroup Condition="$(IsNetStandard)">
+        <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+    </PropertyGroup>
+	
+    <PropertyGroup Condition="$(IsNetCoreApp)">
+        <DefineConstants>$(DefineConstants);NETCOREAPP</DefineConstants>
+    </PropertyGroup>
+	
+    <PropertyGroup Condition="$(IsNetFullFramework)">
+        <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK</DefineConstants>
+    </PropertyGroup>
+	
+    <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net45'">
+        <DefineConstants>$(DefineConstants);NET45</DefineConstants>
+    </PropertyGroup>
 </Project>

@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using Snap.Core;
 
 namespace Snap.Tests.Support.Extensions
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class IoExtensions
     {
         public static void DeleteFileSafe(this string filename)
@@ -21,12 +24,12 @@ namespace Snap.Tests.Support.Extensions
             }
         }
 
-        public static void DeleteResidueMyLibraries(this string workingDirectory)
+        public static void DeleteResidueSnapAppSpec(this string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             foreach (var file in Directory.GetFiles(workingDirectory, "*.dll"))
             {
-                if (file.StartsWith("My") && file.EndsWith(".dll"))
+                if (file.StartsWith(SnapSpecsWriter.SnapAppSpecLibraryName))
                 {
                     file.DeleteFileSafe();
                 }

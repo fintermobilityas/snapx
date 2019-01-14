@@ -12,31 +12,33 @@ using System.Threading;
 using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Versioning;
-using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Extensions;
-using Splat;
+using Snap.Logging;
 
-namespace Snap.AnyOS
+namespace Snap.AnyOS.Windows
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    internal interface ISnapOsWindows
+    internal interface ISnapOsWindows : ISnapOsImpl
     {
-        void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
-        List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
-        void KillAllProcessesInDirectory(string rootAppDirectory);
+
     }
 
-    internal sealed class SnapOsWindows : ISnapOsWindows, IEnableLogger
+    internal sealed class SnapOsWindows : ISnapOsWindows
     {
+        static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
         readonly ISnapFilesystem _snapFilesystem;
+        readonly bool _isUnitTest;
 
-        public SnapOsWindows(ISnapFilesystem snapFilesystem)
+        public SnapOsWindows(ISnapFilesystem snapFilesystem, bool isUnitTest = false)
         {
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            _isUnitTest = isUnitTest;
         }
 
-        public void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken)
+        public void CreateShortcutsForExecutable(NuspecReader nuspecReader, 
+            string rootAppDirectory, string rootAppInstallDirectory, string exeName, 
+            string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken)
         {
             if (nuspecReader == null) throw new ArgumentNullException(nameof(nuspecReader));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
@@ -97,7 +99,7 @@ namespace Snap.AnyOS
                 return Path.Combine(dir, title + ".lnk");
             }
 
-            this.Log().Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
+            Logger.Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
 
             var exePath = Path.Combine(rootAppInstallDirectory, exeName);
             var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
@@ -118,14 +120,14 @@ namespace Snap.AnyOS
                 // annoy them by recreating it.
                 if (!fileExists && updateOnly)
                 {
-                    this.Log().Warn("Wanted to update shortcut {0} but it appears user deleted it", file);
+                    Logger.Warn("Wanted to update shortcut {0} but it appears user deleted it", file);
                     continue;
                 }
 
-                this.Log().Info("Creating shortcut for {0} => {1}", exeName, file);
+                Logger.Info("Creating shortcut for {0} => {1}", exeName, file);
 
                 ShellLink shellLink;
-                this.ErrorIfThrows(() => SnapUtility.Retry(() =>
+                Logger.ErrorIfThrows(() => SnapUtility.Retry(() =>
                 {
                     _snapFilesystem.DeleteFile(file);
 
@@ -150,13 +152,18 @@ namespace Snap.AnyOS
                     shellLink.SetAppUserModelId(appUserModelId);
                     shellLink.SetToastActivatorCLSID(toastActivatorClsid);
 
-                    this.Log().Info("About to save shortcut: {0} (target {1}, workingDir {2}, args {3}, toastActivatorCSLID {4})",
-                        file, shellLink.Target, shellLink.WorkingDirectory, shellLink.Arguments, toastActivatorClsid);
-                    if (ModeDetector.InUnitTestRunner() == false)
+                    Logger.Info($"Saving shortcut: {file}. " +
+                                $"Target: {shellLink.Target}. " +
+                                $"Working directory: {shellLink.WorkingDirectory}. " +
+                                $"Arguments: {shellLink.Arguments}. " +
+                                $"ToastActivatorCSLID: {toastActivatorClsid}.");
+
+                    if (_isUnitTest == false)
                     {
                         shellLink.Save(file);
                     }
-                }, 4), "Can't write shortcut: " + file);
+
+                }, 4), $"Can't write shortcut: {file}");
             }
 
             FixPinnedExecutables(rootAppDirectory, packageVersion);
@@ -166,7 +173,7 @@ namespace Snap.AnyOS
         {
             if (Environment.OSVersion.Version < new Version(6, 1))
             {
-                this.Log().Warn("fixPinnedExecutables: Found OS Version '{0}', exiting...", Environment.OSVersion.VersionString);
+                Logger.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting...", Environment.OSVersion.VersionString);
                 return;
             }
 
@@ -179,7 +186,7 @@ namespace Snap.AnyOS
 
             if (!_snapFilesystem.DirectoryExists(taskbarPath))
             {
-                this.Log().Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping...");
+                Logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping...");
                 return;
             }
 
@@ -187,13 +194,13 @@ namespace Snap.AnyOS
             {
                 try
                 {
-                    this.Log().Info("Examining Pin: " + file);
+                    Logger.Debug("Examining Pin: " + file);
                     return new ShellLink(file.FullName);
                 }
                 catch (Exception ex)
                 {
                     var message = $"File '{file.FullName}' could not be converted into a valid ShellLink";
-                    this.Log().WarnException(message, ex);
+                    Logger.WarnException(message, ex);
                     return null;
                 }
             });
@@ -221,7 +228,7 @@ namespace Snap.AnyOS
                 catch (Exception ex)
                 {
                     var message = $"fixPinnedExecutables: shortcut failed: {shortcut?.Target}";
-                    this.Log().ErrorException(message, ex);
+                    Logger.ErrorException(message, ex);
                 }
             }
         }
@@ -313,14 +320,14 @@ namespace Snap.AnyOS
 #endif
         }
 
-        void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
+        static void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
         {
-            this.Log().Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
+            Logger.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
 
             var target = Environment.ExpandEnvironmentVariables(shortcut.Target);
             var targetIsUpdateDotExe = target.EndsWith("update.exe", StringComparison.OrdinalIgnoreCase);
 
-            this.Log().Info("Old shortcut target: '{0}'", target);
+            Logger.Info("Old shortcut target: '{0}'", target);
 
             // Squirrel comment: 
             // ---------------------
@@ -334,17 +341,17 @@ namespace Snap.AnyOS
 
             target = Path.Combine(rootAppDirectory, Path.GetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
-            this.Log().Info("New shortcut target: '{0}'", target);
+            Logger.Info("New shortcut target: '{0}'", target);
 
             shortcut.WorkingDirectory = newAppPath;
             shortcut.Target = target;
 
-            this.Log().Info("Old iconPath is: '{0}'", shortcut.IconPath);
+            Logger.Info("Old iconPath is: '{0}'", shortcut.IconPath);
             shortcut.IconPath = target;
             shortcut.IconIndex = 0;
 
-            this.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
-            this.Log().Info("Finished shortcut successfully");
+            Logger.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
+            Logger.Info("Finished shortcut successfully");
         }
 
         public void KillAllProcessesInDirectory(string rootAppDirectory)
@@ -380,7 +387,7 @@ namespace Snap.AnyOS
                 {
                     try
                     {
-                        this.WarnIfThrows(() => Process.GetProcessById(x.Item2).Kill());
+                        Logger.WarnIfThrows(() => Process.GetProcessById(x.Item2).Kill());
                     }
                     catch
                     {

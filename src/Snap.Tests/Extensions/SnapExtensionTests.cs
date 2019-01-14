@@ -1,15 +1,29 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using NuGet.Configuration;
 using Snap.Core;
 using Snap.Extensions;
+using Snap.NuGet;
+using Snap.Tests.Support;
+using Snap.Tests.Support.Extensions;
 using Xunit;
 
 namespace Snap.Tests.Extensions
 {
-    public class SnapExtensionTests
+    public class SnapExtensionTests : IClassFixture<BaseFixture>
     {
+        readonly BaseFixture _baseFixture;
+        readonly ISnapSpecsWriter _specsWriter;
+
+        public SnapExtensionTests([NotNull] BaseFixture baseFixture)
+        {
+            _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
+            _specsWriter =  new SnapSpecsWriter();
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -40,18 +54,18 @@ namespace Snap.Tests.Extensions
         }
 
         [Theory]
-        [InlineData(SnapFeedProtocolVersion.NugetV2)]
-        [InlineData(SnapFeedProtocolVersion.NugetV3)]
-        public void TestGetNugetSourcesFromFeed(SnapFeedProtocolVersion protocolVersion)
+        [InlineData(NuGetProtocolVersion.NugetV2)]
+        [InlineData(NuGetProtocolVersion.NugetV3)]
+        public void TestGetNugetSourcesFromSnapFeed(NuGetProtocolVersion protocolVersion)
         {
             string feedUrl;
 
             switch (protocolVersion)
             {
-                case SnapFeedProtocolVersion.NugetV2:
+                case NuGetProtocolVersion.NugetV2:
                     feedUrl = NuGetConstants.V2FeedUrl;
                     break;
-                case SnapFeedProtocolVersion.NugetV3:
+                case NuGetProtocolVersion.NugetV3:
                     feedUrl = NuGetConstants.V3FeedUrl;
                     break;
                 default:
@@ -65,7 +79,7 @@ namespace Snap.Tests.Extensions
                 SourceUri = new Uri(feedUrl)
             };
 
-            var source = feed.GetNugetSourcesFromFeed().Items.SingleOrDefault();
+            var source = feed.GetNugetSourcesFromSnapFeed().Items.SingleOrDefault();
             Assert.NotNull(source);
             Assert.True(source.IsEnabled);
             Assert.True(source.IsOfficial);
@@ -79,18 +93,18 @@ namespace Snap.Tests.Extensions
         }
 
         [Theory]
-        [InlineData(SnapFeedProtocolVersion.NugetV2)]
-        [InlineData(SnapFeedProtocolVersion.NugetV3)]
-        public void TestGetNugetSourcesFromFeed_Credentials(SnapFeedProtocolVersion protocolVersion)
+        [InlineData(NuGetProtocolVersion.NugetV2)]
+        [InlineData(NuGetProtocolVersion.NugetV3)]
+        public void TestGetNugetSourcesFromSnapFeed_Credentials(NuGetProtocolVersion protocolVersion)
         {
             string feedUrl;
 
             switch (protocolVersion)
             {
-                case SnapFeedProtocolVersion.NugetV2:
+                case NuGetProtocolVersion.NugetV2:
                     feedUrl = NuGetConstants.V2FeedUrl;
                     break;
-                case SnapFeedProtocolVersion.NugetV3:
+                case NuGetProtocolVersion.NugetV3:
                     feedUrl = NuGetConstants.V3FeedUrl;
                     break;
                 default:
@@ -106,7 +120,7 @@ namespace Snap.Tests.Extensions
                 Password = "mypassword"
             };
 
-            var source = feed.GetNugetSourcesFromFeed().Items.SingleOrDefault();
+            var source = feed.GetNugetSourcesFromSnapFeed().Items.SingleOrDefault();
             Assert.NotNull(source);
 
             Assert.True(source.IsEnabled);
@@ -132,7 +146,7 @@ namespace Snap.Tests.Extensions
             var feed = new SnapFeed
             {
                 Name = "nuget.org",
-                ProtocolVersion = SnapFeedProtocolVersion.NugetV3,
+                ProtocolVersion = NuGetProtocolVersion.NugetV3,
                 SourceUri = new Uri(NuGetConstants.V3FeedUrl),
                 Username = "myusername",
                 Password = "mypassword"
@@ -161,6 +175,60 @@ namespace Snap.Tests.Extensions
             Assert.Equal(feed.Username, credential.Username);
             Assert.Equal(feed.Password, credential.Password);
             Assert.Equal(feed.SourceUri.ToString(), credential.Source);
+        }
+
+        [Fact]
+        public void TestGetSnapStubExecutableFullPath()
+        {
+            var appSpec = _baseFixture.BuildSnapAppSpec();
+            var workingDirectory = _baseFixture.WorkingDirectory;
+
+            var expectedStubExecutableName = $"{appSpec.Id}.exe";
+            var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
+
+            using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            {
+                var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
+
+                Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);    
+                Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
+            }
+        }
+
+        [Fact]
+        public void TestGetSnapStubExecutableFullPath_Assembly_Location()
+        {
+            var appSpec = _baseFixture.BuildSnapAppSpec();
+            var workingDirectory = _baseFixture.WorkingDirectory;
+
+            var expectedStubExecutableName = $"{appSpec.Id}.exe";
+            var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
+
+            using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            {
+                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
+
+                Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);    
+                Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
+            }
+        }
+
+        [Fact]
+        public void TestGetSnapAppSpecFromDirectory()
+        {
+            var appSpec = _baseFixture.BuildSnapAppSpec();
+            var workingDirectory = _baseFixture.WorkingDirectory;
+
+            workingDirectory.DeleteResidueSnapAppSpec();
+
+            using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            {
+                var appSpecAfter = workingDirectory.GetSnapAppSpecFromDirectory();
+                Assert.NotNull(appSpecAfter);
+            }
         }
     }
 }

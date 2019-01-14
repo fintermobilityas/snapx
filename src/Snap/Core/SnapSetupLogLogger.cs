@@ -1,13 +1,15 @@
-﻿using System;
+﻿using Snap.Logging;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Splat;
 
 namespace Snap.Core
 {
-    internal sealed class SnapSetupLogLogger : ILogger, IDisposable
+    internal sealed class SnapSetupLogLogger : IDisposable
     {
+        static readonly ILog Logger = LogProvider.For<SnapSetupLogLogger>();
+
         readonly TextWriter _inner;
         readonly object _gate = 42;
         public LogLevel Level { get; set; }

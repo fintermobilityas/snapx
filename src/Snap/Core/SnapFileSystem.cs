@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Snap.Extensions;
-using Splat;
+using Snap.Logging;
 
 namespace Snap.Core
 {
@@ -24,8 +24,6 @@ namespace Snap.Core
         void CreateDirectory(string directory);
         void CreateDirectoryIfNotExists(string directory);
         bool DirectoryExists(string directory);
-        string Sha512(string filename);
-        string Sha512(Stream stream);
         IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
         IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
@@ -35,9 +33,9 @@ namespace Snap.Core
         Task DeleteDirectoryOrJustGiveUpAsync(string directory);
     }
 
-    internal sealed class SnapFilesystem : ISnapFilesystem, IEnableLogger
+    internal sealed class SnapFilesystem : ISnapFilesystem
     {
-        readonly ISnapCryptoProvider _snapCryptoProvider;
+        static readonly ILog Logger = LogProvider.For<SnapFilesystem>();
 
         static readonly Lazy<string> DirectoryChars = new Lazy<string>(() =>
         {
@@ -46,11 +44,6 @@ namespace Snap.Core
                        .Concat(Enumerable.Range(0x0400, 0x04FF - 0x0400)) // Cyrillic
                        .Aggregate(new StringBuilder(), (acc, x) => { acc.Append(char.ConvertFromUtf32(x)); return acc; });
         });
-
-        public SnapFilesystem(ISnapCryptoProvider snapCryptoProvider)
-        {
-            _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
-        }
 
         static string TempNameForIndex(int index, string prefix)
         {
@@ -155,7 +148,7 @@ namespace Snap.Core
             {
                 if (ignoreIfFails) return;
 
-                this.Log().ErrorException("Really couldn't delete file: " + path, ex);
+                Logger.ErrorException("Really couldn't delete file: " + path, ex);
                 throw;
             }
         }
@@ -176,21 +169,6 @@ namespace Snap.Core
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             return Directory.Exists(directory);
-        }
-
-        public string Sha512(string filename)
-        {
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-
-            var fileContentBytes = File.ReadAllBytes(filename);
-
-            return _snapCryptoProvider.Sha512(fileContentBytes);
-        }
-
-        public string Sha512(Stream stream)
-        {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
-            return _snapCryptoProvider.Sha512(stream);
         }
 
         public IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath)
@@ -268,11 +246,11 @@ namespace Snap.Core
 
         public async Task DeleteDirectoryAsync(string directory)
         {
-            this.Log().Debug("Starting to delete folder: {0}", directory);
+            Logger.Debug("Starting to delete folder: {0}", directory);
 
             if (!DirectoryExists(directory))
             {
-                this.Log().Warn("DeleteDirectory: does not exist - {0}", directory);
+                Logger.Warn("DeleteDirectory: does not exist - {0}", directory);
                 return;
             }
 
@@ -285,7 +263,7 @@ namespace Snap.Core
             catch (UnauthorizedAccessException ex)
             {
                 var message = $"The files inside {directory} could not be read";
-                this.Log().Warn(message, ex);
+                Logger.Warn(message, ex);
             }
 
             var dirs = new string[0];
@@ -296,7 +274,7 @@ namespace Snap.Core
             catch (UnauthorizedAccessException ex)
             {
                 var message = $"The directories inside {directory} could not be read";
-                this.Log().Warn(message, ex);
+                Logger.Warn(message, ex);
             }
 
             var fileOperations = files.ForEachAsync(file =>
@@ -310,7 +288,7 @@ namespace Snap.Core
 
             await Task.WhenAll(fileOperations, directoryOperations);
 
-            this.Log().Debug("Now deleting folder: {0}", directory);
+            Logger.Debug("Now deleting folder: {0}", directory);
             File.SetAttributes(directory, FileAttributes.Normal);
 
             try
@@ -320,7 +298,7 @@ namespace Snap.Core
             catch (Exception ex)
             {
                 var message = $"DeleteDirectory: could not delete - {directory}";
-                this.Log().ErrorException(message, ex);
+                Logger.ErrorException(message, ex);
             }
         }
 

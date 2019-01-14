@@ -16,6 +16,8 @@ namespace Snap.Core
 
     internal sealed class SnapSpecsWriter : ISnapSpecsWriter
     {
+        public const string SnapAppSpecLibraryName = "SnapAppSpec";
+
         static readonly Serializer YamlSerializer = new SerializerBuilder()
             .WithNamingConvention(new CamelCaseNamingConvention())
             .WithTypeConverter(new SemanticVersionYamlTypeConverter())
@@ -28,12 +30,10 @@ namespace Snap.Core
 
             var yamlSnapAppSpecStr = ToSnapAppSpecYamlString(snapAppSpec);
 
-            const string snapAppSpecLibraryName = "SnapAppSpec";
-
             var currentVersion = snapAppSpec.Version;
 
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(snapAppSpecLibraryName, new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Patch)), snapAppSpecLibraryName, ModuleKind.Dll);
+                new AssemblyNameDefinition(SnapAppSpecLibraryName, new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Patch)), SnapAppSpecLibraryName, ModuleKind.Dll);
 
             var mainModule = assembly.MainModule;
 

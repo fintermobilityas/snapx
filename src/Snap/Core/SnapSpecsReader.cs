@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using JetBrains.Annotations;
 using NuGet.Versioning;
+using Snap.NuGet;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -55,13 +56,6 @@ namespace Snap.Core
         }
     }
 
-    public enum SnapFeedProtocolVersion
-    {
-        NotSupported = 0,
-        NugetV2 = 1,
-        NugetV3 = 2
-    }
-
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapFeed
     {
@@ -71,7 +65,7 @@ namespace Snap.Core
         public string Username { get; set; }
         public string Password { get; set; }
         [YamlMember(Alias = "version")]
-        public SnapFeedProtocolVersion ProtocolVersion { get; set; }
+        public NuGetProtocolVersion ProtocolVersion { get; set; }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]

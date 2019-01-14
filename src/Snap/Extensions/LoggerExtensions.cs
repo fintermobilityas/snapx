@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
-using Splat;
+using Snap.Logging;
 
 namespace Snap.Extensions
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class LoggerExtensions
     {
-        public static void LogIfThrows(this IFullLogger This, LogLevel level, string message, Action block)
+        public static void LogIfThrows(this ILog This, LogLevel level, string message, Action block)
         {
             try
             {
@@ -34,7 +36,7 @@ namespace Snap.Extensions
             }
         }
 
-        public static async Task LogIfThrows(this IFullLogger This, LogLevel level, string message, Func<Task> block)
+        public static async Task LogIfThrows(this ILog This, LogLevel level, string message, Func<Task> block)
         {
             try
             {
@@ -61,7 +63,7 @@ namespace Snap.Extensions
             }
         }
 
-        public static async Task<T> LogIfThrows<T>(this IFullLogger This, LogLevel level, string message, Func<Task<T>> block)
+        public static async Task<T> LogIfThrows<T>(this ILog This, LogLevel level, string message, Func<Task<T>> block)
         {
             try
             {
@@ -88,34 +90,34 @@ namespace Snap.Extensions
             }
         }
 
-        public static void WarnIfThrows(this IEnableLogger This, Action block, string message = null)
+        public static void WarnIfThrows(this ILog This, Action block, string message = null)
         {
-            This.Log().LogIfThrows(LogLevel.Warn, message, block);
+            This.LogIfThrows(LogLevel.Warn, message, block);
         }
 
-        public static Task WarnIfThrows(this IEnableLogger This, Func<Task> block, string message = null)
+        public static Task WarnIfThrows(this ILog This, Func<Task> block, string message = null)
         {
-            return This.Log().LogIfThrows(LogLevel.Warn, message, block);
+            return This.LogIfThrows(LogLevel.Warn, message, block);
         }
 
-        public static Task<T> WarnIfThrows<T>(this IEnableLogger This, Func<Task<T>> block, string message = null)
+        public static Task<T> WarnIfThrows<T>(this ILog This, Func<Task<T>> block, string message = null)
         {
-            return This.Log().LogIfThrows(LogLevel.Warn, message, block);
+            return This.LogIfThrows(LogLevel.Warn, message, block);
         }
 
-        public static void ErrorIfThrows(this IEnableLogger This, Action block, string message = null)
+        public static void ErrorIfThrows(this ILog This, Action block, string message = null)
         {
-            This.Log().LogIfThrows(LogLevel.Error, message, block);
+            This.LogIfThrows(LogLevel.Error, message, block);
         }
 
-        public static Task ErrorIfThrows(this IEnableLogger This, Func<Task> block, string message = null)
+        public static Task ErrorIfThrows(this ILog This, Func<Task> block, string message = null)
         {
-            return This.Log().LogIfThrows(LogLevel.Error, message, block);
+            return This.LogIfThrows(LogLevel.Error, message, block);
         }
 
-        public static Task<T> ErrorIfThrows<T>(this IEnableLogger This, Func<Task<T>> block, string message = null)
+        public static Task<T> ErrorIfThrows<T>(this ILog This, Func<Task<T>> block, string message = null)
         {
-            return This.Log().LogIfThrows(LogLevel.Error, message, block);
+            return This.LogIfThrows(LogLevel.Error, message, block);
         }    
     }
 }

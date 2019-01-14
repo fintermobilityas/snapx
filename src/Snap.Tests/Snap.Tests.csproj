@@ -3,7 +3,7 @@
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
+        <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
     </PropertyGroup>
@@ -34,6 +34,10 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Snap\Snap.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
     </ItemGroup>
 
 </Project>

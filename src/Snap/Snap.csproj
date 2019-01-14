@@ -43,7 +43,15 @@
         </PackageReference>
     </ItemGroup>
 
-    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true'">
+    <ItemGroup>
+      <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Update\" />
+    </ItemGroup>
+
+    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true' AND '$(TargetFramework)' != ''">
 
         <PropertyGroup>
             <WorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</WorkingDirectory>
@@ -51,10 +59,12 @@
 
         <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
             <InputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
+            <InputAssemblies Include="System.Drawing.Common.dll" />
         </ItemGroup>
 
         <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
             <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+            <InputAssemblies Include="System.Drawing.Common.dll" />
         </ItemGroup>
 
         <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
@@ -63,6 +73,8 @@
         </ItemGroup>
 
         <ItemGroup>
+            <InputAssemblies Include="FasterFlect.NETStandard.dll" />
+            <InputAssemblies Include="Jetbrains.Annotations.dll" />
             <InputAssemblies Include="Mono.Cecil.dll" />
             <InputAssemblies Include="Mono.Cecil.Mdb.dll" />
             <InputAssemblies Include="Mono.Cecil.Pdb.dll" />
@@ -73,17 +85,10 @@
             <InputAssemblies Include="NuGet.Frameworks.dll" />
             <InputAssemblies Include="NuGet.Packaging.Core.dll" />
             <InputAssemblies Include="NuGet.Packaging.dll" />
-            <InputAssemblies Include="NuGet.Versioning.dll" />
             <InputAssemblies Include="NuGet.Protocol.dll" />
-            <InputAssemblies Include="Splat.dll" />
-            <InputAssemblies Include="System.Drawing.Common.dll" />
+            <InputAssemblies Include="NuGet.Versioning.dll" />
             <InputAssemblies Include="YamlDotNet.NetCore.dll" />
             <InputAssemblies Include="NuGet.Versioning.dll" />
-            <InputAssemblies Include="FasterFlect.NETStandard.dll" />
-            <InputAssemblies Include="Jetbrains.Annotations" />
-            <InputAssemblies Include="ILRepack.NETStandard.dll" />
-            <InputAssemblies Include="LibLog.dll" />
-            <InputAssemblies Include="Snap.Core.dll" />
         </ItemGroup>
 
         <ItemGroup>

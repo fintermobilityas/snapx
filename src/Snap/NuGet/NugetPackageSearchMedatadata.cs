@@ -6,14 +6,14 @@ using NuGet.Packaging.Core;
 
 namespace Snap.NuGet
 {
-    internal class NugetPackageSearchMedatadata
+    internal class NuGetPackageSearchMedatadata
     {
         public PackageIdentity Identity { get; }
         public PackageSource Source { get; }
         public DateTimeOffset? Published { get; }
         public IReadOnlyCollection<PackageDependency> Dependencies { get; }
 
-        public NugetPackageSearchMedatadata(
+        public NuGetPackageSearchMedatadata(
             PackageIdentity identity,
             PackageSource source,
             DateTimeOffset? published,

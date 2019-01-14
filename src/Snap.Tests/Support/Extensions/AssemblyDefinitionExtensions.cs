@@ -17,17 +17,5 @@ namespace Snap.Tests.Support.Extensions
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
             return Path.Combine(workingDirectory, assemblyDefinition.GetRelativeFilename());
         }
-
-        public static string GetInternalizeExcludeNamespace(this AssemblyDefinition assemblyDefinition)
-        {
-            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            return assemblyDefinition.Name.Name;
-        }
-
-        public static string GetInternalizeRegex(this AssemblyDefinition assemblyDefinition)
-        {
-            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            return $"^{assemblyDefinition.Name.Name}";
-        }
     }
 }

@@ -19,7 +19,6 @@ using System.Linq;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 
-// ReSharper disable once CheckNamespace
 namespace Snap.ILRepack
 {
     internal class ReflectionHelper

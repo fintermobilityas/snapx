@@ -1,6 +1,6 @@
 using System;
 using JetBrains.Annotations;
-using Splat;
+using Snap.Logging;
 
 namespace Snap.NuGet
 {
@@ -9,8 +9,10 @@ namespace Snap.NuGet
         INuGetPackageSources Read(string workingDirectory, INuGetPackageSources overrideValues);
     }
 
-    internal sealed class NuGetSourcesReader : INuGetSourcesReader, IEnableLogger
+    internal sealed class NuGetSourcesReader : INuGetSourcesReader
     {
+        static readonly ILog Logger = LogProvider.For<NuGetSourcesReader>();
+
         readonly INugetConfigFileReader _reader;
 
         public NuGetSourcesReader([NotNull] INugetConfigFileReader reader)
@@ -34,7 +36,7 @@ namespace Snap.NuGet
                 return fromConfigFile;
             }
 
-            this.Log().Info("Using default global NuGet feed.");
+            Logger.Info("Using default global NuGet machine wide settings.");
 
             return new NuGetPackageSources();
         }

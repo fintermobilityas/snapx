@@ -5,7 +5,6 @@ using System.IO;
 using System.Threading.Tasks;
 using NuGet.Frameworks;
 using NuGet.Packaging;
-using Snap.Update;
 
 namespace Snap.Core
 {
@@ -15,7 +14,7 @@ namespace Snap.Core
         public string NuspecBaseDirectory { get; set; }
         public string NuspecFilename { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
-        public IProgressSource ProgressSource {get; set; }
+        public ISnapProgressSource SnapProgressSource {get; set; }
     }
 
     internal interface ISnapPack
@@ -63,7 +62,7 @@ namespace Snap.Core
                 }
             }
 
-            var progressSource = snapPackDetails.ProgressSource;
+            var progressSource = snapPackDetails.SnapProgressSource;
 
             progressSource?.Raise(0);
 
@@ -86,16 +85,6 @@ namespace Snap.Core
 
             //packagear
             throw new NotImplementedException();
-        }
-
-        Task BuildAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        Task PackAsync()
-        {
-            return Task.CompletedTask;
         }
 
     }

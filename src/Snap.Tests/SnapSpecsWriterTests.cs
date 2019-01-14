@@ -1,4 +1,5 @@
 ﻿using System;
+using Snap.Core;
 using Snap.Extensions;
 using Snap.Tests.Support;
 using Xunit;

@@ -5,7 +5,7 @@ using Splat;
 using ILogger = NuGet.Common.ILogger;
 using LogLevel = NuGet.Common.LogLevel;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal interface ISnapNugetLogger : IEnableLogger, ILogger
     {

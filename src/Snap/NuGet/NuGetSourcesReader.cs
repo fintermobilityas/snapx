@@ -2,7 +2,7 @@ using System;
 using JetBrains.Annotations;
 using Splat;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal interface INuGetSourcesReader
     {

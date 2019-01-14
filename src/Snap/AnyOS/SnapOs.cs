@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Packaging;
+using Snap.Core;
 
 namespace Snap.AnyOS
 {

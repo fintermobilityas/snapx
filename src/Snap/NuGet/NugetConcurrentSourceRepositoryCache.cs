@@ -5,7 +5,7 @@ using NuGet.Configuration;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal class NugetConcurrentSourceRepositoryCache
     {

@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal interface INuGetPackageSources
     {
@@ -21,7 +21,7 @@ namespace Snap.NugetApi
         public NugetMachineWideSettings()
         {
             var baseDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.MachineWideConfigDirectory);
-            _settings = new Lazy<ISettings>(() => NuGet.Configuration.Settings.LoadMachineWideSettings(baseDirectory));
+            _settings = new Lazy<ISettings>(() => global::NuGet.Configuration.Settings.LoadMachineWideSettings(baseDirectory));
         }
     }
 

@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Versioning;
+using Snap.Core;
 using Snap.Tests.Support.Extensions;
 using Snap.Tests.Support.Misc;
 

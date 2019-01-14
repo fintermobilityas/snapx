@@ -1,3 +1,4 @@
+using Snap.Core;
 using Xunit;
 
 namespace Snap.Tests

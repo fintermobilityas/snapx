@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 using NuGet.Configuration;
 using Splat;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal interface INugetConfigFileReader
     {

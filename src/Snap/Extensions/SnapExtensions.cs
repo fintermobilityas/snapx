@@ -8,7 +8,8 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using Snap.Attributes;
-using Snap.NugetApi;
+using Snap.Core;
+using Snap.NuGet;
 using Snap.Reflection;
 
 namespace Snap.Extensions

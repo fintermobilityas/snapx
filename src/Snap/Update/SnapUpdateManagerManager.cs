@@ -6,8 +6,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
+using Snap.Core;
 using Snap.Extensions;
-using Snap.NugetApi;
+using Snap.NuGet;
 using Splat;
 
 namespace Snap.Update

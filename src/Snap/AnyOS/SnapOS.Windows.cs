@@ -13,6 +13,7 @@ using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.AnyOS.Windows;
+using Snap.Core;
 using Snap.Extensions;
 using Splat;
 

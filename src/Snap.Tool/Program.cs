@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Snap.AnyOS;
+using Snap.Core;
 using Snap.Tool.AnyOS;
 using Snap.Tool.Options;
 using Snap.Update;

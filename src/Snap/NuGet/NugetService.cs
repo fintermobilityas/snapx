@@ -10,7 +10,7 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using Splat;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     // https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets#packing-using-a-nuspec
     // https://daveaglick.com/posts/exploring-the-nuget-v3-libraries-part-1

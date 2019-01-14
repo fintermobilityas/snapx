@@ -4,7 +4,7 @@ using System.Linq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 
-namespace Snap.NugetApi
+namespace Snap.NuGet
 {
     internal class NugetPackageSearchMedatadata
     {

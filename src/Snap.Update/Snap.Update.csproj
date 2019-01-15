@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Import Project="..\Snap\Snap.Deps.targets" />
+    <!--<Import Project="..\Snap\Snap.Deps.targets" />-->
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -9,15 +9,8 @@
         <AssemblyName>Snap.Update</AssemblyName>
     </PropertyGroup>
 
-    <ItemGroup>
+    <!--<ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
-    </ItemGroup>
-
-    <!-- This target only applies to unit testing. -->
-    <Target Name="CopyToSnapFolder" AfterTargets="Build" Condition="$(IsNetCoreApp)">
-        <Message Importance="high" Text="YOLO!" />
-        <Copy SourceFiles="$(MsbuildThisFileDirectory)$(OutputPath)$(AssemblyName).dll" DestinationFiles="..\Snap\bin\$(Configuration)$(TargetFramework)\$(AssemblyName).dll" />
-        <Copy SourceFiles="$(MsbuildThisFileDirectory)$(OutputPath)$(AssemblyName).dll" DestinationFiles="..\Snap.Tests\bin\$(Configuration)$(TargetFramework)\$(AssemblyName).exe" />
-    </Target>
-
+    </ItemGroup>-->
+       
 </Project>

@@ -12,10 +12,10 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.NuGet;
-using Snap.Tests.Support.Extensions;
+using Snap.Shared.Tests.Extensions;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
-namespace Snap.Tests.Support
+namespace Snap.Shared.Tests
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class BaseFixture
@@ -87,14 +87,14 @@ namespace Snap.Tests.Support
             WriteAssemblies(workingDirectory, assemblyDefinitions.ToList(), true);
         }
 
-        public IDisposable WithDisposableAssemblies(string workingDirectory, params AssemblyDefinition[] assemblyDefinitions)
+        internal IDisposable WithDisposableAssemblies(string workingDirectory, ISnapFilesystem filesystem, params AssemblyDefinition[] assemblyDefinitions)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
 
             WriteAndDisposeAssemblies(workingDirectory, assemblyDefinitions);
 
-            return new DisposableFiles(assemblyDefinitions.Select(x => x.GetFullPath(workingDirectory)).ToList());
+            return new DisposableFiles(filesystem, assemblyDefinitions.Select(x => x.GetFullPath(workingDirectory)).ToArray());
         }
 
         public AssemblyDefinition BuildEmptyLibrary(string libraryName, IReadOnlyCollection<AssemblyDefinition> references = null)

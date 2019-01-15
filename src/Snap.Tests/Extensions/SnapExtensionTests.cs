@@ -7,8 +7,7 @@ using NuGet.Configuration;
 using Snap.Core;
 using Snap.Extensions;
 using Snap.NuGet;
-using Snap.Tests.Support;
-using Snap.Tests.Support.Extensions;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests.Extensions
@@ -17,11 +16,13 @@ namespace Snap.Tests.Extensions
     {
         readonly BaseFixture _baseFixture;
         readonly ISnapSpecsWriter _specsWriter;
+        readonly ISnapFilesystem _fileSystem;
 
         public SnapExtensionTests([NotNull] BaseFixture baseFixture)
         {
             _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
             _specsWriter =  new SnapSpecsWriter();
+            _fileSystem = new SnapFilesystem();
         }
 
         [Theory]
@@ -187,7 +188,7 @@ namespace Snap.Tests.Extensions
             var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
             using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
                 var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
 
@@ -206,7 +207,7 @@ namespace Snap.Tests.Extensions
             var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
             using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
                 var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
 
@@ -221,10 +222,8 @@ namespace Snap.Tests.Extensions
             var appSpec = _baseFixture.BuildSnapAppSpec();
             var workingDirectory = _baseFixture.WorkingDirectory;
 
-            workingDirectory.DeleteResidueSnapAppSpec();
-
             using (var assemblyDefinition = _specsWriter.BuildSnapAppSpecAssembly(appSpec))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, assemblyDefinition))
+            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
                 var appSpecAfter = workingDirectory.GetSnapAppSpecFromDirectory();
                 Assert.NotNull(appSpecAfter);

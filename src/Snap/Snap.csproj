@@ -25,81 +25,14 @@
         <None Remove="obj\**" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(OsPlatform)' == 'Windows'">
-        <Content Include="..\StubExecutable.Windows\bin\$(Configuration)\StubExecutable.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Visible>true</Visible>
-        </Content>
-    </ItemGroup>
-
     <ItemGroup>
-        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.3">
+        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.4">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
-    </ItemGroup>
-
-    <Target Name="ILRepack" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true' AND '$(TargetFramework)' != ''">
-
-        <PropertyGroup>
-            <WorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</WorkingDirectory>
-        </PropertyGroup>
-
-        <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
-            <InputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
-            <InputAssemblies Include="System.Drawing.Common.dll" />
-        </ItemGroup>
-
-        <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
-            <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
-            <InputAssemblies Include="System.Drawing.Common.dll" />
-        </ItemGroup>
-
-        <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
-            <InputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
-            <InputAssemblies Include="System.ValueTuple.dll" />
-        </ItemGroup>
-
-        <ItemGroup>
-            <InputAssemblies Include="FasterFlect.NETStandard.dll" />
-            <InputAssemblies Include="Jetbrains.Annotations.dll" />
-            <InputAssemblies Include="Mono.Cecil.dll" />
-            <InputAssemblies Include="Mono.Cecil.Mdb.dll" />
-            <InputAssemblies Include="Mono.Cecil.Pdb.dll" />
-            <InputAssemblies Include="Mono.Cecil.Rocks.dll" />
-            <InputAssemblies Include="Newtonsoft.Json.dll" />
-            <InputAssemblies Include="NuGet.Common.dll" />
-            <InputAssemblies Include="NuGet.Configuration.dll" />
-            <InputAssemblies Include="NuGet.Frameworks.dll" />
-            <InputAssemblies Include="NuGet.Packaging.Core.dll" />
-            <InputAssemblies Include="NuGet.Packaging.dll" />
-            <InputAssemblies Include="NuGet.Protocol.dll" />
-            <InputAssemblies Include="NuGet.Versioning.dll" />
-            <InputAssemblies Include="YamlDotNet.NetCore.dll" />
-            <InputAssemblies Include="ILRepack.dll" />
-        </ItemGroup>
-
-        <ItemGroup>
-            <InternalizeExcludeAssemblies Include="NuGet.Versioning.SemanticVersion" />
-        </ItemGroup>
-
-        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="@(InputAssemblies)" InternalizeExcludeAssemblies="@(InternalizeExcludeAssemblies)" WorkingDirectory="$(WorkingDirectory)" />
-
+    <Target Name="SnapCoreILRepackPackageRelease" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true' AND '$(TargetFramework)' != ''">
+        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="@(SnapCoreILRepackInputAssemblies)" InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)" WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
     </Target>
-
+    
 </Project>

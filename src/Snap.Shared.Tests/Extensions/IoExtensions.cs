@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using Snap.Core;
 
-namespace Snap.Tests.Support.Extensions
+namespace Snap.Shared.Tests.Extensions
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    internal static class IoExtensions
+    public static class IoExtensions
     {
         public static void DeleteFileSafe(this string filename)
         {

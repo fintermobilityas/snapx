@@ -1,0 +1,1 @@
+for /d /r . %%d in (.vs,bin,obj) do @if exist "%%d" rd /s/q "%%d"

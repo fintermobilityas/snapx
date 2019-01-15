@@ -3,6 +3,49 @@
         <NugetVersion Condition="$(IsNetFullFramework)">4.9.2</NugetVersion>
         <NugetVersion Condition="!$(IsNetFullFramework)">4.9.2</NugetVersion>
     </PropertyGroup>
+
+    <PropertyGroup>
+        <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)$(OutputPath)</SnapCoreILRepackWorkingDirectory>
+    </PropertyGroup>
+        
+    <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
+        <SnapCoreILRepackInputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
+        <SnapCoreILRepackInputAssemblies Include="System.Drawing.Common.dll" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
+        <SnapCoreILRepackInputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+        <SnapCoreILRepackInputAssemblies Include="System.Drawing.Common.dll" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+        <SnapCoreILRepackInputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
+        <SnapCoreILRepackInputAssemblies Include="System.ValueTuple.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <SnapCoreILRepackInputAssemblies Include="FasterFlect.NETStandard.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Jetbrains.Annotations.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Mdb.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Pdb.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Rocks.dll" />
+        <SnapCoreILRepackInputAssemblies Include="Newtonsoft.Json.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Common.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Configuration.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Frameworks.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Packaging.Core.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Packaging.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Protocol.dll" />
+        <SnapCoreILRepackInputAssemblies Include="NuGet.Versioning.dll" />
+        <SnapCoreILRepackInputAssemblies Include="YamlDotNet.NetCore.dll" />
+        <SnapCoreILRepackInputAssemblies Include="ILRepack.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <SnapCoreILRepackInternalizeExcludeAssemblies Include="NuGet.Versioning.SemanticVersion" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.1">
             <PrivateAssets>all</PrivateAssets>
@@ -22,20 +65,30 @@
         <PackageReference Include="FasterFlect.NETStandard" Version="1.0.9">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Jetbrains.Annotations" Version="2018.2.1">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-        <PackageReference Include="LibLog" Version="5.0.5">
+        <PackageReference Include="Jetbrains.Annotations" Version="2018.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="ILRepack.NETStandard" Version="2.0.4">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-    </ItemGroup>
-    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
-        <PackageReference Include="System.ValueTuple" Version="4.5.0">
+        <PackageReference Include="LibLog" Version="5.0.5">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <Reference Include="System.Drawing.dll" />
     </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+          <PackageReference Include="System.ValueTuple" Version="4.5.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
 </Project>

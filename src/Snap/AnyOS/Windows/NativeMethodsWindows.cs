@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -19,6 +20,14 @@ namespace Snap.AnyOS.Windows
         QueryInformation = 0x00000400,
         QueryLimitedInformation = 0x00001000,
         Synchronize = 0x00100000
+    }
+
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    public enum StandardHandles
+    {
+        StdInputHandle = -10,
+        StdOutputHandle = -11,
+        StdErrorHandle = -12
     }
 
     internal static class NativeMethodsWindows
@@ -65,5 +74,14 @@ namespace Snap.AnyOS.Windows
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool CloseHandle(IntPtr hHandle);
 
+        [DllImport("kernel32.dll", EntryPoint = "AllocConsole")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool AllocConsole();
+ 
+        [DllImport("kernel32.dll")]
+        internal static extern bool AttachConsole(int pid);
+        
+        [DllImport("kernel32.dll", EntryPoint = "GetStdHandle")]
+        internal static extern IntPtr GetStdHandle(StandardHandles nStdHandle);
     }
 }

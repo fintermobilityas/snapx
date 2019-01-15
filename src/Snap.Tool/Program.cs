@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -12,9 +13,7 @@ using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Logging;
-using Snap.Tool.AnyOS;
 using Snap.Tool.Options;
-using NativeMethodsWindows = Snap.Tool.AnyOS.NativeMethodsWindows;
 using Snap.Logging;
 
 using LogLevel = Snap.Logging.LogLevel;
@@ -24,9 +23,7 @@ namespace Snap.Tool
     internal class Program
     {
         private static readonly ILog Logger = LogProvider.For<Program>(); 
-
-        static long _consoleCreated;
-
+       
         static int Main(string[] args)
         {
             try
@@ -43,13 +40,24 @@ namespace Snap.Tool
 
         static int MainImplAsync(IEnumerable<string> args)
         {
-            var snapCryptoProvider = new SnapCryptoProvider();
             var snapFilesystem = new SnapFilesystem();
-            var snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
+
+            SnapOs snapOs;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
+            }
+            else
+            {
+                Logger.Error($"Platform is not supported: {RuntimeInformation.OSDescription}");
+                return -1;
+            }
+
             var snapExtractor = new SnapExtractor(snapFilesystem);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
             var snapPack = new SnapPack(snapFilesystem);
             var snapSpecsReader = new SnapSpecsReader();
+            var snapCryptoProvider = new SnapCryptoProvider();
 
             //var packProgressSource = new ProgressSource();
             //packProgressSource.Progress += (sender, i) => { Logger.Info($"{i}%"); };
@@ -64,10 +72,10 @@ namespace Snap.Tool
 
             //var test = snapPack.PackAsync(snapPackDetails).Result;
 
-            return MainAsync(args, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
+            return MainAsync(args, snapOs, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
         }
 
-        static int MainAsync(IEnumerable<string> args, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
+        static int MainAsync(IEnumerable<string> args, ISnapOs snapOs, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
@@ -79,7 +87,7 @@ namespace Snap.Tool
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
                     {
-                        EnsureConsole();
+                        snapOs.EnsureConsole();
                         return 1;
                     });            
         }
@@ -245,21 +253,6 @@ namespace Snap.Tool
             }
 
             return 0;
-        }
-
-        static void EnsureConsole()
-        {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) return;
-
-            if (Interlocked.CompareExchange(ref _consoleCreated, 1, 0) == 1) return;
-
-            if (!NativeMethodsWindows.AttachConsole(-1))
-            {
-                NativeMethodsWindows.AllocConsole();
-            }
-
-            NativeMethodsWindows.GetStdHandle(StandardHandles.StdErrorHandle);
-            NativeMethodsWindows.GetStdHandle(StandardHandles.StdOutputHandle);
         }
     }
 }

@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Snap.Core;
-using Snap.Tests.Support;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests

@@ -3,29 +3,22 @@ using System.IO;
 
 namespace Snap.Core.IO
 {
-    public sealed class DisposableTempDirectory : IDisposable
+    internal sealed class DisposableTempDirectory : IDisposable
     {
+        readonly ISnapFilesystem _filesystem;
+
         public string AbsolutePath { get; }
 
-        public DisposableTempDirectory(string workingDirectory)
+        public DisposableTempDirectory(string workingDirectory, ISnapFilesystem filesystem)
         {
+            _filesystem = filesystem;
             AbsolutePath = Path.Combine(workingDirectory, Guid.NewGuid().ToString());
             Directory.CreateDirectory(AbsolutePath);
         }
 
         public void Dispose()
         {
-            try
-            {
-                if (Directory.Exists(AbsolutePath))
-                {
-                    Directory.Delete(AbsolutePath);
-                }
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
+            _filesystem.DeleteDirectoryOrJustGiveUpAsync(AbsolutePath).Wait();
         }
     }
 }

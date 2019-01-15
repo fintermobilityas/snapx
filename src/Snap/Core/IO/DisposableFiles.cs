@@ -1,36 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using Snap.Logging;
+using JetBrains.Annotations;
 
 namespace Snap.Core.IO
 {
     internal class DisposableFiles : IDisposable
     {
         readonly IReadOnlyCollection<string> _filenames;
-        readonly ILog _logger;
+        readonly ISnapFilesystem _filesystem;
 
-        public DisposableFiles(IReadOnlyCollection<string> filenames, ILog logger = null)
+        public DisposableFiles([NotNull] ISnapFilesystem filesystem, [NotNull] params string[] filenames)
         {
             _filenames = filenames ?? throw new ArgumentNullException(nameof(filenames));
-            _logger = logger;
+            _filesystem = filesystem ?? throw new ArgumentNullException(nameof(filesystem));
         }
 
         public void Dispose()
         {
             foreach (var filename in _filenames)
             {
-                try
-                {
-                    if (File.Exists(filename))
-                    {
-                        File.Delete(filename);
-                    }
-                }
-                catch (Exception e)
-                {
-                    _logger?.ErrorException($"Unable to delete disposable file: {filename}.", e);
-                }
+                _filesystem.DeleteFileHarder(filename, true);
             }
         }
     }

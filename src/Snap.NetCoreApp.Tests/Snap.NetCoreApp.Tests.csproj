@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\Snap\Snap.Deps.targets" />
+
+    <PropertyGroup>
+        <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <SnapNetCoreAppTests>true</SnapNetCoreAppTests>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.9.0" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.4">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Snap\Snap.csproj" />
+        <ProjectReference Include="..\Snap.Shared.Tests\Snap.Shared.Tests.csproj" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <SnapCoreUnitTestFilename>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)\Snap.ILRepacked.UnitTest.dll</SnapCoreUnitTestFilename>
+    </PropertyGroup>
+
+    <Target Name="SnapCoreILRepackForUnitTests" AfterTargets="Build" Condition="$(IsNetCoreApp) AND !Exists($(SnapCoreUnitTestFilename))">
+
+        <Message Importance="high" Text="$(AssemblyName): ILRepacking unit test dll: $(SnapCoreUnitTestFilename)" />
+        <ILRepack OutputType="$(OutputType)" WorkingDirectory="..\Snap\$(OutputPath)" MainAssembly="Snap.dll" OutputAssembly="$(SnapCoreUnitTestFilename)" InputAssemblies="@(SnapCoreILRepackInputAssemblies)" InternalizeExcludeAssemblies="@(ILRepackInternalizeExcludeAssemblies)" />
+
+    </Target>
+    
+    <Target Name="CopyDependenciesForUnitTests" AfterTargets="Build" Condition="$(IsNetCoreApp)">
+        <Message Importance="high" Text="$(AssemblyName): Copying unit test dlls." />
+        <Copy SourceFiles="..\Snap.Update\$(OutputPath)Snap.Update.dll" DestinationFiles="$(MSBuildThisFileDirectory)$(OutputPath)Snap.Update.UnitTest.dll" />
+    </Target>
+
+</Project>

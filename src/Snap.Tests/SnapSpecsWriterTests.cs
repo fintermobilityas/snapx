@@ -1,7 +1,14 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Mono.Cecil;
+using Snap.AnyOS.Windows;
 using Snap.Core;
+using Snap.Core.IO;
 using Snap.Extensions;
-using Snap.Tests.Support;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests
@@ -11,12 +18,14 @@ namespace Snap.Tests
         readonly BaseFixture _baseFixture;
         readonly ISnapSpecsWriter _snapSpecsWriter;
         readonly ISnapSpecsReader _snapSpecsReader;
+        readonly SnapFilesystem _snapFilesystem;
 
         public SnapSpecsWriterTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
             _snapSpecsWriter = new SnapSpecsWriter();
             _snapSpecsReader = new SnapSpecsReader();
+            _snapFilesystem = new SnapFilesystem();
         }
 
         [Fact]
@@ -32,7 +41,7 @@ namespace Snap.Tests
         public void TestBuildSnapAppSpecAssembly()
         {
             var appSpecBefore = _baseFixture.BuildSnapAppSpec();
-          
+
             using (var assembly = _snapSpecsWriter.BuildSnapAppSpecAssembly(appSpecBefore))
             {
                 var appSpecAfter = assembly.GetSnapAppSpec(_snapSpecsReader);
@@ -76,6 +85,7 @@ namespace Snap.Tests
 
                 //Assert.Equal(channel.Name, snapAppSpec.Channel);
             }
-        }
+        }      
+        
     }
 }

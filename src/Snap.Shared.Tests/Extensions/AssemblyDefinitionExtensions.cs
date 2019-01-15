@@ -2,9 +2,9 @@
 using System.IO;
 using Mono.Cecil;
 
-namespace Snap.Tests.Support.Extensions
+namespace Snap.Shared.Tests.Extensions
 {
-    internal static class AssemblyDefinitionExtensions
+    public static class AssemblyDefinitionExtensions
     {
         public static string GetRelativeFilename(this AssemblyDefinition assemblyDefinition)
         {

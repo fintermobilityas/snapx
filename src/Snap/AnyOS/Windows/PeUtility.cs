@@ -3,11 +3,11 @@
 // Resharper disable all
 
 using System;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 
-namespace NSubsys
+namespace Snap.AnyOS.Windows
 {
 
     /// <summary>
@@ -423,13 +423,13 @@ namespace NSubsys
         /// </summary>
         private IMAGE_SECTION_HEADER[] imageSectionHeaders;
 
-        private FileStream curFileStream;
+        private Stream curFileStream;
 
         #endregion Private Fields
 
         #region Public Methods
 
-        public PeUtility([NotNull] FileStream srcStream)
+        public PeUtility([NotNull] Stream srcStream)
         {
             curFileStream = srcStream ?? throw new ArgumentNullException(nameof(srcStream));
 
@@ -536,7 +536,7 @@ namespace NSubsys
         /// <summary>
         /// Gets the PE file stream for R/W functions.
         /// </summary> 
-        public FileStream Stream
+        public Stream Stream
         {
             get => curFileStream;
         }

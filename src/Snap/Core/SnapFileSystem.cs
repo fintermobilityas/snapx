@@ -16,7 +16,7 @@ namespace Snap.Core
     {
         IDisposable WithTempDirectory(out string path, string baseDirectory = null);
         IDisposable WithTempFile(out string path, string baseDirectory = null);
-        FileStream OpenReadOnly(string fileName);
+        FileStream OpenReadOnly(string fileNam);
         FileStream OpenReadWrite(string fileName);
         bool FileExists(string fileName);
         Task<string> ReadAllTextAsync(string fileName, CancellationToken cancellationToken);
@@ -28,6 +28,7 @@ namespace Snap.Core
         IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
         IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
+        Task FileWriteAsync(Stream srcStream, string destinationPath, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         void DeleteDirectory(string directory);
         Task DeleteDirectoryAsync(string directory);
@@ -113,12 +114,12 @@ namespace Snap.Core
 
         public FileStream OpenReadOnly(string fileName)
         {
-            return new FileStream(fileName, FileMode.Open, FileAccess.Read);
+            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
         public FileStream OpenReadWrite(string fileName)
         {
-            return new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite);
+            return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         }
 
         public bool FileExists(string fileName)
@@ -132,7 +133,7 @@ namespace Snap.Core
             {
                 var stringBuilder = new StringBuilder();
                 var result = new byte[stream.Length];
-                await stream.ReadAsync(result, 0, (int)stream.Length).ConfigureAwait(false);
+                await stream.ReadAsync(result, 0, (int)stream.Length, cancellationToken).ConfigureAwait(false);
                 stringBuilder.Append(result);
                 return stringBuilder.ToString();
             }
@@ -209,6 +210,14 @@ namespace Snap.Core
 
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
                 }
+            }
+        }
+
+        public async Task FileWriteAsync(Stream srcStream, string destinationPath, CancellationToken cancellationToken)
+        {
+            using (var dstStream = OpenReadWrite(destinationPath))
+            {
+                await srcStream.CopyToAsync(dstStream, cancellationToken);
             }
         }
 

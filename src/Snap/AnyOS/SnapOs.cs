@@ -20,6 +20,7 @@ namespace Snap.AnyOS
             string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         void KillAllProcessesInDirectory(string rootAppDirectory);
+        bool EnsureConsole();
     }
 
     internal interface ISnapOsImpl 
@@ -27,6 +28,7 @@ namespace Snap.AnyOS
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         void KillAllProcessesInDirectory(string rootAppDirectory);
+        bool EnsureConsole();
     }
 
     internal sealed class SnapOs : ISnapOs
@@ -128,6 +130,11 @@ namespace Snap.AnyOS
         public void KillAllProcessesInDirectory(string rootAppDirectory)
         {
             _snapOsImpl.KillAllProcessesInDirectory(rootAppDirectory);
+        }
+
+        public bool EnsureConsole()
+        {
+            return _snapOsImpl.EnsureConsole();
         }
     }
 }

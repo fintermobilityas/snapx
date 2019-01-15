@@ -36,18 +36,18 @@
     </PropertyGroup>
 	
     <PropertyGroup Condition="$(IsNetStandard)">
-        <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
+        <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
     </PropertyGroup>
 	
     <PropertyGroup Condition="$(IsNetCoreApp)">
-        <DefineConstants>$(DefineConstants);NETCOREAPP</DefineConstants>
+        <DefineConstants>$(DefineConstants);NETCOREAPP;</DefineConstants>
     </PropertyGroup>
 	
     <PropertyGroup Condition="$(IsNetFullFramework)">
-        <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK</DefineConstants>
+        <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
     </PropertyGroup>
 	
     <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net45'">
-        <DefineConstants>$(DefineConstants);NET45</DefineConstants>
+        <DefineConstants>$(DefineConstants);NET45;</DefineConstants>
     </PropertyGroup>
 </Project>

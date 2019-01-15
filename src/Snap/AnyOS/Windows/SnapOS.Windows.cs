@@ -26,6 +26,8 @@ namespace Snap.AnyOS.Windows
 
     internal sealed class SnapOsWindows : ISnapOsWindows
     {
+        static long _consoleCreated;
+
         static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
         readonly ISnapFilesystem _snapFilesystem;
         readonly bool _isUnitTest;
@@ -394,6 +396,23 @@ namespace Snap.AnyOS.Windows
                         // ignored
                     }
                 });
+        }
+
+        public bool EnsureConsole()
+        {
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT) return false;
+
+            if (Interlocked.CompareExchange(ref _consoleCreated, 1, 0) == 1) return false;
+
+            if (!NativeMethodsWindows.AttachConsole(-1))
+            {
+                NativeMethodsWindows.AllocConsole();
+            }
+
+            NativeMethodsWindows.GetStdHandle(StandardHandles.StdErrorHandle);
+            NativeMethodsWindows.GetStdHandle(StandardHandles.StdOutputHandle);
+
+            return true;
         }
 
         public unsafe List<Tuple<string, int>> EnumerateProcesses()

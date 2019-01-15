@@ -8,34 +8,39 @@
 
 using namespace std;
 
-wchar_t* FindRootAppDir() 
+std::wstring FindRootAppDir() 
 {
-	wchar_t* ourDirectory = new wchar_t[MAX_PATH];
+	auto ourDirectory = new wchar_t[MAX_PATH];
 
-	GetModuleFileName(GetModuleHandle(NULL), ourDirectory, MAX_PATH);
-	wchar_t* lastSlash = wcsrchr(ourDirectory, L'\\');
+	GetModuleFileName(GetModuleHandle(nullptr), ourDirectory, MAX_PATH);
+	auto lastSlash = wcsrchr(ourDirectory, L'\\');
 	if (!lastSlash) {
 		delete[] ourDirectory;
-		return NULL;
+		return std::wstring();
 	}
 
 	// Null-terminate the string at the slash so now it's a directory
 	*lastSlash = 0x0;
-	return ourDirectory;
+
+    auto nullTerminated = std::wstring(ourDirectory);
+
+    delete[] ourDirectory;
+
+    return nullTerminated;
 }
 
-wchar_t* FindOwnExecutableName() 
+std::wstring FindOwnExecutableName() 
 {
-	wchar_t* ourDirectory = new wchar_t[MAX_PATH];
+	auto ourDirectory = new wchar_t[MAX_PATH];
 
-	GetModuleFileName(GetModuleHandle(NULL), ourDirectory, MAX_PATH);
-	wchar_t* lastSlash = wcsrchr(ourDirectory, L'\\');
+	GetModuleFileName(GetModuleHandle(nullptr), ourDirectory, MAX_PATH);
+	auto lastSlash = wcsrchr(ourDirectory, L'\\');
 	if (!lastSlash) {
 		delete[] ourDirectory;
-		return NULL;
+		return std::wstring();
 	}
 
-	wchar_t* ret = _wcsdup(lastSlash + 1);
+	std::wstring ret = _wcsdup(lastSlash + 1);
 	delete[] ourDirectory;
 	return ret;
 }
@@ -44,13 +49,17 @@ std::wstring FindLatestAppDir()
 {
 	std::wstring ourDir;
 	ourDir.assign(FindRootAppDir());
+    if(ourDir.empty())
+    {
+        return std::wstring();
+    }
 
 	ourDir += L"\\app-*";
 
 	WIN32_FIND_DATA fileInfo = { 0 };
 	HANDLE hFile = FindFirstFile(ourDir.c_str(), &fileInfo);
 	if (hFile == INVALID_HANDLE_VALUE) {
-		return NULL;
+		return std::wstring();
 	}
 
 	version::Semver200_version acc("0.0.0");
@@ -74,7 +83,7 @@ std::wstring FindLatestAppDir()
 	} while (FindNextFile(hFile, &fileInfo));
 
 	if (acc == version::Semver200_version("0.0.0")) {
-		return NULL;
+		return std::wstring();
 	}
 
 	ourDir.assign(FindRootAppDir());
@@ -92,8 +101,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
 	std::wstring appName;
 	appName.assign(FindOwnExecutableName());
+    if(appName.empty())
+    {
+        return -1;
+    }
 
 	std::wstring workingDir(FindLatestAppDir());
+    if(workingDir.empty())
+    {
+        return -1;
+    }
+
 	std::wstring fullPath(workingDir + L"\\" + appName);
 
 	STARTUPINFO si = { 0 };
@@ -108,8 +126,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	cmdLine += L"\" ";
 	cmdLine += lpCmdLine;
 
-	wchar_t* lpCommandLine = _wcsdup(cmdLine.c_str());
-	wchar_t* lpCurrentDirectory = _wcsdup(workingDir.c_str());
+	auto lpCommandLine = _wcsdup(cmdLine.c_str());
+	auto lpCurrentDirectory = _wcsdup(workingDir.c_str());
 	if (!CreateProcess(NULL, lpCommandLine, NULL, NULL, true, 0, NULL, lpCurrentDirectory, &si, &pi)) {
 		return -1;
 	}

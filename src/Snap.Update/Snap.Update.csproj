@@ -10,11 +10,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Snap\Snap.csproj" />
+        <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
-    </ItemGroup>
+    <!-- This target only applies to unit testing. -->
+    <Target Name="CopyToSnapFolder" AfterTargets="Build" Condition="$(IsNetCoreApp)">
+        <Message Importance="high" Text="YOLO!" />
+        <Copy SourceFiles="$(MsbuildThisFileDirectory)$(OutputPath)$(AssemblyName).dll" DestinationFiles="..\Snap\bin\$(Configuration)$(TargetFramework)\$(AssemblyName).dll" />
+        <Copy SourceFiles="$(MsbuildThisFileDirectory)$(OutputPath)$(AssemblyName).dll" DestinationFiles="..\Snap.Tests\bin\$(Configuration)$(TargetFramework)\$(AssemblyName).exe" />
+    </Target>
 
 </Project>

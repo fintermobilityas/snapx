@@ -10,9 +10,9 @@ using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.Core.IO;
 using Snap.NuGet;
 using Snap.Tests.Support.Extensions;
-using Snap.Tests.Support.Misc;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Tests.Support

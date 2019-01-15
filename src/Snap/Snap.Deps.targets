@@ -28,6 +28,9 @@
         <PackageReference Include="LibLog" Version="5.0.5">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="ILRepack.NETStandard" Version="2.0.4">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
     <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
         <PackageReference Include="System.ValueTuple" Version="4.5.0">

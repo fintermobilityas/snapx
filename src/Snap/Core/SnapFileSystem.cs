@@ -16,7 +16,8 @@ namespace Snap.Core
     {
         IDisposable WithTempDirectory(out string path, string baseDirectory = null);
         IDisposable WithTempFile(out string path, string baseDirectory = null);
-        Stream OpenReadOnly(string fileName);
+        FileStream OpenReadOnly(string fileName);
+        FileStream OpenReadWrite(string fileName);
         bool FileExists(string fileName);
         Task<string> ReadAllTextAsync(string fileName, CancellationToken cancellationToken);
         void DeleteFile(string fileName);
@@ -110,9 +111,14 @@ namespace Snap.Core
             return Disposable.Create(() => File.Delete(thePath));
         }
 
-        public Stream OpenReadOnly(string fileName)
+        public FileStream OpenReadOnly(string fileName)
         {
             return new FileStream(fileName, FileMode.Open, FileAccess.Read);
+        }
+
+        public FileStream OpenReadWrite(string fileName)
+        {
+            return new FileStream(fileName, FileMode.Open, FileAccess.ReadWrite);
         }
 
         public bool FileExists(string fileName)

@@ -37,6 +37,13 @@
         </PackageReference>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(OsPlatform)' == 'Windows'">
+        <Content Include="..\StubExecutable.Windows\bin\$(Configuration)\StubExecutable.exe">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>true</Visible>
+        </Content>
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.3">
             <PrivateAssets>all</PrivateAssets>
@@ -45,10 +52,6 @@
 
     <ItemGroup>
       <PackageReference Update="Jetbrains.Annotations" Version="2018.3.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Update\" />
     </ItemGroup>
 
     <Target Name="ILRepack" AfterTargets="Build" Condition="'$(SnapCorePackageRelease)' == 'true' AND '$(TargetFramework)' != ''">
@@ -88,7 +91,7 @@
             <InputAssemblies Include="NuGet.Protocol.dll" />
             <InputAssemblies Include="NuGet.Versioning.dll" />
             <InputAssemblies Include="YamlDotNet.NetCore.dll" />
-            <InputAssemblies Include="NuGet.Versioning.dll" />
+            <InputAssemblies Include="ILRepack.dll" />
         </ItemGroup>
 
         <ItemGroup>

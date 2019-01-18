@@ -1,8 +1,8 @@
 #include "pal.hpp"
-#include "pathcch.h"
 
 #if PLATFORM_WINDOWS
-#include <Shlwapi.h>
+#include <shlwapi.h>
+#include <pathcch.h>
 #endif
 
 #include <vector>
@@ -85,13 +85,13 @@ PALEXPORT BOOL PALAPI pal_isdebuggerpresent()
 #endif
 }
 
-PALEXPORT BOOL PALAPI pal_ends_with_case_sensitive(const wchar_t * src, const wchar_t * value)
+PALEXPORT BOOL PALAPI pal_str_ends_with_case_sensitive(const wchar_t * src, const wchar_t * value)
 {
     const auto diff = wcslen(src) - wcslen(value);
     return diff > 0 && 0 == wcscmp(&src[diff], value);
 }
 
-PALEXPORT BOOL PALAPI pal_ends_with_case_insensitive(const wchar_t * src, const wchar_t * value)
+PALEXPORT BOOL PALAPI pal_str_ends_with_case_insensitive(const wchar_t * src, const wchar_t * value)
 {
     const auto diff = wcslen(src) - wcslen(value);
     return diff > 0 && 0 == _wcsicmp(&src[diff], value);
@@ -105,17 +105,17 @@ PALEXPORT BOOL PALAPI pal_get_directory_name_full_path(const wchar_t* path_in, w
         return FALSE;
     }
 
-    wchar_t path_in_without_filespec[MAX_PATH];
-    wcscpy_s(path_in_without_filespec, MAX_PATH, path_in);
+    wchar_t path_in_without_filespec[PAL_MAX_PATH];
+    wcscpy_s(path_in_without_filespec, PAL_MAX_PATH, path_in);
 
     if (PathIsDirectory(path_in))
     {
-        if (S_OK != PathCchCanonicalize(path_in_without_filespec, MAX_PATH, path_in))
+        if (S_OK != PathCchCanonicalize(path_in_without_filespec, PAL_MAX_PATH, path_in))
         {
             return FALSE;
         }
     }
-    else if (S_OK != ::PathCchRemoveFileSpec(path_in_without_filespec, MAX_PATH))
+    else if (S_OK != ::PathCchRemoveFileSpec(path_in_without_filespec, PAL_MAX_PATH))
     {
         return FALSE;
     }
@@ -159,9 +159,9 @@ PALEXPORT BOOL PALAPI pal_path_combine(const wchar_t * path_in_lhs, const wchar_
         return FALSE;
     }
 
-    wchar_t path_combined[MAX_PATH];
+    wchar_t path_combined[PAL_MAX_PATH];
 
-    if (S_OK != PathCchCombine(path_combined, MAX_PATH, path_in_lhs, path_in_rhs))
+    if (S_OK != PathCchCombine(path_combined, PAL_MAX_PATH, path_in_lhs, path_in_rhs))
     {
         return FALSE;
     }
@@ -190,12 +190,12 @@ PALEXPORT BOOL PALAPI pal_list_directories(const wchar_t * path_in, wchar_t *** 
     const auto path_root_search_pattern = new wchar_t[path_root_len];
     wcscpy_s(path_root_search_pattern, path_root_len, path_root);
 
-    if (!pal_ends_with_case_insensitive(path_root_search_pattern, PAL_DIRECTORY_SEPARATOR_STR))
+    if (!pal_str_ends_with_case_insensitive(path_root_search_pattern, PAL_DIRECTORY_SEPARATOR_STR))
     {
-        PathCchAppend(path_root_search_pattern, MAX_PATH, PAL_DIRECTORY_SEPARATOR_STR);
+        PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, PAL_DIRECTORY_SEPARATOR_STR);
     }
 
-    PathCchAppend(path_root_search_pattern, MAX_PATH, L"*");
+    PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, L"*");
 
     WIN32_FIND_DATA file_info;
     const auto h_file = FindFirstFile(path_root_search_pattern, &file_info);
@@ -211,7 +211,7 @@ PALEXPORT BOOL PALAPI pal_list_directories(const wchar_t * path_in, wchar_t *** 
             continue;
         }
 
-        auto path_root_this_directory = new wchar_t[MAX_PATH];
+        auto path_root_this_directory = new wchar_t[PAL_MAX_PATH];
 
         if (0 == _wcsicmp(file_info.cFileName, L".")
             || 0 == _wcsicmp(file_info.cFileName, L".."))
@@ -219,7 +219,7 @@ PALEXPORT BOOL PALAPI pal_list_directories(const wchar_t * path_in, wchar_t *** 
             continue;
         }
 
-        if (S_OK != PathCchCombine(path_root_this_directory, MAX_PATH, path_root, file_info.cFileName))
+        if (S_OK != PathCchCombine(path_root_this_directory, PAL_MAX_PATH, path_root, file_info.cFileName))
         {
             continue;
         }
@@ -239,6 +239,90 @@ PALEXPORT BOOL PALAPI pal_list_directories(const wchar_t * path_in, wchar_t *** 
     }
 
     *paths_out = paths;
+
+    ::FindClose(h_file);
+
+    return TRUE;
+#else
+#error "TODO: IMPLEMENT ME"
+#endif
+}
+
+PALEXPORT BOOL PALAPI pal_list_files(const wchar_t * path_in, const pal_list_files_filter_callback_t filter_callback_in,
+    const wchar_t* extension_filter_in, wchar_t *** files_out, size_t * files_out_len)
+{
+#if PLATFORM_WINDOWS
+    if (path_in == nullptr)
+    {
+        return false;
+    }
+    wchar_t* path_root = nullptr;
+    size_t path_root_len = 0;
+
+    if (!pal_get_directory_name_full_path(path_in, &path_root, &path_root_len))
+    {
+        return FALSE;
+    }
+
+    const auto path_root_search_pattern = new wchar_t[path_root_len];
+    wcscpy_s(path_root_search_pattern, path_root_len, path_root);
+
+    if (!pal_str_ends_with_case_insensitive(path_root_search_pattern, PAL_DIRECTORY_SEPARATOR_STR))
+    {
+        PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, PAL_DIRECTORY_SEPARATOR_STR);
+    }
+
+    PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, extension_filter_in != nullptr ? extension_filter_in : L"*");
+
+    WIN32_FIND_DATA file_info;
+    const auto h_file = FindFirstFile(path_root_search_pattern, &file_info);
+    if (h_file == INVALID_HANDLE_VALUE) {
+        return FALSE;
+    }
+
+    std::vector<wchar_t*> files;
+
+    do
+    {
+        if (file_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            continue;
+        }
+
+        auto path_root_this_directory = new wchar_t[PAL_MAX_PATH];
+
+        if (0 == _wcsicmp(file_info.cFileName, L".")
+            || 0 == _wcsicmp(file_info.cFileName, L".."))
+        {
+            continue;
+        }
+
+        if (S_OK != PathCchCombine(path_root_this_directory, PAL_MAX_PATH, path_root, file_info.cFileName))
+        {
+            continue;
+        }
+
+        const auto filter_callback_fn = filter_callback_in;
+        if (filter_callback_fn != nullptr
+            && !filter_callback_fn(path_root_this_directory))
+        {
+            continue;
+        }
+
+        files.emplace_back(path_root_this_directory);
+
+    } while (FindNextFile(h_file, &file_info));
+
+    *files_out_len = files.size();
+
+    const auto files_array = new wchar_t*[*files_out_len];
+
+    for (auto i = 0u; i < *files_out_len; i++)
+    {
+        const auto file = files[i];
+        files_array[i] = file;
+    }
+
+    *files_out = files_array;
 
     ::FindClose(h_file);
 
@@ -278,7 +362,7 @@ PALEXPORT BOOL PALAPI pal_get_environment_variable(const wchar_t * environment_v
 #endif
 }
 
-PALEXPORT BOOL PALAPI pal_get_environment_variable_bool(const wchar_t * environment_variable_in, bool* value)
+PALEXPORT BOOL PALAPI pal_get_environment_variable_bool(const wchar_t * environment_variable_in, BOOL* value)
 {
     wchar_t* environment_variable_value_out = nullptr;
     if (!pal_get_environment_variable(environment_variable_in, &environment_variable_value_out))
@@ -288,12 +372,28 @@ PALEXPORT BOOL PALAPI pal_get_environment_variable_bool(const wchar_t * environm
 
     *value = std::wcscmp(environment_variable_value_out, L"1") == 0
         || _wcsicmp(environment_variable_value_out, L"true") == 0 ?
-        "true" : "false";
+        TRUE : FALSE;
 
     return TRUE;
 }
 
-PALEXPORT void PALAPI pal_convert_from_utf16_to_utf8(const wchar_t* widechar_string_in, const int widechar_string_in_len, char** multibyte_string_out)
+PALEXPORT BOOL PALAPI pal_file_exists(const wchar_t * file_path_in, BOOL *value)
+{
+#if PLATFORM_WINDOWS
+    if(file_path_in == nullptr)
+    {
+        return FALSE;
+    }
+
+    *value = PathFileExists(file_path_in);
+
+    return TRUE;
+#else
+#error "TODO: IMPLEMENT ME"
+#endif
+}
+
+PALEXPORT void PALAPI pal_str_convert_from_utf16_to_utf8(const wchar_t* widechar_string_in, const int widechar_string_in_len, char** multibyte_string_out)
 {
     if (widechar_string_in == nullptr)
     {
@@ -310,7 +410,7 @@ PALEXPORT void PALAPI pal_convert_from_utf16_to_utf8(const wchar_t* widechar_str
     multibyte_string_out[required_size] = nullptr;
 }
 
-PALEXPORT void PALAPI pal_convert_from_utf8_to_utf16(const char* multibyte_string_in, wchar_t** widechar_string_out)
+PALEXPORT void PALAPI pal_str_convert_from_utf8_to_utf16(const char* multibyte_string_in, wchar_t** widechar_string_out)
 {
     if (multibyte_string_in == nullptr)
     {
@@ -331,4 +431,19 @@ PALEXPORT void PALAPI pal_convert_from_utf8_to_utf16(const char* multibyte_strin
         &multibyte_string_in,
         widechar_string.size(), // The character count to convert
         &mbstate);
+}
+
+PALEXPORT BOOL PALAPI pal_str_convert_to_lower_case(const wchar_t * widechar_string_in, wchar_t ** widechar_string_out)
+{
+    if (widechar_string_in == nullptr)
+    {
+        return FALSE;
+    }
+#if PLATFORM_WINDOWS
+    *widechar_string_out = _wcsdup(widechar_string_in);
+    _wcslwr_s(*widechar_string_out, wcslen(widechar_string_in));
+    return TRUE;
+#else
+    return FALSE;
+#endif
 }

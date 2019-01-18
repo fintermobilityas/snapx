@@ -51,9 +51,9 @@ int snap::stubexecutable::run_current_snap_windows(std::vector<std::wstring> arg
 
 std::wstring snap::stubexecutable::find_root_app_dir()
 {
-    const auto our_directory = new wchar_t[MAX_PATH];
+    const auto our_directory = new wchar_t[PAL_MAX_PATH];
 
-    GetModuleFileName(GetModuleHandle(nullptr), our_directory, MAX_PATH);
+    GetModuleFileName(GetModuleHandle(nullptr), our_directory, PAL_MAX_PATH);
     const auto last_slash = wcsrchr(our_directory, PAL_DIRECTORY_SEPARATOR_C);
     if (!last_slash) {
         delete[] our_directory;
@@ -72,9 +72,9 @@ std::wstring snap::stubexecutable::find_root_app_dir()
 
 std::wstring snap::stubexecutable::find_own_executable_name()
 {
-    const auto our_directory = new wchar_t[MAX_PATH];
+    const auto our_directory = new wchar_t[PAL_MAX_PATH];
 
-    GetModuleFileName(GetModuleHandle(nullptr), our_directory, MAX_PATH);
+    GetModuleFileName(GetModuleHandle(nullptr), our_directory, PAL_MAX_PATH);
     const auto last_slash = wcsrchr(our_directory, PAL_DIRECTORY_SEPARATOR_C);
     if (!last_slash) {
         delete[] our_directory;

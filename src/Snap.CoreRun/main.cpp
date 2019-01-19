@@ -101,7 +101,7 @@ int APIENTRY WinMain(
         const auto widechar_string_in_len = static_cast<int>(widechar_string_in.size());
 
         char* multibyte_string_out = nullptr;
-        pal_str_convert_from_utf16_to_utf8(widechar_string_in.c_str(), widechar_string_in_len, &multibyte_string_out);
+        pal_str_from_utf16_to_utf8(widechar_string_in.c_str(), widechar_string_in_len, &multibyte_string_out);
 
         argv[i] = multibyte_string_out;
     }

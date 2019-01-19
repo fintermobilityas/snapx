@@ -2,10 +2,10 @@
 
 #include "corerun.hpp"
 
-namespace snap
-{
-    using namespace std;
+#include <string>
 
+namespace snap
+{    
     class resourcewriter
     {
     public:

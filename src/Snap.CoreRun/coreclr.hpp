@@ -21,15 +21,21 @@ namespace snap {
         version::Semver200_version m_version;
 
     public:
-        core_clr_directory() : core_clr_directory(std::wstring().c_str(), std::wstring().c_str(), version::Semver200_version())
+        core_clr_directory()
+        {
+            
+        }
+
+        core_clr_directory(std::wstring root_path, std::wstring dll_path, version::Semver200_version version) : 
+            m_root_path(std::move(root_path)),
+            m_dll_path(std::move(dll_path)),
+            m_version(std::move(version))
         {
 
         }
 
         core_clr_directory(const wchar_t* root_path, const wchar_t* dll_path, version::Semver200_version version) :
-            m_root_path(std::wstring(root_path)),
-            m_dll_path(std::wstring(dll_path)),
-            m_version(version)
+            core_clr_directory(std::wstring(root_path), std::wstring(dll_path), version)
         {
 
         }

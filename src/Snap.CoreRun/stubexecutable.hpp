@@ -3,11 +3,10 @@
 #include "corerun.hpp"
 
 #include <vector>
+#include <string>
 
 namespace snap
-{
-    using std::wstring;
-
+{   
     class stubexecutable
     {
     public:

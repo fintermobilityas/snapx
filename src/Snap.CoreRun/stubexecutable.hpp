@@ -6,11 +6,17 @@
 #include <string>
 
 namespace snap
-{   
+{
     class stubexecutable
     {
     public:
-        static int snap::stubexecutable::run_current_snap_windows(std::vector<std::wstring> arguments, int cmdShow);
+#if PLATFORM_WINDOWS
+        static int run(std::vector<wchar_t*> arguments, const int cmd_show);
+#else
+        static int run(std::vector<wchar_t*> arguments);
+#endif
+    private:
+
         static std::wstring find_root_app_dir();
         static std::wstring find_own_executable_name();
         static std::wstring find_latest_app_dir();

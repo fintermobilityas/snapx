@@ -1,17 +1,14 @@
 #include "pal.hpp"
 
-#include <cstdlib>
-#include <malloc.h>
-#include <string>
-#include <iostream>
-
 #if PLATFORM_WINDOWS
-#include <shlwapi.h>
-#include <pathcch.h>
+#include <Shlwapi.h> // PathIsDirectory, PathFileExists etc.
+#include <PathCch.h> // PathCchCombine etc.
 #endif
 
 #include <vector>
-#include <cwchar>
+#include <regex>
+#include <codecvt>
+#include <string>
 
 /*++
 Function:
@@ -96,29 +93,35 @@ PALEXPORT BOOL PALAPI pal_isdebuggerpresent()
 PALEXPORT BOOL PALAPI pal_env_get_variable(const wchar_t * environment_variable_in, wchar_t ** environment_variable_value_out)
 {
 #if PLATFORM_WINDOWS
-
-    const auto buffer_size = 65535;
-    wchar_t buffer[buffer_size];
-
-    const auto actual_buffer_size = GetEnvironmentVariable(environment_variable_in, buffer, buffer_size);
-    if (actual_buffer_size == 0) {
-        return FALSE;
-    }
-
-    const auto environment_variable_value_out_length = static_cast<size_t>(actual_buffer_size + 1);
-    *environment_variable_value_out = new wchar_t[environment_variable_value_out_length];
-    wcscpy_s(*environment_variable_value_out, environment_variable_value_out_length, buffer);
-
-    if (!pal_fs_get_directory_name_full_path(*environment_variable_value_out, environment_variable_value_out))
+    wchar_t* buffer = nullptr;
+    size_t buffer_len = 0;
+    const auto error = _wdupenv_s(&buffer, &buffer_len, environment_variable_in);
+    if (error || buffer_len <= 0)
     {
-        delete *environment_variable_value_out;
-        *environment_variable_value_out = nullptr;
         return FALSE;
     }
+
+    *environment_variable_value_out = new wchar_t[buffer_len];
+    wcscpy_s(*environment_variable_value_out, buffer_len, buffer);
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    const auto environment_variable_in_s = pal_str_narrow(environment_variable_in);
+    const auto environment_variable_value_out_s = std::getenv(environment_variable_in_s);
+
+    delete environment_variable_in_s;
+
+    if (environment_variable_value_out_s == nullptr)
+    {
+        return FALSE;
+    }
+
+    const auto environment_variable_value_out_w = pal_str_widen(environment_variable_value_out_s);
+    const auto environment_variable_value_out_w_len = wcslen(environment_variable_value_out_w) + 1;
+    *environment_variable_value_out = new wchar_t[environment_variable_value_out_w_len];
+    wcscpy_s(environment_variable_value_out_w, environment_variable_value_out_w_len, environment_variable_value_out_w);
+
+    return TRUE;
 #endif
 }
 
@@ -135,6 +138,46 @@ PALEXPORT BOOL PALAPI pal_env_get_variable_bool(const wchar_t * environment_vari
         TRUE : FALSE;
 
     return TRUE;
+}
+
+PALEXPORT BOOL PALAPI pal_env_expand_str(const wchar_t * environment_in, wchar_t ** environment_out)
+{
+    std::wstring environment_in_str(environment_in);
+
+#if PLATFORM_WINDOWS
+    static std::wregex expression(LR"(%([0-9A-Za-z\\/]*)%)", std::regex_constants::icase);
+#else
+    static std::wregex expression(LR"(\$\{([^}]+)\})", std::regex_constants::icase);
+#endif
+
+    auto replacements = 0;
+    std::wsmatch match;
+    while (std::regex_search(environment_in_str, match, expression)) {
+        wchar_t* environment_variable_value = nullptr;
+#if PLATFORM_WINDOWS
+        const auto text = match[1].str();
+#else
+        const auto text = match[1].str();
+#endif
+
+        if (!pal_env_get_variable(text.c_str(), &environment_variable_value))
+        {
+            continue;
+        }
+
+        const std::wstring environment_variable_value_wstring(environment_variable_value);
+        delete environment_variable_value;
+
+        environment_in_str.replace(match[0].first, match[0].second, environment_variable_value_wstring);
+
+        replacements++;
+    }
+
+    const auto environment_in_str_len = environment_in_str.size() + 1;
+    *environment_out = new wchar_t[environment_in_str_len];
+    wcscpy_s(*environment_out, environment_in_str_len, environment_in_str.c_str());
+
+    return replacements > 0 ? TRUE : FALSE;
 }
 
 // - Filesystem
@@ -423,13 +466,38 @@ PALEXPORT BOOL PALAPI pal_fs_get_current_directory(wchar_t ** current_directory_
 #endif
 }
 
+PALEXPORT BOOL PALAPI pal_fs_get_own_executable_name(wchar_t ** own_executable_name_out)
+{
+#if PLATFORM_WINDOWS
+
+    const auto current_directory = new wchar_t[PAL_MAX_PATH];
+
+    GetModuleFileName(GetModuleHandle(nullptr), current_directory, PAL_MAX_PATH);
+    const auto last_slash = wcsrchr(current_directory, PAL_DIRECTORY_SEPARATOR_C);
+
+    if (!last_slash) {
+        delete[] current_directory;
+        return FALSE;
+    }
+
+    *own_executable_name_out = _wcsdup(last_slash + 1);
+    delete[] current_directory;
+
+    return TRUE;
+#else
+#error TODO: IMPLEMENT ME
+#endif
+}
+
 // - String
-PALEXPORT void PALAPI pal_str_from_utf16_to_utf8(const wchar_t* widechar_string_in, const int widechar_string_in_len, char** multibyte_string_out)
+PALEXPORT void PALAPI pal_str_from_utf16_to_utf8(const wchar_t* widechar_string_in, char** multibyte_string_out)
 {
     if (widechar_string_in == nullptr)
     {
         return;
     }
+
+    const auto widechar_string_in_len = static_cast<int>(wcslen(widechar_string_in) + 1);
 
     const auto required_size = ::WideCharToMultiByte(CP_UTF8, 0, widechar_string_in, widechar_string_in_len,
         nullptr, 0, nullptr, nullptr);
@@ -482,12 +550,60 @@ PALEXPORT BOOL PALAPI pal_str_to_lower_case(const wchar_t * widechar_string_in, 
 
 PALEXPORT BOOL PALAPI pal_str_endswith(const wchar_t * src, const wchar_t * suffix)
 {
+    if (src == nullptr || suffix == nullptr)
+    {
+        return FALSE;
+    }
+
     const auto diff = wcslen(src) - wcslen(suffix);
     return diff > 0 && 0 == wcscmp(&src[diff], suffix);
 }
 
 PALEXPORT BOOL PALAPI pal_str_endswithi(const wchar_t * src, const wchar_t * suffix)
 {
+    if (src == nullptr || suffix == nullptr)
+    {
+        return FALSE;
+    }
+
     const auto diff = wcslen(src) - wcslen(suffix);
     return diff > 0 && 0 == _wcsicmp(&src[diff], suffix);
+}
+
+PALEXPORT BOOL PALAPI pal_str_startswith(const wchar_t * src, const wchar_t * suffix)
+{
+    if (src == nullptr || suffix == nullptr)
+    {
+        return FALSE;
+    }
+
+    const auto pos = wcsncmp(src, suffix, wcslen(suffix));
+    return pos == 0 ? TRUE : FALSE;
+}
+
+PALEXPORT BOOL PALAPI pal_str_startswithi(const wchar_t * src, const wchar_t * suffix)
+{
+    if (src == nullptr || suffix == nullptr)
+    {
+        return FALSE;
+    }
+
+    const auto pos = _wcsnicmp(src, suffix, wcslen(suffix));
+    return pos == 0 ? TRUE : FALSE;
+}
+
+PALEXPORT char* PALAPI pal_str_narrow(const wchar_t * src)
+{
+    char* narrow = nullptr;
+    pal_str_from_utf16_to_utf8(src, &narrow);
+
+    return narrow;
+}
+
+PALEXPORT wchar_t* PALAPI pal_str_widen(const char * src)
+{
+    wchar_t* widen = nullptr;
+    pal_str_from_utf8_to_utf16(src, &widen);
+
+    return widen;
 }

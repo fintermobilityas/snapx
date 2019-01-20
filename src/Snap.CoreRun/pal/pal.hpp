@@ -20,12 +20,11 @@
 #endif
 
 #ifdef PLATFORM_WINDOWS
-#define PALIMPORT   __declspec(dllimport)
 #define PALEXPORT   __declspec(dllexport)
 #define PALAPI      __cdecl
 #define PAL_DIRECTORY_SEPARATOR_STR L"\\"
 #define PAL_DIRECTORY_SEPARATOR_C L'\\'
-#define PAL_MAX_PATH MAX_PATH
+#define PAL_MAX_PATH  MAX_PATH 
 #else
 #error Unsupported platform
 #endif
@@ -36,6 +35,10 @@ extern "C" {
 
     // - Primitives
     typedef int BOOL;
+
+#if !PLATFORM_WINDOWS
+    typedef wchar_t* LPCWSTR;
+#endif
 
     // - Callbacks
     typedef BOOL(*pal_list_files_filter_callback_t)(const wchar_t* filename);

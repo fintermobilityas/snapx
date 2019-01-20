@@ -37,11 +37,12 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
         return -1;
     }
 
-    const auto clr_runtime_host = get_clr_runtime_host(core_clr_instance);
-    if (clr_runtime_host == nullptr)
+    if (!get_clr_runtime_host(core_clr_instance))
     {
         return -1;
     }
+
+    const auto clr_runtime_host = core_clr_instance->get_host();
 
     auto hr = clr_runtime_host->SetStartupFlags(create_clr_startup_flags());
     if (FAILED(hr)) {
@@ -69,41 +70,36 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
     }
 
     auto argc = 0;
-    std::wstring argw_buffer;
-    auto argw = to_clr_arguments(arguments, &argc, argw_buffer);
+    const auto argw = to_clr_arguments(arguments, &argc);
     auto execute_assembly_exit_code = 0ul;
 
     core_clr_activation_ctx cxt{ executable_path.c_str() };
-    hr = clr_runtime_host->ExecuteAssembly(app_domain_id, executable_path.c_str(), argc, &argw, &execute_assembly_exit_code);
+    hr = clr_runtime_host->ExecuteAssembly(app_domain_id, executable_path.c_str(), argc,
+        const_cast<LPCWSTR*>(argc >= 0 ? argw : nullptr), &execute_assembly_exit_code);
     if (FAILED(hr))
     {
+        delete[] argw;
         std::wcerr << L"ERROR - Failed call to ExecuteAssembly. ERRORCODE: " << hr << std::endl;
         return false;
     }
 
-    hr = clr_runtime_host->UnloadAppDomain(app_domain_id, TRUE /* wait until done */);
-    if (FAILED(hr)) {
-        std::wcerr << L"ERROR - Failed to unload the AppDomain. ERRORCODE: " << hr << std::endl;
-        return false;
-    }
+    delete[] argw;
 
-    hr = clr_runtime_host->Stop();
-    if (FAILED(hr)) {
-        std::wcerr << "ERROR - Failed to stop the host. ERRORCODE: " << hr << std::endl;
-        return false;
-    }
-
+    clr_runtime_host->UnloadAppDomain(app_domain_id, TRUE /* wait until done */);
+    clr_runtime_host->Stop();
     clr_runtime_host->Release();
 
     return execute_assembly_exit_code;
 }
 
-ICLRRuntimeHost2* snap::coreclr::get_clr_runtime_host(core_clr_instance* core_clr_instance)
+BOOL snap::coreclr::get_clr_runtime_host(core_clr_instance* core_clr_instance)
 {
     if (core_clr_instance == nullptr)
     {
-        return nullptr;
+        return FALSE;
     }
+
+    core_clr_instance->set_host(nullptr);
 
     ICLRRuntimeHost2* clr_runtime_host;
     const auto pfn_get_clr_runtime_host =
@@ -112,17 +108,19 @@ ICLRRuntimeHost2* snap::coreclr::get_clr_runtime_host(core_clr_instance* core_cl
     if (!pfn_get_clr_runtime_host)
     {
         std::wcerr << L"ERROR - GetCLRRuntimeHost not found." << std::endl;
-        return nullptr;
+        return FALSE;
     }
 
     const auto hr = pfn_get_clr_runtime_host(IID_ICLRRuntimeHost2, reinterpret_cast<IUnknown**>(&clr_runtime_host));
     if (FAILED(hr))
     {
         std::wcerr << L"ERROR - Failed to get ICLRRuntimeHost2 instance. Error code: " << hr << std::endl;
-        return nullptr;
+        return FALSE;
     }
 
-    return clr_runtime_host;
+    core_clr_instance->set_host(clr_runtime_host);
+
+    return true;
 }
 
 core_clr_instance* snap::coreclr::try_load_core_clr(const std::wstring & executable_path, const std::vector<std::wstring>& arguments,
@@ -139,6 +137,7 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const std::wstring & executa
     auto core_clr_instance = try_load_core_clr(executable_directory_path, version::Semver200_version());
 
     // 2. Try loading from default coreclr well-known directory.
+#if PLATFORM_WINDOWS
     if (core_clr_instance == nullptr)
     {
         wchar_t* core_clr_program_files_directory_expanded = nullptr;
@@ -160,6 +159,9 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const std::wstring & executa
             delete[] core_clr_program_files_directory_expanded;
         }
     }
+#else
+#error TODO: Find a well-known directory on Unix.
+#endif
 
     delete[] executable_directory_path;
     delete[] core_root_path_out;
@@ -266,7 +268,7 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const wchar_t* directory_pat
 #endif
 
     const auto core_clr_instance_out = new core_clr_instance(core_clr_instance_ptr,
-       directory_path, core_clr_dll_path, core_clr_version);
+        directory_path, core_clr_dll_path, core_clr_version);
 
     delete[] core_clr_dll_path;
 
@@ -304,7 +306,7 @@ STARTUP_FLAGS snap::coreclr::create_clr_startup_flags()
 }
 
 BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, const wchar_t* executable_working_directory,
-    const std::wstring& trusted_platform_assemblies, core_clr_instance * const core_clr_instance, unsigned long* appdomain_id_out)
+    const std::wstring& trusted_platform_assemblies, core_clr_instance * const core_clr_instance, unsigned long* app_domain_id_out)
 {
     if (executable_path.empty()
         || executable_working_directory == nullptr
@@ -316,13 +318,35 @@ BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, co
         return FALSE;
     }
 
-    std::wstring executable_paths(executable_working_directory);
-    executable_paths.append(L";");
-    executable_paths.append(core_clr_instance->get_directory().get_root_path());
-    executable_paths.append(L";");
-    executable_paths.append(L"NI");
-    executable_paths.append(L";");
-    executable_paths.append(executable_working_directory);
+    // Absolute path to target app.
+    wchar_t target_app[PAL_MAX_PATH * 50];
+    wcscpy_s(target_app, PAL_MAX_PATH, executable_path.c_str());
+
+    // The directory the target app is in, as it will be referenced later.
+    wchar_t target_app_path[PAL_MAX_PATH * 50];
+    wcscpy_s(target_app_path, executable_working_directory);
+
+    // App paths are directories to probe in for assemblies which are not one of the 
+    // well-known Framework assemblies included in the TPA list.
+    wchar_t app_paths[PAL_MAX_PATH * 50];
+    wcscpy_s(app_paths, target_app_path);
+
+    // App (NI) paths are the paths that will be probed for native images not found on the TPA list. 
+    wchar_t app_ni_paths[PAL_MAX_PATH * 50];
+    wcscpy_s(app_ni_paths, target_app_path);
+    wcscat_s(app_ni_paths, PAL_MAX_PATH * 50, L";");
+    wcscat_s(app_ni_paths, PAL_MAX_PATH * 50, target_app_path);
+    wcscat_s(app_ni_paths, PAL_MAX_PATH * 50, L"NI");
+
+    // Native dll search directories are paths that the runtime will probe for native DLLs called via PInvoke
+    wchar_t native_dll_search_directories[PAL_MAX_PATH * 50];
+    wcscpy_s(native_dll_search_directories, app_paths);
+    wcscat_s(native_dll_search_directories, PAL_MAX_PATH * 50, L";");
+    wcscat_s(native_dll_search_directories, PAL_MAX_PATH * 50, core_clr_instance->get_directory().get_root_path());
+
+    // Platform resource roots are paths to probe in for resource assemblies (in culture-specific sub-directories)
+    wchar_t platform_resource_roots[PAL_MAX_PATH * 50];
+    wcscpy_s(platform_resource_roots, PAL_MAX_PATH* 50, app_paths);
 
     const wchar_t *property_keys[] = {
        L"TRUSTED_PLATFORM_ASSEMBLIES",
@@ -333,21 +357,19 @@ BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, co
     };
 
     const wchar_t *property_values[] = {
-        // TRUSTED_PLATFORM_ASSEMBLIES
         trusted_platform_assemblies.c_str(),
-        // APP_PATHS
-        executable_paths.c_str(),
-        // APP_NI_PATHS
-        executable_paths.c_str(),
-        // NATIVE_DLL_SEARCH_DIRECTORIES
-        executable_paths.c_str(),
-        // APP_LOCAL_WINMETADATA
-        executable_paths.c_str(),
+        app_paths,
+        app_ni_paths,
+        native_dll_search_directories,
+        platform_resource_roots
     };
+
+    const auto friendly_name_last_slash = executable_path.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+    const auto friendly_name = executable_path.substr(friendly_name_last_slash + 1);
 
     const auto hr = core_clr_instance->get_host()->CreateAppDomainWithManager(
         // The friendly name of the AppDomain
-        executable_path.c_str(),
+        friendly_name.c_str(),
         // Flags:
         // APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS
         // - By default CoreCLR only allows platform neutral assembly to be run. To allow
@@ -373,7 +395,7 @@ BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, co
         sizeof property_keys / sizeof(wchar_t*),
         property_keys,
         property_values,
-        appdomain_id_out);
+        app_domain_id_out);
 
     if (FAILED(hr))
     {
@@ -454,31 +476,26 @@ std::wstring snap::coreclr::build_trusted_platform_assemblies_str(const std::wst
         trusted_platform_assemblies.emplace_back(executable_path);
     }
 
-    for (auto i = 0u; i < trusted_platform_assemblies.size(); i++)
+    for (const auto& assembly : trusted_platform_assemblies)
     {
-        trusted_platform_assemblies_str.append(trusted_platform_assemblies[i]);
-
-        if (i + 1 < trusted_platform_assemblies.size())
-        {
-            trusted_platform_assemblies_str.append(L";");
-        }
+        trusted_platform_assemblies_str.append(assembly);
+        trusted_platform_assemblies_str.append(L";");
     }
 
     return trusted_platform_assemblies_str;
 }
 
-LPCWSTR snap::coreclr::to_clr_arguments(const std::vector<std::wstring>& arguments, int* argc, std::wstring& argw_ws)
+wchar_t** snap::coreclr::to_clr_arguments(const std::vector<std::wstring>& arguments, int* argc)
 {
-    *argc = static_cast<int>(arguments.size());
+    const auto arguments_len = static_cast<int>(arguments.size());
 
-    for (auto i = 0; i < *argc; i++)
+    const auto argw = new wchar_t*[arguments_len];
+    for(auto i = 0; i < arguments_len; i++)
     {
-        argw_ws.append(arguments[i]);
-        if (i + 1 < *argc)
-        {
-            argw_ws.append(L" ");
-        }
+        argw[i] = _wcsdup(arguments[i].c_str());
     }
 
-    return const_cast<LPCWSTR>(argw_ws.data());
+    *argc = arguments_len;
+
+    return argw;
 }

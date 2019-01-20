@@ -5,9 +5,9 @@
 using std::wstring;
 
 #if PLATFORM_WINDOWS
-int snap::stubexecutable::run(std::vector<wchar_t*> arguments, const int cmd_show)
+int snap::stubexecutable::run(std::vector<std::wstring> arguments, const int cmd_show)
 #else
-int snap::stubexecutable::run(std::vector<wchar_t*> arguments)
+int snap::stubexecutable::run(std::vector<std::wstring> arguments)
 #endif
 {
     auto app_name(find_own_executable_name());
@@ -37,8 +37,8 @@ int snap::stubexecutable::run(std::vector<wchar_t*> arguments)
     const auto lp_current_directory = _wcsdup(working_dir.c_str());
 
 #if PLATFORM_WINDOWS
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
+    STARTUPINFO si = { 0 };
+    PROCESS_INFORMATION pi = { nullptr };
 
     si.cb = sizeof si;
     si.dwFlags = STARTF_USESHOWWINDOW;
@@ -46,13 +46,13 @@ int snap::stubexecutable::run(std::vector<wchar_t*> arguments)
     if (!CreateProcess(nullptr, lp_command_line,
         nullptr, nullptr, true,
         0, nullptr, lp_current_directory, &si, &pi)) {
-        delete lp_command_line;
-        delete lp_current_directory;
+        delete[] lp_command_line;
+        delete[] lp_current_directory;
         return -1;
     }
 
-    delete lp_command_line;
-    delete lp_current_directory;
+    delete[] lp_command_line;
+    delete[] lp_current_directory;
 
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);

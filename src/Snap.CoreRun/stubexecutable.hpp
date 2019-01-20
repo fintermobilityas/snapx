@@ -11,9 +11,9 @@ namespace snap
     {
     public:
 #if PLATFORM_WINDOWS
-        static int run(std::vector<wchar_t*> arguments, const int cmd_show);
+        static int run(std::vector<std::wstring> arguments, const int cmd_show);
 #else
-        static int run(std::vector<wchar_t*> arguments);
+        static int run(std::vector<std::wstring> arguments);
 #endif
     private:
 

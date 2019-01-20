@@ -186,7 +186,7 @@ namespace snap {
         static std::vector<core_clr_directory> get_core_directories_from_path(const wchar_t* core_clr_root_path,
             const version::Semver200_version& clr_minimum_version);
 
-        static ICLRRuntimeHost2* get_clr_runtime_host(core_clr_instance* core_clr_instance);
+        static BOOL get_clr_runtime_host(core_clr_instance* core_clr_instance);
 
         static core_clr_instance* try_load_core_clr(const std::wstring & executable_path, const std::vector<std::wstring>& arguments,
             const version::Semver200_version & clr_minimum_version);
@@ -206,7 +206,7 @@ namespace snap {
         static std::wstring build_trusted_platform_assemblies_str(const std::wstring& executable_path,
             core_clr_instance* const core_clr_instance);
 
-        static LPCWSTR to_clr_arguments(const std::vector<std::wstring>& arguments, int* argc, std::wstring& argw_ws);
+        static wchar_t** to_clr_arguments(const std::vector<std::wstring>& arguments, int* argc);
 
     };
 };

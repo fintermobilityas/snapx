@@ -61,29 +61,29 @@ namespace version {
 		const Basic_version<Parser, Comparator>&) = default;
 
 	template<typename Parser, typename Comparator>
-	int Basic_version<Parser, Comparator>::major() const {
+	int Basic_version<Parser, Comparator>::get_major() const {
 		return ver_.major;
 	}
 
 	template<typename Parser, typename Comparator>
-	int Basic_version<Parser, Comparator>::minor() const {
+	int Basic_version<Parser, Comparator>::get_minor() const {
 		return ver_.minor;
 	}
 
 	template<typename Parser, typename Comparator>
-	int Basic_version<Parser, Comparator>::patch() const {
+	int Basic_version<Parser, Comparator>::get_patch() const {
 		return ver_.patch;
 	}
 
 	template<typename Parser, typename Comparator>
-	const std::string Basic_version<Parser, Comparator>::prerelease() const {
+	const std::string Basic_version<Parser, Comparator>::get_prerelease() const {
 		std::stringstream ss;
 		splice(ss, ver_.prerelease_ids, ".", [](const auto& id) { return id.first;});
 		return ss.str();
 	}
 
 	template<typename Parser, typename Comparator>
-	const std::string Basic_version<Parser, Comparator>::build() const {
+	const std::string Basic_version<Parser, Comparator>::get_build() const {
 		std::stringstream ss;
 		splice(ss, ver_.build_ids, ".", [](const auto& id) { return id;});
 		return ss.str();
@@ -106,11 +106,11 @@ namespace version {
 	std::ostream& operator<<(std::ostream& os,
 		const Basic_version<Parser, Comparator>& v) {
 		os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
-		std::string prl = v.prerelease();
+		std::string prl = v.get_prerelease();
 		if (!prl.empty()) {
 			os << "-" << prl;
 		}
-		std::string bld = v.build();
+		std::string bld = v.get_build();
 		if (!bld.empty()) {
 			os << "+" << bld;
 		}

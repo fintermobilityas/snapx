@@ -136,11 +136,11 @@ namespace version {
 		/// Copy version data from another Basic_version to this one.
 		Basic_version& operator=(const Basic_version&);
 
-		int major() const; ///< Get major version.
-		int minor() const; ///< Get minor version.
-		int patch() const; ///< Get patch version.
-		const std::string prerelease() const; ///< Get prerelease version string.
-		const std::string build() const; ///< Get build version string.
+		int get_major() const; ///< Get major version.
+		int get_minor() const; ///< Get minor version.
+		int get_patch() const; ///< Get patch version.
+		const std::string get_prerelease() const; ///< Get prerelease version string.
+		const std::string get_build() const; ///< Get build version string.
 
 		friend bool operator< <>(const Basic_version&, const Basic_version&);
 		friend bool operator== <>(const Basic_version&, const Basic_version&);

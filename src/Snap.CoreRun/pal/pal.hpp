@@ -23,6 +23,12 @@
 #define PAL_DIRECTORY_SEPARATOR_STR L"\\"
 #define PAL_DIRECTORY_SEPARATOR_C L'\\'
 #define PAL_MAX_PATH  MAX_PATH 
+#elif PLATFORM_LINUX
+#define PALEXPORT 
+#define PALAPI __cdecl
+#define PAL_DIRECTORY_SEPARATOR_STR L"/"
+#define PAL_DIRECTORY_SEPARATOR_C L'/'
+#define PAL_MAX_PATH 1024
 #else
 #error Unsupported platform
 #endif

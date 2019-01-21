@@ -10,6 +10,8 @@ using snap::core_clr_instance_t;
 #if PLATFORM_WINDOWS
 static const wchar_t* core_clr_dll = L"coreclr.dll";
 static const wchar_t* core_clr_program_files_directory_path = L"%programfiles%\\dotnet\\shared\\microsoft.netcore.app";
+#elif PLATFORM_LINUX
+static const wchar_t* core_clr_dll = L"libcoreclr.so";
 #endif
 
 int snap::coreclr::run(const std::wstring & executable_path, const std::vector<std::wstring>& arguments,
@@ -118,7 +120,7 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const std::wstring & executa
         }
     }
 #else
-#error TODO: Find a well-known directory on Unix.
+    return nullptr;
 #endif
 
     delete[] executable_directory_path;

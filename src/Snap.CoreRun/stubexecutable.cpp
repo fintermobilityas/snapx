@@ -23,7 +23,7 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
         return -1;
     }
 
-    const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_STR + app_name);
+    const auto executable_full_path(working_dir + PAL_CORECLR_TPA_SEPARATOR_WIDE_STR + app_name);
 
     std::wstring cmd_line(L"\"");
     cmd_line += executable_full_path;
@@ -77,7 +77,7 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);
 #else
-#error TODO: IMPLEMENT ME
+    return -1;
 #endif
 
     return 0;

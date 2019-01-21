@@ -215,7 +215,7 @@ PALEXPORT BOOL PALAPI pal_fs_get_directory_name_full_path(const wchar_t* path_in
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    return FALSE;
 #endif
 }
 
@@ -256,7 +256,7 @@ PALEXPORT BOOL PALAPI pal_fs_path_combine(const wchar_t * path_in_lhs, const wch
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    return FALSE;
 #endif
 }
 
@@ -327,7 +327,7 @@ PALEXPORT BOOL PALAPI pal_fs_list_directories(const wchar_t * path_in, wchar_t *
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    return FALSE;
 #endif
 }
 
@@ -412,7 +412,7 @@ PALEXPORT BOOL PALAPI pal_fs_list_files(const wchar_t * path_in, const pal_list_
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    return FALSE;
 #endif
 }
 
@@ -428,7 +428,7 @@ PALEXPORT BOOL PALAPI pal_fs_file_exists(const wchar_t * file_path_in, BOOL *fil
 
     return TRUE;
 #else
-#error "TODO: IMPLEMENT ME"
+    return FALSE;
 #endif
 }
 
@@ -462,7 +462,7 @@ PALEXPORT BOOL PALAPI pal_fs_get_current_directory(wchar_t ** current_directory_
 
     return TRUE;
 #else
-#error Unsupported
+    return FALSE;
 #endif
 }
 
@@ -485,7 +485,7 @@ PALEXPORT BOOL PALAPI pal_fs_get_own_executable_name(wchar_t ** own_executable_n
 
     return TRUE;
 #else
-#error TODO: IMPLEMENT ME
+    return FALSE;
 #endif
 }
 
@@ -539,13 +539,9 @@ PALEXPORT BOOL PALAPI pal_str_to_lower_case(const wchar_t * widechar_string_in, 
     {
         return FALSE;
     }
-#if PLATFORM_WINDOWS
     *widechar_string_out = _wcsdup(widechar_string_in);
     _wcslwr_s(*widechar_string_out, wcslen(widechar_string_in));
     return TRUE;
-#else
-#error TODO: Implement me
-#endif
 }
 
 PALEXPORT BOOL PALAPI pal_str_endswith(const wchar_t * src, const wchar_t * suffix)

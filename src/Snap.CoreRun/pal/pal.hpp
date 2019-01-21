@@ -9,6 +9,12 @@
 #endif
 #endif
 
+#if PLATFORM_LINUX
+#define __STDC_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <wchar.h>
+#endif
+
 #ifndef FORCEINLINE
 #if _MSC_VER < 1200
 #define FORCEINLINE inline
@@ -28,13 +34,17 @@
 #define PAL_CORECLR_TPA_SEPARATOR_NARROW_STR ";"
 #define PAL_CORECLR_TPA_SEPARATOR_NARROW_C ';'
 #elif PLATFORM_LINUX
-#define PALEXPORT 
-#define PALAPI __cdecl
+#define PALEXPORT
+#define PALAPI
 #define PAL_DIRECTORY_SEPARATOR_STR L"/"
-#define PAL_DIRECTORY_SEPARATOR_C L'/'
-#define PAL_CORECLR_TPA_SEPARATOR_STR L":"
-#define PAL_CORECLR_TPA_SEPARATOR_C L':'
+#define PAL_DIRECTORY_SEPARATOR_C '/'
+#define PAL_CORECLR_TPA_SEPARATOR_WIDE_STR L"/"
+#define PAL_CORECLR_TPA_SEPARATOR_WIDE_C L'/'
+#define PAL_CORECLR_TPA_SEPARATOR_NARROW_STR ":"
+#define PAL_CORECLR_TPA_SEPARATOR_NARROW_C ':'
 #define PAL_MAX_PATH 1024
+#define TRUE 1
+#define FALSE 0
 #else
 #error Unsupported platform
 #endif
@@ -45,10 +55,6 @@ extern "C" {
 
     // - Primitives
     typedef int BOOL;
-
-#if !PLATFORM_WINDOWS
-    typedef wchar_t* LPCWSTR;
-#endif
 
     // - Callbacks
     typedef BOOL(*pal_list_files_filter_callback_t)(const wchar_t* filename);

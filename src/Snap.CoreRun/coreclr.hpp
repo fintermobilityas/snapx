@@ -13,63 +13,6 @@ namespace snap {
 
     typedef void core_clr_instance_t;
 
-#if PLATFORM_WINDOWS
-    // Class used to manage activation context.
-    // See: https://docs.microsoft.com/en-us/windows/desktop/SbsCs/using-the-activation-context-api
-    class core_clr_activation_ctx
-    {
-    public:
-        // assemblyPath - Assembly containing activation context manifest
-        core_clr_activation_ctx(_In_z_ const WCHAR *assemblyPath)
-            : _actCookie{}
-            , _actCxt{ INVALID_HANDLE_VALUE }
-        {
-            ACTCTX cxt{};
-            cxt.cbSize = sizeof(cxt);
-            cxt.dwFlags = (ACTCTX_FLAG_APPLICATION_NAME_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID);
-            cxt.lpSource = assemblyPath;
-            cxt.lpResourceName = MAKEINTRESOURCEW(1); // The CreateProcess manifest which contains the context details
-
-            _actCxt = ::CreateActCtxW(&cxt);
-            if (_actCxt == INVALID_HANDLE_VALUE)
-            {
-                DWORD err = ::GetLastError();
-                if (err == ERROR_RESOURCE_TYPE_NOT_FOUND)
-                {
-                    std::wcerr << L"Assembly does not contain a manifest for activation" << std::endl;
-                }
-                else
-                {
-                    std::wcerr << L"Activation Context creation failed. Error Code: " << err << std::endl;
-                }
-            }
-            else
-            {
-                BOOL res = ::ActivateActCtx(_actCxt, &_actCookie);
-                if (res == FALSE)
-                    std::wcerr << L"Failed to activate Activation Context. Error Code: " << ::GetLastError() << std::endl;
-            }
-        }
-
-        ~core_clr_activation_ctx()
-        {
-            if (_actCookie != ULONG_PTR{})
-            {
-                BOOL res = ::DeactivateActCtx(0, _actCookie);
-                if (res == FALSE)
-                    std::wcerr << L"Failed to de-activate Activation Context. Error Code: " << ::GetLastError() << std::endl;
-            }
-
-            if (_actCxt != INVALID_HANDLE_VALUE)
-                ::ReleaseActCtx(_actCxt);
-        }
-
-    private:
-        HANDLE _actCxt;
-        ULONG_PTR _actCookie;
-    };
-#endif
-
     class core_clr_directory
     {
     private:
@@ -219,7 +162,7 @@ namespace snap {
                 return FALSE;
             }
 
-            const auto friendly_name_last_slash = executable_path.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+            const auto friendly_name_last_slash = executable_path.find_last_of(PAL_DIRECTORY_SEPARATOR_STR);
             m_coreclr_appdomain_friendly_name = executable_path.substr(friendly_name_last_slash + 1);
 
             const auto target_app = std::string(pal_str_narrow(executable_path.c_str()));
@@ -312,8 +255,6 @@ namespace snap {
             const auto argc = static_cast<int>(arguments.size());
             const auto argv = to_clr_arguments();
             const auto target_app = std::string(pal_str_narrow(executable_path.c_str()));
-
-            core_clr_activation_ctx cxt{ executable_path.c_str() };
 
             auto st = fn_execute_assembly()(
                 m_coreclr_host_handle,

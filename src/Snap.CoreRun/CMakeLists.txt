@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
-project(corerun CXX C)
+project(corerun CXX)
 
 list(APPEND corerun_INCLUDE_DIRS
    vendor
@@ -11,7 +11,6 @@ list(APPEND corerun_INCLUDE_DIRS
 set(corerun_SOURCES
    coreclr.cpp
    corerun.cpp
-   resourcewriter.cpp 
    stubexecutable.cpp
    vendor/easyloggingpp/src/easylogging++.cc
    vendor/semver/semver200_comparator.cpp 
@@ -30,11 +29,15 @@ add_executable(corerun
 
 target_compile_definitions(corerun PRIVATE 
 	ELPP_NO_DEFAULT_LOG_FILE
-	ELPP_UNICODE
 	_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 )	
 
 if(WIN32)
+	list(APPEND corerun_SOURCES
+	   resourcewriter.cpp 
+	)
+
+
 	target_link_libraries(corerun PRIVATE 
 		shlwapi.lib 
 		shell32.lib 
@@ -60,6 +63,12 @@ if(WIN32)
 		PLATFORM_WINDOWS 
 		UNICODE 
 		_UNICODE
+		ELPP_UNICODE
+	)	
+elseif(UNIX)
+
+	target_compile_definitions(corerun PRIVATE 
+		PLATFORM_LINUX
 	)	
 endif()
 

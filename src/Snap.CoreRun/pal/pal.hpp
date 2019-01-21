@@ -21,13 +21,19 @@
 #define PALEXPORT   __declspec(dllexport)
 #define PALAPI      __cdecl
 #define PAL_DIRECTORY_SEPARATOR_STR L"\\"
-#define PAL_DIRECTORY_SEPARATOR_C L'\\'
+#define PAL_DIRECTORY_SEPARATOR_C '\\'
 #define PAL_MAX_PATH  MAX_PATH 
+#define PAL_CORECLR_TPA_SEPARATOR_WIDE_STR L";"
+#define PAL_CORECLR_TPA_SEPARATOR_WIDE_C L';'
+#define PAL_CORECLR_TPA_SEPARATOR_NARROW_STR ";"
+#define PAL_CORECLR_TPA_SEPARATOR_NARROW_C ';'
 #elif PLATFORM_LINUX
 #define PALEXPORT 
 #define PALAPI __cdecl
 #define PAL_DIRECTORY_SEPARATOR_STR L"/"
 #define PAL_DIRECTORY_SEPARATOR_C L'/'
+#define PAL_CORECLR_TPA_SEPARATOR_STR L":"
+#define PAL_CORECLR_TPA_SEPARATOR_C L':'
 #define PAL_MAX_PATH 1024
 #else
 #error Unsupported platform

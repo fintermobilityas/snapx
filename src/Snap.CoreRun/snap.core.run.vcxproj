@@ -59,8 +59,9 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;PLATFORM_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;PLATFORM_WINDOWS;ELPP_NO_DEFAULT_LOG_FILE;ELPP_UNICODE;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>./vendor/easyloggingpp/src;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -75,8 +76,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;PLATFORM_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;PLATFORM_WINDOWS;ELPP_NO_DEFAULT_LOG_FILE;ELPP_UNICODE;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>./vendor/easyloggingpp/src;%(AdditionalIncludeDirectories);</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -91,10 +93,11 @@
     <ClCompile Include="resourcewriter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="coreclr.cpp" />
-    <ClCompile Include="vendor/semver/semver200_comparator.cpp" />
-    <ClCompile Include="vendor/semver/semver200_parser.cpp" />
     <ClCompile Include="pal/pal.cpp" />
     <ClCompile Include="corerun.hpp" />
+    <ClCompile Include="vendor/semver/semver200_comparator.cpp" />
+    <ClCompile Include="vendor/semver/semver200_parser.cpp" />
+    <ClCompile Include="vendor/easyloggingpp/src/easylogging++.cc" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="resources/corerun.rc" />

@@ -21,24 +21,27 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
     if (!pal_fs_file_exists(executable_path.c_str(), &executable_file_exists)
         || !executable_file_exists)
     {
+        LOG(ERROR) << "Coreclr: Executable does not exist. Path: " << executable_path << std::endl;
         return -1;
     }
 
     wchar_t* executable_working_directory = nullptr;
     if (!pal_fs_get_directory_name_full_path(executable_path.c_str(), &executable_working_directory))
     {
+        LOG(ERROR) << "Coreclr: Unable to obtain directory full path for executable. Path: " << executable_path << std::endl;
         return -1;
     }
 
     const auto core_clr_instance = try_load_core_clr(executable_path, arguments, clr_minimum_version);
     if (core_clr_instance == nullptr)
     {
-        std::wcerr << L"ERROR - " << core_clr_dll << " not found." << std::endl;
+        LOG(ERROR) << "Coreclr: " << core_clr_dll << " not found." << std::endl;
         return -1;
     }
 
     if (!get_clr_runtime_host(core_clr_instance))
     {
+        LOG(ERROR) << "Coreclr: Unable to create runtime host. Path: " << core_clr_instance->get_directory().get_dll_path() << std::endl;
         return -1;
     }
 
@@ -46,19 +49,20 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
 
     auto hr = clr_runtime_host->SetStartupFlags(create_clr_startup_flags());
     if (FAILED(hr)) {
-        std::wcerr << L"Failed to set startup flags. ERRORCODE: " << hr << std::endl;
+        LOG(ERROR) << L"Coreclr: Failed to set startup flags. ERRORCODE: " << hr << std::endl;
         return false;
     }
 
     hr = clr_runtime_host->Start();
     if (FAILED(hr)) {
-        std::wcerr << L"Failed to start CoreCLR. ERRORCODE: " << hr << std::endl;
+        LOG(ERROR) << L"Coreclr: Failed to start coreclr. ERRORCODE: " << hr << std::endl;
         return false;
     }
 
     const auto trusted_platform_assemblies_str = build_trusted_platform_assemblies_str(executable_path, core_clr_instance);
     if (trusted_platform_assemblies_str.empty())
     {
+        LOG(ERROR) << "Coreclr: Unable to build trusted platform assemblies list (TPA)" << std::endl;
         return -1;
     }
 
@@ -66,6 +70,7 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
     if (!create_clr_appdomain(executable_path, executable_working_directory,
         trusted_platform_assemblies_str, core_clr_instance, &app_domain_id))
     {
+        LOG(ERROR) << "Coreclr: Failed to create app domain!" << std::endl;
         return -1;
     }
 
@@ -73,21 +78,68 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
     const auto argw = to_clr_arguments(arguments, &argc);
     auto execute_assembly_exit_code = 0ul;
 
+    std::stringstream core_clr_version;
+    core_clr_version << core_clr_instance->get_directory().get_version();
+
+    std::wstring arguments_buffer;
+    for (auto i = 0; i < argc; i++)
+    {
+        arguments_buffer.append(argw[i]);
+        arguments_buffer.append(L" ");
+    }
+
+    LOG(DEBUG) << "Coreclr: Executing assembly. " <<
+        "Coreclr root directory: " << core_clr_instance->get_directory().get_root_path() << ". " <<
+        "Coreclr dll: " << core_clr_instance->get_directory().get_dll_path() << ". " <<
+        "Coreclr version: " << core_clr_version.str() << ". " <<
+        "Executable: " << executable_path << ". " <<
+        "Working directory: " << executable_working_directory << ". " <<
+        "Arguments count: " << argc << ". " <<
+        "Arguments: " << arguments_buffer <<
+        std::endl;
+
     core_clr_activation_ctx cxt{ executable_path.c_str() };
     hr = clr_runtime_host->ExecuteAssembly(app_domain_id, executable_path.c_str(), argc,
         const_cast<LPCWSTR*>(argc >= 0 ? argw : nullptr), &execute_assembly_exit_code);
     if (FAILED(hr))
     {
         delete[] argw;
-        std::wcerr << L"ERROR - Failed call to ExecuteAssembly. ERRORCODE: " << hr << std::endl;
+        LOG(ERROR) << L"Coreclr: Failed call to ExecuteAssembly. ERRORCODE: " << hr << std::endl;
         return false;
     }
 
     delete[] argw;
 
-    clr_runtime_host->UnloadAppDomain(app_domain_id, TRUE /* wait until done */);
-    clr_runtime_host->Stop();
-    clr_runtime_host->Release();
+    hr = clr_runtime_host->UnloadAppDomain(app_domain_id, TRUE /* wait until done */);
+    if (FAILED(hr))
+    {
+        LOG(ERROR) << L"Coreclr: Failed to call UnloadAppDomain. ERRORCODE: " << hr << std::endl;
+        return -1;
+    }
+
+    hr = clr_runtime_host->Stop();
+    if (FAILED(hr))
+    {
+        LOG(ERROR) << L"Coreclr: Failed to call Stop. ERRORCODE: " << hr << std::endl;
+        return -1;
+    }
+
+    hr = clr_runtime_host->Release();
+    if (FAILED(hr))
+    {
+        LOG(ERROR) << L"Coreclr: Failed to call Release. ERRORCODE: " << hr << std::endl;
+        return -1;
+    }
+
+    LOG(DEBUG) << "Coreclr: Successfully executed assembly. " <<
+        "Coreclr root directory: " << core_clr_instance->get_directory().get_root_path() << ". " <<
+        "Coreclr dll: " << core_clr_instance->get_directory().get_dll_path() << ". " <<
+        "Coreclr version: " << core_clr_version.str() << ". " <<
+        "Executable: " << executable_path << ". " <<
+        "Working directory: " << executable_working_directory << ". " <<
+        "Arguments count: " << argc << ". " <<
+        "Arguments: " << arguments_buffer <<
+        std::endl;
 
     return execute_assembly_exit_code;
 }
@@ -107,14 +159,14 @@ BOOL snap::coreclr::get_clr_runtime_host(core_clr_instance* core_clr_instance)
 
     if (!pfn_get_clr_runtime_host)
     {
-        std::wcerr << L"ERROR - GetCLRRuntimeHost not found." << std::endl;
+        LOG(ERROR) << L"Coreclr: GetCLRRuntimeHost not found." << std::endl;
         return FALSE;
     }
 
     const auto hr = pfn_get_clr_runtime_host(IID_ICLRRuntimeHost2, reinterpret_cast<IUnknown**>(&clr_runtime_host));
     if (FAILED(hr))
     {
-        std::wcerr << L"ERROR - Failed to get ICLRRuntimeHost2 instance. Error code: " << hr << std::endl;
+        LOG(ERROR) << L"Coreclr: Failed to get ICLRRuntimeHost2 instance. Error code: " << hr << std::endl;
         return FALSE;
     }
 
@@ -222,7 +274,7 @@ std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(co
         }
         catch (const version::Parse_error& e)
         {
-            std::wcerr << L"Error - Failed to parse semver version for path: " << core_clr_path << ". Why: " << e.what() << std::endl;
+            LOG(WARNING) << L"Coreclr: Failed to parse semver version for path: " << core_clr_path << ". Why: " << e.what() << std::endl;
         }
 
         delete[] core_clr_path;
@@ -346,7 +398,7 @@ BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, co
 
     // Platform resource roots are paths to probe in for resource assemblies (in culture-specific sub-directories)
     wchar_t platform_resource_roots[PAL_MAX_PATH * 50];
-    wcscpy_s(platform_resource_roots, PAL_MAX_PATH* 50, app_paths);
+    wcscpy_s(platform_resource_roots, PAL_MAX_PATH * 50, app_paths);
 
     const wchar_t *property_keys[] = {
        L"TRUSTED_PLATFORM_ASSEMBLIES",
@@ -399,7 +451,7 @@ BOOL snap::coreclr::create_clr_appdomain(const std::wstring& executable_path, co
 
     if (FAILED(hr))
     {
-        std::wcerr << L"ERROR - Failed to create APPDOMAIN. Error code: " << hr << std::endl;
+        LOG(ERROR) << L"Coreclr: Failed to create APPDOMAIN. Error code: " << hr << std::endl;
         return FALSE;
     }
 
@@ -490,7 +542,7 @@ wchar_t** snap::coreclr::to_clr_arguments(const std::vector<std::wstring>& argum
     const auto arguments_len = static_cast<int>(arguments.size());
 
     const auto argw = new wchar_t*[arguments_len];
-    for(auto i = 0; i < arguments_len; i++)
+    for (auto i = 0; i < arguments_len; i++)
     {
         argw[i] = _wcsdup(arguments[i].c_str());
     }

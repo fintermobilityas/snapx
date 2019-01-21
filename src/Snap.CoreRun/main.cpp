@@ -5,13 +5,38 @@
 
 #include <vector>
 
+INITIALIZE_EASYLOGGINGPP
+
+static char** setup_easyloggingpp(const int argc, wchar_t* argw[])
+{
+    const auto argv = new char*[argc];
+
+    for (auto i = 0; i < argc; ++i) {
+        std::wstring widechar_string_in(argw[i]);
+        argv[i] = pal_str_narrow(widechar_string_in.c_str());
+    }
+
+    START_EASYLOGGINGPP(argc, argv);
+
+    return argv;
+}
+
 int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
 {
+    auto argv = setup_easyloggingpp(argc, argw);
+
     wchar_t* app_name = nullptr;
     if (!pal_fs_get_own_executable_name(&app_name))
     {
         return -1;
     }
+
+    std::string app_name_s(pal_str_narrow(app_name));
+
+    el::Configurations easylogging_default_conf;
+    easylogging_default_conf.setToDefault();
+    easylogging_default_conf.setGlobally(el::ConfigurationType::Filename, app_name_s + ".log");
+    el::Loggers::reconfigureLogger("default", easylogging_default_conf);
 
     const auto run_stubexecutable = [argw, argc, cmd_show_windows]()
     {
@@ -20,7 +45,7 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
         return snap::stubexecutable::run(stubexecutable_arguments, cmd_show_windows);
     };
 
-    cxxopts::Options options(pal_str_narrow(app_name));
+    cxxopts::Options options(app_name_s);
 
     options
         .allow_unrecognised_options()
@@ -36,14 +61,7 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
 
     try
     {
-        auto argv = new char*[argc];
-        for (auto i = 0; i < argc; ++i) {
-            std::wstring widechar_string_in(argw[i]);
-            argv[i] = pal_str_narrow(widechar_string_in.c_str());
-        }
-
         auto options_result = options.parse(argc, argv);
-        delete[] argv;
 
         const auto is_help = options_result.count("help") > 0;
         const auto is_core_clr = options_result.count("coreclr-min-version") > 0
@@ -91,20 +109,20 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
 
         if (is_help)
         {
-            std::cout << options.help({ "", "Generic", "CoreClr" }) << std::endl;
+            LOG(INFO) << options.help({ "", "Generic", "CoreClr" }) << std::endl;
             return 0;
         }
 
     }
     catch (const version::Parse_error & e)
     {
-        std::wcerr << L"Invalid semver version: " << e.what() << std::endl;
+        LOG(ERROR) << L"Invalid semver version: " << e.what() << std::endl;
         return -1;
     }
     catch (const cxxopts::OptionException& e)
     {
-        std::wcerr << L"Error: Unable to parse command line argument options. " << e.what() << std::endl;
-        std::cout << options.help({ "", "Generic", "CoreClr" }) << std::endl;
+        LOG(ERROR) << L"Unable to parse command line argument options. " << e.what() << std::endl;
+        LOG(INFO) << options.help({ "", "Generic", "CoreClr" }) << std::endl;
         return -1;
     }
 
@@ -132,7 +150,7 @@ int APIENTRY wWinMain(
     }
     catch (std::exception& ex)
     {
-        std::wcerr << L"Unknown error: " << ex.what() << std::endl;
+        LOG(ERROR) << L"Unknown error: " << ex.what() << std::endl;
     }
     return -1;
 }
@@ -145,7 +163,7 @@ int PALAPI wmain(const int argc, wchar_t *argv[])
     }
     catch (std::exception& ex)
     {
-        std::wcerr << L"Unknown error: " << ex.what() << std::endl;
+        LOG(ERROR) << L"Unknown error: " << ex.what() << std::endl;
     }
     return -1;
 }

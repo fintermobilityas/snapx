@@ -1,3 +1,6 @@
 [submodule "deps/ilrepack"]
 	path = deps/ilrepack
 	url = https://github.com/peters/il-repack.git
+[submodule "src/Snap.CoreRun/vendor/easyloggingpp"]
+	path = src/Snap.CoreRun/vendor/easyloggingpp
+	url = https://github.com/zuhd-org/easyloggingpp.git

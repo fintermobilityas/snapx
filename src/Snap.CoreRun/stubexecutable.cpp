@@ -1,6 +1,5 @@
 #include "stubexecutable.hpp"
 #include "vendor/semver/semver200.h"
-#include <iostream>
 
 using std::wstring;
 
@@ -13,19 +12,21 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
     auto app_name(find_own_executable_name());
     if (app_name.empty())
     {
+        LOG(ERROR) << "Stubexecutable: Unable to determine own executable name." << std::endl;
         return -1;
     }
 
     auto working_dir(find_latest_app_dir());
     if (working_dir.empty())
     {
+        LOG(ERROR) << "Stubexecutable: Unable to determine application working directory." << std::endl;
         return -1;
     }
 
-    const auto full_path(working_dir + PAL_DIRECTORY_SEPARATOR_STR + app_name);
+    const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_STR + app_name);
 
     std::wstring cmd_line(L"\"");
-    cmd_line += full_path;
+    cmd_line += executable_full_path;
     cmd_line += L"\" ";
 
     for (auto const& argument : arguments)
@@ -43,13 +44,32 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
     si.cb = sizeof si;
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.wShowWindow = cmd_show;
-    if (!CreateProcess(nullptr, lp_command_line,
+
+    const auto create_process_result = CreateProcess(nullptr, lp_command_line,
         nullptr, nullptr, true,
-        0, nullptr, lp_current_directory, &si, &pi)) {
+        0, nullptr, lp_current_directory, &si, &pi);
+
+    if (!create_process_result) {
+
+        LOG(ERROR) << "Stubexecutable: Unable to create process. " << 
+            "Error code: " << create_process_result << ". " <<
+            "Executable: " << executable_full_path << ". " <<
+            "Cmdline: " << working_dir << ". " <<
+            "Current directory: " << lp_current_directory << ". " <<
+            "Cmdshow: " << cmd_show << ". " <<
+            std::endl;
+
         delete[] lp_command_line;
         delete[] lp_current_directory;
         return -1;
     }
+
+    LOG(INFO) << "Stubexecutable: Successfully created process. " << 
+            "Executable: " << executable_full_path << ". " <<
+            "Cmdline: " << cmd_line << ". " <<
+            "Current directory: " << working_dir << ". " <<
+            "Cmdshow: " << cmd_show << ". " <<
+            std::endl;
 
     delete[] lp_command_line;
     delete[] lp_current_directory;
@@ -135,7 +155,7 @@ std::wstring snap::stubexecutable::find_latest_app_dir()
         }
         catch (const version::Parse_error& e)
         {
-            std::wcerr << L"Error - Unable to parse app version. Why: " << e.what() << ". Path: " << directory << std::endl;
+            LOG(WARNING) << L"Stubexecutable: Unable to parse app version. Why: " << e.what() << ". Path: " << directory << std::endl;
             continue;
         }
 

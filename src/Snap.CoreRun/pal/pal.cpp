@@ -3,26 +3,33 @@
 #if PLATFORM_WINDOWS
 #include <Shlwapi.h> // PathIsDirectory, PathFileExists etc.
 #include <PathCch.h> // PathCchCombine etc.
+#include <strsafe.h> // StringCchLengthA
 #endif
 
-#include <vector>
-#include <regex>
-#include <codecvt>
-#include <string>
+#if PLATFORM_LINUX
+#include <sys/stat.h> // stat
+#include <sys/types.h> // O_RDONLY
+#include <unistd.h> // getcwd
+#include <fcntl.h> // open
+#include <dirent.h> // opendir
+#include <libgen.h> // dirname
+#include <dlfcn.h> // dlopen
+#include <cassert> // assert
 
-/*++
-Function:
-PAL_IsDebuggerPresent
-Abstract:
-This function should be used to determine if a debugger is attached to the process.
---*/
+// GLOBALS
+
+static const char* symlink_entrypoint_executable = "/proc/self/exe";
+#endif
+
+#include <regex>
 
 // - Generic
-PALEXPORT BOOL PALAPI pal_isdebuggerpresent()
+BOOL pal_isdebuggerpresent()
 {
 #if PLATFORM_WINDOWS
-    return IsDebuggerPresent();
-#elif defined(__linux__)
+    return ::IsDebuggerPresent() ? TRUE : FALSE;
+#elif PLATFORM_LINUX
+    // https://github.com/dotnet/coreclr/blob/4a6753dcacf44df6a8e91b91029e4b7a4f12d917/src/pal/src/init/pal.cpp#L821
     BOOL debugger_present = FALSE;
     char buf[2048];
 
@@ -49,152 +56,221 @@ PALEXPORT BOOL PALAPI pal_isdebuggerpresent()
     close(status_fd);
 
     return debugger_present;
-#elif defined(__APPLE__)
-    struct kinfo_proc info = {};
-    size_t size = sizeof(info);
-    int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
-    int ret = sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
-
-    if (ret == 0)
-        return ((info.kp_proc.p_flag & P_TRACED) != 0);
-
+#endif
     return FALSE;
-#elif defined(__NetBSD__)
-    int traced;
-    kvm_t *kd;
-    int cnt;
+}
 
-    struct kinfo_proc *info;
-
-    kd = kvm_open(NULL, NULL, NULL, KVM_NO_FILES, "kvm_open");
-    if (kd == NULL)
-        return FALSE;
-
-    info = kvm_getprocs(kd, KERN_PROC_PID, getpid(), &cnt);
-    if (info == NULL || cnt < 1)
+BOOL pal_load_library(const char * name_in, BOOL pinning_required, void** instance_out)
+{
+    if (name_in == nullptr)
     {
-        kvm_close(kd);
         return FALSE;
     }
 
-    traced = info->kp_proc.p_slflag & PSL_TRACED;
-    kvm_close(kd);
+#if PLATFORM_WINDOWS
+    pal_utf16_string name_in_utf16_string(name_in);
 
-    if (traced != 0)
-        return TRUE;
-    else
+    auto h_module = LoadLibraryEx(name_in_utf16_string.data(), nullptr, 0);
+    if (!h_module)
+    {
         return FALSE;
-#else
-    return FALSE;
+    }
+
+    if (pinning_required)
+    {
+        HMODULE dummy_module;
+        if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, name_in_utf16_string.data(), &dummy_module)) {
+            pal_free_library(h_module);
+            return FALSE;
+        }
+    }
+
+    *instance_out = static_cast<void*>(h_module);
+
+    return TRUE;
+
+#elif PLATFORM_LINUX
+
+    auto instance = dlopen(name_in, RTLD_NOW | RTLD_LOCAL);
+    if (!instance)
+    {
+        return FALSE;
+    }
+
+    *instance_out = instance;
+    return TRUE;
 #endif
+    return FALSE;
+}
+
+BOOL pal_free_library(void* instance_in)
+{
+    if (instance_in == nullptr)
+    {
+        return FALSE;
+    }
+#if PLATFORM_WINDOWS
+    auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
+    if (!free_library_result)
+    {
+        LOG(WARNING) << "FreeLibrary failed. result: " << free_library_result;
+    }
+    return TRUE;
+#elif PLATFORM_LINUX
+    auto dlclose_result = dlclose(instance_in);
+    if (dlclose_result != 0)
+    {
+        LOG(WARNING) << "dlclose failed. result: " << dlclose_result;
+    }
+    return TRUE;
+#endif
+    return FALSE;
+}
+
+BOOL pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out)
+{
+    if (instance_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS
+
+    auto h_module = static_cast<HMODULE>(instance_in);
+    auto h_module_ptr_out = ::GetProcAddress(h_module, name_in);
+    if (h_module_ptr_out == nullptr)
+    {
+        return FALSE;
+    }
+
+    *ptr_out = reinterpret_cast<void*>(h_module_ptr_out);
+    return TRUE;
+#elif PLATFORM_LINUX
+    auto dlsym_ptr_out = dlsym(instance_in, name_in);
+    if (dlerror() != nullptr)
+    {
+        return FALSE;
+    }
+
+    *ptr_out = dlsym_ptr_out;
+
+    return TRUE;
+#endif
+
+    return 0;
 }
 
 // - Environment
-PALEXPORT BOOL PALAPI pal_env_get_variable(const wchar_t * environment_variable_in, wchar_t ** environment_variable_value_out)
+BOOL pal_env_get_variable(const char * environment_variable_in, char ** environment_variable_value_out)
 {
+    if (environment_variable_in == nullptr)
+    {
+        return FALSE;
+    }
+
 #if PLATFORM_WINDOWS
+    pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
+
     wchar_t* buffer = nullptr;
     size_t buffer_len = 0;
-    const auto error = _wdupenv_s(&buffer, &buffer_len, environment_variable_in);
+    const auto error = _wdupenv_s(&buffer, &buffer_len, environment_variable_in_utf16_string.data());
     if (error || buffer_len <= 0)
     {
         return FALSE;
     }
 
-    *environment_variable_value_out = new wchar_t[buffer_len];
-    wcscpy_s(*environment_variable_value_out, buffer_len, buffer);
+    *environment_variable_value_out = pal_utf8_string(buffer).dup();
+    delete buffer;
 
     return TRUE;
 #else
-    const auto environment_variable_in_s = pal_str_narrow(environment_variable_in);
-    const auto environment_variable_value_out_s = std::getenv(environment_variable_in_s);
-
-    delete environment_variable_in_s;
-
-    if (environment_variable_value_out_s == nullptr)
+    auto value = std::getenv(environment_variable_in);
+    if (value == nullptr)
     {
         return FALSE;
     }
 
-    const auto environment_variable_value_out_w = pal_str_widen(environment_variable_value_out_s);
-    const auto environment_variable_value_out_w_len = wcslen(environment_variable_value_out_w) + 1;
-    *environment_variable_value_out = new wchar_t[environment_variable_value_out_w_len];
-    wcscpy_s(environment_variable_value_out_w, environment_variable_value_out_w_len, environment_variable_value_out_w);
-
+    *environment_variable_value_out = std::getenv(environment_variable_in);
     return TRUE;
 #endif
 }
 
-PALEXPORT BOOL PALAPI pal_env_get_variable_bool(const wchar_t * environment_variable_in, BOOL* env_value_bool_out)
+BOOL pal_env_get_variable_bool(const char * environment_variable_in, BOOL* env_value_bool_out)
 {
-    wchar_t* environment_variable_value_out = nullptr;
+    char* environment_variable_value_out = nullptr;
     if (!pal_env_get_variable(environment_variable_in, &environment_variable_value_out))
     {
         return FALSE;
     }
 
-    *env_value_bool_out = std::wcscmp(environment_variable_value_out, L"1") == 0
-        || _wcsicmp(environment_variable_value_out, L"true") == 0 ?
-        TRUE : FALSE;
+    *env_value_bool_out = pal_str_iequals(environment_variable_value_out, "1") == 0
+        || pal_str_iequals(environment_variable_value_out, "true") == 0 ? TRUE : FALSE;
+
+    delete environment_variable_value_out;
 
     return TRUE;
 }
 
-PALEXPORT BOOL PALAPI pal_env_expand_str(const wchar_t * environment_in, wchar_t ** environment_out)
+BOOL pal_env_expand_str(const char * environment_in, char ** environment_out)
 {
-    std::wstring environment_in_str(environment_in);
-
-#if PLATFORM_WINDOWS
-    static std::wregex expression(LR"(%([0-9A-Za-z\\/]*)%)", std::regex_constants::icase);
-#else
-    static std::wregex expression(LR"(\$\{([^}]+)\})", std::regex_constants::icase);
-#endif
-
-    auto replacements = 0;
-    std::wsmatch match;
-    while (std::regex_search(environment_in_str, match, expression)) {
-        wchar_t* environment_variable_value = nullptr;
-#if PLATFORM_WINDOWS
-        const auto text = match[1].str();
-#else
-        const auto text = match[1].str();
-#endif
-
-        if (!pal_env_get_variable(text.c_str(), &environment_variable_value))
-        {
-            continue;
-        }
-
-        const std::wstring environment_variable_value_wstring(environment_variable_value);
-        delete environment_variable_value;
-
-        environment_in_str.replace(match[0].first, match[0].second, environment_variable_value_wstring);
-
-        replacements++;
-    }
-
-    const auto environment_in_str_len = environment_in_str.size() + 1;
-    *environment_out = new wchar_t[environment_in_str_len];
-    wcscpy_s(*environment_out, environment_in_str_len, environment_in_str.c_str());
-
-    return replacements > 0 ? TRUE : FALSE;
-}
-
-// - Filesystem
-PALEXPORT BOOL PALAPI pal_fs_get_directory_name_full_path(const wchar_t* path_in, wchar_t** path_out)
-{
-#if PLATFORM_WINDOWS
-    if (path_in == nullptr)
+    if (environment_in == nullptr)
     {
         return FALSE;
     }
 
-    wchar_t path_in_without_filespec[PAL_MAX_PATH];
-    wcscpy_s(path_in_without_filespec, PAL_MAX_PATH, path_in);
+    std::string environment_in_str(environment_in);
 
-    if (PathIsDirectory(path_in))
+#if PLATFORM_WINDOWS
+    static std::regex expression(R"(%([0-9A-Za-z\\/\(\)]*)%)", std::regex_constants::icase);
+#else
+    static std::regex expression(R"(\$\{([^}]+)\})", std::regex_constants::icase);
+#endif
+
+    auto replacements = 0;
+    std::smatch match;
+    while (std::regex_search(environment_in_str, match, expression)) {
+        const auto match_str = match[1].str();
+        char* environment_variable_value = nullptr;
+        if (!pal_env_get_variable(match_str.c_str(), &environment_variable_value))
+        {
+            continue;
+        }
+
+        const std::string environment_variable_value_s(environment_variable_value);
+        delete environment_variable_value;
+
+        environment_in_str.replace(match[0].first, match[0].second, environment_variable_value_s);
+
+        replacements++;
+    }
+
+    if (replacements <= 0)
     {
-        if (S_OK != PathCchCanonicalize(path_in_without_filespec, PAL_MAX_PATH, path_in))
+        return FALSE;
+    }
+
+    *environment_out = strdup(environment_in_str.c_str());
+
+    return TRUE;
+}
+
+// - Filesystem
+BOOL pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out)
+{
+    if (path_in == nullptr)
+    {
+        return FALSE;
+    }
+#if PLATFORM_WINDOWS
+
+    pal_utf16_string path_in_utf16_string(path_in);
+
+    wchar_t path_in_without_filespec[PAL_MAX_PATH];
+    wcscpy_s(path_in_without_filespec, PAL_MAX_PATH, path_in_utf16_string.data());
+
+    if (PathIsDirectory(path_in_utf16_string.data()))
+    {
+        if (S_OK != PathCchCanonicalize(path_in_without_filespec, PAL_MAX_PATH, path_in_utf16_string.data()))
         {
             return FALSE;
         }
@@ -209,397 +285,582 @@ PALEXPORT BOOL PALAPI pal_fs_get_directory_name_full_path(const wchar_t* path_in
         return FALSE;
     }
 
-    const auto path_out_len = wcslen(path_in_without_filespec) + 1;
-    *path_out = new wchar_t[path_out_len];
-    wcscpy_s(*path_out, path_out_len, path_in_without_filespec);
+    *path_out = pal_utf8_string(path_in_without_filespec).dup();
 
     return TRUE;
 #else
+    auto path_in_cpy = strdup(path_in);
+    char* dir = dirname(path_in_cpy);
+    if (dir)
+    {
+        //  Both dirname() and basename() return pointers to null-terminated
+        // strings.  (Do not pass these pointers to free(3).)
+        *path_out = strdup(dir);
+        return TRUE;
+    }
+    delete path_in_cpy;
     return FALSE;
 #endif
 }
 
-PALEXPORT BOOL PALAPI pal_fs_get_directory_name(const wchar_t * path_in, wchar_t ** path_out)
+BOOL pal_fs_get_directory_name(const char * path_in, char ** path_out)
 {
-    if (!pal_fs_get_directory_name_full_path(path_in, path_out)) {
-        return FALSE;
-    }
-
-    const auto directory_name = wcsrchr(*path_out, PAL_DIRECTORY_SEPARATOR_C);
-
-    const auto path_out_len = wcslen(directory_name) + 1;
-    *path_out = new wchar_t[path_out_len];
-    wcsncpy_s(*path_out, path_out_len - 1, &directory_name[1], path_out_len);
-
-    return TRUE;
-}
-
-PALEXPORT BOOL PALAPI pal_fs_path_combine(const wchar_t * path_in_lhs, const wchar_t * path_in_rhs, wchar_t ** path_out)
-{
-#if PLATFORM_WINDOWS
-    if (path_in_lhs == nullptr
-        || path_in_rhs == nullptr)
-    {
-        return FALSE;
-    }
-
-    wchar_t path_combined[PAL_MAX_PATH];
-
-    if (S_OK != PathCchCombine(path_combined, PAL_MAX_PATH, path_in_lhs, path_in_rhs))
-    {
-        return FALSE;
-    }
-
-    const auto path_combined_len = wcslen(path_combined) + 1;
-    *path_out = new wchar_t[path_combined_len];
-    wcscpy_s(*path_out, path_combined_len, path_combined);
-
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-PALEXPORT BOOL PALAPI pal_fs_list_directories(const wchar_t * path_in, wchar_t *** paths_out, size_t* paths_out_len)
-{
-#if PLATFORM_WINDOWS
-    wchar_t* path_root = nullptr;
-    if (!pal_fs_get_directory_name_full_path(path_in, &path_root))
-    {
-        return FALSE;
-    }
-
-    const auto path_root_search_pattern_len = wcslen(path_root) + 1;
-    const auto path_root_search_pattern = new wchar_t[path_root_search_pattern_len];
-    wcscpy_s(path_root_search_pattern, path_root_search_pattern_len, path_root);
-
-    if (!pal_str_endswithi(path_root_search_pattern, PAL_DIRECTORY_SEPARATOR_STR))
-    {
-        PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, PAL_DIRECTORY_SEPARATOR_STR);
-    }
-
-    PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, L"*");
-
-    WIN32_FIND_DATA file_info;
-    const auto h_file = FindFirstFile(path_root_search_pattern, &file_info);
-    if (h_file == INVALID_HANDLE_VALUE) {
-        return FALSE;
-    }
-
-    std::vector<wchar_t*> directories;
-
-    do
-    {
-        if (!(file_info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-            continue;
-        }
-
-        if (0 == _wcsicmp(file_info.cFileName, L".")
-            || 0 == _wcsicmp(file_info.cFileName, L".."))
-        {
-            continue;
-        }
-
-        auto path_root_this_directory = new wchar_t[PAL_MAX_PATH];
-        if (!pal_fs_path_combine(path_root, file_info.cFileName, &path_root_this_directory))
-        {
-            delete[] path_root_this_directory;
-            continue;
-        }
-
-        directories.emplace_back(path_root_this_directory);
-
-    } while (FindNextFile(h_file, &file_info));
-
-    *paths_out_len = directories.size();
-
-    const auto paths = new wchar_t*[*paths_out_len];
-
-    for (auto i = 0u; i < *paths_out_len; i++)
-    {
-        const auto directory = directories[i];
-        paths[i] = directory;
-    }
-
-    *paths_out = paths;
-
-    ::FindClose(h_file);
-
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-PALEXPORT BOOL PALAPI pal_fs_list_files(const wchar_t * path_in, const pal_list_files_filter_callback_t filter_callback_in,
-    const wchar_t* extension_filter_in, wchar_t *** files_out, size_t * files_out_len)
-{
-#if PLATFORM_WINDOWS
     if (path_in == nullptr)
     {
-        return false;
+        return FALSE;
     }
 
-    wchar_t* path_root = nullptr;
-    if (!pal_fs_get_directory_name_full_path(path_in, &path_root))
+    std::string path_in_s(path_in);
+
+    const auto directory_name_start_pos = path_in_s.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+    if (directory_name_start_pos == std::string::npos)
     {
         return FALSE;
     }
 
-    const auto path_root_search_pattern_len = wcslen(path_root) + 1;
-    const auto path_root_search_pattern = new wchar_t[path_root_search_pattern_len];
-    wcscpy_s(path_root_search_pattern, path_root_search_pattern_len, path_root);
+    const auto directory_name = path_in_s.substr(directory_name_start_pos + 1);
 
-    if (!pal_str_endswithi(path_root_search_pattern, PAL_DIRECTORY_SEPARATOR_STR))
-    {
-        PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, PAL_DIRECTORY_SEPARATOR_STR);
-    }
-
-    PathCchAppend(path_root_search_pattern, PAL_MAX_PATH, extension_filter_in != nullptr ? extension_filter_in : L"*");
-
-    WIN32_FIND_DATA file;
-    const auto h_file = FindFirstFile(path_root_search_pattern, &file);
-    if (h_file == INVALID_HANDLE_VALUE) {
-        return FALSE;
-    }
-
-    std::vector<wchar_t*> filenames;
-
-    do
-    {
-        if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            continue;
-        }
-
-        if (0 == _wcsicmp(file.cFileName, L".")
-            || 0 == _wcsicmp(file.cFileName, L".."))
-        {
-            continue;
-        }
-
-        auto path_root_this_directory = new wchar_t[PAL_MAX_PATH];
-        if (!pal_fs_path_combine(path_root, file.cFileName, &path_root_this_directory))
-        {
-            delete[] path_root_this_directory;
-            continue;
-        }
-
-        const auto filter_callback_fn = filter_callback_in;
-        if (filter_callback_fn != nullptr
-            && !filter_callback_fn(path_root_this_directory))
-        {
-            delete[] path_root_this_directory;
-            continue;
-        }
-
-        filenames.emplace_back(path_root_this_directory);
-
-    } while (FindNextFile(h_file, &file));
-
-    *files_out_len = filenames.size();
-
-    const auto files_array = new wchar_t*[*files_out_len];
-
-    for (auto i = 0u; i < *files_out_len; i++)
-    {
-        const auto filename = filenames[i];
-        files_array[i] = filename;
-    }
-
-    *files_out = files_array;
-
-    ::FindClose(h_file);
+    *path_out = strdup(directory_name.c_str());
 
     return TRUE;
-#else
-    return FALSE;
-#endif
 }
 
-PALEXPORT BOOL PALAPI pal_fs_file_exists(const wchar_t * file_path_in, BOOL *file_exists_bool_out)
+BOOL pal_fs_path_combine(const char * path1, const char * path2, char ** path_out)
 {
+    if (path1 == nullptr
+        || path2 == nullptr)
+    {
+        return FALSE;
+    }
 #if PLATFORM_WINDOWS
+
+    pal_utf16_string path_combined_utf16_string(PAL_MAX_PATH);
+    pal_utf16_string path_in_lhs_utf16_string(path1);
+    pal_utf16_string path_in_rhs_utf16_string(path2);
+
+    if (S_OK != PathCchCombine(path_combined_utf16_string.data(), PAL_MAX_PATH,
+        path_in_lhs_utf16_string.data(), path_in_rhs_utf16_string.data()))
+    {
+        return FALSE;
+    }
+
+    *path_out = pal_utf8_string(path_combined_utf16_string.data()).dup();
+
+    return TRUE;
+#elif PLATFORM_LINUX
+    /*
+
+    Adapted from: https://github.com/qpalzmqaz123/path_combine/blob/master/path_combine.c
+
+    typedef struct {
+        const char *path1;
+        const char *path2;
+        const char *combined;
+    } test_t;
+
+    test_t test_data[] = {
+        { "/a/b/c", "/c/d/e", "/c/d/e" },
+        { "/a/b/c", "d", "/a/b/c/d" },
+        { "/foo/bar", "./baz", "/foo/bar/baz" },
+        { "/foo/bar", "./baz/", "/foo/bar/baz" },
+        { "a", ".",  "a"},
+        { "a.", ".",  "a."},
+        { "a./b.", ".",  "a./b."},
+        { "a/b", "..",  "a"},
+        { "a", "..a",  "a/..a"},
+        { "a", "../a",  NULL},
+        { "a", "c../a",  "a/c../a"},
+        { "a/b", "../",  "a"},
+        { "a/b", ".././c/d/../../.",  "a"},
+        { NULL, NULL, NULL }
+    };
+
+    */
+
+    char buffer[PAL_MAX_PATH];
+
+    std::function<int(char*)> path_combine_recursive;
+    path_combine_recursive = [path_combine_recursive](char *path)
+    {
+        char *str;
+
+        if (0 == strlen(path)) {
+            return 0;
+        }
+
+        // Resolve parent dir
+        while (true) {
+            str = strstr(path, "/../");
+            if (nullptr == str) {
+                break;
+            }
+
+            *str = 0;
+            if (nullptr == strchr(path, '/')) {
+                return 1;
+            }
+
+            const auto parent_dir = strrchr(path, '/') + 1;
+            const auto current_dir = str + 4;
+
+            // Replace parent dir
+            memcpy(parent_dir, current_dir, strlen(current_dir) + 1);
+        }
+
+        // Resolve current dir
+        while (true) {
+            str = strstr(path, "/./");
+            if (nullptr == str) {
+                break;
+            }
+
+            memcpy(str + 1, str + 3, strlen(str + 3) + 1);
+        }
+
+        // Remove tail '/' or '/.' 
+        const auto tail = path + strlen(path) - 1;
+        if ('/' == *tail) {
+            *tail = 0;
+        }
+        else if (0 == strcmp(tail - 1, "/.")) {
+            *(tail - 1) = 0;
+        }
+        else if (0 == strcmp(tail - 2, "/..")) {
+            strcat(path, "/");
+            path_combine_recursive(path);
+        }
+
+        return 0;
+    };
+
+    const auto path_combine = [path_combine_recursive, path_out](char* buffer)
+    {
+        if (0 == path_combine_recursive(buffer)) {
+            *path_out = strdup(buffer);
+            return TRUE;
+        }
+        return FALSE;
+    };
+
+    if (nullptr == path1 && nullptr == path2) {
+        return FALSE;
+    }
+    if (nullptr == path1) {
+        strcpy(buffer, path2);
+        return path_combine(buffer);
+    }
+    if (nullptr == path2) {
+        strcpy(buffer, path1);
+        return path_combine(buffer);
+    }
+
+    if ('/' == path2[0]) {
+        strcpy(buffer, path2);
+        return path_combine(buffer);
+    }
+
+    strcpy(buffer, path1);
+
+    if ('/' != path1[strlen(path1) - 1]) {
+        strcat(buffer, "/");
+    }
+
+    strcat(buffer, path2);
+    return path_combine(buffer);
+#endif
+    return FALSE;
+}
+
+BOOL pal_fs_file_exists(const char * file_path_in, BOOL *file_exists_bool_out)
+{
     if (file_path_in == nullptr)
     {
         return FALSE;
     }
 
-    *file_exists_bool_out = PathFileExists(file_path_in);
-
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-PALEXPORT BOOL PALAPI pal_fs_get_current_directory(wchar_t ** current_directory_out)
-{
 #if PLATFORM_WINDOWS
-    if (current_directory_out == nullptr)
-    {
-        return FALSE;
-    }
-
-    const auto h_module = GetModuleHandle(nullptr);
-    if (h_module == nullptr)
-    {
-        return FALSE;
-    }
-
-    const auto filename = new wchar_t[PAL_MAX_PATH];
-    if (0 == GetModuleFileName(h_module, filename, PAL_MAX_PATH))
-    {
-        return FALSE;
-    }
-
-    if (!pal_fs_get_directory_name_full_path(filename, current_directory_out))
-    {
-        delete[] filename;
-        return FALSE;
-    }
-
-    delete[] filename;
-
+    *file_exists_bool_out = PathFileExists(pal_utf16_string(file_path_in).data());
     return TRUE;
-#else
-    return FALSE;
+#elif PLATFORM_LINUX
+    *file_exists_bool_out = access(file_path_in, F_OK) != -1;
+    return TRUE;
 #endif
+    return FALSE;
 }
 
-PALEXPORT BOOL PALAPI pal_fs_get_own_executable_name(wchar_t ** own_executable_name_out)
+BOOL pal_fs_list_impl(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+    const char* filter_extension_in, char *** paths_out, size_t * paths_out_len, const int type)
 {
+    if (path_in == nullptr)
+    {
+        return false;
+    }
+
+    std::vector<char*> paths;
+    auto paths_success = FALSE;
+
 #if PLATFORM_WINDOWS
 
-    const auto current_directory = new wchar_t[PAL_MAX_PATH];
+    const pal_utf16_string extension_filter_in_utf16_string(
+        filter_extension_in != nullptr ? filter_extension_in : "*");
 
-    GetModuleFileName(GetModuleHandle(nullptr), current_directory, PAL_MAX_PATH);
-    const auto last_slash = wcsrchr(current_directory, PAL_DIRECTORY_SEPARATOR_C);
+    pal_utf16_string path_root_utf16_string(path_in);
+    if (!path_root_utf16_string.ends_with(PAL_DIRECTORY_SEPARATOR_WIDE_STR))
+    {
+        path_root_utf16_string.append(PAL_DIRECTORY_SEPARATOR_WIDE_STR);
+    }
 
-    if (!last_slash) {
-        delete[] current_directory;
+    path_root_utf16_string.append(extension_filter_in_utf16_string.str());
+
+    WIN32_FIND_DATA file;
+    const auto h_file = FindFirstFile(path_root_utf16_string.data(), &file);
+    if (h_file == INVALID_HANDLE_VALUE) {
         return FALSE;
     }
 
-    *own_executable_name_out = _wcsdup(last_slash + 1);
-    delete[] current_directory;
+    do
+    {
+        switch (type)
+        {
+        case 0:
+            if (!(file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+            {
+                continue;
+            }
+            break;
+        case 1:
+            if (file.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            {
+                continue;
+            }
+            break;
+        default:
+            continue;
+        }
+
+        auto relative_path = pal_utf8_string(file.cFileName);
+        if (pal_str_iequals(relative_path.data(), ".")
+            || pal_str_iequals(relative_path.data(), ".."))
+        {
+            continue;
+        }
+
+        char* absolute_path = nullptr;
+        if (!pal_fs_path_combine(path_in, relative_path.data(), &absolute_path))
+        {
+            delete[] absolute_path;
+            continue;
+        }
+
+        const auto filter_callback_fn = filter_callback_in;
+        if (filter_callback_fn != nullptr
+            && !filter_callback_fn(absolute_path))
+        {
+            delete[] absolute_path;
+            continue;
+        }
+
+        paths.emplace_back(absolute_path);
+
+    } while (FindNextFile(h_file, &file));
+
+    ::FindClose(h_file);
+
+    paths_success = TRUE;
+
+#elif PLATFORM_LINUX
+
+    std::string filter_extension_s(filter_extension_in == nullptr ? std::string() : filter_extension_in);
+
+    DIR* dir = opendir(path_in);
+    paths_success = dir != nullptr;
+    if (paths_success)
+    {
+        struct dirent* entry;
+        while ((entry = readdir(dir)) != nullptr)
+        {
+            std::string absolute_path_s;
+
+            switch (type)
+            {
+            case 0:
+                if (entry->d_type != DT_DIR)
+                {
+                    continue;
+                }
+
+                if (pal_str_iequals(entry->d_name, ".") ||
+                    pal_str_iequals(entry->d_name, ".."))
+                {
+                    continue;
+                }
+
+                absolute_path_s.assign(path_in);
+                absolute_path_s.append("/");
+                absolute_path_s.append(entry->d_name);
+
+                break;
+            case 1:
+                switch (entry->d_type)
+                {
+                    // Regular file
+                case DT_REG:
+                    if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
+                    {
+                        continue;
+                    }
+
+                    absolute_path_s.assign(path_in);
+                    absolute_path_s.append("/");
+                    absolute_path_s.append(entry->d_name);
+                    break;
+
+                    // Handle symlinks and file systems that do not support d_type
+                case DT_LNK:
+                case DT_UNKNOWN:
+                    if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
+                    {
+                        continue;
+                    }
+
+                    absolute_path_s.assign(path_in);
+                    absolute_path_s.append("/");
+                    absolute_path_s.append(entry->d_name);
+
+                    struct stat sb;
+                    if (stat(absolute_path_s.c_str(), &sb) == -1)
+                    {
+                        absolute_path_s.clear();
+                        continue;
+                    }
+
+                    // Must be a regular file.
+                    if (!S_ISREG(sb.st_mode))
+                    {
+                        absolute_path_s.clear();
+                        continue;
+                    }
+
+                    break;
+                }
+                break;
+            default:
+                // void
+                break;
+            }
+
+            if (absolute_path_s.empty())
+            {
+                continue;
+            }
+
+            const auto filter_callback_fn = filter_callback_in;
+            if (filter_callback_fn != nullptr
+                && !filter_callback_fn(absolute_path_s.c_str()))
+            {
+                continue;
+            }
+
+            paths.emplace_back(strdup(absolute_path_s.data()));
+        }
+
+        closedir(dir);
+    }
+#endif
+
+    if (!paths_success)
+    {
+        return FALSE;
+    }
+
+    *paths_out_len = paths.size();
+
+    const auto paths_array = new char*[*paths_out_len];
+
+    for (auto i = 0u; i < *paths_out_len; i++)
+    {
+        paths_array[i] = paths[i];
+    }
+
+    *paths_out = paths_array;
 
     return TRUE;
-#else
+}
+
+BOOL pal_fs_list_directories(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+    const char* filter_extension_in, char *** directories_out, size_t* directories_out_len)
+{
+    return pal_fs_list_impl(path_in, filter_callback_in, filter_extension_in, directories_out, directories_out_len, 0);
+}
+
+BOOL pal_fs_list_files(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+    const char* filter_extension_in, char *** files_out, size_t * files_out_len)
+{
+    return pal_fs_list_impl(path_in, filter_callback_in, filter_extension_in, files_out, files_out_len, 1);
+}
+
+BOOL pal_fs_get_cwd(char ** working_directory_out)
+{
+#if PLATFORM_WINDOWS
+    pal_utf16_string cwd_utf16_string(PAL_MAX_PATH);
+    GetModuleFileName(GetModuleHandle(nullptr), cwd_utf16_string.data(), PAL_MAX_PATH);
+
+    const auto directory_separator_pos = cwd_utf16_string.str().find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+    if (std::string::npos == directory_separator_pos) {
+        return FALSE;
+    }
+
+    const auto cwd = cwd_utf16_string.str().substr(0, directory_separator_pos);
+
+    *working_directory_out = pal_utf8_string(cwd).dup();
+
+    return TRUE;
+#elif PLATFORM_LINUX
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+    {
+        *working_directory_out = strdup(cwd);
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+BOOL pal_fs_get_own_executable_name(char ** own_executable_name_out)
+{
+#if PLATFORM_WINDOWS
+
+    pal_utf16_string pal_current_directory_utf16_string(PAL_MAX_PATH);
+    GetModuleFileName(GetModuleHandle(nullptr), pal_current_directory_utf16_string.data(), PAL_MAX_PATH);
+
+    const auto directory_separator_pos = pal_current_directory_utf16_string.str().find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+    if (std::string::npos == directory_separator_pos) {
+        return FALSE;
+    }
+
+    const auto executable_name = pal_current_directory_utf16_string.str().substr(directory_separator_pos + 1);
+
+    *own_executable_name_out = pal_utf8_string(executable_name).dup();
+
+    return TRUE;
+#elif PLATFORM_LINUX
+    char* real_path = nullptr;
+    if (pal_fs_get_absolute_path(symlink_entrypoint_executable, &real_path))
+    {
+        const auto real_path_str = std::string(real_path);
+        const auto real_path_directory_separator_pos = real_path_str.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+        if (std::string::npos == real_path_directory_separator_pos)
+        {
+            return FALSE;
+        }
+
+        const auto executable_name = real_path_str.substr(real_path_directory_separator_pos + 1);
+
+        *own_executable_name_out = strdup(executable_name.c_str());
+
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+BOOL pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
+{
+    if (path_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS
+
+    pal_utf16_string path_in_utf16_string(path_in);
+    pal_utf16_string path_absolute_out_utf16_string(PAL_MAX_PATH);
+    const auto path_absolute_out_len = GetLongPathName(path_in_utf16_string.data(),
+        path_absolute_out_utf16_string.data(), PAL_MAX_PATH);
+    if (path_absolute_out_len == 0)
+    {
+        return FALSE;
+    }
+
+    *path_absolute_out = pal_utf8_string(path_absolute_out_utf16_string.data()).dup();
+
+    return TRUE;
+#elif PLATFORM_LINUX
+    char real_path[PATH_MAX];
+    if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
+    {
+        std::string real_path_str(real_path);
+
+        // realpath should return canonicalized path without the trailing slash
+        assert(real_path_str.back() != '/');
+
+        *path_absolute_out = strdup(real_path_str.c_str());
+
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+BOOL pal_fs_directory_exists(const char * path_in, BOOL * directory_exists_out)
+{
+    if (path_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS
+    pal_utf16_string path_in_utf16_string(path_in);
+    const auto attributes = GetFileAttributes(path_in_utf16_string.data());
+    *directory_exists_out = attributes & FILE_ATTRIBUTE_DIRECTORY;
+#elif PLATFORM_LINUX
+    auto directory = opendir(path_in);
+    if (directory)
+    {
+        *directory_exists_out = TRUE;
+        closedir(directory);
+        return TRUE;
+    }
+    *directory_exists_out = FALSE;
     return FALSE;
 #endif
+    return 0;
 }
 
-// - String
-PALEXPORT void PALAPI pal_str_from_utf16_to_utf8(const wchar_t* widechar_string_in, char** multibyte_string_out)
+BOOL pal_str_endswith(const char * src, const char * str)
 {
-    if (widechar_string_in == nullptr)
-    {
-        return;
-    }
-
-    const auto widechar_string_in_len = static_cast<int>(wcslen(widechar_string_in) + 1);
-
-    const auto required_size = ::WideCharToMultiByte(CP_UTF8, 0, widechar_string_in, widechar_string_in_len,
-        nullptr, 0, nullptr, nullptr);
-
-    *multibyte_string_out = new char[required_size];
-
-    ::WideCharToMultiByte(CP_UTF8, 0, widechar_string_in, widechar_string_in_len,
-        *multibyte_string_out, required_size, nullptr, nullptr);
-}
-
-PALEXPORT void PALAPI pal_str_from_utf8_to_utf16(const char* multibyte_string_in, wchar_t** widechar_string_out)
-{
-    if (multibyte_string_in == nullptr)
-    {
-        return;
-    }
-
-    auto mbstate = std::mbstate_t();
-
-    size_t widechar_string_out_len = 0; // Including '\0' - the terminating zero
-    mbsrtowcs_s(&widechar_string_out_len, nullptr, 0, &multibyte_string_in, 0, &mbstate);
-
-    std::wstring widechar_string;
-    widechar_string.resize(widechar_string_out_len);
-
-    mbsrtowcs_s(&widechar_string_out_len,
-        widechar_string.data(),
-        widechar_string.size(), // The character count to write (excl. '\0')
-        &multibyte_string_in,
-        widechar_string.size(), // The character count to convert
-        &mbstate);
-
-    wcscpy_s(*widechar_string_out, widechar_string.size(), widechar_string.c_str());
-}
-
-PALEXPORT BOOL PALAPI pal_str_to_lower_case(const wchar_t * widechar_string_in, wchar_t ** widechar_string_out)
-{
-    if (widechar_string_in == nullptr)
-    {
-        return FALSE;
-    }
-    *widechar_string_out = _wcsdup(widechar_string_in);
-    _wcslwr_s(*widechar_string_out, wcslen(widechar_string_in));
-    return TRUE;
-}
-
-PALEXPORT BOOL PALAPI pal_str_endswith(const wchar_t * src, const wchar_t * suffix)
-{
-    if (src == nullptr || suffix == nullptr)
+    if (src == nullptr || str == nullptr)
     {
         return FALSE;
     }
 
-    const auto diff = wcslen(src) - wcslen(suffix);
-    return diff > 0 && 0 == wcscmp(&src[diff], suffix);
+    const auto diff = strlen(src) - strlen(str);
+    return diff > 0 && 0 == strcmp(&src[diff], str) ? TRUE : FALSE;
 }
 
-PALEXPORT BOOL PALAPI pal_str_endswithi(const wchar_t * src, const wchar_t * suffix)
+BOOL pal_str_startswith(const char * src, const char * str)
 {
-    if (src == nullptr || suffix == nullptr)
+    if (src == nullptr || str == nullptr)
     {
         return FALSE;
     }
 
-    const auto diff = wcslen(src) - wcslen(suffix);
-    return diff > 0 && 0 == _wcsicmp(&src[diff], suffix);
+    const auto src_len = strlen(src);
+    const auto suffix_len = strlen(str);
+    const auto starts_with = src_len < suffix_len ? false : strncmp(src, str, src_len) == 0;
+
+    return starts_with ? TRUE : FALSE;
 }
 
-PALEXPORT BOOL PALAPI pal_str_startswith(const wchar_t * src, const wchar_t * suffix)
+BOOL pal_str_iequals(const char* lhs, const char* rhs)
 {
-    if (src == nullptr || suffix == nullptr)
-    {
-        return FALSE;
-    }
+    std::string str1(lhs);
+    std::string str2(rhs);
 
-    const auto pos = wcsncmp(src, suffix, wcslen(suffix));
-    return pos == 0 ? TRUE : FALSE;
-}
+    const auto iequals = str1.size() == str2.size()
+        && std::equal(str1.begin(), str1.end(), str2.begin(), [](char & c1, char & c2) {
+        return c1 == c2 || std::toupper(c1) == std::toupper(c2);
+            });
 
-PALEXPORT BOOL PALAPI pal_str_startswithi(const wchar_t * src, const wchar_t * suffix)
-{
-    if (src == nullptr || suffix == nullptr)
-    {
-        return FALSE;
-    }
-
-    const auto pos = _wcsnicmp(src, suffix, wcslen(suffix));
-    return pos == 0 ? TRUE : FALSE;
-}
-
-PALEXPORT char* PALAPI pal_str_narrow(const wchar_t * src)
-{
-    char* narrow = nullptr;
-    pal_str_from_utf16_to_utf8(src, &narrow);
-
-    return narrow;
-}
-
-PALEXPORT wchar_t* PALAPI pal_str_widen(const char * src)
-{
-    wchar_t* widen = nullptr;
-    pal_str_from_utf8_to_utf16(src, &widen);
-
-    return widen;
+    return iequals ? TRUE : FALSE;
 }

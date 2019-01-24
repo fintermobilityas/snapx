@@ -10,15 +10,11 @@ namespace snap
     class stubexecutable
     {
     public:
-#if PLATFORM_WINDOWS
-        static int run(std::vector<std::wstring> arguments, const int cmd_show);
-#else
-        static int run(std::vector<std::wstring> arguments);
-#endif
+        static int run(std::vector<std::string> arguments, const int cmd_show);
     private:
 
-        static std::wstring find_root_app_dir();
-        static std::wstring find_own_executable_name();
-        static std::wstring find_latest_app_dir();
+        static std::string find_root_app_dir();
+        static std::string find_own_executable_name();
+        static std::string find_latest_app_dir();
     };
 }

@@ -1,13 +1,9 @@
 #include "stubexecutable.hpp"
 #include "vendor/semver/semver200.h"
 
-using std::wstring;
+using std::string;
 
-#if PLATFORM_WINDOWS
-int snap::stubexecutable::run(std::vector<std::wstring> arguments, const int cmd_show)
-#else
-int snap::stubexecutable::run(std::vector<std::wstring> arguments)
-#endif
+int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
 {
     auto app_name(find_own_executable_name());
     if (app_name.empty())
@@ -23,21 +19,21 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
         return -1;
     }
 
-    const auto executable_full_path(working_dir + PAL_CORECLR_TPA_SEPARATOR_WIDE_STR + app_name);
+    const auto executable_full_path(working_dir + PAL_CORECLR_TPA_SEPARATOR_STR + app_name);
 
-    std::wstring cmd_line(L"\"");
+    std::string cmd_line("\"");
     cmd_line += executable_full_path;
-    cmd_line += L"\" ";
+    cmd_line += "\" ";
 
     for (auto const& argument : arguments)
     {
         cmd_line += argument;
     }
 
-    const auto lp_command_line = _wcsdup(cmd_line.c_str());
-    const auto lp_current_directory = _wcsdup(working_dir.c_str());
-
 #if PLATFORM_WINDOWS
+    pal_utf16_string lp_command_line_utf16_string(cmd_line);
+    pal_utf16_string lp_current_directory_utf16_string(working_dir);
+
     STARTUPINFO si = { 0 };
     PROCESS_INFORMATION pi = { nullptr };
 
@@ -45,9 +41,9 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.wShowWindow = cmd_show;
 
-    const auto create_process_result = CreateProcess(nullptr, lp_command_line,
+    const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
         nullptr, nullptr, true,
-        0, nullptr, lp_current_directory, &si, &pi);
+        0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
 
     if (!create_process_result) {
 
@@ -55,12 +51,10 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
             "Error code: " << create_process_result << ". " <<
             "Executable: " << executable_full_path << ". " <<
             "Cmdline: " << working_dir << ". " <<
-            "Current directory: " << lp_current_directory << ". " <<
+            "Current directory: " << lp_current_directory_utf16_string << ". " <<
             "Cmdshow: " << cmd_show << ". " <<
             std::endl;
 
-        delete[] lp_command_line;
-        delete[] lp_current_directory;
         return -1;
     }
 
@@ -71,9 +65,6 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
             "Cmdshow: " << cmd_show << ". " <<
             std::endl;
 
-    delete[] lp_command_line;
-    delete[] lp_current_directory;
-
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);
 #else
@@ -83,69 +74,70 @@ int snap::stubexecutable::run(std::vector<std::wstring> arguments)
     return 0;
 }
 
-std::wstring snap::stubexecutable::find_root_app_dir()
+std::string snap::stubexecutable::find_root_app_dir()
 {
-    wchar_t* current_directory_out = nullptr;
-    if (!pal_fs_get_current_directory(&current_directory_out))
+    char* current_directory_out = nullptr;
+    if (!pal_fs_get_cwd(&current_directory_out))
     {
-        return std::wstring();
+        return std::string();
     }
 
-    return std::wstring(current_directory_out);
+    return std::string(current_directory_out);
 }
 
-std::wstring snap::stubexecutable::find_own_executable_name()
+std::string snap::stubexecutable::find_own_executable_name()
 {
-    wchar_t* own_executable_name_out = nullptr;
+    char* own_executable_name_out = nullptr;
     if (!pal_fs_get_own_executable_name(&own_executable_name_out))
     {
-        return std::wstring();
+        return std::string();
     }
 
-    return std::wstring(own_executable_name_out);
+    return std::string(own_executable_name_out);
 }
 
-std::wstring snap::stubexecutable::find_latest_app_dir()
+std::string snap::stubexecutable::find_latest_app_dir()
 {
     auto root_app_directory(find_root_app_dir());
     if (root_app_directory.empty())
     {
-        return std::wstring();
+        return std::string();
     }
 
-    wchar_t** paths_out = nullptr;
+    char** paths_out = nullptr;
     size_t paths_out_len = 0;
-    if (!pal_fs_list_directories(root_app_directory.c_str(), &paths_out, &paths_out_len))
+    if (!pal_fs_list_directories(root_app_directory.c_str(), nullptr, 
+        nullptr, &paths_out, &paths_out_len))
     {
-        return std::wstring();
+        return std::string();
     }
 
-    std::vector<wchar_t*> paths(paths_out, paths_out + paths_out_len);
+    std::vector<char*> paths(paths_out, paths_out + paths_out_len);
     delete[] paths_out;
 
     if (paths.empty())
     {
-        return std::wstring();
+        return std::string();
     }
 
     version::Semver200_version acc("0.0.0");
-    std::wstring acc_s;
+    std::string acc_s;
 
     for (const auto &directory : paths)
     {
-        wchar_t* directory_name = nullptr;
+        char* directory_name = nullptr;
         if (!pal_fs_get_directory_name(directory, &directory_name))
         {
             continue;
         }
 
-        if (!pal_str_startswith(directory_name, L"app-"))
+        if (!pal_str_startswith(directory_name, "app-"))
         {
             continue;
         }
 
-        auto current_app_ver_w = std::wstring(directory_name).substr(4); // Skip 'app-'
-        std::string current_app_ver_s(pal_str_narrow(current_app_ver_w.c_str()));
+        auto current_app_ver = std::string(directory_name).substr(4); // Skip 'app-'
+        std::string current_app_ver_s(current_app_ver.c_str());
 
         version::Semver200_version current_app_semver;
 
@@ -155,7 +147,7 @@ std::wstring snap::stubexecutable::find_latest_app_dir()
         }
         catch (const version::Parse_error& e)
         {
-            LOG(WARNING) << L"Stubexecutable: Unable to parse app version. Why: " << e.what() << ". Path: " << directory << std::endl;
+            LOG(WARNING) << "Stubexecutable: Unable to parse app version. Why: " << e.what() << ". Path: " << directory << std::endl;
             continue;
         }
 
@@ -164,12 +156,12 @@ std::wstring snap::stubexecutable::find_latest_app_dir()
         }
 
         acc = current_app_semver;
-        acc_s = current_app_ver_w;
+        acc_s = current_app_ver;
     }
 
     root_app_directory.assign(find_root_app_dir());
-    std::wstringstream ret;
-    ret << root_app_directory << PAL_DIRECTORY_SEPARATOR_STR << L"app-" << acc_s;
+    std::stringstream ret;
+    ret << root_app_directory << PAL_DIRECTORY_SEPARATOR_STR << "app-" << acc_s;
 
     return ret.str();
 }

@@ -89,6 +89,11 @@ namespace version {
 		return ss.str();
 	}
 
+	template<typename Parser, typename Comparator>
+	inline const bool Basic_version<Parser, Comparator>::empty() const
+	{
+		return ver_.major == 0 && ver_.minor == 0 && ver_.patch == 0;
+	}
 
 	template<typename Parser, typename Comparator>
 	bool operator<(const Basic_version<Parser, Comparator>& l,

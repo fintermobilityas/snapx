@@ -2,51 +2,54 @@
 #include "vendor/semver/semver200.h"
 
 #include <algorithm>
+#include <cassert>
 
 using snap::core_clr_directory;
 using snap::core_clr_instance;
 using snap::core_clr_instance_t;
 
 #if PLATFORM_WINDOWS
-static const wchar_t* core_clr_dll = L"coreclr.dll";
-static const wchar_t* core_clr_program_files_directory_path = L"%programfiles%\\dotnet\\shared\\microsoft.netcore.app";
+static const char* core_clr_dll = "coreclr.dll";
+static const char* core_clr_program_files_directory_path = R"(%ProgramW6432%\dotnet\shared\microsoft.netcore.app)";
 #elif PLATFORM_LINUX
-static const wchar_t* core_clr_dll = L"libcoreclr.so";
+static const char* core_clr_dll = "libcoreclr.so";
+// Default location on Ubuntu
+static const char* core_clr_usr_share_dotnet_path = "/usr/share/dotnet/shared/Microsoft.NETCore.App"; // NB! case-insensitive
 #endif
 
-int snap::coreclr::run(const std::wstring & executable_path, const std::vector<std::wstring>& arguments,
+int snap::coreclr::run(const std::string& this_executable_path, const std::string & dotnet_executable_path, const std::vector<std::string>& arguments,
     const version::Semver200_version & clr_minimum_version)
 {
-    auto executable_file_exists = FALSE;
-    if (!pal_fs_file_exists(executable_path.c_str(), &executable_file_exists)
-        || !executable_file_exists)
+    auto dotnet_executable_file_exists = FALSE;
+    if (!pal_fs_file_exists(dotnet_executable_path.c_str(), &dotnet_executable_file_exists)
+        || !dotnet_executable_file_exists)
     {
-        LOG(ERROR) << "Coreclr: Executable does not exist. Path: " << executable_path << std::endl;
+        LOG(ERROR) << "Coreclr: Executable does not exist. Path: " << dotnet_executable_path << std::endl;
         return -1;
     }
 
-    wchar_t* executable_working_directory = nullptr;
-    if (!pal_fs_get_directory_name_full_path(executable_path.c_str(), &executable_working_directory))
+    char* dotnet_executable_working_directory = nullptr;
+    if (!pal_fs_get_directory_name_absolute_path(dotnet_executable_path.c_str(), &dotnet_executable_working_directory))
     {
-        LOG(ERROR) << "Coreclr: Unable to obtain directory full path for executable. Path: " << executable_path << std::endl;
+        LOG(ERROR) << "Coreclr: Unable to obtain directory full path for executable. Path: " << dotnet_executable_path << std::endl;
         return -1;
     }
 
-    const auto core_clr_instance = try_load_core_clr(executable_path, arguments, clr_minimum_version);
+    const auto core_clr_instance = try_load_core_clr(dotnet_executable_path, dotnet_executable_working_directory, arguments, clr_minimum_version);
     if (core_clr_instance == nullptr)
     {
         LOG(ERROR) << "Coreclr: " << core_clr_dll << " not found." << std::endl;
         return -1;
     }
 
-    const auto trusted_platform_assemblies_str = build_trusted_platform_assemblies_str(executable_path, core_clr_instance);
+    const auto trusted_platform_assemblies_str = build_trusted_platform_assemblies_str(dotnet_executable_path, core_clr_instance);
     if (trusted_platform_assemblies_str.empty())
     {
         LOG(ERROR) << "Coreclr: Unable to build trusted platform assemblies list (TPA)." << std::endl;
         return -1;
     }
 
-    if(!core_clr_instance->initialize_coreclr(executable_path, executable_working_directory, trusted_platform_assemblies_str))
+    if (!core_clr_instance->initialize_coreclr(this_executable_path, dotnet_executable_path, dotnet_executable_working_directory, trusted_platform_assemblies_str))
     {
         return -1;
     }
@@ -55,99 +58,118 @@ int snap::coreclr::run(const std::wstring & executable_path, const std::vector<s
     core_clr_version << core_clr_instance->get_directory().get_version();
 
     const auto argc = arguments.size();
-    std::wstring arguments_buffer;
+    std::string arguments_buffer;
     for (auto i = 0u; i < argc; i++)
     {
         arguments_buffer.append(arguments[i]);
-        arguments_buffer.append(L" ");
+        arguments_buffer.append(" ");
     }
 
     LOG(INFO) << "Coreclr: Executing assembly. " <<
         "Coreclr root directory: " << core_clr_instance->get_directory().get_root_path() << ". " <<
         "Coreclr dll: " << core_clr_instance->get_directory().get_dll_path() << ". " <<
         "Coreclr version: " << core_clr_version.str() << ". " <<
-        "Assembly: " << executable_path << ". " <<
-        "Assembly directory: " << executable_working_directory << ". " <<
-        "Arguments count: " << argc << ". " <<
-        "Arguments: " << arguments_buffer <<
+        "Assembly: " << dotnet_executable_path << ". " <<
+        "Assembly working directory: " << dotnet_executable_working_directory << ". " <<
+        "Assembly arguments count: " << argc << ". " <<
+        "Assembly arguments: " << arguments_buffer <<
         std::endl;
 
-    auto exit_code = 0u;
-    if(!core_clr_instance->execute_assembly(executable_path, arguments, &exit_code))
+    auto coreclr_exit_code = 0u;
+    auto dotnet_exit_exit_code = 0;
+    if (!core_clr_instance->execute_assembly(dotnet_executable_path, arguments, &coreclr_exit_code, &dotnet_exit_exit_code))
     {
         return -1;
     }
 
-    LOG(INFO) << "Coreclr: Successfully executed assembly. " << std::endl;
+    LOG(INFO) << "Coreclr: Successfully executed assembly. " 
+              << "Coreclr exit code: " << coreclr_exit_code << ". " 
+              << "Dotnet assembly exit code: " << dotnet_exit_exit_code << ". ";
 
-    return exit_code;
+    return dotnet_exit_exit_code;
 }
 
-core_clr_instance* snap::coreclr::try_load_core_clr(const std::wstring & executable_path, const std::vector<std::wstring>& arguments,
+core_clr_instance* snap::coreclr::try_load_core_clr(const std::string & executable_path, const char* executable_working_directory, const std::vector<std::string>& arguments,
     const version::Semver200_version & clr_minimum_version)
 {
-    wchar_t* executable_directory_path = nullptr;
-    wchar_t* core_root_path_out = nullptr;
-    if (!pal_fs_get_directory_name_full_path(executable_path.c_str(), &executable_directory_path))
+
+    // 1. Try loading from executable working directory if the application is self-contained.
+    auto core_clr_instance = try_load_core_clr(executable_working_directory, version::Semver200_version());
+    if (core_clr_instance != nullptr)
+    {
+        return core_clr_instance;
+    }
+
+    // 2. Try loading from default coreclr well-known directory.
+    char* core_clr_well_known_directory = nullptr;
+#if PLATFORM_WINDOWS
+    if (!pal_env_expand_str(core_clr_program_files_directory_path, &core_clr_well_known_directory))
     {
         return nullptr;
     }
-
-    // 1. Try loading from executable working directory if the application is self-contained.
-    auto core_clr_instance = try_load_core_clr(executable_directory_path, version::Semver200_version());
-
-    // 2. Try loading from default coreclr well-known directory.
-#if PLATFORM_WINDOWS
-    if (core_clr_instance == nullptr)
-    {
-        wchar_t* core_clr_program_files_directory_expanded = nullptr;
-        if (pal_env_expand_str(core_clr_program_files_directory_path, &core_clr_program_files_directory_expanded)
-            && core_clr_program_files_directory_expanded != nullptr)
-        {
-            const auto core_clr_directories = get_core_directories_from_path(
-                core_clr_program_files_directory_expanded, clr_minimum_version);
-
-            for (const auto& clr_directory : core_clr_directories)
-            {
-                core_clr_instance = try_load_core_clr(clr_directory.get_root_path(), clr_directory.get_version());
-                if (core_clr_instance != nullptr)
-                {
-                    break;
-                }
-            }
-
-            delete[] core_clr_program_files_directory_expanded;
-        }
-    }
 #else
-    return nullptr;
+    auto core_root_env_variable_exists = pal_env_get_variable("CORE_ROOT", &core_clr_well_known_directory);
+    auto core_root_dir_exists = FALSE;
+
+    if (core_root_env_variable_exists)
+    {
+        pal_fs_directory_exists(core_clr_well_known_directory, &core_root_dir_exists);
+    }
+
+    if (!core_root_dir_exists)
+    {
+        assert(core_clr_well_known_directory == nullptr);
+        core_clr_well_known_directory = new char[strlen(core_clr_usr_share_dotnet_path)];
+        strcpy(core_clr_well_known_directory, core_clr_usr_share_dotnet_path);
+    }
+
 #endif
 
-    delete[] executable_directory_path;
-    delete[] core_root_path_out;
+    assert(core_clr_well_known_directory != nullptr);
+
+    const auto core_clr_directories = get_core_directories_from_path(
+        core_clr_well_known_directory, clr_minimum_version);
+
+    for (const auto& clr_directory : core_clr_directories)
+    {
+        core_clr_instance = try_load_core_clr(clr_directory.get_root_path(), clr_directory.get_version());
+        if (core_clr_instance != nullptr)
+        {
+            break;
+        }
+    }
+
+
+    delete[] core_clr_well_known_directory;
 
     return core_clr_instance;
 }
 
-std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(const wchar_t* core_clr_root_path,
+std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(const char* core_clr_root_path,
     const version::Semver200_version& clr_minimum_version)
 {
-    wchar_t** paths_out = nullptr;
-    size_t paths_out_len = 0;
-
-    std::vector<core_clr_directory> core_clr_directories;
-
-    if (!pal_fs_list_directories(core_clr_root_path, &paths_out, &paths_out_len))
+    if(clr_minimum_version.empty())
     {
-        return core_clr_directories;
+        LOG(WARNING) << "Clr minimum version is empty: " << clr_minimum_version << ". " 
+                     << "Skipping searching core clr directories in path: " << core_clr_root_path << ". ";
+        return std::vector<core_clr_directory>();
     }
 
-    std::vector<wchar_t*> core_clr_paths(
-        paths_out, paths_out + paths_out_len);
+    char** directories_out = nullptr;
+    size_t directories_out_len = 0;
+    if (!pal_fs_list_directories(core_clr_root_path, nullptr,
+        nullptr, &directories_out, &directories_out_len))
+    {
+        return std::vector<core_clr_directory>();
+    }
+
+    std::vector<core_clr_directory> core_clr_directories;
+    std::vector<char*> core_clr_paths(
+        directories_out, directories_out + directories_out_len);
 
     for (const auto& core_clr_path : core_clr_paths)
     {
-        wchar_t* clr_directory_core_clrversion = nullptr;
+        char* clr_directory_core_clrversion = nullptr;
         if (!pal_fs_get_directory_name(core_clr_path, &clr_directory_core_clrversion))
         {
             delete[] core_clr_path;
@@ -156,13 +178,13 @@ std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(co
 
         try
         {
-            auto core_clr_version = version::Semver200_version(pal_str_narrow(clr_directory_core_clrversion));
+            auto core_clr_version = version::Semver200_version(clr_directory_core_clrversion);
 
-            if (core_clr_version < clr_minimum_version) {
+            if (clr_minimum_version > core_clr_version) {
                 continue;
             }
 
-            wchar_t* core_clr_dll_path = nullptr;
+            char* core_clr_dll_path = nullptr;
             if (!pal_fs_path_combine(core_clr_path, core_clr_dll, &core_clr_dll_path))
             {
                 continue;
@@ -182,7 +204,7 @@ std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(co
         }
         catch (const version::Parse_error& e)
         {
-            LOG(WARNING) << L"Coreclr: Failed to parse semver version for path: " << core_clr_path << ". Why: " << e.what() << std::endl;
+            LOG(WARNING) << "Coreclr: Failed to parse semver version for path: " << core_clr_path << ". Why: " << e.what() << std::endl;
         }
 
         delete[] core_clr_path;
@@ -195,9 +217,10 @@ std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(co
     return core_clr_directories;
 }
 
-core_clr_instance* snap::coreclr::try_load_core_clr(const wchar_t* directory_path, const version::Semver200_version& core_clr_version)
+core_clr_instance* snap::coreclr::try_load_core_clr(const char* directory_path, const version::Semver200_version& core_clr_version)
 {
-    wchar_t* core_clr_dll_path = nullptr;
+
+    char* core_clr_dll_path = nullptr;
     if (!pal_fs_path_combine(directory_path, core_clr_dll, &core_clr_dll_path))
     {
         return nullptr;
@@ -210,8 +233,10 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const wchar_t* directory_pat
         return nullptr;
     }
 
+    LOG(TRACE) << "Attempting to load: " << core_clr_dll_path;
+
     auto instance = new core_clr_instance(directory_path, core_clr_dll_path, core_clr_version);
-    if(instance->try_load())
+    if (instance->try_load())
     {
         return instance;
     }
@@ -221,36 +246,41 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const wchar_t* directory_pat
     return nullptr;
 }
 
-std::vector<std::wstring> snap::coreclr::get_trusted_platform_assemblies(const wchar_t* trusted_platform_assemblies_path)
+std::vector<std::string> snap::coreclr::get_trusted_platform_assemblies(const char* trusted_platform_assemblies_path)
 {
     if (trusted_platform_assemblies_path == nullptr)
     {
-        return std::vector<std::wstring>();
+        return std::vector<std::string>();
     }
 
-    static const std::vector<const wchar_t*> trusted_platform_assemblies_extension_list{
-        L"*.ni.dll", // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
-        L"*.dll",
-        L"*.ni.exe",
-        L"*.exe",
+    LOG(TRACE) << "Adding TPAs from: " << trusted_platform_assemblies_path;
+
+    static const std::vector<const char*> trusted_platform_assemblies_extension_list{
 #if PLATFORM_WINDOWS
-        L"*.ni.winmd",
-        L"*.winmd"
+        "*.ni.dll", // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
+        "*.dll",
+        "*.ni.exe",
+        "*.exe",
+        "*.ni.winmd",
+        "*.winmd"
+#else
+        ".dll",
+        ".exe"
 #endif
     };
 
-    std::vector<std::wstring> trusted_platform_assemblies_list;
+    std::vector<std::string> trusted_platform_assemblies_list;
 
     for (const auto& extension : trusted_platform_assemblies_extension_list)
     {
-        wchar_t** files_out = nullptr;
+        char** files_out = nullptr;
         size_t files_out_len = 0;
         if (!pal_fs_list_files(trusted_platform_assemblies_path, nullptr, extension, &files_out, &files_out_len))
         {
             continue;
         }
 
-        std::vector<wchar_t*> files(files_out, files_out + files_out_len);
+        std::vector<char*> files(files_out, files_out + files_out_len);
 
         for (auto const& filename : files)
         {
@@ -264,21 +294,26 @@ std::vector<std::wstring> snap::coreclr::get_trusted_platform_assemblies(const w
 
             trusted_platform_assemblies_list.emplace_back(filename);
         }
+
+        delete[] files_out;
     }
+
+    LOG(TRACE) << "Successfully added " << trusted_platform_assemblies_list.size() << " assemblies to TPA list.";
 
     return trusted_platform_assemblies_list;
 }
 
-std::wstring snap::coreclr::build_trusted_platform_assemblies_str(const std::wstring& executable_path,
+std::string snap::coreclr::build_trusted_platform_assemblies_str(const std::string& executable_path,
     core_clr_instance* const core_clr_instance)
 {
     if (core_clr_instance == nullptr)
     {
-        return std::wstring();
+        return std::string();
     }
 
-    std::vector<std::wstring> trusted_platform_assemblies;
-    auto trusted_platform_assemblies_str = std::wstring();
+    LOG(TRACE) << "Building TPA assemblies string.";
+
+    std::vector<std::string> trusted_platform_assemblies;
 
     for (auto const& tpa : get_trusted_platform_assemblies(core_clr_instance->get_directory().get_root_path()))
     {
@@ -293,11 +328,15 @@ std::wstring snap::coreclr::build_trusted_platform_assemblies_str(const std::wst
         trusted_platform_assemblies.emplace_back(executable_path);
     }
 
+    std::string trusted_platform_assemblies_str = std::string();
+
     for (const auto& assembly : trusted_platform_assemblies)
     {
         trusted_platform_assemblies_str.append(assembly);
-        trusted_platform_assemblies_str.append(PAL_CORECLR_TPA_SEPARATOR_WIDE_STR);
+        trusted_platform_assemblies_str.append(PAL_CORECLR_TPA_SEPARATOR_STR);
     }
+
+    LOG(TRACE) << "Successfully built TPA assemblies string.";
 
     return trusted_platform_assemblies_str;
 }

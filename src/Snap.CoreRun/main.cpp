@@ -7,40 +7,48 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-static char** setup_easyloggingpp(const int argc, wchar_t* argw[])
+int run_main(int argc, char *argv[], const int cmd_show_windows)
 {
-    const auto argv = new char*[argc];
-
-    for (auto i = 0; i < argc; ++i) {
-        std::wstring widechar_string_in(argw[i]);
-        argv[i] = pal_str_narrow(widechar_string_in.c_str());
-    }
-
     START_EASYLOGGINGPP(argc, argv);
 
-    return argv;
-}
-
-int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
-{
-    auto argv = setup_easyloggingpp(argc, argw);
-
-    wchar_t* app_name = nullptr;
+    char* app_name = nullptr;
     if (!pal_fs_get_own_executable_name(&app_name))
+    {
+        LOG(ERROR) << "Unable to get own executable name." << std::endl;
+        return -1;
+    }
+
+#if _DEBUG && PLATFORM_WINDOWS
+    std::vector<std::string> args;
+    args.emplace_back(strdup(argv[0]));
+    args.emplace_back("--coreclr-min-version=2.2.0");
+    args.emplace_back("--coreclr-exe=C:\\Users\\peters\\Documents\\GitHub\\snap\\src\\Snap.Update\\bin\\Debug\\netcoreapp2.1\\Snap.Update.dll");
+
+    argc = args.size();
+    argv = new char*[argc];
+
+    for(auto i = 0; i < argc; i++)
+    {
+        argv[i] = strdup(args[i].c_str());
+    }
+#endif
+
+    char* this_executable_abs_path = nullptr;
+    if(!pal_fs_get_absolute_path(argv[0], &this_executable_abs_path))
     {
         return -1;
     }
 
-    std::string app_name_s(pal_str_narrow(app_name));
+    const std::string app_name_s(app_name);
 
     el::Configurations easylogging_default_conf;
     easylogging_default_conf.setToDefault();
     easylogging_default_conf.setGlobally(el::ConfigurationType::Filename, app_name_s + ".log");
     el::Loggers::reconfigureLogger("default", easylogging_default_conf);
 
-    const auto run_stubexecutable = [argw, argc, cmd_show_windows]()
+    const auto run_stubexecutable = [argv, argc, cmd_show_windows]() -> int
     {
-        std::vector<std::wstring> stubexecutable_arguments(argw, argw + argc);
+        std::vector<std::string> stubexecutable_arguments(argv, argv + argc);
         stubexecutable_arguments.erase(stubexecutable_arguments.begin()); // Remove "this" executable name.
         return snap::stubexecutable::run(stubexecutable_arguments, cmd_show_windows);
     };
@@ -77,8 +85,8 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
         if (is_core_clr)
         {
             version::Semver200_version clr_min_required_version;
-            std::wstring coreclr_exe_w;
-            std::vector<std::wstring> coreclr_arguments_w;
+            std::string coreclr_exe;
+            std::vector<std::string> coreclr_arguments;
 
             if (options_result.count("coreclr-min-version"))
             {
@@ -88,23 +96,21 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
 
             if (options_result.count("coreclr-exe"))
             {
-                auto coreclr_exe = options_result["coreclr-exe"].as<std::string>();
-                coreclr_exe_w = std::wstring(coreclr_exe.begin(), coreclr_exe.end());
+                coreclr_exe = options_result["coreclr-exe"].as<std::string>();
             }
 
             if (options_result.count("coreclr-args"))
             {
                 options.parse_positional({ "coreclr-args" });
 
-                auto coreclr_arguments = options_result["coreclr-args"].as<std::vector<std::string>>();
-                for (const auto& argument : coreclr_arguments)
+                for (const auto& argument : options_result["coreclr-args"].as<std::vector<std::string>>())
                 {
-                    coreclr_arguments_w.emplace_back(std::wstring(argument.begin(), argument.end()));
+                    coreclr_arguments.emplace_back(argument);
                 }
             }
 
             // Snap.CoreRun.exe --coreclr-min-version 2.2.0 --coreclr-exe test.dll --coreclr-args test1234 test12345
-            return snap::coreclr::run(coreclr_exe_w, coreclr_arguments_w, clr_min_required_version);
+            return snap::coreclr::run(this_executable_abs_path, coreclr_exe, coreclr_arguments, clr_min_required_version);
         }
 
         if (is_help)
@@ -116,12 +122,12 @@ int run_main(int argc, wchar_t *argw[], const int cmd_show_windows)
     }
     catch (const version::Parse_error & e)
     {
-        LOG(ERROR) << L"Invalid semver version: " << e.what() << std::endl;
+        LOG(ERROR) << "Invalid semver version: " << e.what() << std::endl;
         return -1;
     }
     catch (const cxxopts::OptionException& e)
     {
-        LOG(ERROR) << L"Unable to parse command line argument options. " << e.what() << std::endl;
+        LOG(ERROR) << "Unable to parse command line argument options. " << e.what() << std::endl;
         LOG(INFO) << options.help({ "", "Generic", "CoreClr" }) << std::endl;
         return -1;
     }
@@ -144,18 +150,27 @@ int APIENTRY wWinMain(
     auto argc = 0;
     const auto argw = CommandLineToArgvW(GetCommandLineW(), &argc);
 
+    auto argv = new char*[argc];
+    for(auto i = 0; i < argc; i++)
+    {
+        argv[i] = pal_utf8_string(argw[i]).dup();
+    }
+
+    LocalFree(argw);
+
     try
     {
-        return run_main(argc, argw, n_cmd_show);
+        return run_main(argc, argv, n_cmd_show);
     }
     catch (std::exception& ex)
     {
-        LOG(ERROR) << L"Unknown error: " << ex.what() << std::endl;
+        LOG(ERROR) << "Unknown error: " << ex.what() << std::endl;
     }
+
     return -1;
 }
 #else
-int PALAPI wmain(const int argc, wchar_t *argv[])
+int main(const int argc, char *argv[])
 {
     try
     {
@@ -163,7 +178,7 @@ int PALAPI wmain(const int argc, wchar_t *argv[])
     }
     catch (std::exception& ex)
     {
-        LOG(ERROR) << L"Unknown error: " << ex.what() << std::endl;
+        LOG(ERROR) << "Unknown error: " << ex.what() << std::endl;
     }
     return -1;
 }

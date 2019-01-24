@@ -15,8 +15,15 @@ set(corerun_SOURCES
    vendor/easyloggingpp/src/easylogging++.cc
    vendor/semver/semver200_comparator.cpp 
    vendor/semver/semver200_parser.cpp
+   pal/pal_string.cpp
    pal/pal.cpp
 )
+
+if(WIN32)
+list(APPEND corerun_SOURCES
+   resourcewriter.cpp 
+)
+endif()
 
 include_directories(
    ${corerun_INCLUDE_DIRS}
@@ -29,14 +36,9 @@ add_executable(corerun
 
 target_compile_definitions(corerun PRIVATE 
 	ELPP_NO_DEFAULT_LOG_FILE
-	_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 )	
 
 if(WIN32)
-	list(APPEND corerun_SOURCES
-	   resourcewriter.cpp 
-	)
-
 
 	target_link_libraries(corerun PRIVATE 
 		shlwapi.lib 
@@ -44,7 +46,9 @@ if(WIN32)
 		pathcch.lib
 	)
 
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+    endif()
 
 	set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -60,16 +64,27 @@ if(WIN32)
 	endforeach()
 
 	target_compile_definitions(corerun PRIVATE 
-		PLATFORM_WINDOWS 
-		UNICODE 
+		PLATFORM_WINDOWS
+		_CRT_NONSTDC_NO_WARNINGS
 		_UNICODE
-		ELPP_UNICODE
+		UNICODE
 	)	
 elseif(UNIX)
+
+	target_link_libraries(corerun PRIVATE
+		dl
+	)
 
 	target_compile_definitions(corerun PRIVATE 
 		PLATFORM_LINUX
 	)	
+
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64") 
+	target_compile_definitions(corerun PRIVATE 
+		PLATFORM_LINUX_AARCH64
+	)	
+	endif()
+	
 endif()
 
 set_property(TARGET corerun PROPERTY CXX_STANDARD 17)

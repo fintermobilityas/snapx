@@ -141,6 +141,7 @@ namespace version {
 		int get_patch() const; ///< Get patch version.
 		const std::string get_prerelease() const; ///< Get prerelease version string.
 		const std::string get_build() const; ///< Get build version string.
+        const bool empty() const; ///< Build version is empty (0.0.0)
 
 		friend bool operator< <>(const Basic_version&, const Basic_version&);
 		friend bool operator== <>(const Basic_version&, const Basic_version&);

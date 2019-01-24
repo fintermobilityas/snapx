@@ -1,0 +1,81 @@
+﻿{
+    "configurations": [
+        {
+            "name": "windows-clang-x64-Debug",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "-v",
+            "ctestCommandArgs": "",
+            "intelliSenseMode": "windows-clang-x64",
+            "variables": [
+                {
+                    "name": "CMAKE_CXX_COMPILER",
+                    "value": "clang-cl"
+                },
+                {
+                    "name": "CMAKE_C_COMPILER",
+                    "value": "clang-cl"
+                },
+                {
+                    "name": "CMAKE_SYSTEM_NAME",
+                    "value": "Windows"
+                }
+            ]
+        },
+        {
+            "name": "msvs-x64-Debug",
+            "generator": "Visual Studio 15 2017 Win64",
+            "configurationType": "Debug",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [],
+            "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "msvs-x64-Release",
+            "generator": "Visual Studio 15 2017 Win64",
+            "configurationType": "Release",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                { "name": "ENABLE_LTO", "value": "1"}
+            ],
+            "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "linux-gcc-x64-Debug",
+            "generator": "Unix Makefiles",
+            "configurationType": "Debug",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "remoteCopySourcesExclusionList": [ ".vs", ".git", "bin", "obj", "*.log", "*.md", "*.exe", "*.dll", "*.pdb" ],
+            "cmakeCommandArgs": "",
+            "cmakeExecutable": "/home/peters/cmake/bin/cmake",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "linux_x64" ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "remoteMachineName": "crosscompile.northeurope.cloudapp.azure.com",
+            "remoteCMakeListsRoot": "/home/peters/tmp/src/${workspaceHash}/${name}",
+            "remoteBuildRoot": "/home/peters/tmp/build/${workspaceHash}/build/${name}",
+            "remoteInstallRoot": "/home/peters/tmp/build/${workspaceHash}/install/${name}",
+            "remoteCopySources": true,
+            "rsyncCommandArgs": "-t --delete --delete-excluded",
+            "remoteCopyBuildOutput": false,
+            "remoteCopySourcesMethod": "rsync",
+            "variables": []
+        }
+    ]
+}

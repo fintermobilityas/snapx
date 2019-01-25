@@ -10,14 +10,6 @@
 #endif
 #endif
 
-#ifndef FORCEINLINE
-#if _MSC_VER < 1200
-#define FORCEINLINE inline
-#else
-#define FORCEINLINE __forceinline
-#endif
-#endif
-
 #ifdef PLATFORM_WINDOWS
 #define PAL_MAX_PATH MAX_PATH 
 #define PAL_DIRECTORY_SEPARATOR_STR "\\"

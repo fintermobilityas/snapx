@@ -78,7 +78,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestPackAndExtract()
         {
-            var (nupkgMemoryStream, snapPackageDetails) = await _baseFixture
+            var (nupkgMemoryStream, _) = await _baseFixture
                 .BuildTestNupkgAsync(_snapFilesystem, _snapPack);
 
             using (nupkgMemoryStream)

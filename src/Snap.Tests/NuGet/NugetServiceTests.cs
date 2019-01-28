@@ -1,4 +1,6 @@
-﻿using Snap.NuGet;
+﻿using System.Diagnostics;
+using System.Linq;
+using Snap.NuGet;
 using Xunit;
 
 #if NET45
@@ -17,6 +19,13 @@ namespace Snap.Tests.NuGet
             var configFilePaths = packageSources.Settings.GetConfigFilePaths();
             Assert.NotEmpty(configRoots);
             Assert.NotEmpty(configFilePaths);
+        }
+        
+        [Fact]
+        public void TestNuGetMachineWidePackageSources()
+        {
+            var feeds = new NuGetMachineWidePackageSources();
+            Assert.NotNull(feeds.Items.SingleOrDefault(x => x.Name.StartsWith("nuget.org")));
         }
     }
 }

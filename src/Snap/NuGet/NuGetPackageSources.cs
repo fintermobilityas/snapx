@@ -71,7 +71,6 @@ namespace Snap.NuGet
 
     internal class NuGetMachineWidePackageSources : NuGetPackageSources
     {
-#if NETFULLFRAMEWORK
         public NuGetMachineWidePackageSources()
         {
             var nuGetConfigFileReader = new NuGetConfigFileReader();
@@ -82,11 +81,6 @@ namespace Snap.NuGet
 
             Items = packageSources.SelectMany(x => x.Items).ToList();
         }
-#else
-        public NuGetMachineWidePackageSources() : base(Settings.LoadDefaultSettings(string.Empty, null, new NuGetMachineWideSettings()))
-        {
-        }
-#endif
     }
 
     internal interface INuGetPackageSources

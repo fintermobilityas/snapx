@@ -28,7 +28,8 @@ namespace Snap.Core
         IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
         IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
-        Task FileWriteAsync(Stream srcStream, string destinationPath, CancellationToken cancellationToken);
+        Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
+        Task FileWriteAsync(string srcFilename, string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         void DeleteDirectory(string directory);
         Task DeleteDirectoryAsync(string directory);
@@ -213,9 +214,18 @@ namespace Snap.Core
             }
         }
 
-        public async Task FileWriteAsync(Stream srcStream, string destinationPath, CancellationToken cancellationToken)
+        public async Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken)
         {
-            using (var dstStream = OpenReadWrite(destinationPath))
+            using (var dstStream = OpenReadWrite(dstFilename))
+            {
+                await srcStream.CopyToAsync(dstStream, cancellationToken);
+            }
+        }
+
+        public async Task FileWriteAsync(string srcFilename, string dstFilename, CancellationToken cancellationToken)
+        {
+            using (var srcStream = OpenReadOnly(srcFilename))
+            using (var dstStream = OpenReadWrite(dstFilename))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
             }

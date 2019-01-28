@@ -1,26 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Threading.Tasks;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 
 namespace Snap.Core
 {
-    internal sealed class SnapPackDetails
+    internal interface ISnapPackDetails
+    {
+        SnapAppSpec Spec { get; set; }
+        string NuspecFilename { get; }
+        string NuspecBaseDirectory { get; }
+        ISnapProgressSource SnapProgressSource {get; set; }
+        IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
+        Func<MemoryStream, string> FileResolverFunc { get; set; }
+    }
+
+    internal sealed class SnapPackDetails : ISnapPackDetails
     {
         public SnapAppSpec Spec { get; set; }
-        public string NuspecBaseDirectory { get; set; }
         public string NuspecFilename { get; set; }
+        public string NuspecBaseDirectory { get; set; }
+        public ISnapProgressSource SnapProgressSource { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
-        public ISnapProgressSource SnapProgressSource {get; set; }
+        public Func<MemoryStream, string> FileResolverFunc { get; set; }
     }
 
     internal interface ISnapPack
     {
-        Task<string> PackAsync(SnapPackDetails snapPackDetails);
+        MemoryStream Pack(ISnapPackDetails snapPackDetails);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -32,7 +40,7 @@ namespace Snap.Core
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
         }
 
-        public Task<string> PackAsync(SnapPackDetails snapPackDetails)
+        public MemoryStream Pack(ISnapPackDetails snapPackDetails)
         {
             if (snapPackDetails == null) throw new ArgumentNullException(nameof(snapPackDetails));  
 
@@ -49,7 +57,7 @@ namespace Snap.Core
             var properties = new Dictionary<string, string>
             {
                 {"version", snapPackDetails.Spec.Version.ToFullString()},
-                {"snapfolder", snapPackDetails.NuspecBaseDirectory}
+                {"nuspecbasedirectory", snapPackDetails.NuspecBaseDirectory}
             };
 
             if (snapPackDetails.NuspecProperties != null)
@@ -67,6 +75,8 @@ namespace Snap.Core
 
             progressSource?.Raise(0);
 
+            var outputStream = new MemoryStream();
+
             using (var nuspecStream = _snapFilesystem.OpenReadOnly(snapPackDetails.NuspecFilename))
             {
                 string GetPropertyValue(string propertyName)
@@ -75,18 +85,11 @@ namespace Snap.Core
                 }
 
                 var targetFramework = NuGetFramework.Parse("net45");
-
                 var packageBuilder = new PackageBuilder(nuspecStream, snapPackDetails.NuspecBaseDirectory, GetPropertyValue);
+                packageBuilder.Save(outputStream);
 
-                packageBuilder.TargetFrameworks.Clear();
-                packageBuilder.TargetFrameworks.Add(targetFramework);
-
-                Debugger.Break();
+                return outputStream;
             }
-
-            //packagear
-            throw new NotImplementedException();
         }
-
     }
 }

@@ -70,11 +70,11 @@ namespace Snap.Core
 
             if (packageDetails.NuspecProperties != null)
             {
-                foreach (var (key, value) in packageDetails.NuspecProperties)
+                foreach (var pair in packageDetails.NuspecProperties)
                 {
-                    if (!properties.ContainsKey(key.ToLowerInvariant()))
+                    if (!properties.ContainsKey(pair.Key.ToLowerInvariant()))
                     {
-                        properties.Add(key, value);
+                        properties.Add(pair.Key, pair.Value);
                     }
                 }
             }

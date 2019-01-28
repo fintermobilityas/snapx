@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <!--<Import Project="..\Snap\Snap.Deps.targets" />-->
+    <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -9,8 +9,8 @@
         <AssemblyName>Snap.Update</AssemblyName>
     </PropertyGroup>
 
-    <!--<ItemGroup>
+    <ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
-    </ItemGroup>-->
+    </ItemGroup>
        
 </Project>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapFilesystem
     {
+        string DirectorySeparator { get; }
         IDisposable WithTempDirectory(out string path, string baseDirectory = null);
         IDisposable WithTempFile(out string path, string baseDirectory = null);
         FileStream OpenReadOnly(string fileNam);
@@ -59,6 +61,8 @@ namespace Snap.Core
 
             return prefix + DirectoryChars.Value[index % DirectoryChars.Value.Length] + TempNameForIndex(index / DirectoryChars.Value.Length, "");
         }
+
+        public string DirectorySeparator => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
 
         public static DirectoryInfo GetTempDirectory(string localAppDirectory)
         {

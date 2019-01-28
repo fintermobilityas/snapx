@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
@@ -49,7 +50,7 @@ namespace Snap.Shared.Tests
                 {
                     Framework = "netcoreapp2.1",
                     RuntimeIdentifier = "win7-x64",
-                    OsPlatform = OSPlatform.Windows.ToString()                    
+                    OsPlatform = OSPlatform.Windows.ToString()
                 },
                 AvailableChannels = new List<SnapChannel> { channel }
             };
@@ -71,7 +72,7 @@ namespace Snap.Shared.Tests
             }
         }
 
-        public void WriteAssemblies(string workingDirectory, bool disposeAssemblyDefinitions = false, params AssemblyDefinition[]  assemblyDefinitions)
+        public void WriteAssemblies(string workingDirectory, bool disposeAssemblyDefinitions = false, params AssemblyDefinition[] assemblyDefinitions)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
@@ -79,7 +80,7 @@ namespace Snap.Shared.Tests
             WriteAssemblies(workingDirectory, assemblyDefinitions.ToList(), disposeAssemblyDefinitions);
         }
 
-        public void WriteAndDisposeAssemblies(string workingDirectory, params AssemblyDefinition[]  assemblyDefinitions)
+        public void WriteAndDisposeAssemblies(string workingDirectory, params AssemblyDefinition[] assemblyDefinitions)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
@@ -103,7 +104,7 @@ namespace Snap.Shared.Tests
 
             var assembly = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition(libraryName, new Version(1, 0, 0, 0)), libraryName, ModuleKind.Dll);
-            
+
             var mainModule = assembly.MainModule;
 
             if (references == null)
@@ -125,7 +126,7 @@ namespace Snap.Shared.Tests
 
             var assembly = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition(applicationName, new Version(1, 0, 0, 0)), applicationName, ModuleKind.Console);
-            
+
             var mainModule = assembly.MainModule;
 
             if (references == null)
@@ -148,7 +149,7 @@ namespace Snap.Shared.Tests
 
             var assembly = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition(libraryName, new Version(1, 0, 0, 0)), libraryName, ModuleKind.Dll);
-            
+
             var mainModule = assembly.MainModule;
 
             var simpleClass = new TypeDefinition(libraryName, className,
@@ -167,6 +168,61 @@ namespace Snap.Shared.Tests
             }
 
             return assembly;
+        }
+
+        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildTestNupkgAsync([NotNull] ISnapFilesystem filesystem,
+            [NotNull] ISnapPack snapPack, ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
+
+            const string nuspecContent = @"<?xml version=""1.0""?>
+<package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
+    <metadata>
+        <id>Youpark</id>
+        <title>Youpark</title>
+        <version>$version$</version>
+        <authors>Youpark AS</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Youpark</description>
+    </metadata>
+    <files> 
+		<file src=""$nuspecbasedirectory$\test.dll"" target=""lib\net45"" />						    
+		<file src=""$nuspecbasedirectory$\subdirectory\test2.dll"" target=""lib\net45\subdirectory"" />						    
+    </files>
+</package>";
+
+            using (var tempDirectory = new DisposableTempDirectory(WorkingDirectory, filesystem))
+            {
+                var snapPackDetails = new SnapPackageDetails
+                {
+                    NuspecFilename = Path.Combine(tempDirectory.AbsolutePath, "test.nuspec"),
+                    NuspecBaseDirectory = tempDirectory.AbsolutePath,
+                    SnapProgressSource = progressSource,
+                    Spec = this.BuildSnapAppSpec()
+                };
+
+                var subDirectory = Path.Combine(snapPackDetails.NuspecBaseDirectory, "subdirectory");
+                filesystem.CreateDirectory(subDirectory);
+
+                using (var emptyLibraryAssemblyDefinition = BuildEmptyLibrary("test"))
+                {
+                    var testDllFilename = Path.Combine(snapPackDetails.NuspecBaseDirectory,
+                        emptyLibraryAssemblyDefinition.GetRelativeFilename());
+                    emptyLibraryAssemblyDefinition.Write(testDllFilename);
+                }
+
+                using (var emptyLibraryAssemblyDefinition = BuildEmptyLibrary("test2"))
+                {
+                    var testDllFilename = Path.Combine(subDirectory, emptyLibraryAssemblyDefinition.GetRelativeFilename());
+                    emptyLibraryAssemblyDefinition.Write(testDllFilename);
+                }
+
+                await filesystem.WriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
+
+                var nupkgMemoryStream = snapPack.Pack(snapPackDetails);
+                return (nupkgMemoryStream, snapPackDetails);
+            }
         }
     }
 }

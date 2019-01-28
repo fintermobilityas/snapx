@@ -15,8 +15,8 @@ namespace Snap.Core
     internal interface ISnapExtractor
     {
         PackageArchiveReader ReadPackage(string nupkg);
-        Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken, ILogger logger = null);
-        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken, ILogger logger = null);
+        Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken = default, ILogger logger = null);
+        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken = default, ILogger logger = null);
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
@@ -37,7 +37,7 @@ namespace Snap.Core
             return new PackageArchiveReader(zipArchive);
         }
 
-        public Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken, ILogger logger = null)
+        public Task ExtractAsync(string nupkg, string destination, CancellationToken cancellationToken = default, ILogger logger = null)
         {
             if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
@@ -48,7 +48,7 @@ namespace Snap.Core
             }
         }
 
-        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken, ILogger logger = null)
+        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destination, CancellationToken cancellationToken = default, ILogger logger = null)
         {
             if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
@@ -57,23 +57,19 @@ namespace Snap.Core
 
             string ExtractFile(string sourcePath, string targetPath, Stream sourceStream)
             {
-                var pathSeperator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
+                var directorySeparator = _snapFilesystem.DirectorySeparator;
 
-                targetPath = targetPath.Replace($"{pathSeperator}lib{pathSeperator}{netTargetFrameworkMoniker}", string.Empty);
+                var dstFilename = targetPath.Replace($"{directorySeparator}lib{directorySeparator}{netTargetFrameworkMoniker}", string.Empty);
+                var dstDirectory = Path.GetDirectoryName(dstFilename);
 
-                if (targetPath.EndsWith(pathSeperator))
-                {
-                    _snapFilesystem.CreateDirectoryIfNotExists(targetPath);
+                _snapFilesystem.CreateDirectoryIfNotExists(dstDirectory);
 
-                    return targetPath;
-                }
-
-                using (var targetStream = new FileStream(targetPath, FileMode.CreateNew, FileAccess.Write))
+                using (var targetStream = new FileStream(dstFilename, FileMode.CreateNew, FileAccess.Write))
                 {
                     sourceStream.CopyTo(targetStream);
                 }
 
-                return targetPath;
+                return dstFilename;
             }
 
             var files = packageArchiveReader.GetFiles().Where(x => x.StartsWith($"lib/{netTargetFrameworkMoniker}")).ToList();

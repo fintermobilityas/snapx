@@ -35,6 +35,11 @@
 		<SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
     </PropertyGroup>
 	
+	<PropertyGroup>
+        <NugetVersion Condition="$(IsNetFullFramework)">4.9.3</NugetVersion>
+        <NugetVersion Condition="!$(IsNetFullFramework)">4.9.3</NugetVersion>
+    </PropertyGroup>
+	
     <PropertyGroup Condition="$(IsNetStandard)">
         <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
     </PropertyGroup>

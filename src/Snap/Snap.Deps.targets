@@ -1,8 +1,4 @@
 <Project>
-    <PropertyGroup>
-        <NugetVersion Condition="$(IsNetFullFramework)">4.9.2</NugetVersion>
-        <NugetVersion Condition="!$(IsNetFullFramework)">4.9.2</NugetVersion>
-    </PropertyGroup>
 
     <PropertyGroup>
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapCoreILRepackWorkingDirectory>

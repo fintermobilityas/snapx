@@ -13,8 +13,8 @@ using Snap.Attributes;
 using Snap.Core.IO;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Snap.Logging;
 using Snap.Extensions;
+using Snap.Logging;
 
 namespace Snap.Core
 {

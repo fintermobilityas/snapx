@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <OutputPath Condition="'$(OutputPath)' == ''">bin\$(Configuration)\$(TargetFramework)</OutputPath>
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)$(OutputPath)</SnapCoreILRepackWorkingDirectory>
     </PropertyGroup>
         

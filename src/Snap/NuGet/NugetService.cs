@@ -93,7 +93,7 @@ namespace Snap.NuGet
                 false, 
                 _ => GetApiKey(), 
                 _ => null, 
-                false,
+                false,                
                 nugetLogger ?? NullLogger.Instance);
         }
 

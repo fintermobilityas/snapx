@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
 using Mono.Cecil;
@@ -31,15 +30,19 @@ namespace Snap.Extensions
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
 
             var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
+            var inMemorySettings = new InMemorySettings();
 
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
-                packageSource.Credentials = new PackageSourceCredential(packageSource.Source, snapFeed.Username, snapFeed.Password, true);
+                packageSource.Credentials = PackageSourceCredential.FromUserInput(packageSource.Name, 
+                    snapFeed.Username, snapFeed.Password, false);
+
+                inMemorySettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
             }
 
             packageSource.ProtocolVersion = (int)snapFeed.ProtocolVersion;
 
-            return new NuGetPackageSources(new NullSettings(), new List<PackageSource> { packageSource });
+            return new NuGetPackageSources(inMemorySettings, new List<PackageSource> { packageSource });
         }
 
         internal static INuGetPackageSources GetNugetSourcesFromSnapAppSpec([NotNull] this SnapAppSpec snapAppSpec)

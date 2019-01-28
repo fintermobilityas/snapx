@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -117,7 +118,7 @@ namespace Snap.Tests.NuGet
 
                 await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgFilename, CancellationToken.None);
 
-                await _nugetService.PushAsync(nupkgFilename, nuGetMachineWidePackageSources, youparkAppsPackageSource, new NugetLogger());
+                await _nugetService.PushAsync(nupkgFilename, nuGetMachineWidePackageSources, youparkAppsPackageSource);
             }
         }
 

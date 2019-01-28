@@ -30,11 +30,7 @@ namespace Snap.Core
 
         public const string SnapAppSpecLibraryName = "SnapAppSpec";
         public const string SnapAppSpecDllFilename = SnapAppSpecLibraryName + ".dll";
-        public const string SnapUpdateDllFilename = "Snap.Update.dll";
-        public const string SnapUpdateDllUnitTestFilename = "Snap.Update.UnitTest.dll";
-        public const string SnapUpdateExeFilename = "Update.exe";
         public const string SnapDllFilename = "Snap.dll";
-        public const string SnapDllILRepackedUnitTestFilename = "Snap.ILRepacked.UnitTest.dll";
 
         static readonly Serializer YamlSerializer = new SerializerBuilder()
             .WithNamingConvention(new CamelCaseNamingConvention())

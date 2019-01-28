@@ -1,34 +1,8 @@
 ﻿{
     "configurations": [
         {
-            "name": "windows-clang-x64-Debug",
-            "generator": "Ninja",
-            "configurationType": "Debug",
-            "inheritEnvironments": [ "msvc_x64_x64" ],
-            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
-            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-            "cmakeCommandArgs": "",
-            "buildCommandArgs": "-v",
-            "ctestCommandArgs": "",
-            "intelliSenseMode": "windows-clang-x64",
-            "variables": [
-                {
-                    "name": "CMAKE_CXX_COMPILER",
-                    "value": "clang-cl"
-                },
-                {
-                    "name": "CMAKE_C_COMPILER",
-                    "value": "clang-cl"
-                },
-                {
-                    "name": "CMAKE_SYSTEM_NAME",
-                    "value": "Windows"
-                }
-            ]
-        },
-        {
             "name": "msvs-x64-Debug",
-            "generator": "Visual Studio 15 2017 Win64",
+            "generator": "Ninja",
             "configurationType": "Debug",
             "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
             "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
@@ -41,7 +15,7 @@
         },
         {
             "name": "msvs-x64-Release",
-            "generator": "Visual Studio 15 2017 Win64",
+            "generator": "Ninja",
             "configurationType": "Release",
             "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
             "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",

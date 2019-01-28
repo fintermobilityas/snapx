@@ -331,16 +331,6 @@ namespace Snap.AnyOS.Windows
 
             Logger.Info("Old shortcut target: '{0}'", target);
 
-            // Squirrel comment: 
-            // ---------------------
-            // NB: In 1.5.0 we accidentally fixed the target of pinned shortcuts but left the arguments,
-            // so if we find a shortcut with --processStart in the args, we're gonna stomp it even though
-            // what we _should_ do is stomp it only if the target is Update.exe
-            if (shortcut.Arguments.Contains("--processStart"))
-            {
-                shortcut.Arguments = "";
-            }
-
             target = Path.Combine(rootAppDirectory, Path.GetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
             Logger.Info("New shortcut target: '{0}'", target);

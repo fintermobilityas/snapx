@@ -66,8 +66,8 @@ namespace Snap.Core
 
         public static DirectoryInfo GetTempDirectory(string localAppDirectory)
         {
-            var tempDir = Environment.GetEnvironmentVariable("SQUIRREL_TEMP");
-            tempDir = tempDir ?? Path.Combine(localAppDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SquirrelTemp");
+            var tempDir = Environment.GetEnvironmentVariable("SNAP_TEMP");
+            tempDir = tempDir ?? Path.Combine(localAppDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapTemp");
 
             var di = new DirectoryInfo(tempDir);
             if (!di.Exists) di.Create();

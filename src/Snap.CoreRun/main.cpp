@@ -24,7 +24,7 @@ int run_main(int argc, char *argv[], const int cmd_show_windows)
     args.emplace_back("--coreclr-min-version=2.2.0");
     args.emplace_back("--coreclr-exe=C:\\Users\\peters\\Documents\\GitHub\\snap\\src\\Snap.Update\\bin\\Debug\\netcoreapp2.1\\Snap.Update.dll");
 
-    argc = args.size();
+    argc = static_cast<int>(args.size());
     argv = new char*[argc];
 
     for(auto i = 0; i < argc; i++)

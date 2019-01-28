@@ -27,7 +27,7 @@ namespace Snap.Core
     {
         static readonly ILog Logger = LogProvider.For<SnapSpecsWriter>();
 
-        public const string SnapAppSpecLibraryName = "SnapAppSpec";
+        public const string SnapAppSpecLibraryName = "Snap.App.Spec";
         public const string SnapAppSpecDllFilename = SnapAppSpecLibraryName + ".dll";
         public const string SnapDllFilename = "Snap.dll";
 
@@ -55,7 +55,7 @@ namespace Snap.Core
 
             assembly.CustomAttributes.Add(new CustomAttribute(attributeConstructor));
 
-            var snapAppSpecEmbeddedResource = new EmbeddedResource("SnapAppSpec", ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(yamlSnapAppSpecStr));
+            var snapAppSpecEmbeddedResource = new EmbeddedResource(SnapAppSpecLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(yamlSnapAppSpecStr));
             mainModule.Resources.Add(snapAppSpecEmbeddedResource);
 
             return assembly;

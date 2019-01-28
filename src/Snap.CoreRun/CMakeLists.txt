@@ -19,12 +19,6 @@ set(corerun_SOURCES
    pal/pal.cpp
 )
 
-if(WIN32)
-list(APPEND corerun_SOURCES
-   resourcewriter.cpp 
-)
-endif()
-
 include_directories(
    ${corerun_INCLUDE_DIRS}
 )
@@ -40,15 +34,14 @@ target_compile_definitions(corerun PRIVATE
 
 if(WIN32)
 
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows")	
+	set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
+
 	target_link_libraries(corerun PRIVATE 
 		shlwapi.lib 
 		shell32.lib 
 		pathcch.lib
 	)
-
-    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-    endif()
 
 	set(CompilerFlags
         CMAKE_CXX_FLAGS
@@ -62,6 +55,7 @@ if(WIN32)
 	foreach(CompilerFlag ${CompilerFlags})
 	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
+	
 
 	target_compile_definitions(corerun PRIVATE 
 		PLATFORM_WINDOWS

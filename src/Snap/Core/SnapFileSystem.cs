@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -30,6 +31,7 @@ namespace Snap.Core
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
         Task FileWriteAsync(string srcFilename, string dstFilename, CancellationToken cancellationToken);
+        Task WriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         void DeleteDirectory(string directory);
         Task DeleteDirectoryAsync(string directory);
@@ -67,6 +69,20 @@ namespace Snap.Core
             if (!di.Exists) di.Create();
 
             return di;
+        }
+
+        public async Task WriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken)
+        {
+            if (utf8Text == null) throw new ArgumentNullException(nameof(utf8Text));
+            if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
+
+            using (var outputStream = new MemoryStream())
+            {
+                var outputBytes = Encoding.UTF8.GetBytes(utf8Text);
+                await outputStream.WriteAsync(outputBytes, 0, outputBytes.Length, cancellationToken);
+                outputStream.Seek(0, SeekOrigin.Begin);
+                await FileWriteAsync(outputStream, dstFilename, cancellationToken);
+            }
         }
 
         public IDisposable WithTempDirectory(out string path, string baseDirectory = null)

@@ -7,6 +7,22 @@
 
 INITIALIZE_EASYLOGGINGPP
 
+std::vector<std::string> get_core_clr_arguments(int argc, char* argv[]) 
+{
+    std::vector<std::string> args;
+    if(argc <= 3) 
+    {
+        return args;
+    }
+
+    for(auto i = 3; i < argc; i++)
+    {
+        args.emplace_back(std::string(argv[i]));
+    }
+
+    return args;
+}
+
 int run_main(int argc, char *argv[], const int cmd_show_windows)
 {
     START_EASYLOGGINGPP(argc, argv);
@@ -23,18 +39,23 @@ int run_main(int argc, char *argv[], const int cmd_show_windows)
     args.emplace_back(strdup(argv[0]));
     args.emplace_back("--coreclr-min-version=2.2.0");
     args.emplace_back("--coreclr-exe=C:\\Users\\peters\\Documents\\GitHub\\snap\\src\\Snap.Update\\bin\\Debug\\netcoreapp2.1\\Snap.Update.dll");
-
+    args.emplace_back("--test1234");
+    args.emplace_back("--testq213=222");
+    
     argc = static_cast<int>(args.size());
     argv = new char*[argc];
 
-    for(auto i = 0; i < argc; i++)
+    for (auto i = 0; i < argc; i++)
     {
         argv[i] = strdup(args[i].c_str());
     }
 #endif
 
+    // This is necessary because cxxopts hijacks argc/argv :( 
+    const auto core_clr_arguments_maybe = get_core_clr_arguments(argc, argv);
+
     char* this_executable_abs_path = nullptr;
-    if(!pal_fs_get_absolute_path(argv[0], &this_executable_abs_path))
+    if (!pal_fs_get_absolute_path(argv[0], &this_executable_abs_path))
     {
         return -1;
     }
@@ -63,9 +84,7 @@ int run_main(int argc, char *argv[], const int cmd_show_windows)
     options
         .add_options("CoreClr")
         ("coreclr-min-version", "coreclr minimum version that will be loaded.", cxxopts::value<std::string>())
-        ("coreclr-exe", "coreclr executable (dll or exe) to run.", cxxopts::value<std::string>())
-        // NB! Positional arguments cannot contain dashes (--)
-        ("coreclr-args", "coreclr executable arguments.", cxxopts::value<std::vector<std::string>>());
+        ("coreclr-exe", "coreclr executable (dll or exe) to run.", cxxopts::value<std::string>());
 
     try
     {
@@ -99,18 +118,8 @@ int run_main(int argc, char *argv[], const int cmd_show_windows)
                 coreclr_exe = options_result["coreclr-exe"].as<std::string>();
             }
 
-            if (options_result.count("coreclr-args"))
-            {
-                options.parse_positional({ "coreclr-args" });
-
-                for (const auto& argument : options_result["coreclr-args"].as<std::vector<std::string>>())
-                {
-                    coreclr_arguments.emplace_back(argument);
-                }
-            }
-
-            // Snap.CoreRun.exe --coreclr-min-version 2.2.0 --coreclr-exe test.dll --coreclr-args test1234 test12345
-            return snap::coreclr::run(this_executable_abs_path, coreclr_exe, coreclr_arguments, clr_min_required_version);
+            // Snap.CoreRun.exe --coreclr-min-version 2.2.0 --coreclr-exe test.dll -test1234 --test12345 --yolo0123=27
+            return snap::coreclr::run(this_executable_abs_path, coreclr_exe, core_clr_arguments_maybe, clr_min_required_version);
         }
 
         if (is_help)
@@ -151,7 +160,7 @@ int APIENTRY wWinMain(
     const auto argw = CommandLineToArgvW(GetCommandLineW(), &argc);
 
     auto argv = new char*[argc];
-    for(auto i = 0; i < argc; i++)
+    for (auto i = 0; i < argc; i++)
     {
         argv[i] = pal_utf8_string(argw[i]).dup();
     }

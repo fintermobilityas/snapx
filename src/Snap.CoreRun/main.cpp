@@ -23,7 +23,12 @@ std::vector<std::string> get_core_clr_arguments(int argc, char* argv[])
     return args;
 }
 
-int run_main(int argc, char *argv[], const int cmd_show_windows)
+int installer_main(int argc, char *argv[])
+{
+    return -1;
+}
+
+int corerun_main(int argc, char *argv[], const int cmd_show_windows)
 {
     START_EASYLOGGINGPP(argc, argv);
 
@@ -169,7 +174,7 @@ int APIENTRY wWinMain(
 
     try
     {
-        return run_main(argc, argv, n_cmd_show);
+        return corerun_main(argc, argv, n_cmd_show);
     }
     catch (std::exception& ex)
     {

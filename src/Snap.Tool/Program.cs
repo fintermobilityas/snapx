@@ -6,13 +6,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using NuGet.Common;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Logging;
 using Snap.Tool.Options;
 using Snap.Logging;
-
+using Snap.NuGet;
 using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Tool
@@ -55,24 +56,38 @@ namespace Snap.Tool
             var snapPack = new SnapPack(snapFilesystem);
             var snapSpecsReader = new SnapSpecsReader();
             var snapCryptoProvider = new SnapCryptoProvider();
+            var nugetLogger = new NugetLogger();
+            var nugetService = new NugetService(nugetLogger);
 
-            return MainAsync(args, snapOs, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
+            return MainAsync(args, snapOs, nugetService, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
         }
 
-        static int MainAsync(IEnumerable<string> args, ISnapOs snapOs, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
+        static int MainAsync(IEnumerable<string> args, ISnapOs snapOs, INugetService nugetService, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
-            return Parser.Default.ParseArguments<Sha512Options, InstallNupkgOptions, ReleasifyOptions>(args)
+            return Parser.Default.ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, ReleasifyOptions, Sha512Options>(args)
                 .MapResult(
+                    (PromoteNupkgOptions opts) => SnapPromoteNupkg(opts, nugetService),
+                    (PushNupkgOptions options) => SnapPushNupkg(options, nugetService),
+                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     (ReleasifyOptions opts) => SnapReleasify(opts),
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
-                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
                     {
                         snapOs.EnsureConsole();
                         return 1;
                     });            
+        }
+
+        static int SnapPromoteNupkg(PromoteNupkgOptions opts, INugetService nugetService)
+        {
+            return -1;
+        }
+
+        static int SnapPushNupkg(PushNupkgOptions options, INugetService nugetService)
+        {
+            return -1;
         }
 
         static int SnapReleasify(ReleasifyOptions releasifyOptions)

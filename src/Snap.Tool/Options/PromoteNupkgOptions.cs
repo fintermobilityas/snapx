@@ -5,7 +5,7 @@ namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("promote", HelpText = "Pushes a nupkg to the default release channel")]
-    internal class PromoteOptions : BaseSubOptions
+    internal class PromoteNupkgOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Snap app name", Required = true)]
         public string App { get; set; }

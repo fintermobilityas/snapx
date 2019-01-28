@@ -28,47 +28,5 @@ namespace Snap.Tests
             _snapFilesystem = new SnapFilesystem();
         }
                
-        #if NETCOREAPP
-        [Fact]
-        public async Task TestBuildNetCoreUpdateExe()
-        {
-            var workingDirectory = _baseFixture.WorkingDirectory;
-
-            var updateExeAbsoluteFilename = await _snapSpecsWriter.ConvertUpdateExeToConsoleApplicationUnitTest(workingDirectory, _snapFilesystem, CancellationToken.None);
-            using (new DisposableFiles(_snapFilesystem, updateExeAbsoluteFilename))
-            {
-                Assert.NotNull(updateExeAbsoluteFilename);
-                Assert.True(_snapFilesystem.FileExists(updateExeAbsoluteFilename));
-                Assert.Equal(SnapSpecsWriter.SnapUpdateExeFilename, Path.GetFileName(updateExeAbsoluteFilename));
-
-                using (var updateExeMemoryStreamPe = await _snapFilesystem.FileReadAsync(updateExeAbsoluteFilename, CancellationToken.None))
-                {
-                    var (subSystemType, _, _) = updateExeMemoryStreamPe.GetPeDetails();
-                    Assert.Equal(PeUtility.SubSystemType.IMAGE_SUBSYSTEM_WINDOWS_GUI, subSystemType);
-                }
-
-                var (updateExeMemoryStream, updateExePdbMemoryStream) = await _snapSpecsWriter.MergeSnapCoreIntoUpdateExeAsyncUnitTest(workingDirectory, _snapFilesystem, CancellationToken.None);
-                using (updateExeMemoryStream)
-                using (updateExePdbMemoryStream)
-                {
-                    Assert.NotNull(updateExeMemoryStream);
-                    Assert.Equal(0, updateExeMemoryStream.Position);
-                    Assert.True(updateExeMemoryStream.CanRead);
-
-                    Assert.NotNull(updateExePdbMemoryStream);
-                    Assert.Equal(0, updateExePdbMemoryStream.Position);
-                    Assert.True(updateExePdbMemoryStream.CanRead);
-
-                    using (var updateExeAssemblyDefinition = AssemblyDefinition.ReadAssembly(updateExeMemoryStream))
-                    {
-                        var references = updateExeAssemblyDefinition.MainModule.AssemblyReferences.ToList();
-                        Assert.Single(references);
-                        Assert.Equal("mscorlib.dll", references[0].FullName);
-                    }
-                }
-            }                                  
-        }
-        #endif
-
     }
 }

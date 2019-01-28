@@ -18,12 +18,15 @@
         <Compile Remove="bin\**" />
         <Compile Remove="nupkgs\**" />
         <Compile Remove="obj\**" />
+        <Compile Remove="Runners\**" />
         <EmbeddedResource Remove="bin\**" />
         <EmbeddedResource Remove="nupkgs\**" />
         <EmbeddedResource Remove="obj\**" />
+        <EmbeddedResource Remove="Runners\**" />
         <None Remove="bin\**" />
         <None Remove="nupkgs\**" />
         <None Remove="obj\**" />
+        <None Remove="Runners\**" />
     </ItemGroup>
 
     <ItemGroup>

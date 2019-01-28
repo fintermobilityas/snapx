@@ -72,9 +72,7 @@ namespace Snap.Tests.NuGet
             Assert.NotEmpty(packages);
 
             var v450Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
-            var v492Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.9.2"));
             Assert.Null(v450Release);
-            Assert.NotNull(v492Release);
         }
         
         [Fact]

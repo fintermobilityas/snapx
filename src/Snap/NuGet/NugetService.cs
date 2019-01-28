@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
@@ -22,6 +24,7 @@ namespace Snap.NuGet
         Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, INuGetPackageSources packageSources, CancellationToken cancellationToken);
         Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageNameAsync(string packageName, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
         Task<DownloadResourceResult> DownloadByPackageIdentityAsync([NotNull] PackageIdentity packageIdentity, [NotNull] PackageSource source, string packagesFolder, CancellationToken cancellationToken);
+        Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default, int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
     }
 
     internal class NugetService : INugetService
@@ -36,7 +39,7 @@ namespace Snap.NuGet
             _nugetLogger = snapNugetLogger ?? throw new ArgumentNullException(nameof(snapNugetLogger));
         }
 
-        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageNameAsync([NotNull] string packageName, bool includePrerelease, 
+        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageNameAsync([NotNull] string packageName, bool includePrerelease,
             [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken)
         {
             if (packageName == null) throw new ArgumentNullException(nameof(packageName));
@@ -58,6 +61,40 @@ namespace Snap.NuGet
             if (source == null) throw new ArgumentNullException(nameof(source));
 
             return await DownloadByPackageIdentityAsync(source, packageIdentity, string.Empty, cancellationToken);
+        }
+
+        public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, [NotNull] ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
+        {
+            if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
+            if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+
+            string GetApiKey()
+            {
+                if (packageSources.Settings == null 
+                    || packageSource.Source == null)
+                {
+                    return string.Empty;
+                }
+
+                var decryptedApikey = SettingsUtility.GetDecryptedValueForAddItem(
+                    packageSources.Settings, ConfigurationConstants.ApiKeys,packageSource.Source);
+
+                return decryptedApikey ?? string.Empty; // NB! Has to be string.Empty
+            }
+
+            var sourceRepository = _packageSources.Get(packageSource);
+            var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
+
+            await packageUpdateResource.Push(
+                packagePath,
+                null,
+                timeOutInSeconds,
+                false, 
+                _ => GetApiKey(), 
+                _ => null, 
+                false,
+                nugetLogger ?? NullLogger.Instance);
         }
 
         public async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync([NotNull] string searchTerm, [NotNull] SearchFilter filters, int skip, int take,

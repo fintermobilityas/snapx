@@ -1,23 +1,33 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Snap.Core;
+using Snap.Core.IO;
 using Snap.Extensions;
 using Snap.NuGet;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests.NuGet
 {
-    public class NugetServiceV3Tests
+    public class NugetServiceV3Tests : IClassFixture<BaseFixture>
     {
-        readonly NugetService _nugetService;
+        readonly BaseFixture _baseFixture;
+        readonly INugetService _nugetService;
+        readonly ISnapFilesystem _snapFilesystem;
+        readonly SnapPack _snapPack;
 
-        public NugetServiceV3Tests()
+        public NugetServiceV3Tests(BaseFixture baseFixture)
         {
+            _baseFixture = baseFixture;
             _nugetService = new NugetService(new NugetLogger());
+            _snapFilesystem = new SnapFilesystem();
+            _snapPack = new SnapPack(_snapFilesystem);
         }
 
         [Fact]
@@ -72,9 +82,7 @@ namespace Snap.Tests.NuGet
             Assert.NotEmpty(packages);
 
             var v450Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
-            var v492Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.9.2"));
             Assert.Null(v450Release);
-            Assert.NotNull(v492Release);
         }
 
         [Fact]
@@ -93,5 +101,25 @@ namespace Snap.Tests.NuGet
             var upstreamPackageIdentity = downloadResourceResult.PackageReader.NuspecReader.GetIdentity();
             Assert.Equal(packageIdentity, upstreamPackageIdentity);
         }
+
+        [Fact(Skip = "Todo: Mock me. Only for works for YouPark employees right now.")]
+        public async Task TestPushAsync()
+        {
+            var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources();
+            var youparkAppsPackageSource = nuGetMachineWidePackageSources.Items.Single(x => x.Name == "youpark-apps");
+
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildTestNupkgAsync(_snapFilesystem, _snapPack);
+
+            using (nupkgMemoryStream)
+            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var nupkgFilename = Path.Combine(tmpDir.AbsolutePath, "test.nupkg");
+
+                await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgFilename, CancellationToken.None);
+
+                await _nugetService.PushAsync(nupkgFilename, nuGetMachineWidePackageSources, youparkAppsPackageSource, new NugetLogger());
+            }
+        }
+
     }
 }

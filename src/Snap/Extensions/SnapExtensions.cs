@@ -43,7 +43,7 @@ namespace Snap.Extensions
 
             packageSource.ProtocolVersion = (int)snapFeed.ProtocolVersion;
 
-            return new NuGetPackageSources(new List<PackageSource> { packageSource });
+            return new NuGetPackageSources(new NullSettings(), new List<PackageSource> { packageSource });
         }
 
         internal static INuGetPackageSources GetNugetSourcesFromSnapAppSpec([NotNull] this SnapAppSpec snapAppSpec)

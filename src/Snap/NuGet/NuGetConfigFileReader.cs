@@ -33,11 +33,12 @@ namespace Snap.NuGet
 
             var enabledSources = SettingsUtility.GetEnabledSources(settings).ToList();
 
-            return ReadFromFile(enabledSources);
+            return ReadFromFile(settings, enabledSources);
         }
 
-        NuGetPackageSources ReadFromFile([NotNull] IReadOnlyCollection<PackageSource> sources)
+        NuGetPackageSources ReadFromFile([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
         {
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (sources == null) throw new ArgumentNullException(nameof(sources));
 
             foreach (var source in sources)
@@ -46,7 +47,7 @@ namespace Snap.NuGet
                     $"Read [{source.Name}] : {source.SourceUri} from file: {source.Source}.");
             }
 
-            return new NuGetPackageSources(sources);
+            return new NuGetPackageSources(settings, sources);
         }
     }
 }

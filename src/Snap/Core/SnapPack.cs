@@ -97,7 +97,9 @@ namespace Snap.Core
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, GetPropertyValue);
                 packageBuilder.Save(outputStream);
 
-                progressSource?.Raise(100);
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                progressSource?.Raise(100);            
 
                 return outputStream;
             }

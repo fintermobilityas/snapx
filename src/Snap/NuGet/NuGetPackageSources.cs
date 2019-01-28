@@ -39,7 +39,6 @@ namespace Snap.NuGet
         }
     }
     #endif
-
     
     internal sealed class NugetOrgOfficialV2PackageSource : NuGetPackageSources
     {
@@ -49,7 +48,7 @@ namespace Snap.NuGet
             IsMachineWide = true
         };
 
-        public NugetOrgOfficialV2PackageSource() : base(new List<PackageSource> { PackageSourceV2 })
+        public NugetOrgOfficialV2PackageSource() : base(new NullSettings(), new List<PackageSource> { PackageSourceV2 })
         {
 
         }
@@ -63,7 +62,7 @@ namespace Snap.NuGet
             IsMachineWide = true
         };
 
-        public NugetOrgOfficialV3PackageSource() : base(new List<PackageSource> { PackageSourceV3 })
+        public NugetOrgOfficialV3PackageSource() : base(new NullSettings(), new List<PackageSource> { PackageSourceV3 })
         {
 
         }
@@ -71,7 +70,7 @@ namespace Snap.NuGet
 
     internal class NuGetMachineWidePackageSources : NuGetPackageSources
     {
-        public NuGetMachineWidePackageSources()
+        public NuGetMachineWidePackageSources() 
         {
             var nuGetConfigFileReader = new NuGetConfigFileReader();
             var nugetMachineWideSettings = new NuGetMachineWideSettings();
@@ -80,45 +79,35 @@ namespace Snap.NuGet
             var packageSources = configFilePaths.Select(configFilePath => nuGetConfigFileReader.ReadNugetSources(configFilePath)).ToList();
 
             Items = packageSources.SelectMany(x => x.Items).ToList();
+            Settings = nugetMachineWideSettings.Settings;
         }
     }
 
     internal interface INuGetPackageSources
     {
+        ISettings Settings { get; }
         IReadOnlyCollection<PackageSource> Items { get; }
     }
 
     internal class NuGetPackageSources : INuGetPackageSources
     {
+        public ISettings Settings { get; protected set; }
         public IReadOnlyCollection<PackageSource> Items { get; protected set; }
 
-        public NuGetPackageSources()
+        protected NuGetPackageSources()
         {
             Items = new List<PackageSource>();
         }
 
-        public NuGetPackageSources([NotNull] ISettings settings) : this()
+        public NuGetPackageSources([NotNull] ISettings settings) : this(settings, settings.GetConfigFilePaths().Select(x => new PackageSource(x)))
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-
-            var sources = settings.GetConfigFilePaths().ToList();
-
-            if (!sources.Any())
-            {
-                throw new ArgumentException("At least one source must be specified", nameof(sources));
-            }
-
-            Items = sources
-                .Select(s => new PackageSource(s))
-                .ToList();
         }
 
-        public NuGetPackageSources([NotNull] IEnumerable<PackageSource> sources)
+        public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IEnumerable<PackageSource> sources) 
         {
-            if (sources == null)
-            {
-                throw new ArgumentNullException(nameof(sources));
-            }
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
+            if (sources == null) throw new ArgumentNullException(nameof(sources));
 
             var items = sources.ToList();
 
@@ -126,8 +115,9 @@ namespace Snap.NuGet
             {
                 throw new ArgumentException(nameof(items));
             }
-
+            
             Items = items;
+            Settings = settings;
         }
 
         public override string ToString()

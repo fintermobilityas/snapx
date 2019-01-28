@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using NuGet.Commands;
 using NuGet.Common;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
@@ -66,10 +67,9 @@ namespace Snap.Tool
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
-            return Parser.Default.ParseArguments<Sha512Options, ListOptions, InstallNupkgOptions, ReleasifyOptions>(args)
+            return Parser.Default.ParseArguments<Sha512Options, InstallNupkgOptions, ReleasifyOptions>(args)
                 .MapResult(
                     (ReleasifyOptions opts) => SnapReleasify(opts),
-                    (ListOptions opts) => SnapList(opts, snapFilesystem, snapSpecsReader).Result,
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
                     errs =>
@@ -148,98 +148,6 @@ namespace Snap.Tool
                 return -1;
             }
         }
-
-        static async Task<int> SnapList(ListOptions listOptions, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
-        {
-            var snapPkgFileName = default(string);
-
-            if (listOptions.Directory != null)
-            {
-                snapPkgFileName = listOptions.Directory.EndsWith(".snap") ? 
-                    Path.GetFullPath(listOptions.Directory) : Path.Combine(Path.GetFullPath(listOptions.Directory), ".snap");
-            }            
-
-            if (listOptions.Apps)
-            {
-                return await SnapListApps(snapPkgFileName, snapFilesystem, snapSpecsReader);
-            }
-
-            if (listOptions.Feeds)
-            {
-                return await SnapListFeeds(snapPkgFileName, snapFilesystem, snapSpecsReader);
-            }
-
-            return -1;
-        }
-
-        static async Task<int> SnapListFeeds(string snapPkgFileName, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
-        {
-            if (!snapFilesystem.FileExists(snapPkgFileName))
-            {
-                Logger.Error($"Error: Unable to find .snap in path {snapPkgFileName}.");
-                return -1;
-            }
-
-            SnapAppsSpec snapAppsSpec;
-            try
-            {
-                var snapAppSpecYamlStr = await snapFilesystem.ReadAllTextAsync(snapPkgFileName, CancellationToken.None);
-                snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppSpecYamlStr);
-                if (snapAppsSpec == null)
-                {
-                    Logger.Error(".snap file not found in current directory.");
-                    return -1;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Error parsing .snap file.", e);
-                return -1;
-            }
-
-            Logger.Info($"Feeds ({snapAppsSpec.Feeds.Count}):");
-
-            foreach (var feed in snapAppsSpec.Feeds)
-            {
-                Logger.Info($"Name: {feed.Name}. Protocol version: {feed.ProtocolVersion}. Source: {feed.SourceUri}.");
-            }
-
-            return 0;
-        }
-
-        static async Task<int> SnapListApps(string snapPkgFileName, ISnapFilesystem snapFilesystem, ISnapSpecsReader snapSpecsReader)
-        {
-            if (!snapFilesystem.FileExists(snapPkgFileName))
-            {
-                Logger.Error($"Error: Unable to find .snap in path {snapPkgFileName}.");
-                return -1;
-            }
-
-            SnapAppsSpec snapAppsSpec;
-            try
-            {
-                var snapAppsSpecYamlStr = await snapFilesystem.ReadAllTextAsync(snapPkgFileName, CancellationToken.None);
-                snapAppsSpec = snapSpecsReader.GetSnapAppsSpecFromYamlString(snapAppsSpecYamlStr);
-                if (snapAppsSpec == null)
-                {
-                    Logger.Error(".snap file not found in current directory.");
-                    return -1;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Error parsing .snap file.", e);
-                return -1;
-            }
-
-            Logger.Info($"Snaps ({snapAppsSpec.Apps.Count}):");
-            foreach (var app in snapAppsSpec.Apps)
-            {
-                var channels = app.Channels.Select(x => x.Name).ToList();
-                Logger.Info($"Name: {app.Id}. Version: {app.Version}. Channels: {string.Join(", ", channels)}.");
-            }
-
-            return 0;
-        }
+        
     }
 }

@@ -15,15 +15,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Remove="bin\**" />
-      <Compile Remove="nupkgs\**" />
-      <Compile Remove="obj\**" />
-      <EmbeddedResource Remove="bin\**" />
-      <EmbeddedResource Remove="nupkgs\**" />
-      <EmbeddedResource Remove="obj\**" />
-      <None Remove="bin\**" />
-      <None Remove="nupkgs\**" />
-      <None Remove="obj\**" />
+        <Compile Remove="bin\**" />
+        <Compile Remove="nupkgs\**" />
+        <Compile Remove="obj\**" />
+        <EmbeddedResource Remove="bin\**" />
+        <EmbeddedResource Remove="nupkgs\**" />
+        <EmbeddedResource Remove="obj\**" />
+        <None Remove="bin\**" />
+        <None Remove="nupkgs\**" />
+        <None Remove="obj\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -37,7 +37,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Snap\Snap.csproj" />
+        <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
 </Project>

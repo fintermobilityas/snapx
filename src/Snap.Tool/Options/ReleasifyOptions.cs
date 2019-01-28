@@ -7,11 +7,9 @@ namespace Snap.Tool.Options
     [Verb("releasify", HelpText = "Create a new release for a given snap app")]
     internal class ReleasifyOptions : BaseSubOptions
     {
-        [Option('a', "app", HelpText = "Snap app name", Required = true)]
+        [Option('a', "app", HelpText = "Snap app name.", Required = true)]
         public string App { get; set; }
-        [Option('c', "channel", HelpText = "Snap channel name", Required = true)]
-        public string Channel { get; set; }
-        [Option('n', "nupkg", HelpText = "Nuget package to releasify", Required = true)]
-        public string Nupkg { get; set; }
+        [Option('d', "base-directory", HelpText = "Base directory for where binaries for current app can be found.", Required = true)]
+        public string BaseDirectory { get; set; }
     }
 }

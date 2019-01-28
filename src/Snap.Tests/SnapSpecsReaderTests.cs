@@ -17,37 +17,30 @@ namespace Snap.Tests
         {
             const string yaml = @"
 feeds:
-  - name: myfeedname
-    type: Nuget
-    source: https://test
-    username: myusername
-    password: mypassword
-  - name: myfeedname2
-    type: Nuget
-    source: https://test2
+    -   name: myget.private
+        source: 'https://api.myget.org/v3/F/myprivatemygetfeed/index.json'
+        apikey: MYGET_PRIVATE_API_PUBLISH_KEY_ENVIRONMENT_VARIABLE
+    -   name: myget.public
+        source: 'https://api.myget.org/v3/F/myprivatemygetfeed/index.json'
+        username: test
+        password: test
+signatures:
+    -   name: MyCompany
+        certsubject: yolo
+        sha256: 2ABE85936C13256EB139C429BD354E85EA719922013904EB924627660A383EEF
 
 snaps:
-    -
-        id: demoapp
-        version: 1.0.0
-        project: src\snap.crossplatform.demoapp\snap.crossplatform.demoapp.csproj
-        outputdir: build/$id$/$channel$/$version$
+    -   id: demoapp
         channels:
-            - {name: test, feed: nuget.org}
-            - {name: staging, feed: nuget.org}
-            - {name: production, feed: nuget.org}
-        targetframeworks:
-            - {rid: fullframework, framework: net461, nuspec: nuspecs/$id$/$rid_and_framework$.nuspec}
-            - {rid: win7-x64, framework: netcoreapp2.1, nuspec: nuspecs/$id$/$rid_and_framework$.nuspec}
-            - {rid: linux-x64, framework: netcoreapp2.1, nuspec: nuspecs/$id$/S$rid_and_framework$.nuspec}
-        commands:
-            - {name: clean, command: 'dotnet clean $project$'}
-            - {name: publish, commands: [
-                'dotnet publish $project$ -c Release -o $outputdir$ /p:Version=$version$ /p:SnapPublish=true', 
-                'snap releasify --id $id$ --channel test --src $outputdir$', 
-                'snap promote --id $id$ --all']
-            }
-            - {name: publish-all, command: 'snap promote --id $id$ --all'}
+            - {name: ci, publish: myget.private, update: myget.public}
+            - {name: test, publish: myget.private, update: myget.public}
+            - {name: staging, publish: myget.private, update: myget.public}
+            - {name: production, publish: myget.private, update: myget.public}
+        targets:
+            - {osplatform: 'windows', targetframeworks: [
+                {rid: win-x64, framework: netcoreapp2.2, alias: demoapp-win-x64, nuspec: nuspecs/demoapp-win-x64.nuspec, signature: mycompany  } ]
+            - {osplatform: 'linux', targetframeworks: [
+                {rid: linux-64, framework: netcoreapp2.2, alias: demoapp-linux-x64, nuspec: nuspecs/demoapp-linux-x64.nuspec, signature: mycompany } ]
 ";
 
             var snapAppsSpec = _snapSpecsReader.GetSnapAppsSpecFromYamlString(yaml);

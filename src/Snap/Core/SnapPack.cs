@@ -6,29 +6,27 @@ using NuGet.Packaging;
 
 namespace Snap.Core
 {
-    internal interface ISnapPackDetails
+    internal interface ISnapPackageDetails
     {
         SnapAppSpec Spec { get; set; }
         string NuspecFilename { get; }
         string NuspecBaseDirectory { get; }
         ISnapProgressSource SnapProgressSource {get; set; }
         IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
-        Func<MemoryStream, string> FileResolverFunc { get; set; }
     }
 
-    internal sealed class SnapPackDetails : ISnapPackDetails
+    internal sealed class SnapPackageDetails : ISnapPackageDetails
     {
         public SnapAppSpec Spec { get; set; }
         public string NuspecFilename { get; set; }
         public string NuspecBaseDirectory { get; set; }
         public ISnapProgressSource SnapProgressSource { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
-        public Func<MemoryStream, string> FileResolverFunc { get; set; }
     }
 
     internal interface ISnapPack
     {
-        MemoryStream Pack(ISnapPackDetails snapPackDetails);
+        MemoryStream Pack(ISnapPackageDetails packageDetails);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -40,53 +38,66 @@ namespace Snap.Core
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
         }
 
-        public MemoryStream Pack(ISnapPackDetails snapPackDetails)
+        public MemoryStream Pack(ISnapPackageDetails packageDetails)
         {
-            if (snapPackDetails == null) throw new ArgumentNullException(nameof(snapPackDetails));  
+            if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));  
 
-            if (snapPackDetails.NuspecBaseDirectory == null || !_snapFilesystem.DirectoryExists(snapPackDetails.NuspecBaseDirectory))
+            if (packageDetails.NuspecBaseDirectory == null || !_snapFilesystem.DirectoryExists(packageDetails.NuspecBaseDirectory))
             {
-                throw new DirectoryNotFoundException($"Unable to find base directory: {snapPackDetails.NuspecBaseDirectory}.");
+                throw new DirectoryNotFoundException($"Unable to find base directory: {packageDetails.NuspecBaseDirectory}.");
             }
 
-            if (!_snapFilesystem.FileExists(snapPackDetails.NuspecFilename))
+            if (!_snapFilesystem.FileExists(packageDetails.NuspecFilename))
             {
-                throw new FileNotFoundException($"Unable to find nuspec filename: {snapPackDetails.NuspecFilename}.");
+                throw new FileNotFoundException($"Unable to find nuspec filename: {packageDetails.NuspecFilename}.");
+            }
+
+            if (packageDetails.Spec == null)
+            {
+                throw new Exception($"Snap spec cannot be null.");
+            }
+
+            if (packageDetails.Spec.Version == null)
+            {
+                throw new Exception($"Snap spec package version cannot be null.");
             }
 
             var properties = new Dictionary<string, string>
             {
-                {"version", snapPackDetails.Spec.Version.ToFullString()},
-                {"nuspecbasedirectory", snapPackDetails.NuspecBaseDirectory}
+                {"version", packageDetails.Spec.Version.ToFullString()},
+                {"nuspecbasedirectory", packageDetails.NuspecBaseDirectory}
             };
 
-            if (snapPackDetails.NuspecProperties != null)
+            if (packageDetails.NuspecProperties != null)
             {
-                foreach (var pair in snapPackDetails.NuspecProperties)
+                foreach (var (key, value) in packageDetails.NuspecProperties)
                 {
-                    if (!properties.ContainsKey(pair.Key.ToLowerInvariant()))
+                    if (!properties.ContainsKey(key.ToLowerInvariant()))
                     {
-                        properties.Add(pair.Key, pair.Value);
+                        properties.Add(key, value);
                     }
                 }
             }
 
-            var progressSource = snapPackDetails.SnapProgressSource;
+            var progressSource = packageDetails.SnapProgressSource;
 
             progressSource?.Raise(0);
 
             var outputStream = new MemoryStream();
 
-            using (var nuspecStream = _snapFilesystem.OpenReadOnly(snapPackDetails.NuspecFilename))
+            using (var nuspecStream = _snapFilesystem.OpenReadOnly(packageDetails.NuspecFilename))
             {
                 string GetPropertyValue(string propertyName)
                 {
                     return properties.TryGetValue(propertyName, out var value) ? value : null;
                 }
 
-                var targetFramework = NuGetFramework.Parse("net45");
-                var packageBuilder = new PackageBuilder(nuspecStream, snapPackDetails.NuspecBaseDirectory, GetPropertyValue);
+                progressSource?.Raise(50);
+
+                var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, GetPropertyValue);
                 packageBuilder.Save(outputStream);
+
+                progressSource?.Raise(100);
 
                 return outputStream;
             }

@@ -7,7 +7,7 @@
     <PropertyGroup>
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapCoreILRepackWorkingDirectory>
     </PropertyGroup>
-        
+
     <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
         <SnapCoreILRepackInputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
         <SnapCoreILRepackInputAssemblies Include="System.Drawing.Common.dll" />
@@ -73,13 +73,16 @@
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-          <PackageReference Include="System.ValueTuple" Version="4.5.0">
+        <PackageReference Include="System.ValueTuple" Version="4.5.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="System.ValueTuple" Version="4.5.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

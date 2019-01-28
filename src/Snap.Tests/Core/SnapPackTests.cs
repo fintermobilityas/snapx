@@ -49,7 +49,7 @@ namespace Snap.Tests.Core
 
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                var snapPackDetails = new SnapPackDetails
+                var snapPackDetails = new SnapPackageDetails
                 {
                     NuspecFilename = Path.Combine(tmpDir.AbsolutePath, "test.nuspec"),
                     NuspecBaseDirectory = tmpDir.AbsolutePath,

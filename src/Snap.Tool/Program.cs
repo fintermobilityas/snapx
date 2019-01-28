@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using NuGet.Commands;
-using NuGet.Common;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;

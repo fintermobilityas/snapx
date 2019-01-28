@@ -30,11 +30,7 @@ namespace Snap.Extensions
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
 
-            var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false)
-            {
-                IsMachineWide = false,
-                IsOfficial = true
-            };
+            var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
 
             if (snapFeed.Username != null && snapFeed.Password != null)
             {

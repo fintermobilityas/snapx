@@ -40,6 +40,11 @@ namespace Snap.Extensions
                 inMemorySettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
             }
 
+            if (snapFeed.ApiKey != null)
+            {
+                SettingsUtility.SetEncryptedValueForAddItem(inMemorySettings, ConfigurationConstants.ApiKeys, packageSource.Source, snapFeed.ApiKey);
+            }
+
             packageSource.ProtocolVersion = (int)snapFeed.ProtocolVersion;
 
             return new NuGetPackageSources(inMemorySettings, new List<PackageSource> { packageSource });

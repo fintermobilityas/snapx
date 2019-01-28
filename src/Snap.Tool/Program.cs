@@ -59,19 +59,6 @@ namespace Snap.Tool
             var snapSpecsReader = new SnapSpecsReader();
             var snapCryptoProvider = new SnapCryptoProvider();
 
-            //var packProgressSource = new ProgressSource();
-            //packProgressSource.Progress += (sender, i) => { Logger.Info($"{i}%"); };
-
-            //var snapPackDetails = new SnapPackDetails
-            //{
-            //    NuspecBaseDirectory = @"C:\Users\peters\Documents\GitHub\snap\.build\bin\Snap\Debug\netcoreapp2.2",                
-
-            //    CurrentVersion = new SemanticVersion(1, 0, 0),
-            //    ProgressSource = packProgressSource,
-            //};
-
-            //var test = snapPack.PackAsync(snapPackDetails).Result;
-
             return MainAsync(args, snapOs, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
         }
 

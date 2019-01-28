@@ -1,5 +1,0 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Snap.CrossPlatform.DemoApp">
-    Hello World! I'm a snap app that runs on both Windows and Linux.
-</Window>

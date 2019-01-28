@@ -13,7 +13,7 @@ using Snap.Extensions;
 namespace Snap.NuGet
 {
     #if NET45
-    internal class NuGetMachineWideSettings : IMachineWideSettings
+    class NuGetMachineWideSettings : IMachineWideSettings
     {
         readonly Lazy<IEnumerable<Settings>> _settings;
 
@@ -26,7 +26,7 @@ namespace Snap.NuGet
         }
     }
     #else
-    internal class NuGetMachineWideSettings : IMachineWideSettings
+    class NuGetMachineWideSettings : IMachineWideSettings
     {
         readonly Lazy<ISettings> _settings;
 

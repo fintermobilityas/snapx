@@ -64,6 +64,11 @@ namespace Snap.Shared.Tests
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
                 Feeds = new List<SnapFeed> {publishFeed, updateFeed },
+                Signature = new SnapSignature()
+                {
+                    CertificateSubjectName = "mycompany",
+                    Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
+                },
                 Channel = testChannel,
                 Channels = new List<SnapChannel> { testChannel, productionChannel },
                 Target = new SnapTarget
@@ -72,7 +77,9 @@ namespace Snap.Shared.Tests
                     Framework = new SnapTargetFramework
                     {
                         Name = "netcoreapp2.1",
-                        RuntimeIdentifier = "win7-x64"
+                        RuntimeIdentifier = "win7-x64",
+                        Alias = "demoapp-win7-x64",
+                        Nuspec = "test.nuspec"
                     }
                 }
             };

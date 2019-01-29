@@ -28,6 +28,7 @@ namespace Snap.Core
             .WithNamingConvention(new CamelCaseNamingConvention())
             .WithTypeConverter(new SemanticVersionYamlTypeConverter())
             .WithTypeConverter(new UriYamlTypeConverter())
+            .WithTypeConverter(new OsPlatformYamlTypeConverter())
             .Build();
 
         public AssemblyDefinition BuildSnapAppAssembly([NotNull] SnapApp snapApp)

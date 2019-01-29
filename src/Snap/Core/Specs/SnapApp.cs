@@ -42,16 +42,29 @@ namespace Snap.Core.Specs
             Feeds = new List<SnapFeed>();
         }
 
+        /// <summary>
+        /// Copy constructor. Integrity of app properties are not validated.
+        /// </summary>
+        /// <param name="app"></param>
         public SnapApp([NotNull] SnapApp app)
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
-            Signature = new SnapSignature(app.Signature);
-            Channel = new SnapChannel(app.Channel);
-            Channels = app.Channels.Select(x => new SnapChannel(x)).ToList();
-            Target = new SnapTarget(app.Target);
-            Feeds = app.Feeds.Select(x => new SnapFeed(x)).ToList();
+            if (app.Signature != null)
+            {
+                Signature = new SnapSignature(app.Signature);
+            }
+            if (app.Channel != null)
+            {
+                Channel = new SnapChannel(app.Channel);
+            }
+            if (app.Target != null)
+            {
+                Target = new SnapTarget(app.Target);
+            }
+            Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
+            Feeds = app.Feeds?.Select(x => new SnapFeed(x)).ToList();
         }
 
         public void Validate()
@@ -71,7 +84,7 @@ namespace Snap.Core.Specs
                 throw new SnapAppValidationException(this, nameof(Version), "Prereleases are not allowed. Use multiple channels instead, e.g. CI, test, staging, production.");
             }
 
-            if (Version.Release != null)
+            if (!string.IsNullOrEmpty(Version.Release))
             {
                 throw new SnapAppValidationException(this, nameof(Version), "Release labels are not allowed. Use multiple channels instead, e.g. CI, test, staging, production.");
             }

@@ -177,6 +177,8 @@ if($Cross) {
 	$BuildOutputDir = Join-Path $WorkingDir build\$OSPlatform\$Arch\$Configuration
 }
 
+# Projects
+
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
 $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\snap.corerun\$OSPlatform\$Arch\$Configuration
 $SnapCoreRunInstallDir = Join-Path $SnapCoreRunBuildOutputDir install

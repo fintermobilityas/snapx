@@ -188,7 +188,7 @@ int main(const int argc, char *argv[])
 {
     try
     {
-        return run_main(argc, argv, -1);
+        return corerun_main(argc, argv, -1);
     }
     catch (std::exception& ex)
     {

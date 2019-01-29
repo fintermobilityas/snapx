@@ -12,6 +12,7 @@ using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
+using Snap.Core.Specs;
 using Snap.NuGet;
 using Snap.Shared.Tests.Extensions;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
@@ -23,36 +24,57 @@ namespace Snap.Shared.Tests
     {
         public string WorkingDirectory => Directory.GetCurrentDirectory();
 
-        public SnapAppSpec BuildSnapAppSpec([NotNull] string channelName = "test")
+        public SnapApp BuildSnapApp()
         {
-            if (channelName == null) throw new ArgumentNullException(nameof(channelName));
-
-            var feed = new SnapFeed
+            var publishFeed = new SnapFeed
             {
-                Name = "nuget.org",
+                Name = "nuget.org (publish)",
                 SourceUri = new Uri(NuGetConstants.V3FeedUrl),
-                ProtocolVersion = NuGetProtocolVersion.NugetV3
+                ProtocolVersion = NuGetProtocolVersion.V3,
+                ApiKey = "myapikey"
             };
-
-            var channel = new SnapChannel
+            
+            var updateFeed = new SnapFeed
             {
-                Name = channelName,
-                Feed = feed.Name
+                Name = "nuget.org (update)",
+                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                ProtocolVersion = NuGetProtocolVersion.V3,
+                Username = "myusername",
+                Password = "mypassword"
             };
 
-            return new SnapAppSpec
+            var testChannel = new SnapChannel
+            {
+                Name = "test",
+                Feed = publishFeed.Name,
+                Publish = publishFeed.Name,
+                Update = updateFeed.Name
+            };
+
+            var productionChannel = new SnapChannel
+            {
+                Name = "production",
+                Feed = publishFeed.Name,
+                Publish = publishFeed.Name,
+                Update = updateFeed.Name
+            };
+
+            return new SnapApp
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Feed = feed,
-                Channel = channel,
-                TargetFramework = new SnapTargetFramework
+                Feeds = new List<SnapFeed> {publishFeed, updateFeed },
+                Channel = testChannel,
+                Channels = new List<SnapChannel> { testChannel, productionChannel },
+                Target = new SnapTarget
                 {
-                    Framework = "netcoreapp2.1",
-                    RuntimeIdentifier = "win7-x64",
-                    OsPlatform = OSPlatform.Windows.ToString()
-                },
-                AvailableChannels = new List<SnapChannel> { channel }
+                    OsPlatform = OSPlatform.Windows,
+                    Framework = new SnapTargetFramework
+                    {
+                        Name = "netcoreapp2.1",
+                        RuntimeIdentifier = "win7-x64"
+                    }
+                }
             };
         }
 
@@ -199,7 +221,7 @@ namespace Snap.Shared.Tests
                     NuspecFilename = Path.Combine(tempDirectory.AbsolutePath, "test.nuspec"),
                     NuspecBaseDirectory = tempDirectory.AbsolutePath,
                     SnapProgressSource = progressSource,
-                    Spec = this.BuildSnapAppSpec()
+                    App = BuildSnapApp()
                 };
 
                 var subDirectory = Path.Combine(snapPackDetails.NuspecBaseDirectory, "subdirectory");

@@ -1,0 +1,23 @@
+﻿feeds:
+    - { name: myget.public, source: 'https://api.myget.org/v3/F/myprivatemygetfeed/index.json', username: test, password: test }
+signatures:
+    - { name: mycompany, sha256: 2ABE85936C13256EB139C429BD354E85EA719922013904EB924627660A383EEF }
+snaps: 
+  - id: demoapp
+    version: 1.0.0
+    signature: mycompany
+    channels:
+        - { name: ci, publish: myget.private, update: myget.public}
+        - { name: test, publish: myget.private, update: myget.public}
+        - { name: staging, publish: myget.private, update: myget.public}
+        - { name: production, publish: myget.private, update: myget.public}
+    targets:
+        - { osplatform: windows, targetframeworks: [
+              { rid: win-x64, framework: netcoreapp2.2,  nuspec: nuspecs/demoapp-winx-x64.nuspec, alias: demoapp-win-x64 }
+            ]
+          }
+        - { osplatform: linux,
+            targetframeworks: [
+              { rid: linux-x64, framework: netcoreapp2.2, nuspec: nuspecs/demoapp-linux-x64.nuspec, alias: demoapp-linux-x64}
+            ]
+          }

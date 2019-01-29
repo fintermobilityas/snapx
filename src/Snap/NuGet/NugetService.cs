@@ -118,9 +118,14 @@ namespace Snap.NuGet
         {
             using (var cacheContext = new SourceCacheContext())
             {
+                // TODO(1): Enable signature checking if enabled in snap spec.
                 var downloadContext = new PackageDownloadContext(cacheContext);
+
                 var sourceRepository = _packageSources.Get(packageSource);
                 var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
+
+                // TODO(2): https://github.com/dotnet/corefx/issues/6849#issuecomment-195980023
+                // TODO(2): Should we botter with providing a progress source in order to indicate download progress? 
                 return await downloadResource.GetDownloadResourceResultAsync(packageIdentity, downloadContext, globalPackagesFolder, _nugetLogger, cancellationToken);
             }
         }

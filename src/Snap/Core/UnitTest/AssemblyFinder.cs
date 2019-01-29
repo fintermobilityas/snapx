@@ -26,7 +26,7 @@ namespace Snap.Core.UnitTest
             var toSearch = new[]
             {
                 thisType.AssemblyQualifiedName.Replace(thisType.FullName + ", ", string.Empty),
-                thisType.AssemblyQualifiedName.Replace(thisType.FullName + ", ", string.Empty).Replace(".Portable", string.Empty),
+                thisType.AssemblyQualifiedName.Replace(thisType.FullName + ", ", string.Empty).Replace(".Portable", string.Empty)
             }.Select(x => new AssemblyName(x)).ToArray();
 
             foreach (var assembly in toSearch)

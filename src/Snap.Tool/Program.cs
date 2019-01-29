@@ -54,7 +54,7 @@ namespace Snap.Tool
             var snapExtractor = new SnapExtractor(snapFilesystem);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
             var snapPack = new SnapPack(snapFilesystem);
-            var snapSpecsReader = new SnapSpecsReader();
+            var snapSpecsReader = new SnapAppReader();
             var snapCryptoProvider = new SnapCryptoProvider();
             var nugetLogger = new NugetLogger();
             var nugetService = new NugetService(nugetLogger);
@@ -62,7 +62,7 @@ namespace Snap.Tool
             return MainAsync(args, snapOs, nugetService, snapExtractor, snapFilesystem, snapInstaller, snapSpecsReader, snapCryptoProvider);
         }
 
-        static int MainAsync(IEnumerable<string> args, ISnapOs snapOs, INugetService nugetService, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapSpecsReader snapSpecsReader, ISnapCryptoProvider snapCryptoProvider)
+        static int MainAsync(IEnumerable<string> args, ISnapOs snapOs, INugetService nugetService, ISnapExtractor snapExtractor, ISnapFilesystem snapFilesystem, ISnapInstaller snapInstaller, ISnapAppReader snapAppReader, ISnapCryptoProvider snapCryptoProvider)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
@@ -97,12 +97,12 @@ namespace Snap.Tool
 
         static async Task<int> SnapInstallNupkg(InstallNupkgOptions installNupkgOptions, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
         {
-            if (installNupkgOptions.Filename == null)
+            if (installNupkgOptions.Nupkg == null)
             {
                 return -1;
             }
 
-            var nupkgFilename = installNupkgOptions.Filename;
+            var nupkgFilename = installNupkgOptions.Nupkg;
             if (nupkgFilename == null || !snapFilesystem.FileExists(nupkgFilename))
             {
                 Logger.Error($"Unable to find nupkg: {nupkgFilename}.");
@@ -124,7 +124,7 @@ namespace Snap.Tool
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
                 var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
-                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory, CancellationToken.None);
+                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory);
 
                 Logger.Info($"Succesfully installed {packageIdentity.Id} in {sw.Elapsed.TotalSeconds:F} seconds.");
 

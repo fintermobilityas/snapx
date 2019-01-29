@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.Versioning;
 using NuGet.Frameworks;
 using NuGet.Packaging;
+using Snap.Core.Specs;
 
 namespace Snap.Core
 {
     internal interface ISnapPackageDetails
     {
-        SnapAppSpec Spec { get; set; }
+        SnapApp App { get; set; }
         string NuspecFilename { get; }
         string NuspecBaseDirectory { get; }
         ISnapProgressSource SnapProgressSource {get; set; }
@@ -17,7 +20,7 @@ namespace Snap.Core
 
     internal sealed class SnapPackageDetails : ISnapPackageDetails
     {
-        public SnapAppSpec Spec { get; set; }
+        public SnapApp App { get; set; }
         public string NuspecFilename { get; set; }
         public string NuspecBaseDirectory { get; set; }
         public ISnapProgressSource SnapProgressSource { get; set; }
@@ -52,19 +55,19 @@ namespace Snap.Core
                 throw new FileNotFoundException($"Unable to find nuspec filename: {packageDetails.NuspecFilename}.");
             }
 
-            if (packageDetails.Spec == null)
+            if (packageDetails.App == null)
             {
-                throw new Exception($"Snap spec cannot be null.");
+                throw new Exception($"Snap app cannot be null.");
             }
 
-            if (packageDetails.Spec.Version == null)
+            if (packageDetails.App.Version == null)
             {
-                throw new Exception($"Snap spec package version cannot be null.");
+                throw new Exception($"Snap app version cannot be null.");
             }
 
             var properties = new Dictionary<string, string>
             {
-                {"version", packageDetails.Spec.Version.ToFullString()},
+                {"version", packageDetails.App.Version.ToFullString()},
                 {"nuspecbasedirectory", packageDetails.NuspecBaseDirectory}
             };
 
@@ -95,6 +98,7 @@ namespace Snap.Core
                 progressSource?.Raise(50);
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, GetPropertyValue);
+               
                 packageBuilder.Save(outputStream);
 
                 outputStream.Seek(0, SeekOrigin.Begin);
@@ -103,6 +107,24 @@ namespace Snap.Core
 
                 return outputStream;
             }
+        }
+
+        class InMemoryPackageFile : IPackageFile
+        {
+            public InMemoryPackageFile(string relativePath)
+            {
+                
+            }
+
+            public Stream GetStream()
+            {
+                throw new NotSupportedException("This should never happen.");
+            }
+
+            public string Path { get; set; }
+            public string EffectivePath { get; set; }
+            public FrameworkName TargetFramework { get; set; }
+            public DateTimeOffset LastWriteTime { get; set; }
         }
     }
 }

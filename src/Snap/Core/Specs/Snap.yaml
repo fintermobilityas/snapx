@@ -1,0 +1,19 @@
+﻿id: demoapp
+version: 1.0.0
+signature: 
+  name: mycompany, 
+  sha256: 2ABE85936C13256EB139C429BD354E85EA719922013904EB924627660A383EEF
+channel: 
+  name: ci, 
+  feed: myget.public
+channels:
+    - {name: ci, feed: myget.public}
+    - {name: test, feed: myget.public}
+    - {name: staging, feed: myget.public}
+    - {name: production, feed: myget.public}
+feeds:
+    - {name: myget.public, source: 'https://api.myget.org/v3/F/myprivatemygetfeed/index.json', username: test, password: test}
+target:
+    - { osplatform: windows, targetframework: 
+        { rid: win-x64, framework: netcoreapp2.2, nuspec: nuspecs/demoapp-win-x64.nuspec, alias: demoapp-win-x64} 
+      }

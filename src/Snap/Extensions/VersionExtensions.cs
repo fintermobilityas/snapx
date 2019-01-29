@@ -9,13 +9,14 @@ namespace Snap.Extensions
     {
         static readonly Regex SuffixRegex = new Regex(@"(-full|-delta)?\.nupkg$", RegexOptions.Compiled);
         static readonly Regex VersionRegex = new Regex(@"\d+(\.\d+){0,3}(-[A-Za-z][0-9A-Za-z-]*)?$", RegexOptions.Compiled);
-
+        
         [SuppressMessage("ReSharper", "UnusedMember.Global")]
-        public static SemanticVersion ToSemanticVersion(this string fileName)
+        public static SemanticVersion ToSemanticVersionSafe(this string fileName)
         {
             var name = SuffixRegex.Replace(fileName, "");
             var version = VersionRegex.Match(name).Value;
-            return SemanticVersion.Parse(version);
+            SemanticVersion.TryParse(version, out var semanticVersion);
+            return semanticVersion;
         }
     }
 }

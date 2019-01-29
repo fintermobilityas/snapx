@@ -86,11 +86,11 @@ namespace Snap.Core
                 return;
             }
 
-            var appSpec = typeof(SnapAwareApp).Assembly.GetSnapAppSpec();
+            var app = typeof(SnapAwareApp).Assembly.GetSnapApp();
 
             try
             {
-                lookup[args[0]](appSpec.Version);
+                lookup[args[0]](app.Version);
                 if (!ModeDetector.InUnitTestRunner()) Environment.Exit(0);
             }
             catch (Exception ex)

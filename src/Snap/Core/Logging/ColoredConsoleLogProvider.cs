@@ -20,7 +20,7 @@ namespace Snap.Core.Logging
                 {LogLevel.Warn, ConsoleColor.Magenta},
                 {LogLevel.Info, ConsoleColor.White},
                 {LogLevel.Debug, ConsoleColor.Gray},
-                {LogLevel.Trace, ConsoleColor.DarkGray},
+                {LogLevel.Trace, ConsoleColor.DarkGray}
             };
 
         public ColoredConsoleLogProvider(LogLevel logLevel)

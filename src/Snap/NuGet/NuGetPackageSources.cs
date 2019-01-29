@@ -44,7 +44,7 @@ namespace Snap.NuGet
     {
         static readonly PackageSource PackageSourceV2 = new PackageSource(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
         {
-            ProtocolVersion = (int)NuGetProtocolVersion.NugetV2,
+            ProtocolVersion = (int)NuGetProtocolVersion.V2,
             IsMachineWide = true
         };
 
@@ -58,7 +58,7 @@ namespace Snap.NuGet
     {
         static readonly PackageSource PackageSourceV3 = new PackageSource(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
         {
-            ProtocolVersion = (int)NuGetProtocolVersion.NugetV3,
+            ProtocolVersion = (int)NuGetProtocolVersion.V3,
             IsMachineWide = true
         };
 

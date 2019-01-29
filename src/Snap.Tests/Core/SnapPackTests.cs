@@ -42,7 +42,7 @@ namespace Snap.Tests.Core
             {
                 Assert.Equal("Youpark", packageArchiveReader.NuspecReader.GetId());
                 Assert.Equal("Youpark", packageArchiveReader.NuspecReader.GetTitle());
-                Assert.Equal(snapPackageDetails.Spec.Version, packageArchiveReader.NuspecReader.GetVersion());
+                Assert.Equal(snapPackageDetails.App.Version, packageArchiveReader.NuspecReader.GetVersion());
 
                 var files = packageArchiveReader.GetFiles().ToList();
 

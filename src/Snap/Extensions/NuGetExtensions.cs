@@ -16,13 +16,13 @@ namespace Snap.Extensions
         public static bool IsProtocolV2([NotNull] this PackageSource packageSource)
         {
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
-            return packageSource.ProtocolVersion == (int) NuGetProtocolVersion.NugetV2;
+            return packageSource.ProtocolVersion == (int) NuGetProtocolVersion.V2;
         }
 
         public static bool IsProtocolV3([NotNull] this PackageSource packageSource)
         {
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
-            return packageSource.ProtocolVersion == (int) NuGetProtocolVersion.NugetV3;
+            return packageSource.ProtocolVersion == (int) NuGetProtocolVersion.V3;
         }
 
 #if NET45

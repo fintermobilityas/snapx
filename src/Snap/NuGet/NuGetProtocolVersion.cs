@@ -3,7 +3,7 @@
     public enum NuGetProtocolVersion
     {
         NotSupported = 0,
-        NugetV2 = 1,
-        NugetV3 = 2
+        V2 = 1,
+        V3 = 2
     }
 }

@@ -75,30 +75,32 @@ namespace Snap.AnyOS.Windows
 
             string GetLinkTarget(SnapShortcutLocation location, string title, string applicationName, bool createDirectoryIfNecessary = true)
             {
-                var dir = default(string);
+                var targetDirectory = default(string);
 
                 switch (location)
                 {
                     case SnapShortcutLocation.Desktop:
-                        dir = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                        targetDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
                         break;
                     case SnapShortcutLocation.StartMenu:
-                        dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs", applicationName);
+                        targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs", applicationName);
                         break;
                     case SnapShortcutLocation.Startup:
-                        dir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                        targetDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
                         break;
                     case SnapShortcutLocation.AppRoot:
-                        dir = rootAppDirectory;
+                        targetDirectory = rootAppDirectory;
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(location), location, null);
                 }
 
                 if (createDirectoryIfNecessary)
                 {
-                    _snapFilesystem.CreateDirectoryIfNotExists(dir);
+                    _snapFilesystem.CreateDirectoryIfNotExists(targetDirectory);
                 }
 
-                return Path.Combine(dir, title + ".lnk");
+                return Path.Combine(targetDirectory, title + ".lnk");
             }
 
             Logger.Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
@@ -106,14 +108,14 @@ namespace Snap.AnyOS.Windows
             var exePath = Path.Combine(rootAppInstallDirectory, exeName);
             var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
 
-            foreach (var f in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
+            foreach (var flag in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
             {
-                if (!locations.HasFlag(f))
+                if (!locations.HasFlag(flag))
                 {
                     continue;
                 }
 
-                var file = LinkTargetForVersionInfo(f, fileVerInfo);
+                var file = LinkTargetForVersionInfo(flag, fileVerInfo);
                 var fileExists = _snapFilesystem.FileExists(file);
 
                 // NB: If we've already installed the app, but the shortcut
@@ -140,7 +142,7 @@ namespace Snap.AnyOS.Windows
                         IconPath = icon ?? target,
                         IconIndex = 0,
                         WorkingDirectory = Path.GetDirectoryName(exePath),
-                        Description = packageDescription,
+                        Description = packageDescription
                     };
 
                     if (!string.IsNullOrWhiteSpace(programArguments))
@@ -207,7 +209,7 @@ namespace Snap.AnyOS.Windows
                 }
             });
 
-            var shellLinks = (new DirectoryInfo(taskbarPath)).GetFiles("*.lnk").Select(resolveLink).ToArray();
+            var shellLinks = new DirectoryInfo(taskbarPath).GetFiles("*.lnk").Select(resolveLink).ToArray();
 
             foreach (var shortcut in shellLinks)
             {

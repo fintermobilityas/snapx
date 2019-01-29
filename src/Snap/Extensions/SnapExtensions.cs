@@ -1,14 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using Snap.Attributes;
 using Snap.Core;
+using Snap.Core.Specs;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -16,22 +16,23 @@ namespace Snap.Extensions
 {
     public static class SnapExtensions
     {
-        public const string SnapSpecDll = SnapSpecsWriter.SnapAppSpecLibraryName + ".dll";
+        public const string SnapAppDllFilename = SnapAppWriter.SnapAppDllFilename;
+        static readonly OSPlatform AnyOs = OSPlatform.Create("AnyOs");
 
-        internal static string GetNugetUpstreamPackageId([NotNull] this SnapAppSpec snapApp)
+        internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var fullOrDelta = !snapApp.IsDelta ? "full" : "delta";
-            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Channel.Name}-{snapApp.TargetFramework.OsPlatform}-{snapApp.TargetFramework.Framework}-{snapApp.TargetFramework.RuntimeIdentifier}".ToLowerInvariant();
+            var fullOrDelta = "full"; // Todo: Update me when delta updates support lands.
+            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Channel.Name}-{snapApp.Target.OsPlatform}-{snapApp.Target.Framework.Name}-{snapApp.Target.Framework.RuntimeIdentifier}".ToLowerInvariant();
         }
 
-        internal static INuGetPackageSources GetNugetSourcesFromSnapFeed([NotNull] this SnapFeed snapFeed)
+        internal static PackageSource BuildPackageSource([NotNull] this SnapFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
+            if (inMemorySettings == null) throw new ArgumentNullException(nameof(inMemorySettings));
 
             var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
-            var inMemorySettings = new InMemorySettings();
-
+            
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
                 packageSource.Credentials = PackageSourceCredential.FromUserInput(packageSource.Name, 
@@ -47,58 +48,55 @@ namespace Snap.Extensions
 
             packageSource.ProtocolVersion = (int)snapFeed.ProtocolVersion;
 
-            return new NuGetPackageSources(inMemorySettings, new List<PackageSource> { packageSource });
+            return packageSource;
         }
 
-        internal static INuGetPackageSources GetNugetSourcesFromSnapAppSpec([NotNull] this SnapAppSpec snapAppSpec)
+        internal static INuGetPackageSources BuildNugetSourcesFromSnapApp([NotNull] this SnapApp snapApp)
         {
-            if (snapAppSpec == null) throw new ArgumentNullException(nameof(snapAppSpec));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var inMemorySettings = new InMemorySettings();
 
-            return snapAppSpec.Feed.GetNugetSourcesFromSnapFeed();
+            return new NuGetPackageSources(inMemorySettings, snapApp.Feeds.Select(x => x.BuildPackageSource(inMemorySettings)).ToList());
         }
 
-        internal static SnapAppSpec GetSnapAppSpec(this AssemblyDefinition assemblyDefinition, ISnapSpecsReader snapSpecsReader)
+        internal static SnapApp GetSnapApp(this AssemblyDefinition assemblyDefinition, ISnapAppReader snapAppReader)
         {
-            var snapSpecAttribute = new CecilAssemblyReflector(assemblyDefinition).GetAttribute<SnapSpecAttribute>();
-            if (snapSpecAttribute == null)
+            var snapReleaseDetailsAttribute = new CecilAssemblyReflector(assemblyDefinition).GetAttribute<SnapAppReleaseDetailsAttribute>();
+            if (snapReleaseDetailsAttribute == null)
             {
-                throw new Exception($"Unable to find {nameof(SnapSpecAttribute)} in assembly {assemblyDefinition.FullName}.");
+                throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyDefinition.FullName}.");
             }
 
-            const string snapAppSpecResourceName = "SnapAppSpec";
-            var snapSpecResource = assemblyDefinition.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppSpecResourceName);
+            var snapSpecResource = assemblyDefinition.MainModule.Resources.SingleOrDefault(x => x.Name == SnapAppWriter.SnapAppLibraryName);
             if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
             {
-                throw new Exception($"Unable to find {snapAppSpecResourceName} in assembly {assemblyDefinition.FullName}.");
+                throw new Exception($"Unable to find resource {SnapAppWriter.SnapAppLibraryName} in assembly {assemblyDefinition.FullName}.");
             }
 
-            using (var inputStream = snapSpecEmbeddedResource.GetResourceStream())
-            using (var outputStream = new MemoryStream())
+            using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())
+            using (var snapAppMemoryStream = new MemoryStream())
             {
-                inputStream.CopyTo(outputStream);
-                outputStream.Seek(0, SeekOrigin.Begin);
+                resourceStream.CopyTo(snapAppMemoryStream);
+                snapAppMemoryStream.Seek(0, SeekOrigin.Begin);
 
-                var yamlString = Encoding.UTF8.GetString(outputStream.ToArray());
-                var snapAppSpec = snapSpecsReader.GetSnapAppSpecFromYamlString(yamlString);
-
-                return snapAppSpec;
+                return snapAppReader.BuildSnapAppFromStream(snapAppMemoryStream);
             }
         }
 
-        internal static SnapAppSpec GetSnapAppSpecFromDirectory([NotNull] this string workingDirectory)
+        internal static SnapApp GetSnapAppFromDirectory([NotNull] this string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var snapAppSpecDll = Path.Combine(workingDirectory, SnapSpecDll);
-            if (!File.Exists(snapAppSpecDll))
+            var snapAppDll = Path.Combine(workingDirectory, SnapAppDllFilename);
+            if (!File.Exists(snapAppDll))
             {
-                throw new FileNotFoundException(snapAppSpecDll);
+                throw new FileNotFoundException(snapAppDll);
             }
 
-            using (var fileStream = new FileStream(snapAppSpecDll, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(fileStream))
+            using (var snapAppDllFileStream = new FileStream(snapAppDll, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var snapAppDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapAppDllFileStream))
             {
-                return assemblyDefinition.GetSnapAppSpec(new SnapSpecsReader());
+                return snapAppDllAssemblyDefinition.GetSnapApp(new SnapAppReader());
             }
         }
 
@@ -107,24 +105,24 @@ namespace Snap.Extensions
         {
             if (stubExecutableWorkingDirectory == null) throw new ArgumentNullException(nameof(stubExecutableWorkingDirectory));
 
-            var snapAppSpec = stubExecutableWorkingDirectory.GetSnapAppSpecFromDirectory();
+            var snapApp = stubExecutableWorkingDirectory.GetSnapAppFromDirectory();
 
-            stubExecutableExeName = $"{snapAppSpec.Id}.exe";
+            stubExecutableExeName = $"{snapApp.Id}.exe";
 
             return Path.Combine(stubExecutableWorkingDirectory, $"..\\{stubExecutableExeName}");
         }
 
-        public static SnapAppSpec GetSnapAppSpec([NotNull] this Assembly assembly)
+        public static SnapApp GetSnapApp([NotNull] this Assembly assembly)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
             var snapSpecDllDirectory = Path.GetDirectoryName(assembly.Location);
             if (snapSpecDllDirectory == null)
             {
-                throw new Exception($"Unable to find snap dll spec: {SnapSpecDll}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}.");
+                throw new Exception($"Unable to find snap app dll: {SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}.");
             }
 
-            return snapSpecDllDirectory.GetSnapAppSpecFromDirectory();
+            return snapSpecDllDirectory.GetSnapAppFromDirectory();
         }
 
         [UsedImplicitly]
@@ -133,6 +131,16 @@ namespace Snap.Extensions
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
 
             return Path.GetDirectoryName(assembly.Location).GetSnapStubExecutableFullPath(out stubExecutableExeName);
+        }
+
+        public static bool IsAnyOs(this OSPlatform oSPlatform)
+        {
+            return oSPlatform.ToString().Equals(AnyOs.ToString(), StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static bool IsSupportedOsVersion(this OSPlatform oSPlatform)
+        {
+            return oSPlatform == OSPlatform.Linux || oSPlatform == OSPlatform.Windows || oSPlatform.IsAnyOs();
         }
     }
 }

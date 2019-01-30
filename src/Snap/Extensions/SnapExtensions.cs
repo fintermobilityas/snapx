@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -6,9 +7,10 @@ using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
+using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
-using Snap.Core.Specs;
+using Snap.Core.Models;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -22,20 +24,21 @@ namespace Snap.Extensions
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var channel = snapApp.Channels.Single(x => x.Current);
             var fullOrDelta = "full"; // Todo: Update me when delta updates support lands.
-            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Channel.Name}-{snapApp.Target.OsPlatform}-{snapApp.Target.Framework.Name}-{snapApp.Target.Framework.RuntimeIdentifier}".ToLowerInvariant();
+            return $"{snapApp.Id}-{fullOrDelta}-{channel.Name}-{snapApp.Target.Os}-{snapApp.Target.Framework}-{snapApp.Target.Rid}".ToLowerInvariant();
         }
 
-        internal static PackageSource BuildPackageSource([NotNull] this SnapFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
+        internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
             if (inMemorySettings == null) throw new ArgumentNullException(nameof(inMemorySettings));
 
             var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
-            
+
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
-                packageSource.Credentials = PackageSourceCredential.FromUserInput(packageSource.Name, 
+                packageSource.Credentials = PackageSourceCredential.FromUserInput(packageSource.Name,
                     snapFeed.Username, snapFeed.Password, false);
 
                 inMemorySettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
@@ -51,12 +54,192 @@ namespace Snap.Extensions
             return packageSource;
         }
 
-        internal static INuGetPackageSources BuildNugetSourcesFromSnapApp([NotNull] this SnapApp snapApp)
+        internal static string GetDecryptedValue([NotNull] this PackageSource packageSource, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] string sectionName)
+        {
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+            if (sectionName == null) throw new ArgumentNullException(nameof(sectionName));
+
+            var decryptedValue = SettingsUtility.GetDecryptedValueForAddItem(nuGetPackageSources.Settings, sectionName, packageSource.Source);
+            return string.IsNullOrWhiteSpace(decryptedValue) ? null : decryptedValue;
+        }
+
+        internal static SnapNugetFeed BuildSnapNugetFeed([NotNull] this PackageSource packageSource, [NotNull] INuGetPackageSources nuGetPackageSources)
+        {
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+
+            var snapFeed = new SnapNugetFeed
+            {
+                Name = packageSource.Name,
+                SourceUri = packageSource.SourceUri,
+                ProtocolVersion = (NuGetProtocolVersion)packageSource.ProtocolVersion,
+                Username = packageSource.Credentials?.Username,
+                Password = packageSource.Credentials?.Password,
+                ApiKey = packageSource.GetDecryptedValue(nuGetPackageSources, ConfigurationConstants.ApiKeys)
+            };
+
+            return snapFeed;
+        }
+
+        internal static bool TryCreateSnapHttpFeed(this string value, out SnapHttpFeed snapHttpFeed)
+        {
+            snapHttpFeed = null;
+            if (value == null)
+            {
+                return false;
+            }
+
+            const string snapHttpPrefix = "snap://";
+            const string snapHttpsPrefix = "snaps://";
+
+            var http = value.StartsWith(snapHttpPrefix);
+            var https = !http && value.StartsWith(snapHttpsPrefix);
+
+            if (!http && !https)
+            {
+                return false;
+            }
+
+            var substrLen = http ? snapHttpPrefix.Length : snapHttpsPrefix.Length;
+            var sourceUrl = $"{(http ? "http://" : "https://")}{value.Substring(substrLen)}";
+
+            if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var sourceUri))
+            {
+                return false;
+            }
+
+            snapHttpFeed = new SnapHttpFeed(sourceUri);
+            return true;
+        }
+
+        internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string targetName, [NotNull] SemanticVersion releaseVersion,
+            [NotNull] INuGetPackageSources nuGetPackageSources)
+        {
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            if (targetName == null) throw new ArgumentNullException(nameof(targetName));
+            if (releaseVersion == null) throw new ArgumentNullException(nameof(releaseVersion));
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+
+            var snapApp = snapApps.Apps.SingleOrDefault(x => x.Id == id);
+            if (snapApp == null)
+            {
+                throw new Exception($"Unable to find application with id: {id}.");
+            }
+
+            var snapAppCertificate = snapApp.Certificate == null ? null : snapApps.Certificates.SingleOrDefault(x => x.Name == snapApp.Certificate);
+            if (snapApp.Certificate != null && snapAppCertificate == null)
+            {
+                throw new Exception($"Unable to find certificate with name: {snapApp.Certificate}. Application id: {snapApp.Id}.");
+            }
+
+            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => x.Name == targetName);
+            if (snapAppTarget == null)
+            {
+                throw new Exception($"Unable to find target with name: {targetName}. Application id: {snapApp.Id}.");
+            }
+
+            var snapAppAvailableChannels = snapApps.Channels.Where(rhs => snapApp.Channels.Any(lhs => lhs.Equals(rhs.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
+            if (!snapAppAvailableChannels.Any())
+            {
+                throw new Exception($"Channel list is empty. Application id: {snapApp.Id}");
+            }
+
+            var snapFeeds = new List<SnapFeed>();
+            snapFeeds.AddRange(nuGetPackageSources.BuildSnapFeeds());
+            snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed.TryCreateSnapHttpFeed(out var snapHttpFeed) ? snapHttpFeed : null).Where(x => x != null).DistinctBy(x => x.SourceUri));
+
+            var snapNugetFeeds = snapFeeds.Where(x => x is SnapNugetFeed).Cast<SnapNugetFeed>().ToList();
+            var snapHttpFeeds = snapFeeds.Where(x => x is SnapHttpFeed).Cast<SnapHttpFeed>().ToList();
+            var snapAppChannels = new List<SnapChannel>();
+
+            for (var i = 0; i < snapAppAvailableChannels.Count; i++)
+            {
+                var snapsChannel = snapAppAvailableChannels[i];
+                var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed);
+                if (pushFeed == null)
+                {
+                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}.");
+                }
+
+                var updateFeed = (SnapFeed)
+                                 snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.UpdateFeed)
+                                 ?? snapHttpFeeds.SingleOrDefault(x =>
+                                     snapsChannel.UpdateFeed.TryCreateSnapHttpFeed(out var snapHttpFeed)
+                                     && x.ToStringSnapUrl() == snapHttpFeed.ToStringSnapUrl());
+
+                if (updateFeed == null)
+                {
+                    throw new Exception($"Unable to resolve update feed: {snapsChannel.UpdateFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}.");
+                }
+
+                var currentChannel = i == 0; // Default snap channel is always the first one defined. 
+                snapAppChannels.Add(new SnapChannel(snapsChannel.Name, currentChannel, pushFeed, updateFeed));
+            }
+
+            return new SnapApp
+            {
+                Id = snapApp.Id,
+                Version = releaseVersion,
+                Certificate = snapAppCertificate == null ? null : new SnapCertificate(snapAppCertificate),
+                Channels = snapAppChannels,
+                Target = new SnapTarget(snapAppTarget)
+            };
+        }
+
+        internal static INuGetPackageSources BuildNugetSources([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var inMemorySettings = new InMemorySettings();
 
-            return new NuGetPackageSources(inMemorySettings, snapApp.Feeds.Select(x => x.BuildPackageSource(inMemorySettings)).ToList());
+            var nugetFeeds = snapApp.Channels
+                .SelectMany(x => new List<SnapNugetFeed> { x.PushFeed, x.UpdateFeed as SnapNugetFeed })
+                .Where(x => x != null)
+                .DistinctBy(x => x.Name)
+                .Select(x => x.BuildPackageSource(inMemorySettings))
+                .ToList();
+
+            return new NuGetPackageSources(inMemorySettings, nugetFeeds);
+        }
+
+        internal static INuGetPackageSources BuildNugetSources([NotNull] this SnapApps snapApps, INuGetPackageSources nuGetPackageSources)
+        {
+            var allPackageSources = snapApps.Channels
+                .SelectMany(x =>
+                {
+                    var packageSources = new List<PackageSource>();
+
+                    var pushFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == x.PushFeed);
+                    if (pushFeed != null)
+                    {
+                        packageSources.Add(pushFeed);
+                    }
+
+                    if (x.UpdateFeed.TryCreateSnapHttpFeed(out _))
+                    {
+                        goto done;
+                    }
+
+                    var updateFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == x.UpdateFeed);
+                    if (updateFeed != null)
+                    {
+                        packageSources.Add(updateFeed);
+                    }
+
+                    done:
+                    return packageSources;
+                })
+                .DistinctBy(x => x.Name)
+                .ToList();
+
+            return !allPackageSources.Any() ? NuGetPackageSources.Empty : new NuGetPackageSources(nuGetPackageSources.Settings, allPackageSources);
+        }
+
+        internal static List<SnapNugetFeed> BuildSnapFeeds([NotNull] this INuGetPackageSources nuGetPackageSources)
+        {
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+            var snapFeeds = nuGetPackageSources.Items.Select(x => x.BuildSnapNugetFeed(nuGetPackageSources)).ToList();
+            return snapFeeds;
         }
 
         internal static SnapApp GetSnapApp(this AssemblyDefinition assemblyDefinition, ISnapAppReader snapAppReader)

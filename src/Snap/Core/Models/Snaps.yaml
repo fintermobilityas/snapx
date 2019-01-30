@@ -1,0 +1,24 @@
+﻿certificates:
+- name: safenet-ev-codesign
+  csn: Some Awesome Company LTD
+  sha256: 311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02
+channels:
+  - name: test
+    push-feed: myget.private
+    update-feed: myget.public.readonly
+    update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+  - name: production
+    push-feed: myget.private
+    update-feed: myget.public.readonly
+    update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+apps:
+- id: demoapp
+  version: 1.0.0
+  certificate: safenet-ev-codesign
+  channels: [test, production]
+  targets:
+    - name: demoapp-win-x64
+      os: windows
+      nuspec: test.nuspec
+      framework: netcoreapp2.1
+      rid: win-x64

@@ -34,7 +34,7 @@ namespace Snap.Tests.NuGet
         [Fact]
         public void TestNugetOrgPackageSourcesV3()
         {
-            var source = new NugetOrgOfficialV3PackageSource();
+            var source = new NugetOrgOfficialV3PackageSources();
             Assert.Single(source.Items);
 
             var item = source.Items.Single();
@@ -49,7 +49,7 @@ namespace Snap.Tests.NuGet
         [Fact]
         public void TestIsProtocolV3()
         {
-            var packageSources = new NugetOrgOfficialV3PackageSource();
+            var packageSources = new NugetOrgOfficialV3PackageSources();
             Assert.Single(packageSources.Items);
 
             var packageSource = packageSources.Items.Single();
@@ -59,7 +59,7 @@ namespace Snap.Tests.NuGet
         [Fact]
         public async Task TestFindByPackageNameAsync()
         {
-            var packageSources = new NugetOrgOfficialV3PackageSource();
+            var packageSources = new NugetOrgOfficialV3PackageSources();
 
             var packages = await _nugetService
                 .FindByPackageNameAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
@@ -75,7 +75,7 @@ namespace Snap.Tests.NuGet
         [Fact]
         public async Task SearchAsync()
         {
-            var packageSources = new NugetOrgOfficialV3PackageSource();
+            var packageSources = new NugetOrgOfficialV3PackageSources();
 
             var packages = (await _nugetService
                 .SearchAsync("Nuget.Packaging", new SearchFilter(false), 0, 30, packageSources, CancellationToken.None)).ToList();
@@ -90,7 +90,7 @@ namespace Snap.Tests.NuGet
         public async Task TestDownloadByPackageIdentityAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
-            var packageSource = new NugetOrgOfficialV3PackageSource().Items.First();
+            var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();
 
             var downloadResourceResult = await _nugetService.DownloadByPackageIdentityAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);

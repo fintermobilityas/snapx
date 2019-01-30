@@ -4,7 +4,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Snap.Core.Yaml
+namespace Snap.Core.Yaml.TypeConverters
 {
     internal sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
     {

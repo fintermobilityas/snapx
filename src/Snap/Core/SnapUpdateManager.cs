@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
-using Snap.Core.Specs;
+using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Logging;
@@ -59,7 +59,7 @@ namespace Snap.Core
             _nugetService = nugetService ?? new NugetService(new NugetLogger());
             _snapOs = snapOs ?? SnapOs.AnyOs;
             _nugetPackageId = _snapApp.BuildNugetUpstreamPackageId();
-            _nugetPackageSources = _snapApp.BuildNugetSourcesFromSnapApp();
+            _nugetPackageSources = _snapApp.BuildNugetSources();
 
             if (_nugetPackageId.ToSemanticVersionSafe() == null)
             {

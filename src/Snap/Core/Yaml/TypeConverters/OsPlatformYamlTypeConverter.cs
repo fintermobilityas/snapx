@@ -4,7 +4,7 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Snap.Core.Yaml
+namespace Snap.Core.Yaml.TypeConverters
 {
     internal sealed class OsPlatformYamlTypeConverter : IYamlTypeConverter
     {
@@ -35,9 +35,9 @@ namespace Snap.Core.Yaml
             else if (osPlatform.Equals("anyos", StringComparison.InvariantCultureIgnoreCase))
             {
                 osPlatform = "anyos";            
-            }
+            } 
 
-            return OSPlatform.Create(osPlatform);
+            return OSPlatform.Create(osPlatform.ToUpperInvariant());
         }
     }
 }

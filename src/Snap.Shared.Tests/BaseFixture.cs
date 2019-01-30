@@ -12,9 +12,11 @@ using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
-using Snap.Core.Specs;
+using Snap.Core.Models;
+using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests.Extensions;
+using Xunit;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Shared.Tests
@@ -26,62 +28,83 @@ namespace Snap.Shared.Tests
 
         public SnapApp BuildSnapApp()
         {
-            var publishFeed = new SnapFeed
+            var pushFeed = new SnapNugetFeed
             {
-                Name = "nuget.org (publish)",
+                Name = "nuget.org",
                 SourceUri = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 ApiKey = "myapikey"
             };
-            
-            var updateFeed = new SnapFeed
+
+            var updateFeedNuget = new SnapNugetFeed
             {
-                Name = "nuget.org (update)",
+                Name = "nuget.org",
                 SourceUri = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 Username = "myusername",
                 Password = "mypassword"
             };
 
+            "https://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
+
             var testChannel = new SnapChannel
             {
                 Name = "test",
-                Feed = publishFeed.Name,
-                Publish = publishFeed.Name,
-                Update = updateFeed.Name
+                PushFeed = pushFeed,
+                UpdateFeed = updateFeedNuget,
+                Current = true
+            };
+
+            var stagingChannel = new SnapChannel
+            {
+                Name = "staging",
+                PushFeed = pushFeed,
+                UpdateFeed = updateFeedHttp
             };
 
             var productionChannel = new SnapChannel
             {
                 Name = "production",
-                Feed = publishFeed.Name,
-                Publish = publishFeed.Name,
-                Update = updateFeed.Name
+                PushFeed = pushFeed,
+                UpdateFeed = updateFeedNuget
             };
 
             return new SnapApp
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Feeds = new List<SnapFeed> {publishFeed, updateFeed },
-                Signature = new SnapSignature()
+                Certificate = new SnapCertificate
                 {
-                    CertificateSubjectName = "mycompany",
+                    Name = "mycertificate",
+                    Csn = "mycompany",
                     Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
                 },
-                Channel = testChannel,
-                Channels = new List<SnapChannel> { testChannel, productionChannel },
+                Channels = new List<SnapChannel>
+                {
+                    testChannel,
+                    stagingChannel,
+                    productionChannel
+                },
                 Target = new SnapTarget
                 {
-                    OsPlatform = OSPlatform.Windows,
-                    Framework = new SnapTargetFramework
-                    {
-                        Name = "netcoreapp2.1",
-                        RuntimeIdentifier = "win7-x64",
-                        Alias = "demoapp-win7-x64",
-                        Nuspec = "test.nuspec"
-                    }
+                    Name = "demoapp-win7-x64",
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64",
+                    Nuspec = "test.nuspec"
                 }
+            };
+        }
+
+        public SnapApps BuildSnapApps()
+        {
+            var snapApp = BuildSnapApp();
+
+            return new SnapApps
+            {
+                Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
+                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
+                Certificates = new List<SnapsCertificate> { new SnapsCertificate(snapApp.Certificate) }
             };
         }
 
@@ -253,5 +276,11 @@ namespace Snap.Shared.Tests
                 return (nupkgMemoryStream, snapPackDetails);
             }
         }
+
+        protected internal void AssertSnapsAreEqual(SnapApp lhs, SnapApp rhs, bool assertVersion = true, bool assertCurrentChannel = true)
+        {
+           
+        }
+
     }
 }

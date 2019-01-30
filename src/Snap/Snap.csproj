@@ -6,28 +6,13 @@
         <TargetFrameworks>netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
         <RootNamespace>Snap</RootNamespace>
         <AssemblyName>Snap</AssemblyName>
-        <PackageId>Snap.Core</PackageId>
-        <Description>A portable application updater for .NET core applications running on either Windows or Unix.</Description>
+        <PackageId>Snap</PackageId>
+        <Description>A cross platform application updater for .NET applications targeting either Windows or Unix.</Description>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
         <DefineConstants>$(DefineConstants);LIBLOG_PUBLIC;</DefineConstants>
     </PropertyGroup>
-
-    <ItemGroup>
-        <Compile Remove="bin\**" />
-        <Compile Remove="nupkgs\**" />
-        <Compile Remove="obj\**" />
-        <Compile Remove="Runners\**" />
-        <EmbeddedResource Remove="bin\**" />
-        <EmbeddedResource Remove="nupkgs\**" />
-        <EmbeddedResource Remove="obj\**" />
-        <EmbeddedResource Remove="Runners\**" />
-        <None Remove="bin\**" />
-        <None Remove="nupkgs\**" />
-        <None Remove="obj\**" />
-        <None Remove="Runners\**" />
-    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.4">

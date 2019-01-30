@@ -40,7 +40,7 @@ namespace Snap.NuGet
     }
     #endif
     
-    internal sealed class NugetOrgOfficialV2PackageSource : NuGetPackageSources
+    internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
     {
         static readonly PackageSource PackageSourceV2 = new PackageSource(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
         {
@@ -48,13 +48,13 @@ namespace Snap.NuGet
             IsMachineWide = true
         };
 
-        public NugetOrgOfficialV2PackageSource() : base(new NullSettings(), new List<PackageSource> { PackageSourceV2 })
+        public NugetOrgOfficialV2PackageSources() : base(new NullSettings(), new List<PackageSource> { PackageSourceV2 })
         {
 
         }
     }
 
-    internal sealed class NugetOrgOfficialV3PackageSource : NuGetPackageSources
+    internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
     {
         static readonly PackageSource PackageSourceV3 = new PackageSource(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
         {
@@ -62,7 +62,7 @@ namespace Snap.NuGet
             IsMachineWide = true
         };
 
-        public NugetOrgOfficialV3PackageSource() : base(new NullSettings(), new List<PackageSource> { PackageSourceV3 })
+        public NugetOrgOfficialV3PackageSources() : base(new NullSettings(), new List<PackageSource> { PackageSourceV3 })
         {
 
         }
@@ -83,6 +83,14 @@ namespace Snap.NuGet
         }
     }
 
+    internal class NuGetInMemoryPackageSources : NuGetPackageSources
+    {
+        public NuGetInMemoryPackageSources(IEnumerable<PackageSource> packageSources) : base(new InMemorySettings(), packageSources)
+        {
+            
+        }
+    }
+
     internal interface INuGetPackageSources
     {
         ISettings Settings { get; }
@@ -94,11 +102,15 @@ namespace Snap.NuGet
         public ISettings Settings { get; protected set; }
         public IReadOnlyCollection<PackageSource> Items { get; protected set; }
 
+        public static NuGetPackageSources Empty => new NuGetPackageSources();
+
         protected NuGetPackageSources()
         {
             Items = new List<PackageSource>();
+            Settings = new NullSettings();
         }
 
+        [UsedImplicitly]
         public NuGetPackageSources([NotNull] ISettings settings) : this(settings, settings.GetConfigFilePaths().Select(x => new PackageSource(x)))
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));

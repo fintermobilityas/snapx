@@ -1,97 +1,233 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using NuGet.Configuration;
+using NuGet.Versioning;
 using Snap.Core;
+using Snap.Core.Models;
+using Snap.Extensions;
+using Snap.NuGet;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests.Core
 {
-    public class SnapAppReaderTests
+    public class SnapAppReaderTests : IClassFixture<BaseFixture>
     {
-        readonly ISnapAppReader _snapAppReader;
+        const string SnapAppsYaml = @"
+certificates:
+- name: safenet-ev-codesign
+  csn: Some Awesome Company LTD
+  sha256: 311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02
+apps:
+- id: demoapp
+  version: 1.0.0
+  certificate: safenet-ev-codesign
+  channels:
+    - name: test
+      push-feed: myget.private
+      update-feed: myget.public.readonly
+      update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+    - name: production
+      push-feed: myget.private
+      update-feed: myget.public.readonly
+      update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+  targets:
+    - name: demoapp-win-x64
+      os: windows
+      nuspec: test.nuspec
+      framework: netcoreapp2.1
+      rid: win-x64
+";
 
-        public SnapAppReaderTests()
+        readonly BaseFixture _baseFixture;
+        readonly ISnapAppReader _snapAppReader;
+        readonly ISnapAppWriter _snapAppWriter;
+
+        public SnapAppReaderTests(BaseFixture baseFixture)
         {
+            _baseFixture = baseFixture;
             _snapAppReader = new SnapAppReader();
+            _snapAppWriter = new SnapAppWriter();
         }
 
         [Fact]
         public void TestBuildSnapAppFromYamlString()
         {
-            const string yaml = @"
-id: demoapp
-version: 1.0.0
-signature: 
-    - name: mycompany
-    - sha256: 2ABE85936C13256EB139C429BD354E85EA719922013904EB924627660A383EEF
-feed:
-    - name: myget.public
-      source: 'https://api.myget.org/v3/F/myprivatemygetfeed/index.json'
-      username: test
-      password: test
-channels:
-    - {name: ci, publish: myget.private, update: myget.public}
-    - {name: test, publish: myget.private, update: myget.public}
-    - {name: staging, publish: myget.private, update: myget.public}
-    - {name: production, publish: myget.private, update: myget.public}
-targets:
-    - {osplatform: 'anyos': targetframeworks: [
-        { rid: 'anyos-x64', 
-          framework: netcoreapp2.2, 
-          alias: demoapp-x64,
-          nuspec: nuspecs/demoapp-win-x64.nuspec, 
-          signature: mycompany }],
-    - {osplatform: 'windows', targetframeworks: [
-        {rid: win-x64, framework: netcoreapp2.2, alias: demoapp-win-x64, nuspec: nuspecs/demoapp-win-x64.nuspec, signature: mycompany  } ]
-    - {osplatform: 'linux', targetframeworks: [
-        {rid: linux-64, framework: netcoreapp2.2, alias: demoapp-linux-x64, nuspec: nuspecs/demoapp-linux-x64.nuspec, signature: mycompany } ]
-";
+            var snapAppBefore = BuildSnap();
+            var snapAppYamlString  = _snapAppWriter.ToSnapAppYamlString(snapAppBefore);
 
-            var snapAppsSpec = _snapAppReader.BuildSnapAppFromYamlString(yaml);
-            Assert.NotNull(snapAppsSpec);
-            //Assert.Equal(2,snapAppsSpec.Apps.Count);
-            //Assert.Equal(2, snapAppsSpec.Feeds.Count);
+            var snapAppAfter = _snapAppReader.BuildSnapAppFromYamlString(snapAppYamlString);
 
-            //var feed1 = snapAppsSpec.Feeds[0];
-            //Assert.Equal("myfeedname", feed1.Name);
-            //Assert.Equal("https://test/", feed1.SourceUri.ToString());
-            //Assert.Equal("myusername", feed1.Username);
-            //Assert.Equal("mypassword", feed1.Password);
-
-            //var feed2 = snapAppsSpec.Feeds[1];
-            //Assert.Equal("myfeedname2", feed2.Name);
-            //Assert.Equal("https://test2/", feed2.SourceUri.ToString());
-            //Assert.Null(feed2.Username);
-            //Assert.Null(feed2.Password);
-
-            //var app1 = snapAppsSpec.Apps[0];
-            //Assert.Equal("myapp1", app1.Id);
-            ////Assert.Equal("myapp1.nuspec", app1.Nuspec);
-            //Assert.Equal("1.0.0", app1.Version.ToFullString());
-
-            //Assert.Equal(2, app1.Channels.Count);
-
-            //var app1Channel1 = app1.Channels[0];
-            //Assert.Equal("test", app1Channel1.Name);
-            //Assert.Single(app1Channel1.Configurations);
-
-            //var app1Channel1Configuration = app1Channel1.Configurations[0];
-            //Assert.Equal("myfeedname", app1Channel1Configuration.Feed);
-            //Assert.Equal("win10-x64", app1Channel1Configuration.RuntimeIdentifier);
-            //Assert.Equal("netcoreapp2.2", app1Channel1Configuration.TargetFramework);
-            
-            //var app2 = snapAppsSpec.Apps[1];
-            //Assert.Equal("myapp2", app2.Name);
-            //Assert.Equal("myapp2.nuspec", app2.Nuspec);
-            //Assert.Equal("1.0.0", app2.Version.ToFullString());
-
-            //Assert.Equal(2, app1.Channels.Count);
-
-            //var app2Channel1 = app1.Channels[0];
-            //Assert.Equal("test", app2Channel1.Name);
-            //Assert.Single(app2Channel1.Configurations);
-
-            //var app2Channel1Configuration = app2Channel1.Configurations[0];
-            //Assert.Equal("myfeedname", app2Channel1Configuration.Feed);
-            //Assert.Equal("win10-x64", app2Channel1Configuration.RuntimeIdentifier);
-            //Assert.Equal("netcoreapp2.2", app2Channel1Configuration.TargetFramework);
+            AssertSnapApp(snapAppBefore, snapAppAfter);
         }
+
+        [Fact]
+        public void TestBuildSnapAppsFromYamlString()
+        {
+            var snapApps = _baseFixture.BuildSnapApps();
+            Assert.Single(snapApps.Apps);
+
+            var snapAppsAfter = _snapAppReader.BuildSnapAppsFromYamlString(SnapAppsYaml);
+
+            Assert.Equal(snapApps.Channels.Count, snapAppsAfter.Channels.Count);
+            Assert.Equal(snapApps.Certificates.Count, snapAppsAfter.Certificates.Count);
+            Assert.Equal(snapApps.Apps.Count, snapAppsAfter.Apps.Count);
+
+            //AssertSnapApp(snapApps.Apps[0], snapAppsAfter.Apps[0]);
+        }
+
+        static SnapApp BuildSnap()
+        {
+             var nugetOrgFeed = new SnapNugetFeed
+            {
+                Name = "nuget.org",
+                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                ProtocolVersion = NuGetProtocolVersion.V3,
+                Username = "myusername",
+                Password = "mypassword",
+                ApiKey = "myapikey"
+            };
+
+            "snaps://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
+
+            var testChannel = new SnapChannel
+            {
+                Name = "test",
+                PushFeed = nugetOrgFeed,
+                UpdateFeed = nugetOrgFeed,
+                Current = true
+            };
+
+            var stagingChannel = new SnapChannel
+            {
+                Name = "staging",
+                PushFeed = nugetOrgFeed,
+                UpdateFeed = updateFeedHttp
+            };
+
+            var productionChannel = new SnapChannel
+            {
+                Name = "production",
+                PushFeed = nugetOrgFeed,
+                UpdateFeed = nugetOrgFeed
+            };
+
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0),
+                Certificate = new SnapCertificate
+                {
+                    Name = "mycertificate",
+                    Csn = "mycompany",
+                    Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
+                },
+                Channels = new List<SnapChannel>
+                {
+                    testChannel,
+                    stagingChannel,
+                    productionChannel
+                },
+                Target = new SnapTarget
+                {
+                    Name = "demoapp-win7-x64",
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64",
+                    Nuspec = "test.nuspec"
+                }
+            };
+
+            return snapApp;
+        }
+
+        static void AssertSnapApp(SnapApp snapAppBefore, SnapApp snapAppAfter)
+        {
+            Assert.NotNull(snapAppBefore);
+            Assert.NotNull(snapAppAfter);
+
+            // Generic
+            Assert.Equal(snapAppBefore.Id, snapAppAfter.Id);
+            Assert.Equal(snapAppBefore.Version, snapAppAfter.Version);
+
+            // Certificate
+            Assert.NotNull(snapAppBefore.Certificate);
+            Assert.NotNull(snapAppAfter.Certificate);
+            Assert.Equal(snapAppBefore.Certificate.Name, snapAppAfter.Certificate.Name);
+            Assert.Equal(snapAppBefore.Certificate.Csn, snapAppAfter.Certificate.Csn);
+            Assert.Equal(snapAppBefore.Certificate.Sha256, snapAppAfter.Certificate.Sha256);
+
+            // Target
+            Assert.NotNull(snapAppBefore.Target);
+            Assert.NotNull(snapAppAfter.Target);
+            Assert.Equal(snapAppBefore.Target.Os, snapAppAfter.Target.Os);
+            Assert.Equal(snapAppBefore.Target.Name, snapAppAfter.Target.Name);
+            Assert.NotNull(snapAppBefore.Target.Framework);
+            Assert.NotNull(snapAppAfter.Target.Framework);
+            Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
+            Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
+            Assert.Equal(snapAppBefore.Target.Nuspec, snapAppAfter.Target.Nuspec);
+
+            // Channels
+            Assert.Equal(snapAppBefore.Channels.Count, snapAppAfter.Channels.Count);
+            for (var index = 0; index < snapAppAfter.Channels.Count; index++)
+            {
+                var lhsChannel = snapAppBefore.Channels[index];
+                var rhsChannel = snapAppAfter.Channels[index];
+
+                Assert.Equal(lhsChannel.Name, rhsChannel.Name);
+                Assert.NotNull(lhsChannel.PushFeed);
+                Assert.NotNull(rhsChannel.PushFeed);
+                Assert.NotNull(lhsChannel.UpdateFeed);
+                Assert.NotNull(rhsChannel.UpdateFeed);
+
+                if (index == 0)
+                {
+                    Assert.True(lhsChannel.Current);
+                    Assert.True(rhsChannel.Current);
+                }
+                else
+                {
+                    Assert.False(lhsChannel.Current);
+                    Assert.False(rhsChannel.Current);
+                }
+
+                var lhsNugetPushFeed = lhsChannel.PushFeed;
+                var rhsNugetPushFeed = rhsChannel.PushFeed;
+
+                Assert.Equal(lhsNugetPushFeed.Name, rhsNugetPushFeed.Name);
+                Assert.Equal(lhsNugetPushFeed.SourceUri, rhsNugetPushFeed.SourceUri);
+                Assert.Equal(lhsNugetPushFeed.ProtocolVersion, rhsNugetPushFeed.ProtocolVersion);
+                Assert.Equal(lhsNugetPushFeed.ApiKey, rhsNugetPushFeed.ApiKey);
+                Assert.Equal(lhsNugetPushFeed.Username, rhsNugetPushFeed.Username);
+                Assert.Equal(lhsNugetPushFeed.Password, rhsNugetPushFeed.Password);
+
+                var lhsUpdateFeed = lhsChannel.UpdateFeed;
+                var rhsUpdateFeed = rhsChannel.UpdateFeed;
+
+                switch (rhsUpdateFeed)
+                {
+                    case SnapNugetFeed rhsNugetUpdateFeed:
+                        var lhsNugetUpdateFeed = (SnapNugetFeed)lhsUpdateFeed;
+                        Assert.Equal(lhsNugetUpdateFeed.Name, rhsNugetUpdateFeed.Name);
+                        Assert.Equal(lhsNugetUpdateFeed.SourceUri, rhsNugetUpdateFeed.SourceUri);
+                        Assert.Equal(lhsNugetUpdateFeed.ProtocolVersion, rhsNugetUpdateFeed.ProtocolVersion);
+                        Assert.Equal(lhsNugetUpdateFeed.ApiKey, rhsNugetUpdateFeed.ApiKey);
+                        Assert.Equal(lhsNugetUpdateFeed.Username, rhsNugetUpdateFeed.Username);
+                        Assert.Equal(lhsNugetUpdateFeed.Password, rhsNugetUpdateFeed.Password);
+                        break;
+                    case SnapHttpFeed rhsHttpUpdateFeed:
+                        var lhsHttpUpdateFeed = (SnapHttpFeed)lhsUpdateFeed;
+                        Assert.NotNull(lhsHttpUpdateFeed.SourceUri);
+                        Assert.NotNull(rhsHttpUpdateFeed.SourceUri);
+                        Assert.Equal(lhsHttpUpdateFeed.SourceUri, rhsHttpUpdateFeed.SourceUri);
+                        break;
+                    default:
+                        throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
+                }
+            }
+        }
+
     }
 }

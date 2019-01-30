@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using Snap.Core.Specs;
+using Snap.Core.Models;
 using Snap.Core.Yaml;
+using Snap.Core.Yaml.NodeTypeResolvers;
+using Snap.Core.Yaml.TypeConverters;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Serialization.NodeTypeResolvers;
 
 namespace Snap.Core
 {
@@ -21,11 +25,18 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class SnapAppReader : ISnapAppReader
     {
+        internal static readonly Dictionary<string, Type> AbstractClassTypeMappings = new Dictionary<string, Type>
+        {
+            { "NugetFeed", typeof(SnapNugetFeed) }, // SnapFeed
+            { "HttpFeed", typeof(SnapHttpFeed)} // SnapFeed
+        };
+
         static readonly Deserializer Deserializer = new DeserializerBuilder()
             .WithNamingConvention(new CamelCaseNamingConvention())
             .WithTypeConverter(new SemanticVersionYamlTypeConverter())
             .WithTypeConverter(new UriYamlTypeConverter())
             .WithTypeConverter(new OsPlatformYamlTypeConverter())
+            .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappings), selector => selector.After<TagNodeTypeResolver>())
             .Build();
 
         public SnapApps BuildSnapAppsFromStream(MemoryStream stream)

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.Versioning;
 using NuGet.Frameworks;
 using NuGet.Packaging;
-using Snap.Core.Specs;
+using Snap.Core.Models;
 
 namespace Snap.Core
 {

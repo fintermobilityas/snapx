@@ -3,24 +3,24 @@ using System.Text;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Attributes;
-using Snap.Core.Specs;
+using Snap.Core.Models;
 using Snap.Core.Yaml;
+using Snap.Core.Yaml.Emitters;
+using Snap.Core.Yaml.TypeConverters;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Snap.Logging;
 
 namespace Snap.Core
 {
     internal interface ISnapAppWriter
     {
-        AssemblyDefinition BuildSnapAppAssembly(SnapApp snapApp);
+        AssemblyDefinition BuildSnapAppAssembly(SnapApp snapsApp);
         string ToSnapAppYamlString(SnapApp snapApp);
+        string ToSnapAppsYamlString(SnapApps snapApps);
     }
 
     internal sealed class SnapAppWriter : ISnapAppWriter
     {
-        static readonly ILog Logger = LogProvider.For<SnapAppWriter>();
-
         public const string SnapAppLibraryName = "SnapApp";
         public const string SnapAppDllFilename = SnapAppLibraryName + ".dll";
 
@@ -29,6 +29,9 @@ namespace Snap.Core
             .WithTypeConverter(new SemanticVersionYamlTypeConverter())
             .WithTypeConverter(new UriYamlTypeConverter())
             .WithTypeConverter(new OsPlatformYamlTypeConverter())
+            .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter, SnapAppReader.AbstractClassTypeMappings))
+            .DisableAliases()
+            .EmitDefaults()
             .Build();
 
         public AssemblyDefinition BuildSnapAppAssembly([NotNull] SnapApp snapApp)
@@ -38,22 +41,18 @@ namespace Snap.Core
             // Clone
             snapApp = new SnapApp(snapApp);
 
-            // Prune sensitive information
-            foreach (var feed in snapApp.Feeds)
+            foreach (var channel in snapApp.Channels)
             {
-                // NB! Username/password is allowed but its the users responsibility to
-                // ensure that the credentials can only be used for reading.
-                feed.ApiKey = null;
+                channel.PushFeed.ApiKey = null;
             }
 
-            snapApp.Validate();
-
-            var yamlSnapAppStr = ToSnapAppYamlString(snapApp);
+            var snapAppYamlStr = ToSnapAppYamlString(snapApp);
 
             var currentVersion = snapApp.Version;
 
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(SnapAppLibraryName, new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Patch)), SnapAppLibraryName, ModuleKind.Dll);
+                new AssemblyNameDefinition(SnapAppLibraryName, new Version(currentVersion.Major, 
+                    currentVersion.Minor, currentVersion.Patch)), SnapAppLibraryName, ModuleKind.Dll);
 
             var mainModule = assembly.MainModule;
 
@@ -62,7 +61,7 @@ namespace Snap.Core
 
             assembly.CustomAttributes.Add(new CustomAttribute(attributeConstructor));
 
-            var snapAppSpecEmbeddedResource = new EmbeddedResource(SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(yamlSnapAppStr));
+            var snapAppSpecEmbeddedResource = new EmbeddedResource(SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr));
             mainModule.Resources.Add(snapAppSpecEmbeddedResource);
 
             return assembly;
@@ -72,6 +71,12 @@ namespace Snap.Core
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return YamlSerializer.Serialize(snapApp);
+        }
+
+        public string ToSnapAppsYamlString([NotNull] SnapApps snapApps)
+        {
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            return YamlSerializer.Serialize(snapApps);
         }
     }
 }

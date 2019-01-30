@@ -1,0 +1,56 @@
+﻿id: demoapp
+version: 1.0.0
+target:
+  os: windows
+  name: demoapp-win7-x64
+  framework: netcoreapp2.1
+  rid: win7-x64
+  nuspec: test.nuspec
+certificate:
+  name: mycertificate
+  csn: mycompany
+  sha256: 311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02
+channels:
+- name: test
+  current: true
+  pushFeed: !NugetFeed
+    name: nuget.org
+    username: myusername
+    password: mypassword
+    protocolVersion: V3
+    apiKey: myapikey
+    sourceUri: https://api.nuget.org/v3/index.json
+  updateFeed: !NugetFeed
+    name: nuget.org
+    username: myusername
+    password: mypassword
+    protocolVersion: V3
+    apiKey: myapikey
+    sourceUri: https://api.nuget.org/v3/index.json
+- name: staging
+  current: false
+  pushFeed: !NugetFeed
+    name: nuget.org
+    username: myusername
+    password: mypassword
+    protocolVersion: V3
+    apiKey: myapikey
+    sourceUri: https://api.nuget.org/v3/index.json
+  updateFeed: !HttpFeed
+    sourceUri: https://mydynamicupdatefeed.com/
+- name: production
+  current: false
+  pushFeed: !NugetFeed
+    name: nuget.org
+    username: myusername
+    password: mypassword
+    protocolVersion: V3
+    apiKey: myapikey
+    sourceUri: https://api.nuget.org/v3/index.json
+  updateFeed: !NugetFeed
+    name: nuget.org
+    username: myusername
+    password: mypassword
+    protocolVersion: V3
+    apiKey: myapikey
+    sourceUri: https://api.nuget.org/v3/index.json

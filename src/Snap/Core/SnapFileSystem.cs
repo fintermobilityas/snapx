@@ -44,6 +44,7 @@ namespace Snap.Core
         Task<AssemblyDefinition> FileReadAssemblyDefinitionAsync(string filename, CancellationToken cancellationToken);
         bool FileExists(string fileName);
         void ThrowIfFileDoesNotExist(string fileName);
+        FileInfo FileStat(string fileName);
         string PathGetFileNameWithoutExtension(string filename);
         string PathCombine(string path1, string path2);
         string PathCombine(string path1, string path2, string path3);
@@ -191,6 +192,12 @@ namespace Snap.Core
             {
                 throw new FileNotFoundException(fileName);
             }
+        }
+
+        public FileInfo FileStat([NotNull] string fileName)
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            return new FileInfo(fileName);
         }
 
         public async Task<string> FileReadAllTextAsync([NotNull] string fileName, CancellationToken cancellationToken)

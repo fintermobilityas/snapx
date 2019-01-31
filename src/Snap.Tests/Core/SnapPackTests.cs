@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -156,8 +157,14 @@ namespace Snap.Tests.Core
                 };
 
                 Assert.Equal(expectedLayout.Count, extractedLayouted.Count);
+
+                expectedLayout.ForEach(x =>
+                {
+                    var stat = _snapFilesystem.FileStat(x);
+                    Assert.NotNull(stat);
+                    Assert.True(stat.Length > 0);
+                });
                 
-                // Little easier to read xunit error messages due to verbosity of each path
                 for (var i = 0; i < expectedLayout.Count; i++)
                 {
                     Assert.Equal(expectedLayout[i], extractedLayouted[i]);

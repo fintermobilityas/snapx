@@ -5,7 +5,6 @@ using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-using Snap.Extensions;
 using Snap.NuGet;
 using Xunit;
 

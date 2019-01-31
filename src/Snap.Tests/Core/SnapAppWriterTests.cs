@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -9,7 +7,6 @@ using Snap.Core;
 using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
-using Snap.Tests.Core.Resources;
 using Xunit;
 using Xunit.Abstractions;
 

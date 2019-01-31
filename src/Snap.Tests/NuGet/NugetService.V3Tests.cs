@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +9,6 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Resources;
-using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests;
 using Xunit;

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
@@ -9,7 +7,6 @@ using Mono.Cecil.Cil;
 using Snap.Attributes;
 using Snap.Core.Models;
 using Snap.Core.Resources;
-using Snap.Core.UnitTest;
 using Snap.Core.Yaml.Emitters;
 using Snap.Core.Yaml.TypeConverters;
 using Snap.Extensions;

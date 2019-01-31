@@ -16,7 +16,6 @@ using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests.Extensions;
-using Xunit;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Shared.Tests

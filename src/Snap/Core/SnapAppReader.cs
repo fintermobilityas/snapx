@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using Snap.Core.Models;
-using Snap.Core.Yaml;
 using Snap.Core.Yaml.NodeTypeResolvers;
 using Snap.Core.Yaml.TypeConverters;
 using YamlDotNet.Serialization;

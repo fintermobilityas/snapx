@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
-using NuGet.Common;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;

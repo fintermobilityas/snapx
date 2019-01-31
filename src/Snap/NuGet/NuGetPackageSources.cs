@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Fasterflect;
 using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;

@@ -54,7 +54,7 @@ namespace Snap.Tests.NuGet
             Assert.Single(packageSources.Items);
 
             var packageSource = packageSources.Items.Single();
-            Assert.True(packageSource.IsProtocolV3());
+            Assert.True(packageSource.Source == NuGetConstants.V3FeedUrl);
         }
 
         [Fact]

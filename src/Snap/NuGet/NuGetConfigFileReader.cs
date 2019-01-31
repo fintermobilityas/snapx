@@ -5,10 +5,6 @@ using JetBrains.Annotations;
 using NuGet.Configuration;
 using Snap.Logging;
 
-#if NET45
-using Snap.Extensions;
-#endif
-
 namespace Snap.NuGet
 {
     internal interface INugetConfigFileReader

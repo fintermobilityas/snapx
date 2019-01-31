@@ -42,7 +42,7 @@ namespace Snap.Tests.NuGet
             Assert.Single(packageSources.Items);
 
             var packageSource = packageSources.Items.Single();
-            Assert.True(packageSource.IsProtocolV2());
+            Assert.True(packageSource.Source == NuGetConstants.V2FeedUrl);
         }
 
         [Fact]

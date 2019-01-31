@@ -52,7 +52,7 @@
         <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
     </PropertyGroup>
 	
-    <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net45'">
-        <DefineConstants>$(DefineConstants);NET45;</DefineConstants>
+    <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net461'">
+        <DefineConstants>$(DefineConstants);NET461;</DefineConstants>
     </PropertyGroup>
 </Project>

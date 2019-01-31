@@ -3,10 +3,6 @@ using System.Linq;
 using Snap.NuGet;
 using Xunit;
 
-#if NET45
-using Snap.Extensions;
-#endif
-
 namespace Snap.Tests.NuGet
 {
     public class NugetServiceTests

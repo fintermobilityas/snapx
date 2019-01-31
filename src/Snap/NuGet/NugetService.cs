@@ -148,14 +148,10 @@ namespace Snap.NuGet
 
         async Task<IEnumerable<IPackageSearchMetadata>> FindPackageByIdAsync(PackageMetadataResource metadataResource, string packageName, bool includePrerelease, CancellationToken cancellationToken)
         {
-#if NET45
-            return await metadataResource.GetMetadataAsync(packageName, includePrerelease, false, _nugetLogger, cancellationToken);
-#else
             using (var cacheContext = new SourceCacheContext())
             {
                 return await metadataResource.GetMetadataAsync(packageName, includePrerelease, false, cacheContext, _nugetLogger, cancellationToken);
             }
-#endif
         }
 
         static NuGetPackageSearchMedatadata BuildNuGetPackageSearchMedatadata(PackageSource source, IPackageSearchMetadata metadata)

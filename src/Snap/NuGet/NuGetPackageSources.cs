@@ -6,26 +6,8 @@ using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;
 
-#if NET45
-using Snap.Extensions;
-#endif
-
 namespace Snap.NuGet
 {
-    #if NET45
-    class NuGetMachineWideSettings : IMachineWideSettings
-    {
-        readonly Lazy<IEnumerable<Settings>> _settings;
-
-        public IEnumerable<Settings> Settings => _settings.Value;
-
-        public NuGetMachineWideSettings()
-        {
-            var baseDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.MachineWideConfigDirectory);
-            _settings = new Lazy<IEnumerable<Settings>>(() => global::NuGet.Configuration.Settings.LoadMachineWideSettings(baseDirectory));
-        }
-    }
-    #else
     class NuGetMachineWideSettings : IMachineWideSettings
     {
         readonly Lazy<ISettings> _settings;
@@ -38,8 +20,7 @@ namespace Snap.NuGet
             _settings = new Lazy<ISettings>(() => global::NuGet.Configuration.Settings.LoadMachineWideSettings(baseDirectory));
         }
     }
-    #endif
-    
+
     internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
     {
         static readonly PackageSource PackageSourceV2 = new PackageSource(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)

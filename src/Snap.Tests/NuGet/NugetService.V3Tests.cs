@@ -114,7 +114,7 @@ namespace Snap.Tests.NuGet
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                var nupkgFilename = Path.Combine(tmpDir.AbsolutePath, "test.nupkg");
+                var nupkgFilename = Path.Combine(tmpDir.WorkingDirectory, "test.nupkg");
 
                 await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgFilename, CancellationToken.None);
 

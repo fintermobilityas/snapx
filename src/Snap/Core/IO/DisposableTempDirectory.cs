@@ -7,18 +7,19 @@ namespace Snap.Core.IO
     {
         readonly ISnapFilesystem _filesystem;
 
-        public string AbsolutePath { get; }
+        public string WorkingDirectory { get; }
+        public DirectoryInfo WorkingDirectoryInfo => new DirectoryInfo(WorkingDirectory);
 
         public DisposableTempDirectory(string workingDirectory, ISnapFilesystem filesystem)
         {
             _filesystem = filesystem;
-            AbsolutePath = Path.Combine(workingDirectory, Guid.NewGuid().ToString());
-            Directory.CreateDirectory(AbsolutePath);
+            WorkingDirectory = Path.Combine(workingDirectory, Guid.NewGuid().ToString());
+            Directory.CreateDirectory(WorkingDirectory);
         }
 
         public void Dispose()
         {
-            _filesystem.DeleteDirectoryOrJustGiveUpAsync(AbsolutePath).Wait();
+            _filesystem.DeleteDirectoryOrJustGiveUpAsync(WorkingDirectory).Wait();
         }
     }
 }

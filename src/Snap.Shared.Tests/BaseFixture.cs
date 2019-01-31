@@ -248,8 +248,8 @@ namespace Snap.Shared.Tests
             {
                 var snapPackDetails = new SnapPackageDetails
                 {
-                    NuspecFilename = Path.Combine(tempDirectory.AbsolutePath, "test.nuspec"),
-                    NuspecBaseDirectory = tempDirectory.AbsolutePath,
+                    NuspecFilename = Path.Combine(tempDirectory.WorkingDirectory, "test.nuspec"),
+                    NuspecBaseDirectory = tempDirectory.WorkingDirectory,
                     SnapProgressSource = progressSource,
                     App = BuildSnapApp()
                 };

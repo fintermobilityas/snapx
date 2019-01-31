@@ -42,11 +42,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="..\..\build\snap.corerun\Windows\win7-x64\$(Configuration)\Snap.CoreRun\$(Configuration)\corerun.exe" CopyToOutputDirectory="PreserveNewest"  />
-        <Content Include="..\..\build\snap.corerun\Unix\x86_64-linux-gcc\$(Configuration)\snap.corerun\corerun" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

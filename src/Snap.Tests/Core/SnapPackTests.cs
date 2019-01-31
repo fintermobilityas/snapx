@@ -83,13 +83,13 @@ namespace Snap.Tests.Core
             using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
             using (var tmpDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                await _snapExtractor.ExtractAsync(packageArchiveReader, tmpDirectory.AbsolutePath);
+                await _snapExtractor.ExtractAsync(packageArchiveReader, tmpDirectory.WorkingDirectory);
 
                 var files = Directory
-                    .GetFiles(tmpDirectory.AbsolutePath, "*.*", SearchOption.AllDirectories)
+                    .GetFiles(tmpDirectory.WorkingDirectory, "*.*", SearchOption.AllDirectories)
                     .Select(x =>
                     {
-                        var relativePath = x.Replace(tmpDirectory.AbsolutePath, string.Empty);
+                        var relativePath = x.Replace(tmpDirectory.WorkingDirectory, string.Empty);
                         return relativePath.Substring(_snapFilesystem.DirectorySeparator.Length);
                     }).ToList();
 

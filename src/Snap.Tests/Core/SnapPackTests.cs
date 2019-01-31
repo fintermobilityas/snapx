@@ -83,15 +83,16 @@ namespace Snap.Tests.Core
             using (nupkgMemoryStream)
             using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
             {
-                Assert.Equal("Youpark", packageArchiveReader.NuspecReader.GetId());
-                Assert.Equal("Youpark", packageArchiveReader.NuspecReader.GetTitle());
+                Assert.Equal(snapPackageDetails.App.Id, packageArchiveReader.NuspecReader.GetId());
+                Assert.Equal("Random Title", packageArchiveReader.NuspecReader.GetTitle());
                 Assert.Equal(snapPackageDetails.App.Version, packageArchiveReader.NuspecReader.GetVersion());
 
                 var files = packageArchiveReader.GetFiles().ToList();
+                var sourcePath = _snapPack.NuspecRootTargetPath.ForwardSlashesSafe();
 
-                Assert.Equal(4, files.Count(x => x.StartsWith(_snapPack.NuspecRootTargetPath)));
+                Assert.Equal(4, files.Count(x => x.StartsWith(sourcePath)));
 
-                var testDllStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "test.dll"));
+                var testDllStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(sourcePath, "test.dll"));
                 Assert.NotNull(testDllStream);
 
                 using (var testDllMemoryStream = await testDllStream.ReadStreamFullyAsync())
@@ -100,7 +101,7 @@ namespace Snap.Tests.Core
                     Assert.Equal("test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", emptyLibraryAssemblyDefinition.FullName);
                 }
 
-                var testDllSubDirectoryStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", "test2.dll"));
+                var testDllSubDirectoryStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(sourcePath, "subdirectory", "test2.dll"));
                 Assert.NotNull(testDllSubDirectoryStream);
 
                 using (var testDllMemoryStream = await testDllSubDirectoryStream.ReadStreamFullyAsync())

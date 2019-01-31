@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.InteropServices;
-using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
-using Snap.AnyOS.Windows;
 using Snap.Core.UnitTest;
 using Snap.Extensions;
 using Snap.Logging;
@@ -86,7 +83,7 @@ namespace Snap.Core
                 return;
             }
 
-            var app = typeof(SnapAwareApp).Assembly.GetSnapApp();
+            var app = typeof(SnapAwareApp).Assembly.GetSnapApp(SnapOs.Filesystem, new SnapAppReader(), new SnapAppWriter());
 
             try
             {

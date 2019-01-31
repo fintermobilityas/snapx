@@ -18,7 +18,6 @@ namespace Snap.Extensions
 {
     public static class SnapExtensions
     {
-        public const string SnapAppDllFilename = SnapAppWriter.SnapAppDllFilename;
         static readonly OSPlatform AnyOs = OSPlatform.Create("AnyOs");
 
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
@@ -264,18 +263,22 @@ namespace Snap.Extensions
             return snapFeeds;
         }
 
-        internal static SnapApp GetSnapApp(this AssemblyDefinition assemblyDefinition, ISnapAppReader snapAppReader)
+        internal static SnapApp GetSnapApp([NotNull] this AssemblyDefinition assemblyDefinition, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter)
         {
+            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
+
             var snapReleaseDetailsAttribute = new CecilAssemblyReflector(assemblyDefinition).GetAttribute<SnapAppReleaseDetailsAttribute>();
             if (snapReleaseDetailsAttribute == null)
             {
                 throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyDefinition.FullName}.");
             }
 
-            var snapSpecResource = assemblyDefinition.MainModule.Resources.SingleOrDefault(x => x.Name == SnapAppWriter.SnapAppLibraryName);
+            var snapSpecResource = assemblyDefinition.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppWriter.SnapAppLibraryName);
             if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
             {
-                throw new Exception($"Unable to find resource {SnapAppWriter.SnapAppLibraryName} in assembly {assemblyDefinition.FullName}.");
+                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyDefinition.FullName}.");
             }
 
             using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())
@@ -288,11 +291,15 @@ namespace Snap.Extensions
             }
         }
 
-        internal static SnapApp GetSnapAppFromDirectory([NotNull] this string workingDirectory)
+        internal static SnapApp GetSnapAppFromDirectory([NotNull] this string workingDirectory, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapAppWriter snapAppWriter)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            var snapAppDll = Path.Combine(workingDirectory, SnapAppDllFilename);
+            var snapAppDll = filesystem.PathCombine(workingDirectory, snapAppWriter.SnapAppDllFilename);
             if (!File.Exists(snapAppDll))
             {
                 throw new FileNotFoundException(snapAppDll);
@@ -301,49 +308,61 @@ namespace Snap.Extensions
             using (var snapAppDllFileStream = new FileStream(snapAppDll, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var snapAppDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapAppDllFileStream))
             {
-                return snapAppDllAssemblyDefinition.GetSnapApp(new SnapAppReader());
+                return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader, snapAppWriter);
             }
         }
 
         [UsedImplicitly]
-        internal static string GetSnapStubExecutableFullPath([NotNull] this string stubExecutableWorkingDirectory, out string stubExecutableExeName)
+        internal static string GetSnapStubExecutableFullPath([NotNull] this string stubExecutableWorkingDirectory, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapAppWriter snapAppWriter, out string stubExecutableExeName)
         {
             if (stubExecutableWorkingDirectory == null) throw new ArgumentNullException(nameof(stubExecutableWorkingDirectory));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            var snapApp = stubExecutableWorkingDirectory.GetSnapAppFromDirectory();
+            var snapApp = stubExecutableWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader, snapAppWriter);
 
             stubExecutableExeName = $"{snapApp.Id}.exe";
 
-            return Path.Combine(stubExecutableWorkingDirectory, $"..\\{stubExecutableExeName}");
+            return snapFilesystem.PathCombine(stubExecutableWorkingDirectory, $"..\\{stubExecutableExeName}");
         }
 
-        public static SnapApp GetSnapApp([NotNull] this Assembly assembly)
+        internal static SnapApp GetSnapApp([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapAppWriter snapAppWriter)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            var snapSpecDllDirectory = Path.GetDirectoryName(assembly.Location);
+            var snapSpecDllDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
             if (snapSpecDllDirectory == null)
             {
-                throw new Exception($"Unable to find snap app dll: {SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}.");
+                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}.");
             }
 
-            return snapSpecDllDirectory.GetSnapAppFromDirectory();
+            return snapSpecDllDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader, snapAppWriter);
         }
 
         [UsedImplicitly]
-        public static string GetSnapStubExecutableFullPath([NotNull] this Assembly assembly, out string stubExecutableExeName)
+        internal static string GetSnapStubExecutableFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapAppWriter snapAppWriter, out string stubExecutableExeName)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            return Path.GetDirectoryName(assembly.Location).GetSnapStubExecutableFullPath(out stubExecutableExeName);
+            return snapFilesystem.PathGetDirectoryName(assembly.Location).GetSnapStubExecutableFullPath(snapFilesystem, snapAppReader, snapAppWriter, out stubExecutableExeName);
         }
 
-        public static bool IsAnyOs(this OSPlatform oSPlatform)
+        internal static bool IsAnyOs(this OSPlatform oSPlatform)
         {
             return oSPlatform.ToString().Equals(AnyOs.ToString(), StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public static bool IsSupportedOsVersion(this OSPlatform oSPlatform)
+        internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)
         {
             return oSPlatform == OSPlatform.Linux || oSPlatform == OSPlatform.Windows || oSPlatform.IsAnyOs();
         }

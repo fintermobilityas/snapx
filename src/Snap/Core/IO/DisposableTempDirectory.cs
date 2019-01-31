@@ -13,13 +13,13 @@ namespace Snap.Core.IO
         public DisposableTempDirectory(string workingDirectory, ISnapFilesystem filesystem)
         {
             _filesystem = filesystem;
-            WorkingDirectory = Path.Combine(workingDirectory, Guid.NewGuid().ToString());
-            Directory.CreateDirectory(WorkingDirectory);
+            WorkingDirectory = filesystem.PathCombine(workingDirectory, Guid.NewGuid().ToString());
+            filesystem.DirectoryCreate(WorkingDirectory);
         }
 
         public void Dispose()
         {
-            _filesystem.DeleteDirectoryOrJustGiveUpAsync(WorkingDirectory).Wait();
+            _filesystem.DirectoryDeleteOrJustGiveUpAsync(WorkingDirectory).Wait();
         }
     }
 }

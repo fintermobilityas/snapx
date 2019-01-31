@@ -19,7 +19,7 @@ namespace Snap.Core.IO
         {
             foreach (var filename in _filenames)
             {
-                _filesystem.DeleteFileHarder(filename, true);
+                _filesystem.FileDeleteHarder(filename, true);
             }
         }
     }

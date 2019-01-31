@@ -14,6 +14,7 @@ namespace Snap.AnyOS
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapOs
     {
+        ISnapFilesystem Filesystem { get; }
         Task<(int exitCode, string standardOutput)> InvokeProcessAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<(int exitCode, string standardOutput)> InvokeProcessAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory,
@@ -25,6 +26,7 @@ namespace Snap.AnyOS
 
     internal interface ISnapOsImpl 
     {
+        ISnapFilesystem Filesystem { get; }
         void CreateShortcutsForExecutable(NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken);
         List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         void KillAllProcessesInDirectory(string rootAppDirectory);
@@ -48,10 +50,12 @@ namespace Snap.AnyOS
             }
         }
 
+        public ISnapFilesystem Filesystem => _snapOsImpl.Filesystem;
+
         public SnapOs(ISnapOsImpl snapOsImpl)
         {
             _snapOsImpl = snapOsImpl ?? throw new ArgumentNullException(nameof(snapOsImpl));
-        }        
+        }
 
         public Task<(int exitCode, string standardOutput)> InvokeProcessAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "")
         {

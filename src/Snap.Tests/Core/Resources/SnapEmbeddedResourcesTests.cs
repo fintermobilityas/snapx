@@ -31,31 +31,24 @@ namespace Snap.Tests.Core.Resources
         }
 
         [Fact]
-        public async Task TestExtractCoreRunWindowsAsync()
+        public async Task TestExtractCoreRunExecutableAsync()
         {
-            var expectedFilename = Path.Combine(_baseFixture.WorkingDirectory, "corerun.exe");
-
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                await _snapEmbeddedResources.ExtractCoreRunWindowsAsync(_snapFilesystem, tmpDir.WorkingDirectory, CancellationToken.None);
+                const string snapAppId = "demoapp";
 
-                Assert.True(_snapFilesystem.FileExists(expectedFilename));
-            }
-        }
+                var coreRunExeFilename = _snapEmbeddedResources.GetCoreRunExeFilename(snapAppId);
+                var expectedDstFilename = Path.Combine(tmpDir.WorkingDirectory, coreRunExeFilename);
+                var dstFilename = await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, snapAppId, tmpDir.WorkingDirectory, CancellationToken.None);
 
-        [Fact]
-        public async Task TestExtractCoreRunLinuxAsync()
-        {
-            var expectedFilename = Path.Combine(_baseFixture.WorkingDirectory, "corerun");
-
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            {
-                await _snapEmbeddedResources.ExtractCoreRunLinuxAsync(_snapFilesystem, tmpDir.WorkingDirectory, CancellationToken.None);
+                Assert.True(_snapFilesystem.FileExists(expectedDstFilename));
 
                 // For some fucked up reason, File.Exists does not work when a file does not have an extension on Windows.
-                var corerun = _snapFilesystem.GetAllFilesRecursively(tmpDir.WorkingDirectoryInfo).SingleOrDefault(x => x.Name.StartsWith("corerun"));
+                var corerun = _snapFilesystem.DirectoryGetAllFilesRecursively(tmpDir.WorkingDirectoryInfo).SingleOrDefault(x => x.Name == coreRunExeFilename);
                 Assert.NotNull(corerun);
-                Assert.Equal(Path.GetFileName(expectedFilename), corerun.Name);
+                Assert.Equal(Path.GetFileName(expectedDstFilename), corerun.Name);
+
+                Assert.Equal(expectedDstFilename, dstFilename);
             }
         }
 

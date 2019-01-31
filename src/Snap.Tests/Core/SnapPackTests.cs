@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Mono.Cecil;
@@ -7,6 +9,7 @@ using Moq;
 using NuGet.Packaging;
 using Snap.Core;
 using Snap.Core.IO;
+using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
 using Xunit;
@@ -19,13 +22,53 @@ namespace Snap.Tests.Core
         readonly ISnapPack _snapPack;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapExtractor _snapExtractor;
+        readonly ISnapAppWriter _snapAppWriter;
+        readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
         public SnapPackTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem);
-            _snapExtractor = new SnapExtractor(_snapFilesystem);
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppWriter(), new SnapEmbeddedResources());
+            _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, new SnapEmbeddedResources());
+            _snapAppWriter = new SnapAppWriter();
+            _snapEmbeddedResources = new SnapEmbeddedResources();
+        }
+
+        [Fact]
+        public void TestNuspecTargetFrameworkMoniker()
+        {
+            Assert.Equal("Any", _snapPack.NuspecTargetFrameworkMoniker);
+        }
+
+        [Fact]
+        public void TestNuspecRootTargetPath()
+        {
+            Assert.Equal(_snapFilesystem.PathCombine("lib", "Any"), _snapPack.NuspecRootTargetPath);
+        }
+
+        [Fact]
+        public void TestSnapNuspecRootTargetPath()
+        {
+            Assert.Equal(_snapFilesystem.PathCombine("lib", "Any", "a97d941bdd70471289d7330903d8b5b3"), _snapPack.SnapNuspecTargetPath);
+        }
+
+        [Fact]
+        public void TestSnapUniqueTargetPathFolderName()
+        {
+            Assert.Equal("a97d941bdd70471289d7330903d8b5b3", _snapPack.SnapUniqueTargetPathFolderName);
+        }
+
+        [Fact]
+        public void TestAlwaysRemoveTheseAssemblies()
+        {
+            var assemblies = new List<string>
+            {
+                _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, _snapAppWriter.SnapDllFilename),
+                _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename)
+            }.AsReadOnly();
+
+            Assert.Equal(assemblies, _snapPack.AlwaysRemoveTheseAssemblies);
         }
 
         [Fact]
@@ -35,7 +78,7 @@ namespace Snap.Tests.Core
             progressSource.Setup(x => x.Raise(It.IsAny<int>()));
 
             var (nupkgMemoryStream, snapPackageDetails) = await _baseFixture
-                .BuildTestNupkgAsync(_snapFilesystem, _snapPack, progressSource.Object, CancellationToken.None);
+                .BuildInMemoryPackageAsync(_snapFilesystem, _snapPack, progressSource.Object, CancellationToken.None);
 
             using (nupkgMemoryStream)
             using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
@@ -46,9 +89,9 @@ namespace Snap.Tests.Core
 
                 var files = packageArchiveReader.GetFiles().ToList();
 
-                Assert.Equal(2, files.Count(x => x.StartsWith("lib/net45")));
+                Assert.Equal(4, files.Count(x => x.StartsWith(_snapPack.NuspecRootTargetPath)));
 
-                var testDllStream = packageArchiveReader.GetStream("lib\\net45\\test.dll");
+                var testDllStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "test.dll"));
                 Assert.NotNull(testDllStream);
 
                 using (var testDllMemoryStream = await testDllStream.ReadStreamFullyAsync())
@@ -57,13 +100,23 @@ namespace Snap.Tests.Core
                     Assert.Equal("test, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", emptyLibraryAssemblyDefinition.FullName);
                 }
 
-                var testDllSubDirectoryStream = packageArchiveReader.GetStream("lib\\net45\\subdirectory\\test2.dll");
+                var testDllSubDirectoryStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", "test2.dll"));
                 Assert.NotNull(testDllSubDirectoryStream);
 
                 using (var testDllMemoryStream = await testDllSubDirectoryStream.ReadStreamFullyAsync())
                 using (var emptyLibraryAssemblyDefinition = AssemblyDefinition.ReadAssembly(testDllMemoryStream))
                 {
                     Assert.Equal("test2, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", emptyLibraryAssemblyDefinition.FullName);
+                }
+
+                var snapDllStream = packageArchiveReader.GetStream(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename));
+                Assert.NotNull(snapDllStream);
+
+                using (var snapDllMemoryStream = await snapDllStream.ReadStreamFullyAsync())
+                using (var snapDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapDllMemoryStream))
+                {
+                    var currentVersion = typeof(SnapPack).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>();
+                    Assert.Equal($"Snap, Version={currentVersion.Version}, Culture=neutral, PublicKeyToken=null", snapDllAssemblyDefinition.FullName);
                 }
             }
 
@@ -76,26 +129,38 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestPackAndExtract()
         {
-            var (nupkgMemoryStream, _) = await _baseFixture
-                .BuildTestNupkgAsync(_snapFilesystem, _snapPack);
-
+            var (nupkgMemoryStream, packageDetails) = await _baseFixture
+                .BuildInMemoryPackageAsync(_snapFilesystem, _snapPack);
+            
             using (nupkgMemoryStream)
             using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
-            using (var tmpDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                await _snapExtractor.ExtractAsync(packageArchiveReader, tmpDirectory.WorkingDirectory);
+                var appDirName = $"app-{packageDetails.App.Version}";
+                var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
 
-                var files = Directory
-                    .GetFiles(tmpDirectory.WorkingDirectory, "*.*", SearchOption.AllDirectories)
-                    .Select(x =>
-                    {
-                        var relativePath = x.Replace(tmpDirectory.WorkingDirectory, string.Empty);
-                        return relativePath.Substring(_snapFilesystem.DirectorySeparator.Length);
-                    }).ToList();
+                await _snapExtractor.ExtractAsync(packageArchiveReader, appDir);
 
-                Assert.Equal(2, files.Count);
-                Assert.Equal("test.dll", files[0]);
-                Assert.Equal(Path.Combine("subdirectory", "test2.dll"), files[1]);
+                var extractedLayouted = _snapFilesystem
+                    .DirectoryGetAllPathsRecursively(rootDir.WorkingDirectory)
+                    .ToList();
+
+                var expectedLayout = new List<string>
+                {
+                    _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
+                    _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
+                    _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
+                    _snapFilesystem.PathCombine(appDir, "test.dll"),
+                    _snapFilesystem.PathCombine(appDir, "subdirectory", "test2.dll")
+                };
+
+                Assert.Equal(expectedLayout.Count, extractedLayouted.Count);
+                
+                // Little easier to read xunit error messages due to verbosity of each path
+                for (var i = 0; i < expectedLayout.Count; i++)
+                {
+                    Assert.Equal(expectedLayout[i], extractedLayouted[i]);
+                }
             }
         }
      

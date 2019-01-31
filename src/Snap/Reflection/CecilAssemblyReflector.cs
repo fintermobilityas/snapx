@@ -1,28 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
+using Snap.Extensions;
+using Snap.Reflection.Exceptions;
 
 namespace Snap.Reflection
 {
-    internal interface IAttributeReflector
-    {
-        IDictionary<string, string> Values { get; }
-    }
-
-    internal interface ITypeReflector
-    {
-        IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
-        string FullName { get; }
-        string Name { get; }
-    }
-
+    
     internal interface IAssemblyReflector
     {
         IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
         IAttributeReflector GetAttribute<T>() where T : Attribute;
         IEnumerable<ITypeReflector> GetTypes();
+        CecilResourceReflector GetResourceReflector();
+        void RewriteOrThrow<TSource>(Expression<Func<TSource, object>> selector, Action<TypeDefinition, string, string, PropertyDefinition> rewriter);
         string Location { get; }
         string FileName { get; }
         string FullName { get; }
@@ -30,22 +24,22 @@ namespace Snap.Reflection
 
     internal class CecilAssemblyReflector : IAssemblyReflector
     {
-        readonly AssemblyDefinition _assembly;
+        readonly AssemblyDefinition _assemblyDefinition;
 
-        public CecilAssemblyReflector([NotNull] AssemblyDefinition assembly)
+        public CecilAssemblyReflector([NotNull] AssemblyDefinition assemblyDefinition)
         {
-            _assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
+            _assemblyDefinition = assemblyDefinition ?? throw new ArgumentNullException(nameof(assemblyDefinition));
         }
 
         public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
         {
-            if (!_assembly.HasCustomAttributes)
+            if (!_assemblyDefinition.HasCustomAttributes)
             {
                 return new IAttributeReflector[] { };
             }
 
             var expectedTypeName = typeof(T).Name;
-            return _assembly.CustomAttributes
+            return _assemblyDefinition.CustomAttributes
                 .Where(a => a.AttributeType.Name == expectedTypeName)
                 .Select(a => new CecilAttributeReflector(a))
                 .ToList();
@@ -60,82 +54,40 @@ namespace Snap.Reflection
         public IEnumerable<ITypeReflector> GetTypes()
         {
             var result = new List<ITypeReflector>();
-            var modules = _assembly.Modules;
+            var modules = _assemblyDefinition.Modules;
             foreach (var module in modules)
             {
                 var types = module.GetTypes();
-                result.AddRange(types.Select(type => new CecilTypeReflector(type)).Cast<ITypeReflector>());
+                result.AddRange(types.Select(type => new CecilTypeReflector(type)));
             }
             return result;
         }
 
-        public string Location => _assembly.MainModule.FileName;
 
-        public string FileName => _assembly.MainModule.Name;
-
-        public string FullName => _assembly.FullName;
-    }
-
-    internal class CecilTypeReflector : ITypeReflector
-    {
-        readonly TypeDefinition _type;
-
-        public CecilTypeReflector([NotNull] TypeDefinition type)
+        public CecilResourceReflector GetResourceReflector()
         {
-            _type = type ?? throw new ArgumentNullException(nameof(type));
+            return new CecilResourceReflector(_assemblyDefinition);
         }
 
-        public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
+        public void RewriteOrThrow<TSource>([NotNull] Expression<Func<TSource, object>> selector,
+            [NotNull] Action<TypeDefinition, string, string, PropertyDefinition> rewriter)
         {
-            if (!_type.HasCustomAttributes)
+            if (selector == null) throw new ArgumentNullException(nameof(selector));
+            if (rewriter == null) throw new ArgumentNullException(nameof(rewriter));
+
+            var (typeDefinition, autoPropertyDefinition, setterName, getterName) = _assemblyDefinition.ResolveAutoProperty(selector);
+            if (autoPropertyDefinition == null)
             {
-                return new IAttributeReflector[] { };
+                throw new CecilAutoPropertyNotFoundException(_assemblyDefinition, selector.BuildMemberName());
             }
 
-            var expectedTypeName = typeof(T).Name;
-            return _type.CustomAttributes
-                .Where(a => a.AttributeType.Name == expectedTypeName)
-                .Select(a => new CecilAttributeReflector(a))
-                .ToList();
-
+            rewriter(typeDefinition, getterName, setterName, autoPropertyDefinition);
         }
 
-        public string FullName => _type.FullName;
-        public string Name => _type.Name;
-    }
+        public string Location => _assemblyDefinition.MainModule.FileName;
 
-    internal class CecilAttributeReflector : IAttributeReflector
-    {
-        readonly CustomAttribute _attribute;
-        IDictionary<string, string> _values;
+        public string FileName => _assemblyDefinition.MainModule.Name;
 
-        public CecilAttributeReflector([NotNull] CustomAttribute attribute)
-        {
-            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-        }
-
-        public IDictionary<string, string> Values
-        {
-            get
-            {
-                if (_values != null)
-                {
-                    return _values;
-                }
-
-                _values = new Dictionary<string, string>();
-                var constructorArguments = _attribute.Constructor.Resolve().Parameters.Select(p => p.Name).ToList();
-                var constructorParameters = _attribute.ConstructorArguments.Select(a => a.Value.ToString()).ToList();
-                for (var i = 0; i < constructorArguments.Count; i++)
-                {
-                    _values.Add(constructorArguments[i], constructorParameters[i]);
-                }
-                foreach (var prop in _attribute.Properties)
-                {
-                    _values.Add(prop.Name, prop.Argument.Value.ToString());
-                }
-                return _values;
-            }
-        }
+        public string FullName => _assemblyDefinition.FullName;
     }
 }

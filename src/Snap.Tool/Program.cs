@@ -11,6 +11,7 @@ using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Logging;
+using Snap.Core.Resources;
 using Snap.Tool.Options;
 using Snap.Logging;
 using Snap.NuGet;
@@ -51,9 +52,11 @@ namespace Snap.Tool
                 return -1;
             }
 
-            var snapExtractor = new SnapExtractor(snapFilesystem);
+            var snapEmbeddedResources = new SnapEmbeddedResources();
+            var snapAppWriter = new SnapAppWriter();
+            var snapPack = new SnapPack(snapFilesystem, snapAppWriter, snapEmbeddedResources);
+            var snapExtractor = new SnapExtractor(snapFilesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
-            var snapPack = new SnapPack(snapFilesystem);
             var snapSpecsReader = new SnapAppReader();
             var snapCryptoProvider = new SnapCryptoProvider();
             var nugetLogger = new NugetLogger();
@@ -122,7 +125,7 @@ namespace Snap.Tool
                 }
 
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
-                var rootAppDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
+                var rootAppDirectory = snapFilesystem.PathCombine(snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
                 await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory);
 

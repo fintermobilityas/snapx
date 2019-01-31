@@ -222,7 +222,7 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildTestNupkgAsync([NotNull] ISnapFilesystem filesystem,
+        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync([NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapPack snapPack, ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -231,16 +231,16 @@ namespace Snap.Shared.Tests
             const string nuspecContent = @"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
-        <id>Youpark</id>
-        <title>Youpark</title>
+        <id>demoapp</id>
+        <title>Random Title</title>
         <version>$version$</version>
-        <authors>Youpark AS</authors>
+        <authors>Peter Rekdal Sunde</authors>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>Youpark</description>
+        <description>YOLO</description>
     </metadata>
     <files> 
-		<file src=""$nuspecbasedirectory$\test.dll"" target=""lib\net45"" />						    
-		<file src=""$nuspecbasedirectory$\subdirectory\test2.dll"" target=""lib\net45\subdirectory"" />						    
+		<file src=""$nuspecbasedirectory$/test.dll"" target=""$anytarget$"" />						    
+		<file src=""$nuspecbasedirectory$/subdirectory/test2.dll"" target=""$anytarget$/subdirectory"" />						    
     </files>
 </package>";
 
@@ -255,7 +255,7 @@ namespace Snap.Shared.Tests
                 };
 
                 var subDirectory = Path.Combine(snapPackDetails.NuspecBaseDirectory, "subdirectory");
-                filesystem.CreateDirectory(subDirectory);
+                filesystem.DirectoryCreate(subDirectory);
 
                 using (var emptyLibraryAssemblyDefinition = BuildEmptyLibrary("test"))
                 {
@@ -270,9 +270,9 @@ namespace Snap.Shared.Tests
                     emptyLibraryAssemblyDefinition.Write(testDllFilename);
                 }
 
-                await filesystem.WriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
+                await filesystem.FileWriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-                var nupkgMemoryStream = snapPack.Pack(snapPackDetails);
+                var nupkgMemoryStream = await snapPack.PackAsync(snapPackDetails, cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);
             }
         }

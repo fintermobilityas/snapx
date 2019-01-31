@@ -20,10 +20,12 @@ namespace Snap.Tests.Core.Extensions
         readonly BaseFixture _baseFixture;
         readonly ISnapAppWriter _appWriter;
         readonly ISnapFilesystem _fileSystem;
+        readonly ISnapAppReader _appReader;
 
         public SnapExtensionTests([NotNull] BaseFixture baseFixture)
         {
             _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
+            _appReader = new SnapAppReader();
             _appWriter = new SnapAppWriter();
             _fileSystem = new SnapFilesystem();
         }
@@ -195,7 +197,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
+                var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(_fileSystem, _appReader, _appWriter, out var stubExecutableExeName);
 
                 Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
                 Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
@@ -214,7 +216,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
+                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(_fileSystem, _appReader, _appWriter, out var stubExecutableExeName);
 
                 Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
                 Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
@@ -230,7 +232,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(appSpec))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var appSpecAfter = workingDirectory.GetSnapAppFromDirectory();
+                var appSpecAfter = workingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader, _appWriter);
                 Assert.NotNull(appSpecAfter);
             }
         }

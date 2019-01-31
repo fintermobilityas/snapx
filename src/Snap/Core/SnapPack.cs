@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.Versioning;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using Snap.Core.Models;
+using Snap.Core.Resources;
+using Snap.Extensions;
+using Snap.NuGet;
 
 namespace Snap.Core
 {
@@ -14,7 +20,7 @@ namespace Snap.Core
         SnapApp App { get; set; }
         string NuspecFilename { get; }
         string NuspecBaseDirectory { get; }
-        ISnapProgressSource SnapProgressSource {get; set; }
+        ISnapProgressSource SnapProgressSource { get; set; }
         IReadOnlyDictionary<string, string> NuspecProperties { get; set; }
     }
 
@@ -29,21 +35,46 @@ namespace Snap.Core
 
     internal interface ISnapPack
     {
-        MemoryStream Pack(ISnapPackageDetails packageDetails);
+        IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
+        string NuspecTargetFrameworkMoniker { get; }
+        string NuspecRootTargetPath { get; }
+        string SnapNuspecTargetPath { get; }
+        string SnapUniqueTargetPathFolderName { get; }
+        Task<MemoryStream> PackAsync(ISnapPackageDetails packageDetails, CancellationToken cancellationToken = default);
     }
 
     internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;
+        readonly ISnapAppWriter _snapAppWriter;
+        readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
-        public SnapPack(ISnapFilesystem snapFilesystem)
+        public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
+        {
+            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapDllFilename),
+            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename)
+        };
+
+        public string NuspecTargetFrameworkMoniker { get; }
+        public string NuspecRootTargetPath { get; set; }
+        public string SnapNuspecTargetPath { get; }
+        public string SnapUniqueTargetPathFolderName { get; }
+
+        public SnapPack(ISnapFilesystem snapFilesystem, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
         {
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        }
+            _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
+            _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
 
-        public MemoryStream Pack(ISnapPackageDetails packageDetails)
+            SnapUniqueTargetPathFolderName = BuildSnapNuspecUniqueFolderName();
+            NuspecTargetFrameworkMoniker = NuGetFramework.AnyFramework.Framework;
+            NuspecRootTargetPath = snapFilesystem.PathCombine("lib", NuspecTargetFrameworkMoniker);
+            SnapNuspecTargetPath = snapFilesystem.PathCombine(NuspecRootTargetPath, SnapUniqueTargetPathFolderName);
+        }
+       
+        public async Task<MemoryStream> PackAsync(ISnapPackageDetails packageDetails, CancellationToken cancellationToken = default)
         {
-            if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));  
+            if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
 
             if (packageDetails.NuspecBaseDirectory == null || !_snapFilesystem.DirectoryExists(packageDetails.NuspecBaseDirectory))
             {
@@ -57,27 +88,28 @@ namespace Snap.Core
 
             if (packageDetails.App == null)
             {
-                throw new Exception($"Snap app cannot be null.");
+                throw new Exception("Snap app cannot be null.");
             }
 
             if (packageDetails.App.Version == null)
             {
-                throw new Exception($"Snap app version cannot be null.");
+                throw new Exception("Snap app version cannot be null.");
             }
 
-            var properties = new Dictionary<string, string>
+            var nuspecProperties = new Dictionary<string, string>
             {
                 {"version", packageDetails.App.Version.ToFullString()},
-                {"nuspecbasedirectory", packageDetails.NuspecBaseDirectory}
+                {"nuspecbasedirectory", packageDetails.NuspecBaseDirectory},
+                {"anytarget", NuspecRootTargetPath }
             };
 
             if (packageDetails.NuspecProperties != null)
             {
                 foreach (var pair in packageDetails.NuspecProperties)
                 {
-                    if (!properties.ContainsKey(pair.Key.ToLowerInvariant()))
+                    if (!nuspecProperties.ContainsKey(pair.Key.ToLowerInvariant()))
                     {
-                        properties.Add(pair.Key, pair.Value);
+                        nuspecProperties.Add(pair.Key, pair.Value);
                     }
                 }
             }
@@ -88,43 +120,109 @@ namespace Snap.Core
 
             var outputStream = new MemoryStream();
 
-            using (var nuspecStream = _snapFilesystem.OpenReadOnly(packageDetails.NuspecFilename))
+            using (var nuspecStream = _snapFilesystem.FileOpenReadOnly(packageDetails.NuspecFilename))
             {
                 string GetPropertyValue(string propertyName)
                 {
-                    return properties.TryGetValue(propertyName, out var value) ? value : null;
+                    return nuspecProperties.TryGetValue(propertyName, out var value) ? value : null;
                 }
 
                 progressSource?.Raise(50);
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, GetPropertyValue);
-               
+
+                EnsureCoreRunSupportsThisPlatform();
+                AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.Files.Remove(new PhysicalPackageFile { TargetPath = targetPath }));
+                await AddSnapAssemblies(packageBuilder, packageDetails, cancellationToken);
+
                 packageBuilder.Save(outputStream);
 
                 outputStream.Seek(0, SeekOrigin.Begin);
 
-                progressSource?.Raise(100);            
+                progressSource?.Raise(100);
 
                 return outputStream;
             }
         }
 
-        class InMemoryPackageFile : IPackageFile
+        void EnsureCoreRunSupportsThisPlatform()
         {
-            public InMemoryPackageFile(string relativePath)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                
+                using (var coreRun = _snapEmbeddedResources.CoreRunWindows)
+                {
+                    if (coreRun.Length <= 0)
+                    {
+                        throw new FileNotFoundException($"corerun.exe is missing in Snap assembly. Target os: {OSPlatform.Windows}");
+                    }
+
+                    return;
+                }
             }
 
-            public Stream GetStream()
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                throw new NotSupportedException("This should never happen.");
+                using (var coreRun = _snapEmbeddedResources.CoreRunLinux)
+                {
+                    if (coreRun.Length <= 0)
+                    {
+                        throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}.");
+                    }
+                }
+
+                return;
             }
 
-            public string Path { get; set; }
-            public string EffectivePath { get; set; }
-            public FrameworkName TargetFramework { get; set; }
-            public DateTimeOffset LastWriteTime { get; set; }
+            throw new PlatformNotSupportedException();
+        }
+
+        async Task AddSnapAssemblies([NotNull] PackageBuilder packageBuilder, [NotNull] ISnapPackageDetails packageDetails, CancellationToken cancellationToken)
+        {
+            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
+            if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
+
+            // Snap.dll
+            using (var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapPack).Assembly.Location, cancellationToken))
+            using (var snapDllAssemblyDefinitionOptimized = _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, packageDetails.App.Target.Os))
+            {
+                var snapDllOptimizedMemoryStream = new MemoryStream();
+                snapDllAssemblyDefinitionOptimized.Write(snapDllOptimizedMemoryStream);
+                snapDllOptimizedMemoryStream.Seek(0, SeekOrigin.Begin);
+
+                packageBuilder.Files.Add(BuildInMemoryPackageFile(snapDllOptimizedMemoryStream, SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename));
+            }
+
+            // Snap.App.dll
+            using (var snapAppDllAssembly = _snapAppWriter.BuildSnapAppAssembly(packageDetails.App))
+            {
+                var snapAppMemoryStream = new MemoryStream();
+                snapAppDllAssembly.Write(snapAppMemoryStream);
+
+                packageBuilder.Files.Add(BuildInMemoryPackageFile(snapAppMemoryStream, SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename));
+            }
+        }
+
+        InMemoryPackageFile BuildInMemoryPackageFile(MemoryStream memoryStream, string targetPath, string filename)
+        {
+            if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            var nuGetFramework = NuGetFramework.Parse(NuspecTargetFrameworkMoniker);
+            targetPath = _snapFilesystem.PathCombine(targetPath, filename);
+
+            return new InMemoryPackageFile(memoryStream, targetPath, nuGetFramework);
+        }
+
+        static string BuildSnapNuspecUniqueFolderName()
+        {
+            var guidStr = typeof(SnapPack).Assembly.GetCustomAttribute<GuidAttribute>()?.Value;
+            Guid.TryParse(guidStr, out var assemblyGuid);
+            if (assemblyGuid == Guid.Empty)
+            {
+                throw new Exception("Fatal error! Assembly guid is empty.");
+            }
+            return assemblyGuid.ToString("N");
         }
     }
 }

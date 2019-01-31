@@ -9,6 +9,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
+using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests;
@@ -21,14 +22,14 @@ namespace Snap.Tests.NuGet
         readonly BaseFixture _baseFixture;
         readonly INugetService _nugetService;
         readonly ISnapFilesystem _snapFilesystem;
-        readonly SnapPack _snapPack;
+        readonly ISnapPack _snapPack;
 
         public NugetServiceV3Tests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
             _nugetService = new NugetService(new NugetLogger());
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem);
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppWriter(), new SnapEmbeddedResources());
         }
 
         [Fact]
@@ -109,7 +110,7 @@ namespace Snap.Tests.NuGet
             var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources();
             var youparkAppsPackageSource = nuGetMachineWidePackageSources.Items.Single(x => x.Name == "youpark-apps");
 
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildTestNupkgAsync(_snapFilesystem, _snapPack);
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(_snapFilesystem, _snapPack);
 
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

@@ -1,26 +1,36 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Snap.Core.Models;
 using Snap.Resources;
 
 namespace Snap.Core.Resources
 {
     internal interface ISnapEmbeddedResources
     {
+        [UsedImplicitly]
+        bool IsStripped { get; }
+
         MemoryStream CoreRunWindows { get; }
         MemoryStream CoreRunLinux { get; }
 
-        Task ExtractCoreRunWindowsAsync(ISnapFilesystem filesystem, string destinationFolder, CancellationToken cancellationToken);
-        Task ExtractCoreRunLinuxAsync(ISnapFilesystem filesystem, string destinationFolder, CancellationToken cancellationToken);
+        string GetCoreRunExeFilenameForSnapApp([NotNull] SnapApp snapApp);
+        string GetCoreRunExeFilename(string appId = "corerun");
+        Task<string> ExtractCoreRunExecutableAsync(ISnapFilesystem filesystem, string appId, string destinationFolder, CancellationToken cancellationToken);
     }
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
     {
         readonly EmbeddedResource _coreRunWindows;
         readonly EmbeddedResource _coreRunLinux;
+
+        // This property will be updated to true when optimized by `ISnapAppWriter`
+        [UsedImplicitly]
+        public bool IsStripped { get; }
 
         public MemoryStream CoreRunWindows => new MemoryStream(_coreRunWindows.Stream.ToArray());
         public MemoryStream CoreRunLinux => new MemoryStream(_coreRunLinux.Stream.ToArray());
@@ -29,32 +39,76 @@ namespace Snap.Core.Resources
         {
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
 
-            _coreRunWindows = Resources.Single(x => x.Filename == "corerun.corerun.exe");
-            _coreRunLinux = Resources.Single(x => x.Filename == "corerun.corerun");
+            // Signe 
+            _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun.exe");
+            _coreRunLinux = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun");
+
+            if (!IsStripped && _coreRunWindows == null)
+            {
+                throw new FileNotFoundException("corerun.exe");
+            }
+
+            if (!IsStripped && _coreRunLinux == null)
+            {
+                throw new FileNotFoundException("corerun");
+            }
         }
 
-        public Task ExtractCoreRunWindowsAsync(ISnapFilesystem filesystem, string destinationFolder, CancellationToken cancellationToken)
+        public string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp)
         {
-            return ExtractAsync(filesystem, CoreRunWindows, destinationFolder, "corerun.exe", cancellationToken);
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return GetCoreRunExeFilename(snapApp.Id);
         }
 
-        public Task ExtractCoreRunLinuxAsync(ISnapFilesystem filesystem, string destinationFolder, CancellationToken cancellationToken)
+        public string GetCoreRunExeFilename(string appId = "corerun")
         {
-            return ExtractAsync(filesystem, CoreRunLinux, destinationFolder, "corerun", cancellationToken);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return $"{appId}.exe";
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return $"{appId}";
+            }
+
+            throw new PlatformNotSupportedException();
         }
 
-        async Task ExtractAsync([NotNull] ISnapFilesystem filesystem, [NotNull] MemoryStream srcStream, [NotNull] string destinationFolder, [NotNull] string relativeFilename, CancellationToken cancellationToken)
+        public Task<string> ExtractCoreRunExecutableAsync([NotNull] ISnapFilesystem filesystem, string appId, [NotNull] string destinationFolder, CancellationToken cancellationToken)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (destinationFolder == null) throw new ArgumentNullException(nameof(destinationFolder));
+
+            MemoryStream coreRunMemoryStream;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                coreRunMemoryStream = CoreRunWindows;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                coreRunMemoryStream = CoreRunLinux;
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            return ExtractAsync(filesystem, coreRunMemoryStream, destinationFolder, GetCoreRunExeFilename(appId), cancellationToken);
+        }
+
+        async Task<string> ExtractAsync([NotNull] ISnapFilesystem filesystem, [NotNull] MemoryStream srcStream, [NotNull] string destinationFolder, [NotNull] string relativeFilename, CancellationToken cancellationToken)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (destinationFolder == null) throw new ArgumentNullException(nameof(destinationFolder));
             if (relativeFilename == null) throw new ArgumentNullException(nameof(relativeFilename));
-            filesystem.CreateDirectoryIfNotExists(destinationFolder);
+            filesystem.DirectoryCreateIfNotExists(destinationFolder);
 
-            var filename = Path.Combine(destinationFolder, relativeFilename);
+            var filename = filesystem.PathCombine(destinationFolder, relativeFilename);
             using (srcStream)
             {
                 await filesystem.FileWriteAsync(srcStream, filename, cancellationToken);
+                return filename;
             }
         }
     }

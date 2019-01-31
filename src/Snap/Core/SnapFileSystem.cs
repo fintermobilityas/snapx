@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -19,25 +20,38 @@ namespace Snap.Core
         string DirectorySeparator { get; }
         IDisposable WithTempDirectory(out string path, string baseDirectory = null);
         IDisposable WithTempFile(out string path, string baseDirectory = null);
-        FileStream OpenReadOnly(string fileNam);
-        FileStream OpenReadWrite(string fileName);
-        bool FileExists(string fileName);
-        Task<string> ReadAllTextAsync(string fileName, CancellationToken cancellationToken);
-        void DeleteFile(string fileName);
-        void DeleteFileHarder(string path, bool ignoreIfFails = false);
-        void CreateDirectory(string directory);
-        void CreateDirectoryIfNotExists(string directory);
+        void DirectoryCreate(string directory);
+        void DirectoryCreateIfNotExists(string directory);
         bool DirectoryExists(string directory);
-        IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath);
-        IEnumerable<string> GetAllFilePathsRecursively(string rootPath);
+        void DirectoryDelete(string directory);
+        Task DirectoryDeleteAsync(string directory);
+        Task DirectoryDeleteOrJustGiveUpAsync(string directory);
+        string DirectoryGetParent(string path);
+        IEnumerable<FileInfo> DirectoryGetAllFilesRecursively(DirectoryInfo rootPath);
+        IEnumerable<string> DirectoryGetAllPathsRecursively(string rootPath);
+        string PathGetFileName(string filename);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
         Task FileWriteAsync(string srcFilename, string dstFilename, CancellationToken cancellationToken);
-        Task WriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
+        Task FileWriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
-        void DeleteDirectory(string directory);
-        Task DeleteDirectoryAsync(string directory);
-        Task DeleteDirectoryOrJustGiveUpAsync(string directory);
+        Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
+        void FileDelete(string fileName);
+        void FileDeleteHarder(string path, bool ignoreIfFails = false);
+        FileStream FileOpenReadOnly(string fileName);
+        FileStream FileOpenReadWrite(string fileName);
+        FileStream FileOpenWrite(string fileName);
+        Task<AssemblyDefinition> FileReadAssemblyDefinitionAsync(string filename, CancellationToken cancellationToken);
+        bool FileExists(string fileName);
+        void ThrowIfFileDoesNotExist(string fileName);
+        string PathGetFileNameWithoutExtension(string filename);
+        string PathCombine(string path1, string path2);
+        string PathCombine(string path1, string path2, string path3);
+        string PathGetSpecialFolder(Environment.SpecialFolder specialFolder);
+        string PathGetDirectoryName(string path);
+        string PathGetFullPath(string path);
+        string PathGetExtension(string path);
+        string PathEnsureThisOsDirectorySeperator(string path);
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -64,10 +78,10 @@ namespace Snap.Core
 
         public string DirectorySeparator => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
 
-        public static DirectoryInfo GetTempDirectory(string localAppDirectory)
+        public DirectoryInfo GetTempDirectory(string localAppDirectory)
         {
             var tempDir = Environment.GetEnvironmentVariable("SNAP_TEMP");
-            tempDir = tempDir ?? Path.Combine(localAppDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SnapTemp");
+            tempDir = tempDir ?? PathCombine(localAppDirectory ?? PathGetSpecialFolder(Environment.SpecialFolder.LocalApplicationData), "SnapTemp");
 
             var di = new DirectoryInfo(tempDir);
             if (!di.Exists) di.Create();
@@ -75,7 +89,7 @@ namespace Snap.Core
             return di;
         }
 
-        public async Task WriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteStringContentAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
         {
             if (utf8Text == null) throw new ArgumentNullException(nameof(utf8Text));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
@@ -110,7 +124,7 @@ namespace Snap.Core
 
             path = tempDir.FullName;
 
-            return Disposable.Create(() => Task.Run(async () => await DeleteDirectoryAsync(tempDir.FullName)).Wait());
+            return Disposable.Create(() => Task.Run(async () => await DirectoryDeleteAsync(tempDir.FullName)).Wait());
         }
 
         public IDisposable WithTempFile(out string path, string baseDirectory = null)
@@ -133,23 +147,55 @@ namespace Snap.Core
             return Disposable.Create(() => File.Delete(thePath));
         }
 
-        public FileStream OpenReadOnly(string fileName)
+        public FileStream FileOpenReadOnly([NotNull] string fileName)
         {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
-        public FileStream OpenReadWrite(string fileName)
+        public FileStream FileOpenReadWrite([NotNull] string fileName)
         {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
         }
 
-        public bool FileExists(string fileName)
+        public FileStream FileOpenWrite([NotNull] string fileName)
         {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            return new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Write);
+        }
+
+        public async Task<AssemblyDefinition> FileReadAssemblyDefinitionAsync([NotNull] string filename, CancellationToken cancellationToken)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            if (!FileExists(filename))
+            {
+                throw new FileNotFoundException(filename);
+            }
+
+            var srcStream = await FileReadAsync(filename, cancellationToken);
+            return AssemblyDefinition.ReadAssembly(srcStream);
+        }
+
+        public bool FileExists([NotNull] string fileName)
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             return File.Exists(fileName);
         }
 
-        public async Task<string> ReadAllTextAsync(string fileName, CancellationToken cancellationToken)
+        public void ThrowIfFileDoesNotExist([NotNull] string fileName)
         {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            if (!FileExists(fileName))
+            {
+                throw new FileNotFoundException(fileName);
+            }
+        }
+
+        public async Task<string> FileReadAllTextAsync([NotNull] string fileName, CancellationToken cancellationToken)
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 var stringBuilder = new StringBuilder();
@@ -160,14 +206,16 @@ namespace Snap.Core
             }
         }
 
-        public void DeleteFile(string fileName)
+        public void FileDelete([NotNull] string fileName)
         {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             File.Delete(fileName);
         }
 
-        public void DeleteFileHarder(string path, bool ignoreIfFails = false)
+        public void FileDeleteHarder([NotNull] string path, bool ignoreIfFails = false)
         {
+            if (path == null) throw new ArgumentNullException(nameof(path));
             try
             {
                 SnapUtility.Retry(() => File.Delete(path), 2);
@@ -181,16 +229,17 @@ namespace Snap.Core
             }
         }
 
-        public void CreateDirectory(string directory)
+        public void DirectoryCreate(string directory)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             Directory.CreateDirectory(directory);
         }
 
-        public void CreateDirectoryIfNotExists(string directory)
+        public void DirectoryCreateIfNotExists([NotNull] string directory)
         {
+            if (directory == null) throw new ArgumentNullException(nameof(directory));
             if (DirectoryExists(directory)) return;
-            CreateDirectory(directory);
+            DirectoryCreate(directory);
         }
 
         public bool DirectoryExists(string directory)
@@ -199,13 +248,14 @@ namespace Snap.Core
             return Directory.Exists(directory);
         }
 
-        public IEnumerable<FileInfo> GetAllFilesRecursively(DirectoryInfo rootPath)
+        public IEnumerable<FileInfo> DirectoryGetAllFilesRecursively([NotNull] DirectoryInfo rootPath)
         {
+            if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
             if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
             return rootPath.EnumerateFiles("*", SearchOption.AllDirectories);
         }
 
-        public IEnumerable<string> GetAllFilePathsRecursively(string rootPath)
+        public IEnumerable<string> DirectoryGetAllPathsRecursively(string rootPath)
         {
             if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
             return Directory.EnumerateFiles(rootPath, "*", SearchOption.AllDirectories);
@@ -234,18 +284,22 @@ namespace Snap.Core
             }
         }
 
-        public async Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteAsync([NotNull] Stream srcStream, [NotNull] string dstFilename, CancellationToken cancellationToken)
         {
-            using (var dstStream = OpenReadWrite(dstFilename))
+            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
+            if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
+            using (var dstStream = FileOpenWrite(dstFilename))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
             }
         }
 
-        public async Task FileWriteAsync(string srcFilename, string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteAsync([NotNull] string srcFilename, [NotNull] string dstFilename, CancellationToken cancellationToken)
         {
-            using (var srcStream = OpenReadOnly(srcFilename))
-            using (var dstStream = OpenReadWrite(dstFilename))
+            if (srcFilename == null) throw new ArgumentNullException(nameof(srcFilename));
+            if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
+            using (var srcStream = FileOpenReadOnly(srcFilename))
+            using (var dstStream = FileOpenReadWrite(dstFilename))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
             }
@@ -283,14 +337,15 @@ namespace Snap.Core
             return dstStream;
         }
 
-        public void DeleteDirectory(string directory)
+        public void DirectoryDelete(string directory)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             Directory.Delete(directory);
         }
 
-        public async Task DeleteDirectoryAsync(string directory)
+        public async Task DirectoryDeleteAsync([NotNull] string directory)
         {
+            if (directory == null) throw new ArgumentNullException(nameof(directory));
             Logger.Debug("Starting to delete folder: {0}", directory);
 
             if (!DirectoryExists(directory))
@@ -329,7 +384,7 @@ namespace Snap.Core
             });
 
             var directoryOperations =
-                dirs.ForEachAsync(async dir => await DeleteDirectoryAsync(dir));
+                dirs.ForEachAsync(async dir => await DirectoryDeleteAsync(dir));
 
             await Task.WhenAll(fileOperations, directoryOperations);
 
@@ -347,16 +402,98 @@ namespace Snap.Core
             }
         }
 
-        public async Task DeleteDirectoryOrJustGiveUpAsync(string directory)
+        public async Task DirectoryDeleteOrJustGiveUpAsync([NotNull] string directory)
         {
+            if (directory == null) throw new ArgumentNullException(nameof(directory));
             try
             {
-                await DeleteDirectoryAsync(directory);
+                await DirectoryDeleteAsync(directory);
             }
             catch (Exception)
             {
                 // ignore
             }
+        }
+
+        public string PathGetFileName([NotNull] string filename)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            return Path.GetFileName(filename);
+        }
+
+        public string PathGetFileNameWithoutExtension([NotNull] string filename)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            return Path.GetFileNameWithoutExtension(filename);
+        }
+
+        public string PathCombine([NotNull] string path1, [NotNull] string path2)
+        {
+            if (path1 == null) throw new ArgumentNullException(nameof(path1));
+            if (path2 == null) throw new ArgumentNullException(nameof(path2));
+            return Path.Combine(path1, path2);
+        }
+
+        public string PathCombine([NotNull] string path1, [NotNull] string path2, [NotNull] string path3)
+        {
+            if (path1 == null) throw new ArgumentNullException(nameof(path1));
+            if (path2 == null) throw new ArgumentNullException(nameof(path2));
+            if (path3 == null) throw new ArgumentNullException(nameof(path3));
+            return Path.Combine(path1, path2, path3);
+        }
+
+        public string PathGetSpecialFolder(Environment.SpecialFolder specialFolder)
+        {
+            return Environment.GetFolderPath(specialFolder);
+        }
+
+        public string PathGetDirectoryName([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            return Path.GetDirectoryName(path);
+        }
+
+        public string PathGetFullPath([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            return Path.GetFullPath(path);
+        }
+
+        public string PathGetExtension([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            return Path.GetExtension(path);
+        }
+
+        public string PathEnsureThisOsDirectorySeperator([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return path.TrailingSlashesSafe();
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return path.ForwardSlashesSafe();
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
+        public string DirectoryGetParent([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (!path.EndsWith(DirectorySeparator))
+            {
+                path += DirectorySeparator;
+            }
+
+            var parentDirectory = Directory.GetParent(path)?.Parent?.FullName;
+
+            return parentDirectory;
         }
     }
 }

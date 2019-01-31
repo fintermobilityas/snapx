@@ -32,6 +32,8 @@ namespace Snap.AnyOS.Windows
         readonly ISnapFilesystem _snapFilesystem;
         readonly bool _isUnitTest;
 
+        public ISnapFilesystem Filesystem => _snapFilesystem;
+
         public SnapOsWindows(ISnapFilesystem snapFilesystem, bool isUnitTest = false)
         {
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
@@ -59,7 +61,7 @@ namespace Snap.AnyOS.Windows
                     versionInfo.ProductName,
                     packageTitle,
                     versionInfo.FileDescription,
-                    Path.GetFileNameWithoutExtension(versionInfo.FileName)
+                    _snapFilesystem.PathGetFileNameWithoutExtension(versionInfo.FileName)
                 };
 
                 var possibleCompanyNames = new[] {
@@ -80,13 +82,13 @@ namespace Snap.AnyOS.Windows
                 switch (location)
                 {
                     case SnapShortcutLocation.Desktop:
-                        targetDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+                        targetDirectory = _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.DesktopDirectory);
                         break;
                     case SnapShortcutLocation.StartMenu:
-                        targetDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs", applicationName);
+                        targetDirectory = _snapFilesystem.PathCombine(_snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.StartMenu), "Programs", applicationName);
                         break;
                     case SnapShortcutLocation.Startup:
-                        targetDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                        targetDirectory = _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.Startup);
                         break;
                     case SnapShortcutLocation.AppRoot:
                         targetDirectory = rootAppDirectory;
@@ -97,15 +99,15 @@ namespace Snap.AnyOS.Windows
 
                 if (createDirectoryIfNecessary)
                 {
-                    _snapFilesystem.CreateDirectoryIfNotExists(targetDirectory);
+                    _snapFilesystem.DirectoryCreateIfNotExists(targetDirectory);
                 }
 
-                return Path.Combine(targetDirectory, title + ".lnk");
+                return _snapFilesystem.PathCombine(targetDirectory, title + ".lnk");
             }
 
             Logger.Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
 
-            var exePath = Path.Combine(rootAppInstallDirectory, exeName);
+            var exePath = _snapFilesystem.PathCombine(rootAppInstallDirectory, exeName);
             var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
 
             foreach (var flag in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
@@ -133,15 +135,15 @@ namespace Snap.AnyOS.Windows
                 ShellLink shellLink;
                 Logger.ErrorIfThrows(() => SnapUtility.Retry(() =>
                 {
-                    _snapFilesystem.DeleteFile(file);
+                    _snapFilesystem.FileDelete(file);
 
-                    var target = Path.Combine(rootAppInstallDirectory, exeName);
+                    var target = _snapFilesystem.PathCombine(rootAppInstallDirectory, exeName);
                     shellLink = new ShellLink
                     {
                         Target = target,
                         IconPath = icon ?? target,
                         IconIndex = 0,
-                        WorkingDirectory = Path.GetDirectoryName(exePath),
+                        WorkingDirectory = _snapFilesystem.PathGetDirectoryName(exePath),
                         Description = packageDescription
                     };
 
@@ -182,10 +184,10 @@ namespace Snap.AnyOS.Windows
             }
 
             var newCurrentFolder = "app-" + newCurrentVersion;
-            var newAppPath = Path.Combine(rootAppDirectory, newCurrentFolder);
+            var newAppPath = _snapFilesystem.PathCombine(rootAppDirectory, newCurrentFolder);
 
-            var taskbarPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            var taskbarPath = _snapFilesystem.PathCombine(
+                _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.ApplicationData),
                 "Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar");
 
             if (!_snapFilesystem.DirectoryExists(taskbarPath))
@@ -221,7 +223,7 @@ namespace Snap.AnyOS.Windows
 
                     if (removeAll)
                     {
-                        _snapFilesystem.DeleteFileHarder(shortcut.ShortCutFile);
+                        _snapFilesystem.FileDeleteHarder(shortcut.ShortCutFile);
                     }
                     else
                     {
@@ -255,7 +257,7 @@ namespace Snap.AnyOS.Windows
                 return null;
             }
 
-            var fullname = Path.GetFullPath(executable);
+            var fullname = _snapFilesystem.PathGetFullPath(executable);
 
             return SnapUtility.Retry(() =>
                 GetAssemblySnapAwareVersion(fullname) ?? GetVersionBlockSnapAwareValue(fullname));
@@ -324,7 +326,7 @@ namespace Snap.AnyOS.Windows
 #endif
         }
 
-        static void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
+        void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
         {
             Logger.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
 
@@ -333,7 +335,7 @@ namespace Snap.AnyOS.Windows
 
             Logger.Info("Old shortcut target: '{0}'", target);
 
-            target = Path.Combine(rootAppDirectory, Path.GetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
+            target = _snapFilesystem.PathCombine(rootAppDirectory, _snapFilesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
             Logger.Info("New shortcut target: '{0}'", target);
 
@@ -374,7 +376,7 @@ namespace Snap.AnyOS.Windows
                     // Never kill our own EXE
                     if (ourExePath != null && tuple.Item1.Equals(ourExePath, StringComparison.OrdinalIgnoreCase)) return false;
 
-                    var name = Path.GetFileName(tuple.Item1).ToLowerInvariant();
+                    var name = _snapFilesystem.PathGetFileName(tuple.Item1).ToLowerInvariant();
                     return name != "snap.exe" && name != "update.exe";
                 })
                 .ForEach(x =>

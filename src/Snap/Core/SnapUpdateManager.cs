@@ -26,6 +26,10 @@ namespace Snap.Core
 
     public sealed class SnapUpdateManager : ISnapUpdateManager
     {
+        static readonly ISnapFilesystem SnapFilesystemPublicCtorsOnly = new SnapFilesystem();
+        static readonly ISnapAppReader SnapAppReaderPublicCtorsOnly = new SnapAppReader();
+        static readonly ISnapAppWriter SnapAppWriterPublicCtorsOnly = new SnapAppWriter();
+
         static readonly ILog Logger = LogProvider.For<SnapUpdateManager>();
 
         readonly string _workingDirectory;
@@ -40,13 +44,13 @@ namespace Snap.Core
         public SnapUpdateManager() : this(
             Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location) 
                 ?? throw new InvalidOperationException("Unable to determine application working directory"), 
-                typeof(SnapUpdateManager).Assembly.GetSnapApp())
+                typeof(SnapUpdateManager).Assembly.GetSnapApp(SnapFilesystemPublicCtorsOnly, SnapAppReaderPublicCtorsOnly, SnapAppWriterPublicCtorsOnly))
         {
 
         }
 
         [UsedImplicitly]
-        internal SnapUpdateManager([NotNull] string workingDirectory) : this(workingDirectory, workingDirectory.GetSnapAppFromDirectory())
+        internal SnapUpdateManager([NotNull] string workingDirectory) : this(workingDirectory, workingDirectory.GetSnapAppFromDirectory(SnapFilesystemPublicCtorsOnly, SnapAppReaderPublicCtorsOnly, SnapAppWriterPublicCtorsOnly))
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }

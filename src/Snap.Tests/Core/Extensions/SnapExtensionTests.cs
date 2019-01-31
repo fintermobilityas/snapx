@@ -186,13 +186,13 @@ namespace Snap.Tests.Core.Extensions
         [Fact]
         public void TestGetSnapStubExecutableFullPath()
         {
-            var appSpec = _baseFixture.BuildSnapApp();
+            var snapApp = _baseFixture.BuildSnapApp();
             var workingDirectory = _baseFixture.WorkingDirectory;
 
-            var expectedStubExecutableName = $"{appSpec.Id}.exe";
+            var expectedStubExecutableName = $"{snapApp.Id}.exe";
             var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(appSpec))
+            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
                 var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
@@ -205,13 +205,13 @@ namespace Snap.Tests.Core.Extensions
         [Fact]
         public void TestGetSnapStubExecutableFullPath_Assembly_Location()
         {
-            var appSpec = _baseFixture.BuildSnapApp();
+            var snapApp = _baseFixture.BuildSnapApp();
             var workingDirectory = _baseFixture.WorkingDirectory;
 
-            var expectedStubExecutableName = $"{appSpec.Id}.exe";
+            var expectedStubExecutableName = $"{snapApp.Id}.exe";
             var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(appSpec))
+            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
                 var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(out var stubExecutableExeName);
@@ -327,7 +327,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Name,
+            var snapAppAfter = snapApps.BuildSnapAppRelease(snapAppBefore.Id, snapAppBefore.Target.Name,
                 new SemanticVersion(1, 1, 0), snapAppBefore.BuildNugetSources());
 
             // Generic
@@ -436,7 +436,6 @@ namespace Snap.Tests.Core.Extensions
             var packageSource = nugetPackageSources.Items.First();
             Assert.Equal(packageSource.Name, nugetOrgFeed.Name);
         }
-
 
         [Fact]
         public void TestBuildNugetSources_SnapApps()

@@ -22,7 +22,7 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            var osPlatformStr = ((OSPlatform)value).ToString();
+            var osPlatformStr = ((OSPlatform)value).ToString().ToLowerInvariant();
             emitter.Emit(new Scalar(osPlatformStr));
         }
 

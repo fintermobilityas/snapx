@@ -4,7 +4,6 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Attributes;
 using Snap.Core.Models;
-using Snap.Core.Yaml;
 using Snap.Core.Yaml.Emitters;
 using Snap.Core.Yaml.TypeConverters;
 using YamlDotNet.Serialization;

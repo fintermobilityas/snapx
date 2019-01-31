@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using NuGet.Configuration;
 using NuGet.Versioning;
@@ -14,32 +15,6 @@ namespace Snap.Tests.Core
 {
     public class SnapAppReaderTests : IClassFixture<BaseFixture>
     {
-        const string SnapAppsYaml = @"
-certificates:
-- name: safenet-ev-codesign
-  csn: Some Awesome Company LTD
-  sha256: 311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02
-apps:
-- id: demoapp
-  version: 1.0.0
-  certificate: safenet-ev-codesign
-  channels:
-    - name: test
-      push-feed: myget.private
-      update-feed: myget.public.readonly
-      update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
-    - name: production
-      push-feed: myget.private
-      update-feed: myget.public.readonly
-      update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
-  targets:
-    - name: demoapp-win-x64
-      os: windows
-      nuspec: test.nuspec
-      framework: netcoreapp2.1
-      rid: win-x64
-";
-
         readonly BaseFixture _baseFixture;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapAppWriter _snapAppWriter;
@@ -56,7 +31,6 @@ apps:
         {
             var snapAppBefore = BuildSnap();
             var snapAppYamlString  = _snapAppWriter.ToSnapAppYamlString(snapAppBefore);
-
             var snapAppAfter = _snapAppReader.BuildSnapAppFromYamlString(snapAppYamlString);
 
             AssertSnapApp(snapAppBefore, snapAppAfter);
@@ -65,16 +39,13 @@ apps:
         [Fact]
         public void TestBuildSnapAppsFromYamlString()
         {
-            var snapApps = _baseFixture.BuildSnapApps();
-            Assert.Single(snapApps.Apps);
+            var snapAppsBefore = _baseFixture.BuildSnapApps();
+            Assert.Single(snapAppsBefore.Apps);
+            var snapAppsYamlString  = _snapAppWriter.ToSnapAppsYamlString(snapAppsBefore);
 
-            var snapAppsAfter = _snapAppReader.BuildSnapAppsFromYamlString(SnapAppsYaml);
+            var snapAppsAfter = _snapAppReader.BuildSnapAppsFromYamlString(snapAppsYamlString);
 
-            Assert.Equal(snapApps.Channels.Count, snapAppsAfter.Channels.Count);
-            Assert.Equal(snapApps.Certificates.Count, snapAppsAfter.Certificates.Count);
-            Assert.Equal(snapApps.Apps.Count, snapAppsAfter.Apps.Count);
-
-            //AssertSnapApp(snapApps.Apps[0], snapAppsAfter.Apps[0]);
+            AssertSnapApps(snapAppsBefore, snapAppsAfter, new NugetOrgOfficialV3PackageSources());
         }
 
         static SnapApp BuildSnap()
@@ -140,6 +111,48 @@ apps:
             };
 
             return snapApp;
+        }
+
+        static void AssertSnapApps(SnapApps snapAppsBefore, SnapApps snapAppsAfter, INuGetPackageSources nuGetPackageSources)
+        {
+            Assert.NotNull(snapAppsBefore);
+            Assert.NotNull(snapAppsAfter);
+
+            Assert.Equal(snapAppsBefore.Channels.Count, snapAppsAfter.Channels.Count);
+            Assert.Equal(snapAppsBefore.Certificates.Count, snapAppsAfter.Certificates.Count);
+            Assert.Equal(snapAppsBefore.Apps.Count, snapAppsAfter.Apps.Count);
+            
+            // Channels.
+            for (var index = 0; index < snapAppsBefore.Channels.Count; index++)
+            {
+                var lhsChannel = snapAppsBefore.Channels[index];
+                var rhsChannel = snapAppsAfter.Channels[index];
+
+                Assert.Equal(lhsChannel.Name, rhsChannel.Name);
+                Assert.Equal(lhsChannel.PushFeed, rhsChannel.PushFeed);
+                Assert.Equal(lhsChannel.UpdateFeed, rhsChannel.UpdateFeed);
+            }
+
+            // Certificates.
+            for (var index = 0; index < snapAppsBefore.Certificates.Count; index++)
+            {
+                var lhsCertificate = snapAppsBefore.Certificates[index];
+                var rhsCertificate= snapAppsAfter.Certificates[index];
+
+                Assert.Equal(lhsCertificate.Name, rhsCertificate.Name);
+                Assert.Equal(lhsCertificate.Csn, rhsCertificate.Csn);
+                Assert.Equal(lhsCertificate.Sha256, rhsCertificate.Sha256);
+            }
+
+            // Apps.     
+            var snapAppBefore = snapAppsBefore.BuildSnapApp(nuGetPackageSources).ToList();
+            var snapAppAfter = snapAppsAfter.BuildSnapApp(nuGetPackageSources).ToList();
+            Assert.Equal(snapAppBefore.Count, snapAppAfter.Count);
+
+            for (var i = 0; i < snapAppsBefore.Apps.Count; i++)
+            {
+                AssertSnapApp(snapAppBefore[i], snapAppAfter[i]);
+            }
         }
 
         static void AssertSnapApp(SnapApp snapAppBefore, SnapApp snapAppAfter)

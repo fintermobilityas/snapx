@@ -45,7 +45,6 @@ namespace Snap.Core.Yaml.NodeTypeResolvers
 
             currentType = arrayType ? predefinedType.MakeArrayType() : predefinedType;
             return true;
-
         }
     }
 }

@@ -113,7 +113,29 @@ namespace Snap.Extensions
             return true;
         }
 
-        internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string targetName, [NotNull] SemanticVersion releaseVersion,
+        internal static IEnumerable<SnapApp> BuildSnapApp([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources)
+        {
+            foreach (var snapsApp in snapApps.Apps)
+            {
+                foreach (var snapsTarget in snapsApp.Targets)
+                {
+                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Name, snapsApp.Version, nuGetPackageSources);
+                }
+            }
+        }
+
+        internal static IEnumerable<SnapApp> BuildSnapAppReleaseForAllTargets([NotNull] this SnapApps snapApps, [NotNull] SemanticVersion releaseVersion, [NotNull] INuGetPackageSources nuGetPackageSources)
+        {
+            foreach (var snapsApp in snapApps.Apps)
+            {
+                foreach (var snapsTarget in snapsApp.Targets)
+                {
+                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Name, releaseVersion, nuGetPackageSources);
+                }
+            }
+        }
+
+        internal static SnapApp BuildSnapAppRelease([NotNull] this SnapApps snapApps, string id, [NotNull] string targetName, [NotNull] SemanticVersion releaseVersion,
             [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));

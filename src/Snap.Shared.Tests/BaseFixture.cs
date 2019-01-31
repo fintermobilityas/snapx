@@ -45,7 +45,7 @@ namespace Snap.Shared.Tests
                 Password = "mypassword"
             };
 
-            "https://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
+            "snaps://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
 
             var testChannel = new SnapChannel
             {

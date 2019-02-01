@@ -101,7 +101,7 @@ function Write-Output-Header-Warn
 # IO Variables
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
-$ToolsDir = Join-Path $WorkingDir Tools
+$ToolsDir = Join-Path $WorkingDir tools
 
 # Global variables
 
@@ -131,7 +131,7 @@ switch -regex ($OSVersion)
 		$CommandCmake = "cmake.exe"
 		$CommandGit = "git.exe"
 		$CommandDotnet = "dotnet.exe"
-        $CommandUpx = Join-Path $Tools\upx.exe
+        $CommandUpx = Join-Path $ToolsDir upx.exe
 		$Arch = "win7-x64"
 		$ArchCross = "x86_64-win64-gcc"
 	}
@@ -371,7 +371,7 @@ function Build-SnapCoreRun
         
             if($Configuration -eq "Release")
             {
-                $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir corerun.exe
+                $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration\corerun.exe
                 Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
             }
 		}

@@ -35,17 +35,26 @@ namespace Snap.Extensions
 
             var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
 
+            var storePasswordInClearText = !inMemorySettings.NuGetSupportsEncryption();
+            
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
-                packageSource.Credentials = PackageSourceCredential.FromUserInput(packageSource.Name,
-                    snapFeed.Username, snapFeed.Password, false);
+                packageSource.Credentials = new PackageSourceCredential(packageSource.Name,
+                    snapFeed.Username, snapFeed.Password, storePasswordInClearText);
 
                 inMemorySettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
             }
 
             if (snapFeed.ApiKey != null)
             {
-                SettingsUtility.SetEncryptedValueForAddItem(inMemorySettings, ConfigurationConstants.ApiKeys, packageSource.Source, snapFeed.ApiKey);
+                if (storePasswordInClearText)
+                {
+                    inMemorySettings.AddOrUpdate(ConfigurationConstants.ApiKeys, new AddItem(packageSource.Source, snapFeed.ApiKey));
+                }
+                else
+                {
+                    SettingsUtility.SetEncryptedValueForAddItem(inMemorySettings, ConfigurationConstants.ApiKeys, packageSource.Source, snapFeed.ApiKey);                    
+                }
             }
 
             packageSource.ProtocolVersion = (int)snapFeed.ProtocolVersion;
@@ -59,7 +68,12 @@ namespace Snap.Extensions
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (sectionName == null) throw new ArgumentNullException(nameof(sectionName));
 
-            var decryptedValue = SettingsUtility.GetDecryptedValueForAddItem(nuGetPackageSources.Settings, sectionName, packageSource.Source);
+            var nuGetSupportsEncryption = nuGetPackageSources.NuGetSupportsEncryption();
+            
+            var decryptedValue = nuGetSupportsEncryption ? 
+                SettingsUtility.GetDecryptedValueForAddItem(nuGetPackageSources.Settings, sectionName, packageSource.Source) : 
+                SettingsUtility.GetValueForAddItem(nuGetPackageSources.Settings, sectionName, packageSource.Source);
+            
             return string.IsNullOrWhiteSpace(decryptedValue) ? null : decryptedValue;
         }
 
@@ -68,6 +82,8 @@ namespace Snap.Extensions
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
 
+            var apiKey = packageSource.GetDecryptedValue(nuGetPackageSources, ConfigurationConstants.ApiKeys);
+            
             var snapFeed = new SnapNugetFeed
             {
                 Name = packageSource.Name,
@@ -75,7 +91,7 @@ namespace Snap.Extensions
                 ProtocolVersion = (NuGetProtocolVersion)packageSource.ProtocolVersion,
                 Username = packageSource.Credentials?.Username,
                 Password = packageSource.Credentials?.Password,
-                ApiKey = packageSource.GetDecryptedValue(nuGetPackageSources, ConfigurationConstants.ApiKeys)
+                ApiKey = apiKey
             };
 
             return snapFeed;

@@ -2,9 +2,9 @@ param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
-	[Parameter(Position = 1, ValueFromPipeline = $true)]
+    [Parameter(Position = 1, ValueFromPipeline = $true)]
     [boolean] $Cross = $FALSE,
-	[Parameter(Position = 2, ValueFromPipeline = $true)]
+    [Parameter(Position = 2, ValueFromPipeline = $true)]
     [boolean] $Lto = $FALSE
 )
 
@@ -98,27 +98,10 @@ function Write-Output-Header-Warn
     Write-Host
 }
 
-function Extract-FFMpeg-Version
-{
-	param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Filename,
-        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Prefix
-    )
-	
-	$Regex = "^\#define $Prefix_VERSION_(MAJOR|MINOR|MICRO) (\d+)$"
+# IO Variables
 
-	$Content  = Get-Content $FileName -Raw
-	
-	$Matches = $Content | Select-String -Pattern "\#define ${Prefix}_VERSION_(MAJOR|MINOR|MICRO).+?(\d+)" -AllMatches | foreach { $_.Matches } | % { $_.Groups[2].Value }
-	if($Matches.Length -ne 3)
-	{
-		Die "Unable to find version for $Prefix in filename $Filename"
-	}
-	
-	return "{0}.{1}.{2}" -f ($Matches[0], $Matches[1], $Matches[2])
-}
+$WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+$ToolsDir = Join-Path $WorkingDir Tools
 
 # Global variables
 
@@ -148,6 +131,7 @@ switch -regex ($OSVersion)
 		$CommandCmake = "cmake.exe"
 		$CommandGit = "git.exe"
 		$CommandDotnet = "dotnet.exe"
+        $CommandUpx = Join-Path $Tools\upx.exe
 		$Arch = "win7-x64"
 		$ArchCross = "x86_64-win64-gcc"
 	}
@@ -158,29 +142,25 @@ switch -regex ($OSVersion)
 		$CommandGit = "git"
 		$CommandDotnet = "dotnet"
 		$CommandMake = "make"
+        $CommandUpx = "upx"
 		$Arch = "x86_64-linux-gcc"
-		$ArchCross = "x86_64-win64-gcc"
+		$ArchCross = "x86_64-w64-mingw32-gcc"
 	}	
 	default {
 		Die "Unsupported os: $OSVersion"
 	}
 }
 
-# IO Variables
-
-$WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
-$BuildOutputDir = $null
-
-if($Cross) {
-	$BuildOutputDir = Join-Path $WorkingDir build\$OSPlatform\$ArchCross\$Configuration
-} else {
-	$BuildOutputDir = Join-Path $WorkingDir build\$OSPlatform\$Arch\$Configuration
+$TargetArch = $Arch
+if($Cross)
+{
+  $TargetArch = $ArchCross
 }
 
 # Projects
 
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
-$SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\snap.corerun\$OSPlatform\$Arch\$Configuration
+$SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\$OSPlatform\$TargetArch\$Configuration
 $SnapCoreRunInstallDir = Join-Path $SnapCoreRunBuildOutputDir install
 
 # Miscellaneous functions that require bootstrapped variable state
@@ -217,6 +197,13 @@ function Requires-Make
 {
 	if ((Get-Command $CommandMake -ErrorAction SilentlyContinue) -eq $null) {
 		Die "Unable to find make executable in environment path: $CommandMake"
+	}
+}
+
+function Requires-Upx
+{
+	if ((Get-Command $CommandUpx -ErrorAction SilentlyContinue) -eq $null) {
+		Die "Unable to find upx executable in environment path: $CommandUpx"
 	}
 }
 
@@ -294,7 +281,7 @@ function Invoke-BatchFile
 
 function Configure-Msvs-Toolchain
 {
-    Write-Output-Header "Configuring msvs toolchain"
+  Write-Output-Header "Configuring msvs toolchain"
 
 	# https://github.com/Microsoft/vswhere/commit/a8c90e3218d6c4774f196d0400a8805038aa13b1 (Release mode / VS 2015 Update 3)
 	# SHA512: 06FAE35E3A5B74A5B0971FB19EE0987E15E413558C620AB66FB3188F6BF1C790919E8B163596744D126B3716D0E91C65F7C1325F5752614078E6B63E7C81D681
@@ -333,19 +320,28 @@ function Build-SnapCoreRun
 
 	$CmakeArguments = @(
 		"-G`"$CmakeGenerator`"",
-        "-H`"$SnapCoreRunSrcDir`"",
-        "-B`"$SnapCoreRunBuildOutputDir`""
+  	"-H`"$SnapCoreRunSrcDir`"",
+  	"-B`"$SnapCoreRunBuildOutputDir`""
 	)
 	
 	if($Lto)
 	{
 		$CmakeArguments += "-DENABLE_LTO=1"
 	}
+
+	if($Cross -eq $TRUE -and $OsPlatform -eq "Unix")
+	{
+		$CmakeToolChainFile = Join-Path $WorkingDir cmake\Toolchain-x86_64-w64-mingw32.cmake
+		$CmakeArguments += "-DCMAKE_TOOLCHAIN_FILE=$CmakeToolChainFile"
+	} elseif($Cross -eq $TRUE)
+	{
+		Die "Cross compiling is not support on: $OSPlatform"
+	}
 			
 	Write-Output "Build src directory: $SnapCoreRunSrcDir"
 	Write-Output "Build output directory: $SnapCoreRunBuildOutputDir"
 	Write-Output "Build install directory: $SnapCoreRunInstallDir"
-	Write-Output "Arch: $Arch"
+	Write-Output "Arch: $TargetArch"
 	Write-Output ""
 	
 	Write-Output $CmakeArguments
@@ -355,12 +351,29 @@ function Build-SnapCoreRun
 	switch($OSPlatform)
 	{
 		"Unix" {
-				sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
-			}
+			sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
+
+            if($Configuration -eq "Release")
+            {
+                $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun
+                if($Cross -eq $TRUE)
+                {
+                    $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun.exe
+                }
+                Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+            }
+
+		}
 		"Windows" {
 			Start-Process $CommandCmake @(
 				"--build `"$SnapCoreRunBuildOutputDir`" --config $Configuration"
 			)
+        
+            if($Configuration -eq "Release")
+            {
+                $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir corerun.exe
+                Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+            }
 		}
 		default {
 			Die "Unsupported os platform: $OSPlatform"
@@ -400,17 +413,18 @@ switch($OSPlatform)
 }
 			
 Requires-Cmake
+Requires-Upx
 
 switch($OSPlatform)
 {
 	"Windows" {		
 		if($Cross -eq $FALSE) {
 			Build-SnapCoreRun		
-		}
+		} else {
+		 	Die "Cross compiling is not supported on Windows."
+		} 
 	}
 	"Unix" {
-		if($Cross -eq $FALSE) {
-			Build-SnapCoreRun		
-		}
+		Build-SnapCoreRun		
 	}
 }

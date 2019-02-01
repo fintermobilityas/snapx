@@ -142,7 +142,9 @@ namespace Snap.Tests.Core
                 await _snapExtractor.ExtractAsync(packageArchiveReader, appDir);
 
                 var extractedLayouted = _snapFilesystem
-                    .DirectoryGetAllPathsRecursively(rootDir.WorkingDirectory)
+                    .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
+                    .ToList()
+                    .OrderBy(x => x)
                     .ToList();
 
                 var expectedLayout = new List<string>
@@ -152,7 +154,9 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
                     _snapFilesystem.PathCombine(appDir, "test.dll"),
                     _snapFilesystem.PathCombine(appDir, "subdirectory", "test2.dll")
-                };
+                }
+                    .OrderBy(x => x)
+                    .ToList();
 
                 Assert.Equal(expectedLayout.Count, extractedLayouted.Count);
 

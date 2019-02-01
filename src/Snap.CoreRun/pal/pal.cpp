@@ -1,9 +1,11 @@
 #include "pal.hpp"
 
 #if PLATFORM_WINDOWS
-#include <Shlwapi.h> // PathIsDirectory, PathFileExists etc.
-#include <PathCch.h> // PathCchCombine etc.
+#include <shlwapi.h> // PathIsDirectory, PathFileExists etc.
 #include <strsafe.h> // StringCchLengthA
+#if _MINGW32_
+#include <wchar_s.h> // _wgetenv
+#endif
 #endif
 
 #if PLATFORM_LINUX
@@ -171,16 +173,13 @@ BOOL pal_env_get_variable(const char * environment_variable_in, char ** environm
 #if PLATFORM_WINDOWS
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
 
-    wchar_t* buffer = nullptr;
-    size_t buffer_len = 0;
-    const auto error = _wdupenv_s(&buffer, &buffer_len, environment_variable_in_utf16_string.data());
-    if (error || buffer_len <= 0)
+    auto w_env = _wgetenv(environment_variable_in_utf16_string.data());
+    if (w_env == nullptr)
     {
         return FALSE;
     }
 
-    *environment_variable_value_out = pal_utf8_string(buffer).dup();
-    delete buffer;
+    *environment_variable_value_out = pal_utf8_string(w_env).dup();
 
     return TRUE;
 #else
@@ -270,12 +269,12 @@ BOOL pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_ou
 
     if (PathIsDirectory(path_in_utf16_string.data()))
     {
-        if (S_OK != PathCchCanonicalize(path_in_without_filespec, PAL_MAX_PATH, path_in_utf16_string.data()))
+        if (S_OK != PathCanonicalize(path_in_without_filespec, path_in_utf16_string.data()))        
         {
             return FALSE;
         }
     }
-    else if (S_OK != ::PathCchRemoveFileSpec(path_in_without_filespec, PAL_MAX_PATH))
+    else if (S_OK != PathRemoveFileSpec(path_in_without_filespec))
     {
         return FALSE;
     }
@@ -338,8 +337,7 @@ BOOL pal_fs_path_combine(const char * path1, const char * path2, char ** path_ou
     pal_utf16_string path_in_lhs_utf16_string(path1);
     pal_utf16_string path_in_rhs_utf16_string(path2);
 
-    if (S_OK != PathCchCombine(path_combined_utf16_string.data(), PAL_MAX_PATH,
-        path_in_lhs_utf16_string.data(), path_in_rhs_utf16_string.data()))
+    if (S_OK != PathCombine(path_combined_utf16_string.data(), path_in_lhs_utf16_string.data(), path_in_rhs_utf16_string.data()))
     {
         return FALSE;
     }

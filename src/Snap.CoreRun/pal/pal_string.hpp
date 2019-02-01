@@ -13,6 +13,12 @@ char* pal_str_narrow(const wchar_t* utf16_str);
 #ifndef FALSE
 #define FALSE 0
 #endif
+#ifdef __MINGW32__
+#include <string.h>
+#ifndef WC_ERR_INVALID_CHARS
+#define WC_ERR_INVALID_CHARS 0x0080
+#endif
+#endif
 #endif
 
 #if PLATFORM_LINUX

@@ -119,7 +119,14 @@ namespace Snap.Tests.Core.Extensions
             Assert.NotNull(packageSource.Credentials);
 
             var credential = packageSource.Credentials;
-            Assert.False(credential.IsPasswordClearText);
+            if (nuGetPackageSources.NuGetSupportsEncryption())
+            {
+                Assert.False(credential.IsPasswordClearText);                
+            }
+            else
+            {
+                Assert.True(credential.IsPasswordClearText);                                
+            }
             Assert.Equal(snapNugetFeed.Username, credential.Username);
             Assert.Equal(snapNugetFeed.Password, credential.Password);
             Assert.Equal(snapNugetFeed.Name, credential.Source);

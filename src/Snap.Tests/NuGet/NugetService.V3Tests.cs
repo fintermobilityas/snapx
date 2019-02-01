@@ -105,7 +105,7 @@ namespace Snap.Tests.NuGet
         [Fact(Skip = "Todo: Mock me. Only for works for YouPark employees right now.")]
         public async Task TestPushAsync()
         {
-            var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources();
+            var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources(_snapFilesystem, _baseFixture.WorkingDirectory);
             var youparkAppsPackageSource = nuGetMachineWidePackageSources.Items.Single(x => x.Name == "youpark-apps");
 
             var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(_snapFilesystem, _snapPack);

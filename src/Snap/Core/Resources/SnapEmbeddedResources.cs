@@ -84,7 +84,7 @@ namespace Snap.Core.Resources
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 coreRunMemoryStream = CoreRunWindows;
-            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 coreRunMemoryStream = CoreRunLinux;
             }

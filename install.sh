@@ -1,7 +1,7 @@
 echo "Installing build dependencies"
 
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends build-essential pkg-config software-properties-common gcc g++
+sudo apt-get install -y --no-install-recommends build-essential pkg-config software-properties-common gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 upx-ucl
 
 echo "Installing powershell"
 

@@ -43,7 +43,9 @@ switch($Target)
 		if($OSVersion -match "^Unix")
 		{
 			.\bootstrap.ps1 -Configuration Debug
+			.\bootstrap.ps1 -Configuration Debug -Cross 1
 			.\bootstrap.ps1 -Configuration Release -Lto 1		
+			.\bootstrap.ps1 -Configuration Release -Cross 1 -Lto 1		
 		}	
 		
 		$BuildTime.Stop()		

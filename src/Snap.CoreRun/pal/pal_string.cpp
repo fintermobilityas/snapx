@@ -1,8 +1,7 @@
 #include "pal_string.hpp"
 
 #if PLATFORM_WINDOWS
-#include <Shlwapi.h> // PathIsDirectory, PathFileExists etc.
-#include <PathCch.h> // PathCchCombine etc.
+#include <shlwapi.h> // MultiByteToWideChar
 #include <strsafe.h> // StringCchLengthA
 #endif
 

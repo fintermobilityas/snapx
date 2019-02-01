@@ -4,3 +4,6 @@ bin/
 nupkgs/
 .snap
 build/
+.idea/
+
+src/Snap\.sln\.DotSettings\.user

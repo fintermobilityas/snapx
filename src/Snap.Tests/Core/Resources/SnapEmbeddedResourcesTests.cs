@@ -44,10 +44,9 @@ namespace Snap.Tests.Core.Resources
                 Assert.True(_snapFilesystem.FileExists(expectedDstFilename));
 
                 // For some fucked up reason, File.Exists does not work when a file does not have an extension on Windows.
-                var corerun = _snapFilesystem.DirectoryGetAllFilesRecursively(tmpDir.WorkingDirectoryInfo).SingleOrDefault(x => x.Name == coreRunExeFilename);
-                Assert.NotNull(corerun);
-                Assert.Equal(Path.GetFileName(expectedDstFilename), corerun.Name);
-
+                var coreRunFileName = _snapFilesystem.DirectoryGetAllFilesRecursively(tmpDir.WorkingDirectory).SingleOrDefault(x => _snapFilesystem.PathGetFileName(x) == coreRunExeFilename);
+                Assert.NotNull(coreRunExeFilename);
+                Assert.NotNull(coreRunFileName);
                 Assert.Equal(expectedDstFilename, dstFilename);
             }
         }

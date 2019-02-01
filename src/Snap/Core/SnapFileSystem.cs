@@ -27,8 +27,8 @@ namespace Snap.Core
         Task DirectoryDeleteAsync(string directory);
         Task DirectoryDeleteOrJustGiveUpAsync(string directory);
         string DirectoryGetParent(string path);
-        IEnumerable<FileInfo> DirectoryGetAllFilesRecursively(DirectoryInfo rootPath);
-        IEnumerable<string> DirectoryGetAllPathsRecursively(string rootPath);
+        IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
+        IEnumerable<string> DirectoryGetAllFiles(string rootPath);
         string PathGetFileName(string filename);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
@@ -254,18 +254,17 @@ namespace Snap.Core
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             return Directory.Exists(directory);
         }
-
-        public IEnumerable<FileInfo> DirectoryGetAllFilesRecursively([NotNull] DirectoryInfo rootPath)
-        {
-            if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
-            if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
-            return rootPath.EnumerateFiles("*", SearchOption.AllDirectories);
-        }
-
-        public IEnumerable<string> DirectoryGetAllPathsRecursively(string rootPath)
+        
+        public IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath)
         {
             if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
             return Directory.EnumerateFiles(rootPath, "*", SearchOption.AllDirectories);
+        }
+
+        public IEnumerable<string> DirectoryGetAllFiles(string rootPath)
+        {
+            if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
+            return Directory.EnumerateFiles(rootPath, "*", SearchOption.TopDirectoryOnly);
         }
 
         public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)

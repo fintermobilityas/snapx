@@ -33,23 +33,26 @@ target_compile_definitions(corerun PRIVATE
 )	
 
 if(WIN32)
-
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows")	
-	set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
+	
+	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows")		
+		set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
+	elseif (CMAKE_COMPILER_IS_GNUCXX)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")			
+	endif()
 
 	target_link_libraries(corerun PRIVATE 
-		shlwapi.lib 
-		shell32.lib 
-		pathcch.lib
+		shlwapi
+		shell32
 	)
 
 	set(CompilerFlags
-        CMAKE_CXX_FLAGS
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_C_FLAGS
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS
+		CMAKE_CXX_FLAGS_DEBUG
+		CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_C_FLAGS
+		CMAKE_C_FLAGS_DEBUG
+		CMAKE_C_FLAGS_RELEASE
 	)
 		
 	foreach(CompilerFlag ${CompilerFlags})
@@ -63,6 +66,7 @@ if(WIN32)
 		_UNICODE
 		UNICODE
 	)	
+
 elseif(UNIX)
 
 	target_link_libraries(corerun PRIVATE
@@ -74,17 +78,12 @@ elseif(UNIX)
 	)	
 
 	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64") 
-	target_compile_definitions(corerun PRIVATE 
-		PLATFORM_LINUX_AARCH64
-	)	
+		target_compile_definitions(corerun PRIVATE 
+			PLATFORM_LINUX_AARCH64
+		)	
 	endif()
 	
 endif()
 
 set_property(TARGET corerun PROPERTY CXX_STANDARD 17)
 set_property(TARGET corerun PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET corerun PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-if(ENABLE_LTO)
-set_property(TARGET corerun PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-endif()

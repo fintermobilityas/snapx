@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
@@ -10,7 +12,9 @@ using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Resources;
 using Snap.NuGet;
+using Snap.Reflection;
 using Snap.Shared.Tests;
+using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.NuGet
@@ -108,7 +112,17 @@ namespace Snap.Tests.NuGet
             var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources(_snapFilesystem, _baseFixture.WorkingDirectory);
             var youparkAppsPackageSource = nuGetMachineWidePackageSources.Items.Single(x => x.Name == "youpark-apps");
 
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(_snapFilesystem, _snapPack);
+            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
+            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
+            testDllReflector.SetSnapAware();
+
+            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
+                { $"subdirectory\\{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
+            };
+
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(_snapFilesystem, _snapPack, nuspecLayout);
 
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

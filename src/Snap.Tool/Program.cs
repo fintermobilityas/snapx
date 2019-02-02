@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Snap.AnyOS;
+using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Logging;
@@ -44,6 +45,9 @@ namespace Snap.Tool
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                snapOs = new SnapOs(new SnapOsUnix(snapFilesystem));
             }
             else
             {
@@ -126,7 +130,7 @@ namespace Snap.Tool
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
                 var rootAppDirectory = snapFilesystem.PathCombine(snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
 
-                await snapInstaller.CleanInstallFromDiskAsync(nupkgFilename, rootAppDirectory);
+                await snapInstaller.InstallAsync(nupkgFilename, rootAppDirectory);
 
                 Logger.Info($"Succesfully installed {packageIdentity.Id} in {sw.Elapsed.TotalSeconds:F} seconds.");
 

@@ -7,6 +7,6 @@ namespace Snap.Attributes
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class SnapAppReleaseDetailsAttribute : Attribute
     {
-        public string YamlString { get; set; }
+  
     }
 }

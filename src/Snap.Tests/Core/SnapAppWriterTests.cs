@@ -8,22 +8,19 @@ using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Snap.Tests.Core
 {
     public class SnapAppWriterTests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;
-        readonly ITestOutputHelper _testOutputHelper;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapFilesystem _snapFilesystem;
 
-        public SnapAppWriterTests(BaseFixture baseFixture, ITestOutputHelper testOutputHelper)
+        public SnapAppWriterTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
-            _testOutputHelper = testOutputHelper;
             _snapFilesystem = new SnapFilesystem();
             _snapAppWriter = new SnapAppWriter();
             _snapAppReader = new SnapAppReader();
@@ -47,8 +44,6 @@ namespace Snap.Tests.Core
             {
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
                 Assert.NotNull(snapAppAfter);
-
-                _baseFixture.AssertSnapsAreEqual(snapAppBefore, snapAppAfter);
             }
         }
 
@@ -83,7 +78,7 @@ namespace Snap.Tests.Core
                     return;
                 }
 
-                Assert.True((bool)optimizedEmbeddedResources.IsStripped);
+                Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
 
                 if (osPlatform == OSPlatform.Windows)
                 {

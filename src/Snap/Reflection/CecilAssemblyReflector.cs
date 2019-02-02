@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Extensions;
@@ -12,19 +14,28 @@ namespace Snap.Reflection
     
     internal interface IAssemblyReflector
     {
+        string Location { get; }
+        string FileName { get; }
+        string FullName { get; }
+        ModuleDefinition MainModule {get;}
         IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
         IAttributeReflector GetAttribute<T>() where T : Attribute;
         IEnumerable<ITypeReflector> GetTypes();
         CecilResourceReflector GetResourceReflector();
+        void AddResource(EmbeddedResource embeddedResource);
+        void SetSnapAware();
+        void AddCustomAttribute(CustomAttribute attribute);
         void RewriteOrThrow<TSource>(Expression<Func<TSource, object>> selector, Action<TypeDefinition, string, string, PropertyDefinition> rewriter);
-        string Location { get; }
-        string FileName { get; }
-        string FullName { get; }
     }
 
     internal class CecilAssemblyReflector : IAssemblyReflector
     {
         readonly AssemblyDefinition _assemblyDefinition;
+        
+        public string Location => _assemblyDefinition.MainModule.FileName;
+        public string FileName => _assemblyDefinition.MainModule.Name;
+        public string FullName => _assemblyDefinition.FullName;
+        public ModuleDefinition MainModule => _assemblyDefinition.MainModule;
 
         public CecilAssemblyReflector([NotNull] AssemblyDefinition assemblyDefinition)
         {
@@ -43,7 +54,6 @@ namespace Snap.Reflection
                 .Where(a => a.AttributeType.Name == expectedTypeName)
                 .Select(a => new CecilAttributeReflector(a))
                 .ToList();
-
         }
 
         public IAttributeReflector GetAttribute<T>() where T : Attribute
@@ -63,10 +73,33 @@ namespace Snap.Reflection
             return result;
         }
 
-
         public CecilResourceReflector GetResourceReflector()
         {
             return new CecilResourceReflector(_assemblyDefinition);
+        }
+
+        public void SetSnapAware()
+        {
+            var attributeConstructor = _assemblyDefinition.MainModule.ImportReference(
+                typeof(AssemblyMetadataAttribute).GetConstructor(new []{ typeof(string), typeof(string) }));
+
+            var attribute = new CustomAttribute(attributeConstructor);
+            attribute.ConstructorArguments.Add(new CustomAttributeArgument(MainModule.TypeSystem.String, "SnapAwareVersion"));
+            attribute.ConstructorArguments.Add(new CustomAttributeArgument(MainModule.TypeSystem.String, "1"));
+
+            _assemblyDefinition.CustomAttributes.Add(attribute);
+        }
+
+        public void AddCustomAttribute([NotNull] CustomAttribute attribute)
+        {
+            if (attribute == null) throw new ArgumentNullException(nameof(attribute));
+            _assemblyDefinition.CustomAttributes.Add(attribute);
+        }
+
+        public void AddResource([NotNull] EmbeddedResource embeddedResource)
+        {
+            if (embeddedResource == null) throw new ArgumentNullException(nameof(embeddedResource));
+            _assemblyDefinition.MainModule.Resources.Add(embeddedResource);
         }
 
         public void RewriteOrThrow<TSource>([NotNull] Expression<Func<TSource, object>> selector,
@@ -83,11 +116,5 @@ namespace Snap.Reflection
 
             rewriter(typeDefinition, getterName, setterName, autoPropertyDefinition);
         }
-
-        public string Location => _assemblyDefinition.MainModule.FileName;
-
-        public string FileName => _assemblyDefinition.MainModule.Name;
-
-        public string FullName => _assemblyDefinition.FullName;
     }
 }

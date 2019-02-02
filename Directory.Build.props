@@ -40,6 +40,14 @@
         <NugetVersion Condition="!$(IsNetFullFramework)">4.9.3</NugetVersion>
     </PropertyGroup>
 	
+	<PropertyGroup Condition="$(OsPlatform) == 'Windows'">
+        <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS;</DefineConstants>
+    </PropertyGroup>
+
+	<PropertyGroup Condition="$(OsPlatform) == 'Unix'">
+        <DefineConstants>$(DefineConstants);PLATFORM_UNIX;</DefineConstants>
+    </PropertyGroup>
+	
     <PropertyGroup Condition="$(IsNetStandard)">
         <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
     </PropertyGroup>

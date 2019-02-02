@@ -48,32 +48,29 @@ namespace Snap.Core
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
-            // Clone
             snapApp = new SnapApp(snapApp);
-
 
             foreach (var channel in snapApp.Channels)
             {
                 channel.PushFeed.ApiKey = null;
+                channel.PushFeed.Username = null;
+                channel.PushFeed.Password = null;
             }
 
             var snapAppYamlStr = ToSnapAppYamlString(snapApp);
-
             var currentVersion = snapApp.Version;
 
             var assembly = AssemblyDefinition.CreateAssembly(
                 new AssemblyNameDefinition(SnapAppLibraryName, new Version(currentVersion.Major,
                     currentVersion.Minor, currentVersion.Patch)), SnapAppLibraryName, ModuleKind.Dll);
 
-            var mainModule = assembly.MainModule;
+            var assemblyReflector = new CecilAssemblyReflector(assembly);
 
-            var attributeConstructor = mainModule.ImportReference(
+            var snapAppReleaseDetailsAttributeMethodDefinition = assemblyReflector.MainModule.ImportReference(
                 typeof(SnapAppReleaseDetailsAttribute).GetConstructor(Type.EmptyTypes));
 
-            assembly.CustomAttributes.Add(new CustomAttribute(attributeConstructor));
-
-            var snapAppSpecEmbeddedResource = new EmbeddedResource(SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr));
-            mainModule.Resources.Add(snapAppSpecEmbeddedResource);
+            assemblyReflector.AddCustomAttribute(new CustomAttribute(snapAppReleaseDetailsAttributeMethodDefinition));
+            assemblyReflector.AddResource(new EmbeddedResource(SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr)));
 
             return assembly;
         }
@@ -109,7 +106,7 @@ namespace Snap.Core
 
                 cecilResourceFlector.RemoveOrThrow(coreRunResourceName);
 
-                cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsStripped, (typedDefinition, getterName, setterName, propertyDefinition) =>
+                cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsOptimized, (typedDefinition, getterName, setterName, propertyDefinition) =>
                 {                    
                     var getIlProcessor = propertyDefinition.GetMethod.Body.GetILProcessor();
                     getIlProcessor.Body.Instructions.Clear();

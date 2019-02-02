@@ -13,7 +13,7 @@ namespace Snap.Core.Resources
     internal interface ISnapEmbeddedResources
     {
         [UsedImplicitly]
-        bool IsStripped { get; }
+        bool IsOptimized { get; }
 
         MemoryStream CoreRunWindows { get; }
         MemoryStream CoreRunLinux { get; }
@@ -28,9 +28,8 @@ namespace Snap.Core.Resources
         readonly EmbeddedResource _coreRunWindows;
         readonly EmbeddedResource _coreRunLinux;
 
-        // This property will be updated to true when optimized by `ISnapAppWriter`
         [UsedImplicitly]
-        public bool IsStripped { get; }
+        public bool IsOptimized { get; }
 
         public MemoryStream CoreRunWindows => new MemoryStream(_coreRunWindows.Stream.ToArray());
         public MemoryStream CoreRunLinux => new MemoryStream(_coreRunLinux.Stream.ToArray());
@@ -39,18 +38,22 @@ namespace Snap.Core.Resources
         {
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
 
-            // Signe 
             _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun.exe");
             _coreRunLinux = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun");
 
-            if (!IsStripped && _coreRunWindows == null)
+            if (IsOptimized)
             {
-                throw new FileNotFoundException("corerun.exe");
+                return;
             }
 
-            if (!IsStripped && _coreRunLinux == null)
+            if (_coreRunWindows == null)
             {
-                throw new FileNotFoundException("corerun");
+                throw new Exception("corerun.exe was not found in current assembly resources manifest.");
+            }
+
+            if (_coreRunWindows == null)
+            {
+                throw new Exception("corerun was not found in current assembly resources manifest.");
             }
         }
 

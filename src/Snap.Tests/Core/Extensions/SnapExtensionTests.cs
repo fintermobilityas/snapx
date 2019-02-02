@@ -119,16 +119,18 @@ namespace Snap.Tests.Core.Extensions
             Assert.NotNull(packageSource.Credentials);
 
             var credential = packageSource.Credentials;
-            if (nuGetPackageSources.NuGetSupportsEncryption())
+            Assert.Equal(snapNugetFeed.Username, credential.Username);
+            if (nuGetPackageSources.IsPasswordEncryptionSupported())
             {
                 Assert.False(credential.IsPasswordClearText);                
+                Assert.Equal(EncryptionUtility.DecryptString(snapNugetFeed.Password), credential.Password);
+                Assert.Equal(snapNugetFeed.Password, credential.PasswordText);
             }
             else
             {
                 Assert.True(credential.IsPasswordClearText);                                
+                Assert.Equal(snapNugetFeed.Password, credential.Password);
             }
-            Assert.Equal(snapNugetFeed.Username, credential.Username);
-            Assert.Equal(snapNugetFeed.Password, credential.Password);
             Assert.Equal(snapNugetFeed.Name, credential.Source);
 
             Assert.Equal(snapNugetFeed.ApiKey, packageSource.GetDecryptedValue(nuGetPackageSources, ConfigurationConstants.ApiKeys));
@@ -188,7 +190,18 @@ namespace Snap.Tests.Core.Extensions
             Assert.Equal((int)snapNugetFeed.ProtocolVersion, snapNugetFeedAfter.ProtocolVersion);
             Assert.Equal(snapNugetFeed.SourceUri, snapNugetFeedAfter.SourceUri);
             Assert.Equal(snapNugetFeed.Username, snapNugetFeedAfter.Credentials.Username);
-            Assert.Equal(snapNugetFeed.Password, snapNugetFeedAfter.Credentials.Password);
+            var credential = snapNugetFeedAfter.Credentials;
+            if (nugetPackageSources.IsPasswordEncryptionSupported())
+            {
+                Assert.False(credential.IsPasswordClearText);                
+                Assert.Equal(EncryptionUtility.DecryptString(snapNugetFeed.Password), credential.Password);
+                Assert.Equal(snapNugetFeed.Password, credential.PasswordText);
+            }
+            else
+            {
+                Assert.True(credential.IsPasswordClearText);                                
+                Assert.Equal(snapNugetFeed.Password, credential.Password);
+            }
             Assert.Equal(snapNugetFeed.ApiKey, snapNugetFeedAfter.GetDecryptedValue(nugetPackageSources, ConfigurationConstants.ApiKeys));
         }
 
@@ -393,7 +406,15 @@ namespace Snap.Tests.Core.Extensions
                 Assert.Equal(lhsNugetPushFeed.ProtocolVersion, rhsNugetPushFeed.ProtocolVersion);
                 Assert.Equal(lhsNugetPushFeed.ApiKey, rhsNugetPushFeed.ApiKey);
                 Assert.Equal(lhsNugetPushFeed.Username, rhsNugetPushFeed.Username);
-                Assert.Equal(lhsNugetPushFeed.Password, rhsNugetPushFeed.Password);
+
+                if (lhsNugetPushFeed.IsPasswordEncryptionSupported())
+                {
+                    Assert.Equal(EncryptionUtility.DecryptString(lhsNugetPushFeed.Password), rhsNugetPushFeed.Password);
+                }
+                else
+                {
+                    Assert.Equal(lhsNugetPushFeed.Password, rhsNugetPushFeed.Password);
+                }
 
                 var lhsUpdateFeed = lhsChannel.UpdateFeed;
                 var rhsUpdateFeed = rhsChannel.UpdateFeed;
@@ -407,7 +428,14 @@ namespace Snap.Tests.Core.Extensions
                         Assert.Equal(lhsNugetUpdateFeed.ProtocolVersion, rhsNugetUpdateFeed.ProtocolVersion);
                         Assert.Equal(lhsNugetUpdateFeed.ApiKey, rhsNugetUpdateFeed.ApiKey);
                         Assert.Equal(lhsNugetUpdateFeed.Username, rhsNugetUpdateFeed.Username);
-                        Assert.Equal(lhsNugetUpdateFeed.Password, rhsNugetUpdateFeed.Password);
+                        if (lhsNugetUpdateFeed.IsPasswordEncryptionSupported())
+                        {
+                            Assert.Equal(EncryptionUtility.DecryptString(lhsNugetUpdateFeed.Password), rhsNugetUpdateFeed.Password);
+                        }
+                        else
+                        {
+                            Assert.Equal(lhsNugetUpdateFeed.Password, rhsNugetUpdateFeed.Password);
+                        }
                         break;
                     case SnapHttpFeed rhsHttpUpdateFeed:
                         var lhsHttpUpdateFeed = (SnapHttpFeed) lhsUpdateFeed;

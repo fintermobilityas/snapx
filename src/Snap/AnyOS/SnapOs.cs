@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Mono.Cecil;
 using NuGet.Packaging;
+using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 
@@ -41,12 +47,19 @@ namespace Snap.AnyOS
         {
             get
             {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                var snapFilesystem = new SnapFilesystem();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    throw new PlatformNotSupportedException();
+                    return new SnapOs(new SnapOsWindows(snapFilesystem));
                 }
 
-                return new SnapOs(new SnapOsWindows(new SnapFilesystem()));
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    return new SnapOs(new SnapOsUnix(snapFilesystem));
+                }
+
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -140,5 +153,49 @@ namespace Snap.AnyOS
         {
             return _snapOsImpl.EnsureConsole();
         }
+
+        internal static int? GetAssemblySnapAwareVersion(string executable)
+        {
+            try
+            {
+                var assembly = AssemblyDefinition.ReadAssembly(executable);
+                if (assembly == null || !assembly.HasCustomAttributes)
+                {
+                    return null;
+                }
+
+                var attrs = assembly.CustomAttributes;
+                var attribute = attrs.FirstOrDefault(x =>
+                {
+                    if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName)
+                    {
+                        return false;
+                    }
+
+                    if (x.ConstructorArguments.Count != 2)
+                    {
+                        return false;
+                    }
+
+                    var attributeValue = x.ConstructorArguments[0].Value.ToString();
+                    return attributeValue == "SnapAwareVersion";
+                });
+
+                if (attribute == null)
+                {
+                    return null;
+                }
+
+                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
+                {
+                    return null;
+                }
+
+                return result;
+            }
+            catch (FileLoadException) { return null; }
+            catch (BadImageFormatException) { return null; }
+        }
+
     }
 }

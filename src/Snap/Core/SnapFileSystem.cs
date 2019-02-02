@@ -37,7 +37,7 @@ namespace Snap.Core
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
         void FileDelete(string fileName);
-        void FileDeleteHarder(string path, bool ignoreIfFails = false);
+        void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
         FileStream FileOpenReadOnly(string fileName);
         FileStream FileOpenReadWrite(string fileName);
         FileStream FileOpenWrite(string fileName);
@@ -48,6 +48,7 @@ namespace Snap.Core
         string PathGetFileNameWithoutExtension(string filename);
         string PathCombine(string path1, string path2);
         string PathCombine(string path1, string path2, string path3);
+        string PathCombine(string path1, string path2, string path3, string path4);
         string PathGetSpecialFolder(Environment.SpecialFolder specialFolder);
         string PathGetDirectoryName(string path);
         string PathGetFullPath(string path);
@@ -220,7 +221,7 @@ namespace Snap.Core
             File.Delete(fileName);
         }
 
-        public void FileDeleteHarder([NotNull] string path, bool ignoreIfFails = false)
+        public void FileDeleteWithRetries([NotNull] string path, bool ignoreIfFails = false)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             try
@@ -322,20 +323,9 @@ namespace Snap.Core
 
             var dstStream = new MemoryStream();
 
-            using (Stream srcStream = File.OpenRead(filename))
+            using (var srcStream = File.OpenRead(filename))
             {
-                var buffer = new byte[8096];
-                
-                while (!cancellationToken.IsCancellationRequested)
-                {
-                    var bytesRead = await srcStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-
-                    await dstStream.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
-                }
+                await srcStream.CopyToAsync(dstStream, cancellationToken);
             }
 
             dstStream.Seek(0, SeekOrigin.Begin);
@@ -446,6 +436,15 @@ namespace Snap.Core
             if (path2 == null) throw new ArgumentNullException(nameof(path2));
             if (path3 == null) throw new ArgumentNullException(nameof(path3));
             return Path.Combine(path1, path2, path3);
+        }
+
+        public string PathCombine([NotNull] string path1, [NotNull] string path2, [NotNull] string path3, [NotNull] string path4)
+        {
+            if (path1 == null) throw new ArgumentNullException(nameof(path1));
+            if (path2 == null) throw new ArgumentNullException(nameof(path2));
+            if (path3 == null) throw new ArgumentNullException(nameof(path3));
+            if (path4 == null) throw new ArgumentNullException(nameof(path4));
+            return Path.Combine(path1, path2, path3, path4);
         }
 
         public string PathGetSpecialFolder(Environment.SpecialFolder specialFolder)

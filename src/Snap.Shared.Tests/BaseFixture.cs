@@ -15,6 +15,7 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
+using Snap.Reflection;
 using Snap.Shared.Tests.Extensions;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
@@ -114,7 +115,7 @@ namespace Snap.Shared.Tests
 
             foreach (var assemblyDefinition in assemblyDefinitions)
             {
-                assemblyDefinition.Write(Path.Combine(workingDirectory, assemblyDefinition.GetRelativeFilename()));
+                assemblyDefinition.Write(Path.Combine(workingDirectory, assemblyDefinition.BuildRelativeFilename()));
 
                 if (disposeAssemblyDefinitions)
                 {
@@ -222,12 +223,22 @@ namespace Snap.Shared.Tests
         }
 
         internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync([NotNull] ISnapFilesystem filesystem,
-            [NotNull] ISnapPack snapPack, ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
+        [NotNull] ISnapPack snapPack, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
+            if (nuspecFilesLayout == null) throw new ArgumentNullException(nameof(nuspecFilesLayout));
 
-            const string nuspecContent = @"<?xml version=""1.0""?>
+            var files = new List<string>();
+
+            foreach (var pair in nuspecFilesLayout)
+            {
+                var targetPath = filesystem.PathGetDirectoryName(pair.Key).ForwardSlashesSafe();
+                var nuspecTargetPath = $"$anytarget$/{targetPath}";
+                files.Add($"<file src=\"$nuspecbasedirectory$/{pair.Key}\" target=\"{nuspecTargetPath}\" />");
+            }
+
+            var nuspecContent = $@"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
         <id>demoapp</id>
@@ -238,8 +249,7 @@ namespace Snap.Shared.Tests
         <description>YOLO</description>
     </metadata>
     <files> 
-		<file src=""$nuspecbasedirectory$/test.dll"" target=""$anytarget$"" />						    
-		<file src=""$nuspecbasedirectory$/subdirectory/test2.dll"" target=""$anytarget$/subdirectory"" />						    
+		{string.Join("\n", files)}						    
     </files>
 </package>";
 
@@ -253,20 +263,12 @@ namespace Snap.Shared.Tests
                     App = BuildSnapApp()
                 };
 
-                var subDirectory = Path.Combine(snapPackDetails.NuspecBaseDirectory, "subdirectory");
-                filesystem.DirectoryCreate(subDirectory);
-
-                using (var emptyLibraryAssemblyDefinition = BuildEmptyLibrary("test"))
+                foreach (var pair in nuspecFilesLayout)
                 {
-                    var testDllFilename = Path.Combine(snapPackDetails.NuspecBaseDirectory,
-                        emptyLibraryAssemblyDefinition.GetRelativeFilename());
-                    emptyLibraryAssemblyDefinition.Write(testDllFilename);
-                }
-
-                using (var emptyLibraryAssemblyDefinition = BuildEmptyLibrary("test2"))
-                {
-                    var testDllFilename = Path.Combine(subDirectory, emptyLibraryAssemblyDefinition.GetRelativeFilename());
-                    emptyLibraryAssemblyDefinition.Write(testDllFilename);
+                    var dstFilename = filesystem.PathCombine(snapPackDetails.NuspecBaseDirectory, pair.Key);
+                    var directory = filesystem.PathGetDirectoryName(dstFilename);
+                    filesystem.DirectoryCreateIfNotExists(directory);
+                    pair.Value.Write(dstFilename);                
                 }
 
                 await filesystem.FileWriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
@@ -274,11 +276,6 @@ namespace Snap.Shared.Tests
                 var nupkgMemoryStream = await snapPack.PackAsync(snapPackDetails, cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);
             }
-        }
-
-        protected internal void AssertSnapsAreEqual(SnapApp lhs, SnapApp rhs, bool assertVersion = true, bool assertCurrentChannel = true)
-        {
-           
         }
 
     }

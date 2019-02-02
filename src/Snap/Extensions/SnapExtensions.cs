@@ -28,6 +28,12 @@ namespace Snap.Extensions
             return $"{snapApp.Id}-{fullOrDelta}-{channel.Name}-{snapApp.Target.Os}-{snapApp.Target.Framework}-{snapApp.Target.Rid}".ToLowerInvariant();
         }
 
+        internal static string BuildNugetUpstreamPackageFilename([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return $"{snapApp.BuildNugetUpstreamPackageId()}.nupkg";
+        }
+
         internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
@@ -35,10 +41,12 @@ namespace Snap.Extensions
 
             var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
 
-            var storePasswordInClearText = !inMemorySettings.NuGetSupportsEncryption();
+            var storePasswordInClearText = !inMemorySettings.IsPasswordEncryptionSupported();
             
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
+                snapFeed.Password = storePasswordInClearText ? snapFeed.Password : EncryptionUtility.EncryptString(snapFeed.Password);
+
                 packageSource.Credentials = new PackageSourceCredential(packageSource.Name,
                     snapFeed.Username, snapFeed.Password, storePasswordInClearText);
 
@@ -68,7 +76,7 @@ namespace Snap.Extensions
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (sectionName == null) throw new ArgumentNullException(nameof(sectionName));
 
-            var nuGetSupportsEncryption = nuGetPackageSources.NuGetSupportsEncryption();
+            var nuGetSupportsEncryption = nuGetPackageSources.IsPasswordEncryptionSupported();
             
             var decryptedValue = nuGetSupportsEncryption ? 
                 SettingsUtility.GetDecryptedValueForAddItem(nuGetPackageSources.Settings, sectionName, packageSource.Source) : 
@@ -285,16 +293,18 @@ namespace Snap.Extensions
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            var snapReleaseDetailsAttribute = new CecilAssemblyReflector(assemblyDefinition).GetAttribute<SnapAppReleaseDetailsAttribute>();
+            var assemblyReflector = new CecilAssemblyReflector(assemblyDefinition);
+
+            var snapReleaseDetailsAttribute = assemblyReflector.GetAttribute<SnapAppReleaseDetailsAttribute>();
             if (snapReleaseDetailsAttribute == null)
             {
-                throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyDefinition.FullName}.");
+                throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyReflector.FullName}.");
             }
 
-            var snapSpecResource = assemblyDefinition.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppWriter.SnapAppLibraryName);
+            var snapSpecResource = assemblyReflector.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppWriter.SnapAppLibraryName);
             if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
             {
-                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyDefinition.FullName}.");
+                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyReflector.FullName}.");
             }
 
             using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())

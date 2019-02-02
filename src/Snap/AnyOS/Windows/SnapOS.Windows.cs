@@ -77,7 +77,7 @@ namespace Snap.AnyOS.Windows
 
             string GetLinkTarget(SnapShortcutLocation location, string title, string applicationName, bool createDirectoryIfNecessary = true)
             {
-                var targetDirectory = default(string);
+                string targetDirectory;
 
                 switch (location)
                 {
@@ -223,7 +223,7 @@ namespace Snap.AnyOS.Windows
 
                     if (removeAll)
                     {
-                        _snapFilesystem.FileDeleteHarder(shortcut.ShortCutFile);
+                        _snapFilesystem.FileDeleteWithRetries(shortcut.ShortCutFile);
                     }
                     else
                     {
@@ -241,58 +241,24 @@ namespace Snap.AnyOS.Windows
 
         public List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1)
         {
-            var di = new DirectoryInfo(directory);
+            int? GetPeSnapAwareVersion(string executable)
+            {
+                var fullname = _snapFilesystem.PathGetFullPath(executable);
 
-            return di.EnumerateFiles()
-                .Where(x => x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                return SnapUtility.Retry(() =>
+                    SnapOs.GetAssemblySnapAwareVersion(fullname) ?? GetVersionBlockSnapAwareValue(fullname));
+            }
+ 
+            var directoryInfo = new DirectoryInfo(directory);
+
+            return directoryInfo
+                .EnumerateFiles()
+                .Where(x => 
+                    x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
+                    || x.Name.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => x.FullName)
                 .Where(x => (GetPeSnapAwareVersion(x) ?? -1) >= minimumVersion)
                 .ToList();
-        }
-
-        int? GetPeSnapAwareVersion(string executable)
-        {
-            if (!_snapFilesystem.FileExists(executable))
-            {
-                return null;
-            }
-
-            var fullname = _snapFilesystem.PathGetFullPath(executable);
-
-            return SnapUtility.Retry(() =>
-                GetAssemblySnapAwareVersion(fullname) ?? GetVersionBlockSnapAwareValue(fullname));
-        }
-
-        static int? GetAssemblySnapAwareVersion(string executable)
-        {
-            try
-            {
-                var assembly = AssemblyDefinition.ReadAssembly(executable);
-                if (!assembly.HasCustomAttributes) return null;
-
-                var attrs = assembly.CustomAttributes;
-                var attribute = attrs.FirstOrDefault(x =>
-                {
-                    if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName) return false;
-                    if (x.ConstructorArguments.Count != 2) return false;
-                    var attributeValue = x.ConstructorArguments[0].Value.ToString();
-                    return attributeValue == "SnapAwareVersion";
-                });
-
-                if (attribute == null)
-                {
-                    return null;
-                }
-
-                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
-                {
-                    return null;
-                }
-
-                return result;
-            }
-            catch (FileLoadException) { return null; }
-            catch (BadImageFormatException) { return null; }
         }
 
         static int? GetVersionBlockSnapAwareValue(string executable)
@@ -300,30 +266,32 @@ namespace Snap.AnyOS.Windows
             var size = NativeMethodsWindows.GetFileVersionInfoSize(executable, IntPtr.Zero);
 
             // Nice try, buffer overflow
-            if (size <= 0 || size > 4096) return null;
+            if (size <= 0 || size > 4096)
+            {
+                return null;
+            }
 
             var buf = new byte[size];
-            if (!NativeMethodsWindows.GetFileVersionInfo(executable, 0, size, buf)) return null;
+            if (!NativeMethodsWindows.GetFileVersionInfo(executable, 0, size, buf))
+            {
+                return null;
+            }
 
             if (!NativeMethodsWindows.VerQueryValue(buf, "\\StringFileInfo\\040904B0\\SnapAwareVersion", out _, out _))
             {
                 return null;
             }
 
+            // Comment by Squirrel.Windows author:
+            // ----------------------------------
+
             // NB: I have **no** idea why, but Atom.exe won't return the version
             // number "1" despite it being in the resource file and being 100% 
             // identical to the version block that actually works. I've got stuff
             // to ship, so we're just going to return '1' if we find the name in 
             // the block at all. I hate myself for this.
+
             return 1;
-
-#if __NOT__DEFINED_EVAR__
-            int ret;
-            string resultData = Marshal.PtrToStringAnsi(result, resultSize-1 /* Subtract one for null terminator */);
-            if (!Int32.TryParse(resultData, NumberStyles.Integer, CultureInfo.CurrentCulture, out ret)) return null;
-
-            return ret;
-#endif
         }
 
         void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
@@ -363,27 +331,34 @@ namespace Snap.AnyOS.Windows
             }
 
             EnumerateProcesses()
-                .Where(tuple =>
+                .Where(x =>
                 {
+                    var (processName, _) = x;
 
-                    // Processes we can't query will have an empty process name, we can't kill them
-                    // anyways
-                    if (tuple == null || string.IsNullOrWhiteSpace(tuple.Item1)) return false;
+                    if (string.IsNullOrWhiteSpace(processName))
+                    {
+                        return false;
+                    }
 
                     // Files that aren't in our root app directory are untouched
-                    if (!tuple.Item1.StartsWith(rootAppDirectory, StringComparison.OrdinalIgnoreCase)) return false;
+                    if (!processName.StartsWith(rootAppDirectory, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
 
                     // Never kill our own EXE
-                    if (ourExePath != null && tuple.Item1.Equals(ourExePath, StringComparison.OrdinalIgnoreCase)) return false;
+                    if (ourExePath != null && processName.Equals(ourExePath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
 
-                    var name = _snapFilesystem.PathGetFileName(tuple.Item1).ToLowerInvariant();
-                    return name != "snap.exe" && name != "update.exe";
+                    return true;
                 })
                 .ForEach(x =>
                 {
                     try
                     {
-                        Logger.WarnIfThrows(() => Process.GetProcessById(x.Item2).Kill());
+                        Logger.WarnIfThrows(() => Process.GetProcessById(x.pid).Kill());
                     }
                     catch
                     {
@@ -394,9 +369,15 @@ namespace Snap.AnyOS.Windows
 
         public bool EnsureConsole()
         {
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) return false;
+            if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+            {
+                return false;
+            }
 
-            if (Interlocked.CompareExchange(ref _consoleCreated, 1, 0) == 1) return false;
+            if (Interlocked.CompareExchange(ref _consoleCreated, 1, 0) == 1)
+            {
+                return false;
+            }
 
             if (!NativeMethodsWindows.AttachConsole(-1))
             {
@@ -409,9 +390,9 @@ namespace Snap.AnyOS.Windows
             return true;
         }
 
-        public unsafe List<Tuple<string, int>> EnumerateProcesses()
+        public unsafe List<(string processName, int pid)> EnumerateProcesses()
         {
-            var bytesReturned = 0;
+            int bytesReturned;
             var pids = new int[2048];
 
             fixed (int* p = pids)
@@ -431,7 +412,10 @@ namespace Snap.AnyOS.Windows
                     try
                     {
                         var hProcess = NativeMethodsWindows.OpenProcess(ProcessAccess.QueryLimitedInformation, false, pids[i]);
-                        if (hProcess == IntPtr.Zero) throw new Win32Exception();
+                        if (hProcess == IntPtr.Zero)
+                        {
+                            throw new Win32Exception();
+                        }
 
                         var sb = new StringBuilder(256);
                         var capacity = sb.Capacity;
@@ -441,11 +425,12 @@ namespace Snap.AnyOS.Windows
                         }
 
                         NativeMethodsWindows.CloseHandle(hProcess);
-                        return Tuple.Create(sb.ToString(), pids[i]);
+
+                        return (sb.ToString(), pids[i]);
                     }
                     catch (Exception)
                     {
-                        return Tuple.Create(default(string), pids[i]);
+                        return (default, pids[i]);
                     }
                 })
                 .ToList();

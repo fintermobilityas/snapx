@@ -289,13 +289,14 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename))
                     }
                     .Concat(snapAwareApps)
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
                     .Where(x => x != nupkgAbsoluteFilename)
-                    .ToList()
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
 

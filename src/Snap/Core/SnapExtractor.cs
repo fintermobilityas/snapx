@@ -75,7 +75,7 @@ namespace Snap.Core
 
                 _snapFilesystem.DirectoryCreateIfNotExists(dstDirectory);
 
-                using (var targetStream = _snapFilesystem.FileOpenWrite(dstFilename))
+                using (var targetStream = _snapFilesystem.FileWrite(dstFilename))
                 {
                     sourceStream.CopyTo(targetStream);
                 }

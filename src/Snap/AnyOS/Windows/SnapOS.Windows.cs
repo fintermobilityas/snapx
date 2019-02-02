@@ -9,10 +9,13 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -29,20 +32,26 @@ namespace Snap.AnyOS.Windows
         static long _consoleCreated;
 
         static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
-        readonly ISnapFilesystem _snapFilesystem;
         readonly bool _isUnitTest;
 
-        public ISnapFilesystem Filesystem => _snapFilesystem;
+        public ISnapFilesystem Filesystem { get; }
+        public ISnapOsProcessManager OsProcessManager { get; }
+        public SnapOsDistroType DistroType => SnapOsDistroType.Windows;
+        public ISnapOsSpecialFolders SpecialFolders { get; }
 
-        public SnapOsWindows(ISnapFilesystem snapFilesystem, bool isUnitTest = false)
+        public SnapOsWindows(ISnapFilesystem snapFilesystem, [NotNull] ISnapOsProcessManager snapOsProcessManager,
+            [NotNull] ISnapOsSpecialFolders snapOsSpecialFolders, bool isUnitTest = false)
         {
-            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            Filesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            OsProcessManager = snapOsProcessManager ?? throw new ArgumentNullException(nameof(snapOsProcessManager));
+            SpecialFolders = snapOsSpecialFolders ?? throw new ArgumentNullException(nameof(snapOsSpecialFolders));
             _isUnitTest = isUnitTest;
         }
 
-        public void CreateShortcutsForExecutable(NuspecReader nuspecReader, 
-            string rootAppDirectory, string rootAppInstallDirectory, string exeName, 
-            string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly, CancellationToken cancellationToken)
+        public Task CreateShortcutsForExecutableAsync(SnapApp snapApp, NuspecReader nuspecReader,
+            string rootAppDirectory, string rootAppInstallDirectory, string exeName,
+            string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly,
+            CancellationToken cancellationToken)
         {
             if (nuspecReader == null) throw new ArgumentNullException(nameof(nuspecReader));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
@@ -61,7 +70,7 @@ namespace Snap.AnyOS.Windows
                     versionInfo.ProductName,
                     packageTitle,
                     versionInfo.FileDescription,
-                    _snapFilesystem.PathGetFileNameWithoutExtension(versionInfo.FileName)
+                    Filesystem.PathGetFileNameWithoutExtension(versionInfo.FileName)
                 };
 
                 var possibleCompanyNames = new[] {
@@ -82,13 +91,13 @@ namespace Snap.AnyOS.Windows
                 switch (location)
                 {
                     case SnapShortcutLocation.Desktop:
-                        targetDirectory = _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.DesktopDirectory);
+                        targetDirectory = SpecialFolders.DesktopDirectory;
                         break;
                     case SnapShortcutLocation.StartMenu:
-                        targetDirectory = _snapFilesystem.PathCombine(_snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.StartMenu), "Programs", applicationName);
+                        targetDirectory = Filesystem.PathCombine(SpecialFolders.StartMenu, "Programs", applicationName);
                         break;
                     case SnapShortcutLocation.Startup:
-                        targetDirectory = _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.Startup);
+                        targetDirectory = SpecialFolders.StartupDirectory;
                         break;
                     case SnapShortcutLocation.AppRoot:
                         targetDirectory = rootAppDirectory;
@@ -99,15 +108,15 @@ namespace Snap.AnyOS.Windows
 
                 if (createDirectoryIfNecessary)
                 {
-                    _snapFilesystem.DirectoryCreateIfNotExists(targetDirectory);
+                    Filesystem.DirectoryCreateIfNotExists(targetDirectory);
                 }
 
-                return _snapFilesystem.PathCombine(targetDirectory, title + ".lnk");
+                return Filesystem.PathCombine(targetDirectory, title + ".lnk");
             }
 
             Logger.Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
 
-            var exePath = _snapFilesystem.PathCombine(rootAppInstallDirectory, exeName);
+            var exePath = Filesystem.PathCombine(rootAppInstallDirectory, exeName);
             var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
 
             foreach (var flag in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
@@ -118,7 +127,7 @@ namespace Snap.AnyOS.Windows
                 }
 
                 var file = LinkTargetForVersionInfo(flag, fileVerInfo);
-                var fileExists = _snapFilesystem.FileExists(file);
+                var fileExists = Filesystem.FileExists(file);
 
                 // NB: If we've already installed the app, but the shortcut
                 // is no longer there, we have to assume that the user didn't
@@ -135,15 +144,15 @@ namespace Snap.AnyOS.Windows
                 ShellLink shellLink;
                 Logger.ErrorIfThrows(() => SnapUtility.Retry(() =>
                 {
-                    _snapFilesystem.FileDelete(file);
+                    Filesystem.FileDelete(file);
 
-                    var target = _snapFilesystem.PathCombine(rootAppInstallDirectory, exeName);
+                    var target = Filesystem.PathCombine(rootAppInstallDirectory, exeName);
                     shellLink = new ShellLink
                     {
                         Target = target,
                         IconPath = icon ?? target,
                         IconIndex = 0,
-                        WorkingDirectory = _snapFilesystem.PathGetDirectoryName(exePath),
+                        WorkingDirectory = Filesystem.PathGetDirectoryName(exePath),
                         Description = packageDescription
                     };
 
@@ -173,6 +182,8 @@ namespace Snap.AnyOS.Windows
             }
 
             FixPinnedExecutables(rootAppDirectory, packageVersion);
+
+            return Task.CompletedTask;
         }
 
         void FixPinnedExecutables(string rootAppDirectory, SemanticVersion newCurrentVersion, bool removeAll = false)
@@ -184,13 +195,12 @@ namespace Snap.AnyOS.Windows
             }
 
             var newCurrentFolder = "app-" + newCurrentVersion;
-            var newAppPath = _snapFilesystem.PathCombine(rootAppDirectory, newCurrentFolder);
+            var newAppPath = Filesystem.PathCombine(rootAppDirectory, newCurrentFolder);
 
-            var taskbarPath = _snapFilesystem.PathCombine(
-                _snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.ApplicationData),
+            var taskbarPath = Filesystem.PathCombine(SpecialFolders.ApplicationData,
                 "Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar");
 
-            if (!_snapFilesystem.DirectoryExists(taskbarPath))
+            if (!Filesystem.DirectoryExists(taskbarPath))
             {
                 Logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping...");
                 return;
@@ -223,7 +233,7 @@ namespace Snap.AnyOS.Windows
 
                     if (removeAll)
                     {
-                        _snapFilesystem.FileDeleteWithRetries(shortcut.ShortCutFile);
+                        Filesystem.FileDeleteWithRetries(shortcut.ShortCutFile);
                     }
                     else
                     {
@@ -243,7 +253,7 @@ namespace Snap.AnyOS.Windows
         {
             int? GetPeSnapAwareVersion(string executable)
             {
-                var fullname = _snapFilesystem.PathGetFullPath(executable);
+                var fullname = Filesystem.PathGetFullPath(executable);
 
                 return SnapUtility.Retry(() =>
                     SnapOs.GetAssemblySnapAwareVersion(fullname) ?? GetVersionBlockSnapAwareValue(fullname));
@@ -303,7 +313,7 @@ namespace Snap.AnyOS.Windows
 
             Logger.Info("Old shortcut target: '{0}'", target);
 
-            target = _snapFilesystem.PathCombine(rootAppDirectory, _snapFilesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
+            target = Filesystem.PathCombine(rootAppDirectory, Filesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
             Logger.Info("New shortcut target: '{0}'", target);
 
@@ -317,54 +327,18 @@ namespace Snap.AnyOS.Windows
             Logger.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
             Logger.Info("Finished shortcut successfully");
         }
-
-        public void KillAllProcessesInDirectory(string rootAppDirectory)
+        
+        public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)
         {
-            var ourExe = Assembly.GetEntryAssembly();
-            var ourExePath = ourExe?.Location;
-
-            // Do not kill processes from folders that starts with the same name as current package.
-            // E.g. processes in folder "MyApp" should not be killed if "MyAp" is installed.
-            if (!rootAppDirectory.EndsWith("\\"))
+            var processes = EnumerateProcesses().Select(x =>
             {
-                rootAppDirectory += "\\";
-            }
+                var processNameValid = !string.IsNullOrWhiteSpace(x.processName);
+                return OsProcessManager.Build(x.pid, x.processName,
+                    !processNameValid ? null : Filesystem.PathGetDirectoryName(x.processName),
+                    !processNameValid ? null : Filesystem.PathGetFileName(x.processName));
+            }).ToList();
 
-            EnumerateProcesses()
-                .Where(x =>
-                {
-                    var (processName, _) = x;
-
-                    if (string.IsNullOrWhiteSpace(processName))
-                    {
-                        return false;
-                    }
-
-                    // Files that aren't in our root app directory are untouched
-                    if (!processName.StartsWith(rootAppDirectory, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
-
-                    // Never kill our own EXE
-                    if (ourExePath != null && processName.Equals(ourExePath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return false;
-                    }
-
-                    return true;
-                })
-                .ForEach(x =>
-                {
-                    try
-                    {
-                        Logger.WarnIfThrows(() => Process.GetProcessById(x.pid).Kill());
-                    }
-                    catch
-                    {
-                        // ignored
-                    }
-                });
+            return Task.FromResult(processes);
         }
 
         public bool EnsureConsole()
@@ -390,14 +364,14 @@ namespace Snap.AnyOS.Windows
             return true;
         }
 
-        public unsafe List<(string processName, int pid)> EnumerateProcesses()
+        static unsafe IEnumerable<(string processName, int pid)> EnumerateProcesses()
         {
             int bytesReturned;
-            var pids = new int[2048];
+            var processIds = new int[2048];
 
-            fixed (int* p = pids)
+            fixed (int* p = processIds)
             {
-                if (!NativeMethodsWindows.EnumProcesses((IntPtr)p, sizeof(int) * pids.Length, out bytesReturned))
+                if (!NativeMethodsWindows.EnumProcesses((IntPtr)p, sizeof(int) * processIds.Length, out bytesReturned))
                 {
                     throw new Win32Exception("Failed to enumerate processes");
                 }
@@ -406,12 +380,12 @@ namespace Snap.AnyOS.Windows
             }
 
             return Enumerable.Range(0, bytesReturned / sizeof(int))
-                .Where(i => pids[i] > 0)
+                .Where(i => processIds[i] > 0)
                 .Select(i =>
                 {
                     try
                     {
-                        var hProcess = NativeMethodsWindows.OpenProcess(ProcessAccess.QueryLimitedInformation, false, pids[i]);
+                        var hProcess = NativeMethodsWindows.OpenProcess(ProcessAccess.QueryLimitedInformation, false, processIds[i]);
                         if (hProcess == IntPtr.Zero)
                         {
                             throw new Win32Exception();
@@ -426,11 +400,11 @@ namespace Snap.AnyOS.Windows
 
                         NativeMethodsWindows.CloseHandle(hProcess);
 
-                        return (sb.ToString(), pids[i]);
+                        return (sb.ToString(), processIds[i]);
                     }
                     catch (Exception)
                     {
-                        return (default, pids[i]);
+                        return (default, processIds[i]);
                     }
                 })
                 .ToList();

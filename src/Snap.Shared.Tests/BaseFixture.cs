@@ -87,10 +87,10 @@ namespace Snap.Shared.Tests
                 },
                 Target = new SnapTarget
                 {
-                    Name = "demoapp-win7-x64",
+                    Name = "demoapp-unknown-x64",
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
-                    Rid = "win7-x64",
+                    Rid = "unknown-x64",
                     Nuspec = "test.nuspec"
                 }
             };
@@ -222,9 +222,11 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync([NotNull] ISnapFilesystem filesystem,
-        [NotNull] ISnapPack snapPack, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
+        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync(
+            [NotNull] SnapApp snapApp, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapPack snapPack, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
+            ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (nuspecFilesLayout == null) throw new ArgumentNullException(nameof(nuspecFilesLayout));
@@ -260,7 +262,7 @@ namespace Snap.Shared.Tests
                     NuspecFilename = Path.Combine(tempDirectory.WorkingDirectory, "test.nuspec"),
                     NuspecBaseDirectory = tempDirectory.WorkingDirectory,
                     SnapProgressSource = progressSource,
-                    App = BuildSnapApp()
+                    App = snapApp
                 };
 
                 foreach (var pair in nuspecFilesLayout)

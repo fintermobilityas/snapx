@@ -31,7 +31,7 @@ namespace Snap.Tests.NuGet
             _baseFixture = baseFixture;
             _nugetService = new NugetService(new NugetLogger());
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppWriter(), new SnapEmbeddedResources());
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), new SnapEmbeddedResources());
         }
 
         [Fact]
@@ -122,7 +122,9 @@ namespace Snap.Tests.NuGet
                 { $"subdirectory\\{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
 
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(_snapFilesystem, _snapPack, nuspecLayout);
+            var snapApp = _baseFixture.BuildSnapApp();
+            
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
 
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

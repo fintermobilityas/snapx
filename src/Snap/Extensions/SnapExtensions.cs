@@ -24,8 +24,8 @@ namespace Snap.Extensions
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.Channels.Single(x => x.Current);
-            var fullOrDelta = "full"; // Todo: Update me when delta updates support lands.
-            return $"{snapApp.Id}-{fullOrDelta}-{channel.Name}-{snapApp.Target.Os}-{snapApp.Target.Framework}-{snapApp.Target.Rid}".ToLowerInvariant();
+            const string fullOrDelta = "full"; // Todo: Update me when delta updates support lands.
+            return $"{snapApp.Id}-{snapApp.Version.ToMajorMinorPatch()}-{fullOrDelta}-{channel.Name}-{snapApp.Target.Os}-{snapApp.Target.Framework}-{snapApp.Target.Rid}".ToLowerInvariant();
         }
 
         internal static string BuildNugetUpstreamPackageFilename([NotNull] this SnapApp snapApp)

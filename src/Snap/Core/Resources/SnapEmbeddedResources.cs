@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Snap.AnyOS.Unix;
+using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Resources;
 
@@ -105,12 +108,21 @@ namespace Snap.Core.Resources
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (destinationFolder == null) throw new ArgumentNullException(nameof(destinationFolder));
             if (relativeFilename == null) throw new ArgumentNullException(nameof(relativeFilename));
+            
             filesystem.DirectoryCreateIfNotExists(destinationFolder);
 
             var filename = filesystem.PathCombine(destinationFolder, relativeFilename);
             using (srcStream)
             {
                 await filesystem.FileWriteAsync(srcStream, filename, cancellationToken);
+
+                // Todo: Determine if we should chmod or not. 
+//                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+//                {
+//                    var returnValue = NativeMethodsUnix.chmod(filename, 755); // chmod +x
+//                    Debug.Assert(returnValue == 0, $"Failed to chmod on corerun executable: {filename}.");
+//                }
+//                
                 return filename;
             }
         }

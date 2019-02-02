@@ -1,15 +1,18 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Snap.AnyOS;
+﻿using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
-using Snap.Core.IO;
-using Snap.Reflection;
 using Snap.Shared.Tests;
-using Snap.Shared.Tests.Extensions;
 using Xunit;
 
-namespace Snap.Tests.AnyOS
+#if PLATFORM_WINDOWS
+using System.Collections.Generic;
+using System.Linq;
+using Snap.Core.IO;
+using Snap.Reflection;
+using Snap.Shared.Tests.Extensions;
+#endif
+
+namespace Snap.Tests.AnyOS.Windows
 {
     public class SnapOsWindowsTests : IClassFixture<BaseFixture>
     {
@@ -21,9 +24,16 @@ namespace Snap.Tests.AnyOS
         {
             _baseFixture = baseFixture;
             _snapFilesystem = new SnapFilesystem();
-            _snapOs = new SnapOs(new SnapOsWindows(_snapFilesystem));
+            _snapOs = new SnapOs(new SnapOsWindows(_snapFilesystem, new SnapOsProcessManager(), new SnapOsSpecialFoldersWindows()));
         }
 
+        [Fact]
+        public void TestDistroType()
+        {
+            Assert.Equal(SnapOsDistroType.Windows, _snapOs.DistroType);
+        }
+
+#if PLATFORM_WINDOWS
         [Fact]
         public void TestGetAllSnapAwareApps()
         {
@@ -62,5 +72,7 @@ namespace Snap.Tests.AnyOS
                 Assert.Equal(expectedSnapAwareApps, snapAwareApps);
             }
         }
+#endif
+        
     }
 }

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using Snap.Core.Models;
@@ -41,11 +42,13 @@ namespace Snap.Core
         string SnapNuspecTargetPath { get; }
         string SnapUniqueTargetPathFolderName { get; }
         Task<MemoryStream> PackAsync(ISnapPackageDetails packageDetails, CancellationToken cancellationToken = default);
+        Task<SnapApp> GetSnapAppFromPackageArchiveReaderAsync(PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken = default);
     }
 
     internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;
+        readonly ISnapAppReader _snapAppReader;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
@@ -60,9 +63,10 @@ namespace Snap.Core
         public string SnapNuspecTargetPath { get; }
         public string SnapUniqueTargetPathFolderName { get; }
 
-        public SnapPack(ISnapFilesystem snapFilesystem, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
+        public SnapPack(ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
         {
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            _snapAppReader = snapAppReader ?? throw new ArgumentNullException(nameof(snapAppReader));
             _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
 
@@ -120,7 +124,7 @@ namespace Snap.Core
 
             var outputStream = new MemoryStream();
 
-            using (var nuspecStream = _snapFilesystem.FileOpenReadOnly(packageDetails.NuspecFilename))
+            using (var nuspecStream = _snapFilesystem.FileRead(packageDetails.NuspecFilename))
             {
                 string GetPropertyValue(string propertyName)
                 {
@@ -142,6 +146,20 @@ namespace Snap.Core
                 progressSource?.Raise(100);
 
                 return outputStream;
+            }
+        }
+
+        public async Task<SnapApp> GetSnapAppFromPackageArchiveReaderAsync([NotNull] PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken = default)
+        {
+            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            
+            var targetPath = _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename);
+            using (var intermediateStream = packageArchiveReader.GetStream(targetPath))
+            using (var actualStream = await intermediateStream.ReadToEndAsync(cancellationToken))
+            using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(actualStream, new ReaderParameters(ReadingMode.Immediate)))
+            {
+                var snapApp =  assemblyDefinition.GetSnapApp(_snapAppReader, _snapAppWriter);
+                return snapApp;
             }
         }
 

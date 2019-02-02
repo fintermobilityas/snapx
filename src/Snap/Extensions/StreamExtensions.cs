@@ -12,7 +12,7 @@ namespace Snap.Extensions
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (dstStream == null) throw new ArgumentNullException(nameof(dstStream));
-#if NETCOREAPP
+            #if NETCOREAPP
             return srcStream.CopyToAsync(dstStream, cancellationToken);
             #else
             const int bufferSize = 8096;
@@ -20,11 +20,11 @@ namespace Snap.Extensions
             #endif
         }
 
-        public static async Task<MemoryStream> ReadStreamFullyAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveOpen = false)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveOpen = false)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             var outputStream = new MemoryStream();
-            await StreamExtensions.CopyToAsync(srcStream, outputStream, cancellationToken);
+            await CopyToAsync(srcStream, outputStream, cancellationToken);
             outputStream.Seek(0, SeekOrigin.Begin);
             if (!leaveOpen)
             {

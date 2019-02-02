@@ -26,7 +26,7 @@ namespace Snap.Tests.Core
         {
             _baseFixture = baseFixture;
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppWriter(), new SnapEmbeddedResources());
+            _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), new SnapEmbeddedResources());
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, new SnapEmbeddedResources());
             _snapAppWriter = new SnapAppWriter();
             _snapEmbeddedResources = new SnapEmbeddedResources();
@@ -82,8 +82,10 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
             };
 
+            var snapApp = _baseFixture.BuildSnapApp();
+            
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(_snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
 
             using (testDllAssemblyDefinition)
             using (nupkgMemoryStream)
@@ -95,7 +97,7 @@ namespace Snap.Tests.Core
 
                 await _snapExtractor.ExtractAsync(packageArchiveReader, appDir);
 
-                var extractedLayouted = _snapFilesystem
+                var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
                     .ToList()
                     .OrderBy(x => x)
@@ -113,7 +115,7 @@ namespace Snap.Tests.Core
                     .OrderBy(x => x)
                     .ToList();
 
-                Assert.Equal(expectedLayout.Count, extractedLayouted.Count);
+                Assert.Equal(expectedLayout.Count, extractedLayout.Count);
 
                 expectedLayout.ForEach(x =>
                 {
@@ -124,10 +126,26 @@ namespace Snap.Tests.Core
 
                 for (var i = 0; i < expectedLayout.Count; i++)
                 {
-                    Assert.Equal(expectedLayout[i], extractedLayouted[i]);
+                    Assert.Equal(expectedLayout[i], extractedLayout[i]);
                 }
             }
         }
 
+        [Fact]
+        public async Task TestGetSnapAppFromPackageArchiveReaderAsync()
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            
+            var (nupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(snapAppBefore, _snapFilesystem, _snapPack, new Dictionary<string, AssemblyDefinition>());
+
+            using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
+            {
+                var snapAppAfter = await _snapPack.GetSnapAppFromPackageArchiveReaderAsync(packageArchiveReader);
+                Assert.NotNull(snapAppAfter);
+            }
+        }
+
+        
     }
 }

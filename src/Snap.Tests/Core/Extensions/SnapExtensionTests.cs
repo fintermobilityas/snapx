@@ -42,6 +42,7 @@ namespace Snap.Tests.Core.Extensions
             var spec = new SnapApp
             {
                 Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
                 Channels = new List<SnapChannel>
                 {
                     currentChannel
@@ -56,7 +57,7 @@ namespace Snap.Tests.Core.Extensions
 
             var fullOrDelta = "full";
 
-            var expectedPackageId = $"{spec.Id}-{fullOrDelta}-{currentChannel.Name}-{spec.Target.Os}-{spec.Target.Framework}-{spec.Target.Rid}".ToLowerInvariant();
+            var expectedPackageId = $"{spec.Id}-1.0.0-{fullOrDelta}-{currentChannel.Name}-{spec.Target.Os}-{spec.Target.Framework}-{spec.Target.Rid}".ToLowerInvariant();
 
             var actualPackageId = spec.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);

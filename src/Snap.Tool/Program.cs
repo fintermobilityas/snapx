@@ -11,6 +11,7 @@ using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Logging;
+using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Tool.Options;
 using Snap.Logging;
@@ -39,27 +40,29 @@ namespace Snap.Tool
 
         static int MainImplAsync(IEnumerable<string> args)
         {
-            var snapFilesystem = new SnapFilesystem();
-
-            SnapOs snapOs;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            ISnapOs snapOs;
+            try
             {
-                snapOs = new SnapOs(new SnapOsWindows(snapFilesystem));
-            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                snapOs = new SnapOs(new SnapOsUnix(snapFilesystem));
+                snapOs = SnapOs.AnyOs;
             }
-            else
+            catch (PlatformNotSupportedException)
             {
                 Logger.Error($"Platform is not supported: {RuntimeInformation.OSDescription}");
                 return -1;
             }
-
+            catch (Exception e)
+            {
+                Logger.Error($"Exception thrown while initializing snap os.", e);
+                return -1;
+            }
+            
+            var snapFilesystem = new SnapFilesystem();
             var snapEmbeddedResources = new SnapEmbeddedResources();
+            var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
-            var snapPack = new SnapPack(snapFilesystem, snapAppWriter, snapEmbeddedResources);
+            var snapPack = new SnapPack(snapFilesystem, snapAppReader, snapAppWriter, snapEmbeddedResources);
             var snapExtractor = new SnapExtractor(snapFilesystem, snapPack, snapEmbeddedResources);
-            var snapInstaller = new SnapInstaller(snapExtractor, snapFilesystem, snapOs);
+            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapFilesystem, snapOs);
             var snapSpecsReader = new SnapAppReader();
             var snapCryptoProvider = new SnapCryptoProvider();
             var nugetLogger = new NugetLogger();
@@ -76,7 +79,7 @@ namespace Snap.Tool
                 .MapResult(
                     (PromoteNupkgOptions opts) => SnapPromoteNupkg(opts, nugetService),
                     (PushNupkgOptions options) => SnapPushNupkg(options, nugetService),
-                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapFilesystem, snapExtractor, snapInstaller).Result,
+                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, snapInstaller).Result,
                     (ReleasifyOptions opts) => SnapReleasify(opts),
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
                     errs =>
@@ -101,7 +104,7 @@ namespace Snap.Tool
             return -1;
         }
 
-        static async Task<int> SnapInstallNupkg(InstallNupkgOptions installNupkgOptions, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
+        static async Task<int> SnapInstallNupkg(InstallNupkgOptions installNupkgOptions, ISnapOs snapOs, ISnapFilesystem snapFilesystem, ISnapExtractor snapExtractor, ISnapInstaller snapInstaller)
         {
             if (installNupkgOptions.Nupkg == null)
             {
@@ -128,7 +131,7 @@ namespace Snap.Tool
                 }
 
                 var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
-                var rootAppDirectory = snapFilesystem.PathCombine(snapFilesystem.PathGetSpecialFolder(Environment.SpecialFolder.LocalApplicationData), packageIdentity.Id);
+                var rootAppDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, packageIdentity.Id);
 
                 await snapInstaller.InstallAsync(nupkgFilename, rootAppDirectory);
 

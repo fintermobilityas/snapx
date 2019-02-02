@@ -135,7 +135,7 @@ namespace Snap.Tests.Core
 
                 await _snapInstaller.InstallAsync(installNupkgAbsoluteFilename, rootDir.WorkingDirectory);
 
-                var coreRunFileInfoAfterInstall = _snapFilesystem.FileStat(
+                var coreRunAbsoluteExePath = _snapFilesystem.FileStat(
                     _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(installPackageDetails.App)));
                 
@@ -155,7 +155,7 @@ namespace Snap.Tests.Core
 
                 var expectedLayout =  new List<string>
                     {
-                        coreRunFileInfoAfterInstall.FullName,
+                        coreRunAbsoluteExePath.FullName,
                         // Install
                         _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapDllFilename),
@@ -177,12 +177,7 @@ namespace Snap.Tests.Core
                     .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
-                
-                var coreRunFileInfoAfterUpdate = _snapFilesystem.FileStat(coreRunFileInfoAfterInstall.FullName);
-
-                Assert.True(coreRunFileInfoAfterUpdate.LastWriteTime.Ticks > coreRunFileInfoAfterInstall.LastWriteTime.Ticks);
-                Assert.Equal(coreRunFileInfoAfterUpdate.Length, coreRunFileInfoAfterInstall.Length); 
-                
+              
                 Assert.Equal(expectedLayout.Count, extractedLayout.Count);
 
                 expectedLayout.ForEach(x =>

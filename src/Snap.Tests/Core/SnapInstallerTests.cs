@@ -167,13 +167,14 @@ namespace Snap.Tests.Core
                     }
                     .Concat(installSnapAwareApps)
                     .Concat(updateSnapAwareApps)
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();                
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
                     .Where(x => x != installNupkgAbsoluteFilename)
-                    .ToList()
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
                 

@@ -30,8 +30,54 @@ namespace Snap.Tests.Core.Extensions
             _fileSystem = new SnapFilesystem();
         }
 
-        [Fact]
-        public void TestBuildNugetUpstreamPackageId()
+        [Theory]
+        [InlineData("demoapp.1", true)]
+        [InlineData("demoapp_1", true)]
+        [InlineData("DEMOApp.1", true)]
+        [InlineData("DemOApp_1", true)]
+        [InlineData("demoapp-1", false)]
+        public void TestIsValidAppName(string appName, bool isValid)
+        {
+            var snapApp = new SnapApp
+            {
+                Id = appName
+            };
+            
+            Assert.Equal(isValid, snapApp.IsValidAppName());
+        }
+        
+        [Theory]
+        [InlineData("testchannel123", true)]
+        [InlineData("testchannel", true)]
+        [InlineData("testChannel", true)]
+        [InlineData("TESTCHANNEL", true)]
+        [InlineData("testchannel-", false)]
+        [InlineData("testchannel_", false)]
+        [InlineData("testchannel@", false)]
+        public void TestIsValidChannelName(string channelName, bool isValid)
+        {
+            var channel = new SnapChannel
+            {
+                Name = channelName,
+                Current = true
+            };
+            
+            var snapApp = new SnapApp
+            {
+                Id = channelName,
+                Channels = new List<SnapChannel>
+                {
+                    channel
+                }
+            };
+            
+            Assert.Equal(isValid, snapApp.IsValidChannelName());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestBuildNugetUpstreamPackageId(bool isDelta)
         {
             var currentChannel = new SnapChannel
             {
@@ -39,10 +85,11 @@ namespace Snap.Tests.Core.Extensions
                 Current = true
             };
 
-            var spec = new SnapApp
+            var snapApp = new SnapApp
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                DeltaSrcFilename = isDelta ? "yolo.nupkg" : null,
                 Channels = new List<SnapChannel>
                 {
                     currentChannel
@@ -55,11 +102,47 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var fullOrDelta = "full";
+            var fullOrDelta = !snapApp.Delta ? "full" : "delta";
 
-            var expectedPackageId = $"{spec.Id}-1.0.0-{fullOrDelta}-{currentChannel.Name}-{spec.Target.Os}-{spec.Target.Framework}-{spec.Target.Rid}".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}-{fullOrDelta}-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestBuildNugetLocalFilename(bool isDelta)
+        {
+            var currentChannel = new SnapChannel
+            {
+                Name = "test",
+                Current = true
+            };
 
-            var actualPackageId = spec.BuildNugetUpstreamPackageId();
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                DeltaSrcFilename = isDelta ? "yolo.nupkg" : null,
+                Channels = new List<SnapChannel>
+                {
+                    currentChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var fullOrDelta = !snapApp.Delta ? "full" : "delta";
+
+            var expectedPackageId = $"{snapApp.Id}-{fullOrDelta}-{snapApp.Version.ToMajorMinorPatch()}-{snapApp.Target.Rid}-{currentChannel.Name}.nupkg".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
 
@@ -334,7 +417,6 @@ namespace Snap.Tests.Core.Extensions
                 },
                 Target = new SnapTarget
                 {
-                    Name = "demoapp-win7-x64",
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
@@ -344,7 +426,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapAppRelease(snapAppBefore.Id, snapAppBefore.Target.Name,
+            var snapAppAfter = snapApps.BuildSnapAppRelease(snapAppBefore.Id, snapAppBefore.Target.Rid,
                 new SemanticVersion(1, 1, 0), snapAppBefore.BuildNugetSources());
 
             // Generic
@@ -355,7 +437,7 @@ namespace Snap.Tests.Core.Extensions
             Assert.NotNull(snapAppBefore.Target);
             Assert.NotNull(snapAppAfter.Target);
             Assert.Equal(snapAppBefore.Target.Os, snapAppAfter.Target.Os);
-            Assert.Equal(snapAppBefore.Target.Name, snapAppAfter.Target.Name);
+            Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
             Assert.NotNull(snapAppBefore.Target.Framework);
             Assert.NotNull(snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);

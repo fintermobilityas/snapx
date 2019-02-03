@@ -21,7 +21,6 @@ namespace Snap.Core
         Task ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
         Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory,
             bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
-        IEnumerable<(string nuspecEffectivePath, string sha1)> ParseChecksumManifest(string content);
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
@@ -65,7 +64,7 @@ namespace Snap.Core
             var nuspecRootTargetPath = _snapPack.NuspecRootTargetPath.ForwardSlashesSafe();
             var nuspecSnapRootTargetPath = _snapPack.SnapNuspecTargetPath.ForwardSlashesSafe();
 
-            var snapAppId = packageArchiveReader.GetIdentity().Id;
+            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
             var rootAppDir = _snapFilesystem.DirectoryGetParent(destinationDirectory);
 
             string Extractor(string sourcePath, string targetPath, Stream sourceStream)
@@ -74,7 +73,7 @@ namespace Snap.Core
 
                 if (!includeChecksumManifest 
                     && isSnapRootTargetItem 
-                    && sourcePath.EndsWith("checksum"))
+                    && sourcePath.EndsWith(_snapPack.ChecksumManifestFilename))
                 {
                     return null;
                 }
@@ -107,20 +106,10 @@ namespace Snap.Core
             await packageArchiveReader.CopyFilesAsync(destinationDirectory, files, Extractor, logger ?? NullLogger.Instance, cancellationToken);
 
             await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, 
-                snapAppId, rootAppDir, cancellationToken);
+                snapApp.Id, rootAppDir, cancellationToken);
 
             return true;
         }
 
-        public IEnumerable<(string nuspecEffectivePath, string sha1)> ParseChecksumManifest([NotNull] string content)
-        {
-            if (content == null) throw new ArgumentNullException(nameof(content));
-            return content
-                .Split(_snapFilesystem.FixedNewlineChar)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Select(x => x.Split(':'))
-                .Select(x => (nuspecEffectivePath: x[0], sha1: x[1]))
-                .OrderBy(x => x.nuspecEffectivePath);
-        }
     }
 }

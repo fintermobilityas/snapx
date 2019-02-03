@@ -24,6 +24,8 @@ namespace Snap.Shared.Tests
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class BaseFixture
     {
+        static readonly Random RandomVersionSource = new Random();
+        
         public string WorkingDirectory => Directory.GetCurrentDirectory();
 
         public SnapApp BuildSnapApp()
@@ -81,7 +83,6 @@ namespace Snap.Shared.Tests
                 },
                 Target = new SnapTarget
                 {
-                    Name = "demoapp-unknown-x64",
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "unknown-x64",
@@ -143,12 +144,19 @@ namespace Snap.Shared.Tests
             return new DisposableFiles(filesystem, assemblyDefinitions.Select(x => x.GetFullPath(workingDirectory)).ToArray());
         }
 
-        public AssemblyDefinition BuildEmptyLibrary(string libraryName, IReadOnlyCollection<AssemblyDefinition> references = null)
+        public AssemblyDefinition BuildEmptyLibrary(string libraryName, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
         {
             if (libraryName == null) throw new ArgumentNullException(nameof(libraryName));
-
+            
+            var version = randomVersion ? new Version(
+                RandomVersionSource.Next(0, 1000), 
+                RandomVersionSource.Next(0, 1000), 
+                RandomVersionSource.Next(0, 1000), 
+                RandomVersionSource.Next(0, 1000)) : 
+                new Version(1, 0, 0, 0);
+            
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(libraryName, new Version(1, 0, 0, 0)), libraryName, ModuleKind.Dll);
+                new AssemblyNameDefinition(libraryName, version), libraryName, ModuleKind.Dll);
 
             var mainModule = assembly.MainModule;
 
@@ -266,7 +274,7 @@ namespace Snap.Shared.Tests
 
                 await filesystem.FileWriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-                var nupkgMemoryStream = await snapPack.PackAsync(snapPackDetails, cancellationToken);
+                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);
             }
         }

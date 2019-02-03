@@ -56,7 +56,6 @@ namespace Snap.Core.Models
     public sealed class SnapsTarget
     {
         public OSPlatform Os { get; set; }
-        public string Name { get; set; }
         public string Framework { get; set; }
         public string Rid { get; set; }
         public string Nuspec { get; set; }
@@ -71,7 +70,6 @@ namespace Snap.Core.Models
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
-            Name = target.Name;
             Framework = target.Framework;
             Rid = target.Rid;
             Nuspec = target.Nuspec;
@@ -84,6 +82,7 @@ namespace Snap.Core.Models
         public SemanticVersion Version { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
+        public bool Delta { get; set; }
 
         [UsedImplicitly]
         public SnapsApp()
@@ -97,6 +96,7 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
             Version = snapApp.Version;
+            Delta = snapApp.Delta;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
         }

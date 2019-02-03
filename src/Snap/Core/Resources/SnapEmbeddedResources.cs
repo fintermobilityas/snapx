@@ -17,10 +17,8 @@ namespace Snap.Core.Resources
     {
         [UsedImplicitly]
         bool IsOptimized { get; }
-
         MemoryStream CoreRunWindows { get; }
         MemoryStream CoreRunLinux { get; }
-
         string GetCoreRunExeFilenameForSnapApp([NotNull] SnapApp snapApp);
         string GetCoreRunExeFilename(string appId = "corerun");
         Task<string> ExtractCoreRunExecutableAsync(ISnapFilesystem filesystem, string appId, string destinationFolder, CancellationToken cancellationToken);

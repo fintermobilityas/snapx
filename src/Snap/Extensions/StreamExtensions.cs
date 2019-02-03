@@ -20,13 +20,13 @@ namespace Snap.Extensions
             #endif
         }
 
-        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveOpen = false)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = false)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             var outputStream = new MemoryStream();
             await CopyToAsync(srcStream, outputStream, cancellationToken);
             outputStream.Seek(0, SeekOrigin.Begin);
-            if (!leaveOpen)
+            if (!leaveSrcStreamOpen)
             {
                 srcStream.Dispose();
             }

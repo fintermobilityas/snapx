@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
@@ -18,30 +19,50 @@ namespace Snap.Extensions
 {
     public static class SnapExtensions
     {
+        // https://github.com/NuGet/NuGet.Client/blob/dev/src/NuGet.Core/NuGet.Packaging/PackageCreation/Utility/PackageIdValidator.cs#L14
+        static readonly Regex AppNameRegex = new Regex(@"^\w+([_.]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+
         static readonly OSPlatform AnyOs = OSPlatform.Create("AnyOs");
 
-        internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)
+        internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var defaultChannel = snapApp.Channels.FirstOrDefault();
-            if (defaultChannel == null)
+            var channel = snapApp.Channels.SingleOrDefault(x => x.Current);
+            if (channel == null)
             {
-                throw new Exception($"Default channel not found. Application id: {snapApp.Id}.");
+                throw new Exception($"Current channel not found. Application id: {snapApp.Id}.");
             }
-            return defaultChannel;
+            return channel;
         }
+
+        internal static bool IsValidAppName([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return AppNameRegex.IsMatch(snapApp.Id);
+        }
+        
+        internal static bool IsValidChannelName([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var channel = snapApp.GetCurrentChannelOrThrow();
+            return ChannelNameRegex.IsMatch(channel.Name);
+        }
+  
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var channel = snapApp.Channels.Single(x => x.Current);
-            const string fullOrDelta = "full"; // Todo: Update me when delta updates support lands.
-            return $"{snapApp.Id}-{snapApp.Version.ToMajorMinorPatch()}-{fullOrDelta}-{channel.Name}-{snapApp.Target.Os}-{snapApp.Target.Framework}-{snapApp.Target.Rid}".ToLowerInvariant();
+            var channel = snapApp.GetCurrentChannelOrThrow();
+            var fullOrDelta = snapApp.Delta ? "delta" : "full";
+            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Target.Rid}-{channel.Name}".ToLowerInvariant();
         }
 
-        internal static string BuildNugetUpstreamPackageFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.BuildNugetUpstreamPackageId()}.nupkg";
+            var channel = snapApp.GetCurrentChannelOrThrow();
+            var fullOrDelta = snapApp.Delta ? "delta" : "full";
+            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Version.ToMajorMinorPatch()}-{snapApp.Target.Rid}-{channel.Name}.nupkg".ToLowerInvariant();
         }
 
         internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
@@ -156,27 +177,16 @@ namespace Snap.Extensions
             {
                 foreach (var snapsTarget in snapsApp.Targets)
                 {
-                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Name, snapsApp.Version, nuGetPackageSources);
+                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Rid, snapsApp.Version, nuGetPackageSources);
                 }
             }
         }
 
-        internal static IEnumerable<SnapApp> BuildSnapAppReleaseForAllTargets([NotNull] this SnapApps snapApps, [NotNull] SemanticVersion releaseVersion, [NotNull] INuGetPackageSources nuGetPackageSources)
-        {
-            foreach (var snapsApp in snapApps.Apps)
-            {
-                foreach (var snapsTarget in snapsApp.Targets)
-                {
-                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Name, releaseVersion, nuGetPackageSources);
-                }
-            }
-        }
-
-        internal static SnapApp BuildSnapAppRelease([NotNull] this SnapApps snapApps, string id, [NotNull] string targetName, [NotNull] SemanticVersion releaseVersion,
+        internal static SnapApp BuildSnapAppRelease([NotNull] this SnapApps snapApps, string id, [NotNull] string rid, [NotNull] SemanticVersion releaseVersion,
             [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
-            if (targetName == null) throw new ArgumentNullException(nameof(targetName));
+            if (rid == null) throw new ArgumentNullException(nameof(rid));
             if (releaseVersion == null) throw new ArgumentNullException(nameof(releaseVersion));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
 
@@ -186,10 +196,10 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find application with id: {id}.");
             }
 
-            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => x.Name == targetName);
+            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => x.Rid == rid);
             if (snapAppTarget == null)
             {
-                throw new Exception($"Unable to find target with name: {targetName}. Application id: {snapApp.Id}.");
+                throw new Exception($"Unable to find target with rid: {rid}. Application id: {snapApp.Id}.");
             }
 
             var snapAppAvailableChannels = snapApps.Channels.Where(rhs => snapApp.Channels.Any(lhs => lhs.Equals(rhs.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();

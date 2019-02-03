@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.NuGet;
+using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {
@@ -15,6 +16,10 @@ namespace Snap.Core.Models
         public SemanticVersion Version { get; set; }
         public SnapTarget Target { get; set; }
         public List<SnapChannel> Channels { get; set; }
+        [YamlIgnore]
+        public bool Delta => DeltaSrcFilename != null;
+        public string DeltaSrcFilename { get; set; }
+        public SnapAppDeltaReport DeltaReport { get; set; }
 
         [UsedImplicitly]
         public SnapApp()
@@ -27,6 +32,8 @@ namespace Snap.Core.Models
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
+            DeltaSrcFilename = app.DeltaSrcFilename;
+            DeltaReport = Delta ? new SnapAppDeltaReport(app.DeltaReport) : null; 
             if (app.Target != null)
             {
                 Target = new SnapTarget(app.Target);
@@ -120,7 +127,6 @@ namespace Snap.Core.Models
     public sealed class SnapTarget
     {
         public OSPlatform Os { get; set; }
-        public string Name { get; set; }
         public string Framework { get; set; }
         public string Rid { get; set; }
         public string Nuspec { get; set; }
@@ -138,13 +144,11 @@ namespace Snap.Core.Models
             Framework = target.Framework;
             Rid = target.Rid;
             Nuspec = target.Nuspec;
-            Name = target.Name;
         }
 
         internal SnapTarget([NotNull] SnapsTarget snapsTarget) : this(new SnapTarget
         {
             Os = snapsTarget.Os,
-            Name = snapsTarget.Name,
             Framework = snapsTarget.Framework,
             Nuspec = snapsTarget.Nuspec,
             Rid = snapsTarget.Rid

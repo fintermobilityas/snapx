@@ -29,8 +29,8 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapInstaller
     {
-        string GetRootApplicationInstallationDirectory(string rootAppDirectory, SemanticVersion version);
-        string GetRootPackagesDirectory(string rootAppDirectory);
+        string GetApplicationDirectory(string rootAppDirectory, SemanticVersion version);
+        string GetPackagesDirectory(string rootAppDirectory);
         Task InstallAsync(string nupkgAbsoluteFilename, string rootAppDirectory, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default);
         Task UpdateAsync(string nupkgAbsoluteFilename, string rootAppDirectory, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default);
     }
@@ -53,14 +53,14 @@ namespace Snap.Core
             _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
         }
 
-        public string GetRootApplicationInstallationDirectory(string rootAppDirectory, SemanticVersion version)
+        public string GetApplicationDirectory(string rootAppDirectory, SemanticVersion version)
         {
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
             if (version == null) throw new ArgumentNullException(nameof(version));
             return _snapFilesystem.PathCombine(rootAppDirectory, "app-" + version);
         }
 
-        public string GetRootPackagesDirectory(string rootAppDirectory)
+        public string GetPackagesDirectory(string rootAppDirectory)
         {
             if (string.IsNullOrEmpty(rootAppDirectory)) throw new ArgumentException("Value cannot be null or empty.", nameof(rootAppDirectory));
             return _snapFilesystem.PathCombine(rootAppDirectory, "packages");
@@ -85,12 +85,12 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(0);
             Logger.Debug("Attempting to get snap app details from nupkg.");
-            var snapApp = await _snapPack.GetSnapAppFromPackageArchiveReaderAsync(packageArchiveReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
    
             Logger.Info($"Updating snap id: {snapApp.Id}. " +
                                  $"Version: {snapApp.Version}. ");
 
-            var rootAppInstallDirectory = GetRootApplicationInstallationDirectory(rootAppDirectory, snapApp.Version);
+            var rootAppInstallDirectory = GetApplicationDirectory(rootAppDirectory, snapApp.Version);
 
             if (!_snapFilesystem.DirectoryExists(rootAppDirectory))
             {
@@ -111,7 +111,7 @@ namespace Snap.Core
                 _snapFilesystem.DirectoryCreateIfNotExists(rootAppInstallDirectory);
             }
 
-            var rootPackagesDirectory = GetRootPackagesDirectory(rootAppDirectory);
+            var rootPackagesDirectory = GetPackagesDirectory(rootAppDirectory);
             if (!_snapFilesystem.DirectoryExists(rootPackagesDirectory))
             {
                 Logger.Error($"Root packages directory does not exist: {rootPackagesDirectory}.");
@@ -166,7 +166,7 @@ namespace Snap.Core
             snapProgressSource?.Raise(0);
        
             Logger.Debug("Attempting to get snap app details from nupkg.");
-            var snapApp = await _snapPack.GetSnapAppFromPackageArchiveReaderAsync(packageArchiveReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
    
             Logger.Info($"Installing snap id: {snapApp.Id}. " +
                                  $"Version: {snapApp.Version}. ");
@@ -184,7 +184,7 @@ namespace Snap.Core
             _snapFilesystem.DirectoryCreate(rootAppDirectory);
 
             snapProgressSource?.Raise(30);
-            var rootPackagesDirectory = GetRootPackagesDirectory(rootAppDirectory);
+            var rootPackagesDirectory = GetPackagesDirectory(rootAppDirectory);
             Logger.Info($"Creating packages directory: {rootPackagesDirectory}.");
             _snapFilesystem.DirectoryCreate(rootPackagesDirectory);
 
@@ -195,7 +195,7 @@ namespace Snap.Core
             await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
 
             snapProgressSource?.Raise(50);
-            var rootAppInstallDirectory = GetRootApplicationInstallationDirectory(rootAppDirectory, snapApp.Version);
+            var rootAppInstallDirectory = GetApplicationDirectory(rootAppDirectory, snapApp.Version);
             Logger.Info($"Creating root app install directory: {rootAppInstallDirectory}.");
             _snapFilesystem.DirectoryCreate(rootAppInstallDirectory);
 

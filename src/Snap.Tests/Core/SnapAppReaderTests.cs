@@ -96,7 +96,6 @@ namespace Snap.Tests.Core
                 },
                 Target = new SnapTarget
                 {
-                    Name = "demoapp-win7-x64",
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
@@ -150,7 +149,6 @@ namespace Snap.Tests.Core
             Assert.NotNull(snapAppBefore.Target);
             Assert.NotNull(snapAppAfter.Target);
             Assert.Equal(snapAppBefore.Target.Os, snapAppAfter.Target.Os);
-            Assert.Equal(snapAppBefore.Target.Name, snapAppAfter.Target.Name);
             Assert.NotNull(snapAppBefore.Target.Framework);
             Assert.NotNull(snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);

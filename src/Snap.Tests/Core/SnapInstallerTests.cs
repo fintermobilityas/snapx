@@ -268,7 +268,7 @@ namespace Snap.Tests.Core
 
                 var appDirName = $"app-{packageDetails.App.Version}";
                 var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
-                var packagesDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "packages");
+                var packagesDir = _snapInstaller.GetPackagesDirectory(rootDir.WorkingDirectory);
                                 
                 _snapOsMock
                     .Setup(x => x.GetAllSnapAwareApps(It.IsAny<string>(), It.IsAny<int>()))
@@ -327,7 +327,7 @@ namespace Snap.Tests.Core
             if (nupkgMemoryStream == null) throw new ArgumentNullException(nameof(nupkgMemoryStream));
             if (destDir == null) throw new ArgumentNullException(nameof(destDir));
             
-            var nupkgFilename = snapApp.BuildNugetUpstreamPackageFilename();
+            var nupkgFilename = snapApp.BuildNugetLocalFilename();
             var nupkgAbsoluteFilename = _snapFilesystem.PathCombine(destDir, nupkgFilename);
             await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgAbsoluteFilename, cancellationToken);
             return nupkgAbsoluteFilename;

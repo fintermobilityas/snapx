@@ -194,6 +194,7 @@ namespace Snap.Core
         Task<SnapApp> GetSnapAppAsync(PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken = default);
         IEnumerable<SnapPackFileChecksum> ParseChecksumManifest(string content);
         int CountNonNugetFiles(PackageArchiveReader packageArchiveReader);
+        IEnumerable<string> GetFiles([NotNull] PackageArchiveReader packageArchiveReader);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -554,7 +555,13 @@ namespace Snap.Core
         public int CountNonNugetFiles([NotNull] PackageArchiveReader packageArchiveReader)
         {
             if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
-            return packageArchiveReader.GetFiles().Count(x => x.StartsWith(NuspecRootTargetPath));
+            return GetFiles(packageArchiveReader).Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x)).Count(x => x.StartsWith(NuspecRootTargetPath));
+        }
+
+        public IEnumerable<string> GetFiles([NotNull] PackageArchiveReader packageArchiveReader)
+        {
+            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            return packageArchiveReader.GetFiles().Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x));
         }
 
         void EnsureCoreRunSupportsThisPlatform()

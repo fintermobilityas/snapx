@@ -130,11 +130,11 @@ namespace Snap.Tests.Core
                     await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(1, deltaReport.New.Count);
+                    Assert.Single(deltaReport.New);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename), deltaReport.New[0].TargetPath);
                     
                     // Modified
-                    Assert.Equal(0, deltaReport.Modified.Count);
+                    Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
                     Assert.Equal(2, deltaReport.Unmodified.Count);
@@ -142,7 +142,7 @@ namespace Snap.Tests.Core
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.Unmodified[1].TargetPath);
                     
                     // Deleted
-                    Assert.Equal(0, deltaReport.Deleted.Count);
+                    Assert.Empty(deltaReport.Deleted);
                 }
             }            
         }
@@ -190,19 +190,19 @@ namespace Snap.Tests.Core
                     await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(1, deltaReport.New.Count);
+                    Assert.Single(deltaReport.New);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename), deltaReport.New[0].TargetPath);
                     
                     // Modified
-                    Assert.Equal(1, deltaReport.Modified.Count);
+                    Assert.Single(deltaReport.Modified);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.Modified[0].TargetPath);
                     
                     // Unmodified
-                    Assert.Equal(1, deltaReport.Unmodified.Count);
+                    Assert.Single(deltaReport.Unmodified);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename), deltaReport.Unmodified[0].TargetPath);
                     
                     // Deleted
-                    Assert.Equal(0, deltaReport.Deleted.Count);                    
+                    Assert.Empty(deltaReport.Deleted);                    
                 }
             }            
         }
@@ -260,14 +260,14 @@ namespace Snap.Tests.Core
                         currentNupkgAssemblyDefinition2.BuildRelativeFilename()), deltaReport.New[2].TargetPath);
 
                     // Modified
-                    Assert.Equal(0, deltaReport.Modified.Count);
+                    Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
-                    Assert.Equal(1, deltaReport.Unmodified.Count);
+                    Assert.Single(deltaReport.Unmodified);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename), deltaReport.Unmodified[0].TargetPath);
 
                     // Deleted
-                    Assert.Equal(1, deltaReport.Deleted.Count);                    
+                    Assert.Single(deltaReport.Deleted);                    
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, previousNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.Deleted[0].TargetPath);
                 }
             }            
@@ -323,7 +323,7 @@ namespace Snap.Tests.Core
                         currentNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.New[1].TargetPath);
 
                     // Modified
-                    Assert.Equal(0, deltaReport.Modified.Count);
+                    Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
                     Assert.Equal(2, deltaReport.Unmodified.Count);
@@ -331,7 +331,7 @@ namespace Snap.Tests.Core
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, previousNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.Unmodified[1].TargetPath);
                     
                     // Deleted
-                    Assert.Equal(0, deltaReport.Deleted.Count);    
+                    Assert.Empty(deltaReport.Deleted);    
                 }
             }            
         }
@@ -386,7 +386,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine("zzzsubdirectory", currentNupkgAssemblyDefinition.BuildRelativeFilename())), deltaReport.New[1].TargetPath);
 
                     // Modified
-                    Assert.Equal(0, deltaReport.Modified.Count);
+                    Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
                     Assert.Equal(2, deltaReport.Unmodified.Count);
@@ -394,7 +394,7 @@ namespace Snap.Tests.Core
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, previousNupkgAssemblyDefinition.BuildRelativeFilename()), deltaReport.Unmodified[1].TargetPath);
                     
                     // Deleted
-                    Assert.Equal(0, deltaReport.Deleted.Count);    
+                    Assert.Empty(deltaReport.Deleted);    
                 }
             }            
         }
@@ -640,8 +640,8 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename)
                 }.OrderBy(x => x).ToList();
                 
-                var actualLayout = packageArchiveReader
-                    .GetFiles()
+                var actualLayout = _snapPack
+                    .GetFiles(packageArchiveReader)
                     .Where(x => x.StartsWith(_snapPack.NuspecRootTargetPath))
                     .OrderBy(x => x)
                     .ToList();
@@ -660,13 +660,13 @@ namespace Snap.Tests.Core
                 Assert.Equal(3, deltaReport.New.Count);
           
                 // Modified
-                Assert.Equal(1, deltaReport.Modified.Count);
+                Assert.Single(deltaReport.Modified);
                  
                 // Unmodified
-                Assert.Equal(1, deltaReport.Unmodified.Count);
+                Assert.Single(deltaReport.Unmodified);
                  
                 // Deleted
-                Assert.Equal(1, deltaReport.Deleted.Count);   
+                Assert.Single(deltaReport.Deleted);   
             }
         }
 

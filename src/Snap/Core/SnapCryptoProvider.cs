@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace Snap.Core
 {
@@ -34,15 +36,10 @@ namespace Snap.Core
             return HashToString(hash);
         }
         
-        static string HashToString(IEnumerable<byte> hash)
+        static string HashToString([NotNull] IEnumerable<byte> hash)
         {
-            var result = new StringBuilder();
-            foreach (var h in hash)
-            {
-                result.Append(h.ToString("X2"));
-            }
-
-            return result.ToString();
+            if (hash == null) throw new ArgumentNullException(nameof(hash));
+            return hash.Select(x => x.ToString("X2")).ToString();
         }
     }
 }

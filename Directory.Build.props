@@ -36,8 +36,8 @@
     </PropertyGroup>
 	
 	<PropertyGroup>
-        <NugetVersion Condition="$(IsNetFullFramework)">4.9.3</NugetVersion>
-        <NugetVersion Condition="!$(IsNetFullFramework)">4.9.3</NugetVersion>
+        <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
+        <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
     </PropertyGroup>
 	
 	<PropertyGroup Condition="$(OsPlatform) == 'Windows'">

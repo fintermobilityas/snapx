@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,6 +20,16 @@ namespace Snap.Extensions
     {
         static readonly OSPlatform AnyOs = OSPlatform.Create("AnyOs");
 
+        internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var defaultChannel = snapApp.Channels.FirstOrDefault();
+            if (defaultChannel == null)
+            {
+                throw new Exception($"Default channel not found. Application id: {snapApp.Id}.");
+            }
+            return defaultChannel;
+        }
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -47,8 +57,12 @@ namespace Snap.Extensions
             {
                 snapFeed.Password = storePasswordInClearText ? snapFeed.Password : EncryptionUtility.EncryptString(snapFeed.Password);
 
+                // Comma-delimited list of authentication types the credential is valid for as stored in the config file.
+                // If null or empty, all authentication types are valid. Example: 'basic,negotiate'
+                string validAuthenticationTypesText = null;
+                
                 packageSource.Credentials = new PackageSourceCredential(packageSource.Name,
-                    snapFeed.Username, snapFeed.Password, storePasswordInClearText);
+                    snapFeed.Username, snapFeed.Password, storePasswordInClearText, validAuthenticationTypesText);
 
                 inMemorySettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
             }

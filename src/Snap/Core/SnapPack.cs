@@ -144,7 +144,7 @@ namespace Snap.Core
                 progressSource?.Raise(50);
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, NuspecPropertyProvider);
-
+                
                 EnsureCoreRunSupportsThisPlatform();
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.Files.Remove(new PhysicalPackageFile { TargetPath = targetPath }));
                 await AddSnapAssemblies(packageBuilder, packageDetails, cancellationToken);
@@ -174,8 +174,7 @@ namespace Snap.Core
             }
         }
 
-        public MemoryStream RewriteNuspec(MemoryStream memoryStream, [NotNull] Func<string, string> propertyProvider,
-            [NotNull] string baseDirectory)
+        public MemoryStream RewriteNuspec(MemoryStream memoryStream, [NotNull] Func<string, string> propertyProvider, [NotNull] string baseDirectory)
         {
             if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
             if (propertyProvider == null) throw new ArgumentNullException(nameof(propertyProvider));
@@ -183,9 +182,14 @@ namespace Snap.Core
 
             var nuspec = Manifest.ReadFrom(memoryStream, propertyProvider, true);
 
-            foreach (var file in nuspec.Files.Where(x => !string.IsNullOrWhiteSpace(x.Source)))
+            if (!nuspec.Files.Any())
             {
-                var targetPath = file.Source.Replace(baseDirectory, string.Empty).ForwardSlashesSafe();
+                throw new Exception("Nuspec does not contain any files.");
+            }
+            
+            foreach (var file in nuspec.Files)
+            {
+                var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? _snapFilesystem.DirectorySeparator;
                 if(!targetPath.StartsWith(_snapFilesystem.DirectorySeparator))
                 {
                     targetPath = $"{_snapFilesystem.DirectorySeparator}{targetPath}";

@@ -88,12 +88,6 @@ namespace Snap.Tests.Core
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Certificate = new SnapCertificate
-                {
-                    Name = "mycertificate",
-                    Csn = "mycompany",
-                    Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
-                },
                 Channels = new List<SnapChannel>
                 {
                     testChannel,
@@ -119,7 +113,6 @@ namespace Snap.Tests.Core
             Assert.NotNull(snapAppsAfter);
 
             Assert.Equal(snapAppsBefore.Channels.Count, snapAppsAfter.Channels.Count);
-            Assert.Equal(snapAppsBefore.Certificates.Count, snapAppsAfter.Certificates.Count);
             Assert.Equal(snapAppsBefore.Apps.Count, snapAppsAfter.Apps.Count);
             
             // Channels.
@@ -131,17 +124,6 @@ namespace Snap.Tests.Core
                 Assert.Equal(lhsChannel.Name, rhsChannel.Name);
                 Assert.Equal(lhsChannel.PushFeed, rhsChannel.PushFeed);
                 Assert.Equal(lhsChannel.UpdateFeed, rhsChannel.UpdateFeed);
-            }
-
-            // Certificates.
-            for (var index = 0; index < snapAppsBefore.Certificates.Count; index++)
-            {
-                var lhsCertificate = snapAppsBefore.Certificates[index];
-                var rhsCertificate= snapAppsAfter.Certificates[index];
-
-                Assert.Equal(lhsCertificate.Name, rhsCertificate.Name);
-                Assert.Equal(lhsCertificate.Csn, rhsCertificate.Csn);
-                Assert.Equal(lhsCertificate.Sha256, rhsCertificate.Sha256);
             }
 
             // Apps.     
@@ -163,13 +145,6 @@ namespace Snap.Tests.Core
             // Generic
             Assert.Equal(snapAppBefore.Id, snapAppAfter.Id);
             Assert.Equal(snapAppBefore.Version, snapAppAfter.Version);
-
-            // Certificate
-            Assert.NotNull(snapAppBefore.Certificate);
-            Assert.NotNull(snapAppAfter.Certificate);
-            Assert.Equal(snapAppBefore.Certificate.Name, snapAppAfter.Certificate.Name);
-            Assert.Equal(snapAppBefore.Certificate.Csn, snapAppAfter.Certificate.Csn);
-            Assert.Equal(snapAppBefore.Certificate.Sha256, snapAppAfter.Certificate.Sha256);
 
             // Target
             Assert.NotNull(snapAppBefore.Target);

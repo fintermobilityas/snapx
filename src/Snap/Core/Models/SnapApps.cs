@@ -51,14 +51,6 @@ namespace Snap.Core.Models
         {
 
         }
-
-        internal SnapsCertificate([NotNull] SnapCertificate certificate)
-        {
-            if (certificate == null) throw new ArgumentNullException(nameof(certificate));
-            Name = certificate.Name;
-            Csn = certificate.Csn;
-            Sha256 = certificate.Sha256;
-        }
     }
 
     public sealed class SnapsTarget
@@ -90,7 +82,6 @@ namespace Snap.Core.Models
     {
         public string Id { get; set; }
         public SemanticVersion Version { get; set; }
-        public string Certificate { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
 
@@ -106,7 +97,6 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
             Version = snapApp.Version;
-            Certificate = snapApp.Certificate?.Name;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
         }
@@ -116,13 +106,11 @@ namespace Snap.Core.Models
     public sealed class SnapApps
     {
         public List<SnapsChannel> Channels { get; set; }
-        public List<SnapsCertificate> Certificates { get; set; }
         public List<SnapsApp> Apps { get; set; }
 
         public SnapApps()
         {
             Channels = new List<SnapsChannel>();
-            Certificates = new List<SnapsCertificate>();
             Apps = new List<SnapsApp>();
         }
 
@@ -131,7 +119,6 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
             Apps = new List<SnapsApp> { new SnapsApp(snapApp) };
-            Certificates = new List<SnapsCertificate> { new SnapsCertificate(snapApp.Certificate) };
         }
 
     }

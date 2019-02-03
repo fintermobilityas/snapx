@@ -1,8 +1,4 @@
-﻿certificates:
-- name: safenet-ev-codesign
-  csn: Some Awesome Company LTD
-  sha256: 311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02
-channels:
+﻿channels:
   - name: test
     push-feed: myget.private
     update-feed: myget.public.readonly

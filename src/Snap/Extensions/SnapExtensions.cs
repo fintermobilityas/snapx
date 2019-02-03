@@ -186,12 +186,6 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find application with id: {id}.");
             }
 
-            var snapAppCertificate = snapApp.Certificate == null ? null : snapApps.Certificates.SingleOrDefault(x => x.Name == snapApp.Certificate);
-            if (snapApp.Certificate != null && snapAppCertificate == null)
-            {
-                throw new Exception($"Unable to find certificate with name: {snapApp.Certificate}. Application id: {snapApp.Id}.");
-            }
-
             var snapAppTarget = snapApp.Targets.SingleOrDefault(x => x.Name == targetName);
             if (snapAppTarget == null)
             {
@@ -240,7 +234,6 @@ namespace Snap.Extensions
             {
                 Id = snapApp.Id,
                 Version = releaseVersion,
-                Certificate = snapAppCertificate == null ? null : new SnapCertificate(snapAppCertificate),
                 Channels = snapAppChannels,
                 Target = new SnapTarget(snapAppTarget)
             };

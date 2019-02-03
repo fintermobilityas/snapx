@@ -73,12 +73,6 @@ namespace Snap.Shared.Tests
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Certificate = new SnapCertificate
-                {
-                    Name = "mycertificate",
-                    Csn = "mycompany",
-                    Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
-                },
                 Channels = new List<SnapChannel>
                 {
                     testChannel,
@@ -103,8 +97,7 @@ namespace Snap.Shared.Tests
             return new SnapApps
             {
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
-                Certificates = new List<SnapsCertificate> { new SnapsCertificate(snapApp.Certificate) }
+                Apps = new List<SnapsApp> { new SnapsApp(snapApp) }
             };
         }
 

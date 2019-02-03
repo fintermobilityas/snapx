@@ -14,7 +14,6 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public SemanticVersion Version { get; set; }
         public SnapTarget Target { get; set; }
-        public SnapCertificate Certificate { get; set; }
         public List<SnapChannel> Channels { get; set; }
 
         [UsedImplicitly]
@@ -28,10 +27,6 @@ namespace Snap.Core.Models
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
-            if (app.Certificate != null)
-            {
-                Certificate = new SnapCertificate(app.Certificate);
-            }
             if (app.Target != null)
             {
                 Target = new SnapTarget(app.Target);
@@ -199,38 +194,6 @@ namespace Snap.Core.Models
             PushFeed = pushFeed ?? throw new ArgumentNullException(nameof(pushFeed));
             UpdateFeed = updateFeed ?? throw new ArgumentNullException(nameof(updateFeed));
             Current = current;
-        }
-    }
-
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public sealed class SnapCertificate
-    {
-        public string Name { get; set; }
-        public string Csn { get; set; }
-        public string Sha256 { get; set; }
-
-        [UsedImplicitly]
-        public SnapCertificate()
-        {
-
-        }
-
-        internal SnapCertificate([NotNull] SnapCertificate certificate)
-        {
-            if (certificate == null) throw new ArgumentNullException(nameof(certificate));
-            Name = certificate.Name;
-            Csn = certificate.Csn;
-            Sha256 = certificate.Sha256;
-        }
-
-        internal SnapCertificate([NotNull] SnapsCertificate certificate) : this(new SnapCertificate
-        {
-            Name = certificate.Name,
-            Csn = certificate.Csn,
-            Sha256 = certificate.Sha256
-        })
-        {
-            if (certificate == null) throw new ArgumentNullException(nameof(certificate));
         }
     }
 }

@@ -326,12 +326,6 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0),
-                Certificate = new SnapCertificate
-                {
-                    Name = "mycertificate",
-                    Csn = "mycompany",
-                    Sha256 = "311FE3FEED16B9CD8DF0F8B1517BE5CB86048707DF4889BA8DC37D4D68866D02"
-                },
                 Channels = new List<SnapChannel>
                 {
                     testChannel,
@@ -356,13 +350,6 @@ namespace Snap.Tests.Core.Extensions
             // Generic
             Assert.Equal(snapAppBefore.Id, snapAppAfter.Id);
             Assert.True(snapAppBefore.Version < snapAppAfter.Version);
-
-            // Certificate
-            Assert.NotNull(snapAppBefore.Certificate);
-            Assert.NotNull(snapAppAfter.Certificate);
-            Assert.Equal(snapAppBefore.Certificate.Name, snapAppAfter.Certificate.Name);
-            Assert.Equal(snapAppBefore.Certificate.Csn, snapAppAfter.Certificate.Csn);
-            Assert.Equal(snapAppBefore.Certificate.Sha256, snapAppAfter.Certificate.Sha256);
 
             // Target
             Assert.NotNull(snapAppBefore.Target);

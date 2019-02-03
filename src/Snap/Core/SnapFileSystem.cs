@@ -17,6 +17,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapFilesystem
     {
+        char FixedNewlineChar { get; }
         string DirectorySeparator { get; }
         void DirectoryCreate(string directory);
         void DirectoryCreateIfNotExists(string directory);
@@ -57,6 +58,7 @@ namespace Snap.Core
     {
         static readonly ILog Logger = LogProvider.For<SnapFilesystem>();
 
+        public char FixedNewlineChar => '\n';
         public string DirectorySeparator => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
 
         public async Task FileWriteStringContentAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
@@ -127,13 +129,10 @@ namespace Snap.Core
         public async Task<string> FileReadAllTextAsync([NotNull] string fileName, CancellationToken cancellationToken)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
-            using (var stream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var stream = FileRead(fileName))
+            using (var streamReader = new StreamReader(stream))
             {
-                var stringBuilder = new StringBuilder();
-                var result = new byte[stream.Length];
-                await stream.ReadAsync(result, 0, (int)stream.Length, cancellationToken).ConfigureAwait(false);
-                stringBuilder.Append(result);
-                return stringBuilder.ToString();
+                return await streamReader.ReadToEndAsync();
             }
         }
 

@@ -56,15 +56,15 @@ namespace Snap.Tool
                 return -1;
             }
             
+            var snapCryptoProvider = new SnapCryptoProvider();
             var snapFilesystem = new SnapFilesystem();
             var snapEmbeddedResources = new SnapEmbeddedResources();
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
-            var snapPack = new SnapPack(snapFilesystem, snapAppReader, snapAppWriter, snapEmbeddedResources);
+            var snapPack = new SnapPack(snapFilesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             var snapExtractor = new SnapExtractor(snapFilesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapFilesystem, snapOs);
             var snapSpecsReader = new SnapAppReader();
-            var snapCryptoProvider = new SnapCryptoProvider();
             var nugetLogger = new NugetLogger();
             var nugetService = new NugetService(nugetLogger);
 

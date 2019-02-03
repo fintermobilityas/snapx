@@ -228,9 +228,7 @@ namespace Snap.Shared.Tests
 
             foreach (var pair in nuspecFilesLayout)
             {
-                var targetPath = filesystem.PathGetDirectoryName(pair.Key).ForwardSlashesSafe();
-                var nuspecTargetPath = $"$anytarget$/{targetPath}";
-                files.Add($"<file src=\"$nuspecbasedirectory$/{pair.Key}\" target=\"{nuspecTargetPath}\" />");
+                files.Add($"<file src=\"{pair.Key}\" />");
             }
 
             var nuspecContent = $@"<?xml version=""1.0""?>

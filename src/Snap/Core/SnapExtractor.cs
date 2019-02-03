@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
@@ -17,8 +18,10 @@ namespace Snap.Core
     internal interface ISnapExtractor
     {
         PackageArchiveReader ReadPackage(string nupkg);
-        Task ExtractAsync(string nupkg, string destinationDirectory, CancellationToken cancellationToken = default, ILogger logger = null);
-        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory, CancellationToken cancellationToken = default, ILogger logger = null);
+        Task ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
+        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory,
+            bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
+        IEnumerable<(string nuspecEffectivePath, string sha1)> ParseChecksumManifest(string content);
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
@@ -43,18 +46,18 @@ namespace Snap.Core
             return new PackageArchiveReader(zipArchive);
         }
 
-        public Task ExtractAsync(string nupkg, string destinationDirectory, CancellationToken cancellationToken = default, ILogger logger = null)
+        public Task ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null)
         {
             if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
             using (var packageArchiveReader = ReadPackage(nupkg))
             {
-                return ExtractAsync(packageArchiveReader, destinationDirectory, cancellationToken, logger);
+                return ExtractAsync(packageArchiveReader, destinationDirectory, includeChecksumManifest, cancellationToken, logger);
             }
         }
 
-        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory, CancellationToken cancellationToken = default, ILogger logger = null)
+        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null)
         {
             if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
@@ -67,7 +70,16 @@ namespace Snap.Core
 
             string Extractor(string sourcePath, string targetPath, Stream sourceStream)
             {
-                var dstFilename = sourcePath.StartsWith(nuspecSnapRootTargetPath) ? 
+                var isSnapRootTargetItem = sourcePath.StartsWith(nuspecSnapRootTargetPath);
+
+                if (!includeChecksumManifest 
+                    && isSnapRootTargetItem 
+                    && sourcePath.EndsWith("checksum"))
+                {
+                    return null;
+                }
+                
+                var dstFilename = isSnapRootTargetItem ? 
                     _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(sourcePath)) :
                     targetPath.Replace(_snapFilesystem.PathEnsureThisOsDirectorySeperator(nuspecRootTargetPath), string.Empty);
 
@@ -98,6 +110,17 @@ namespace Snap.Core
                 snapAppId, rootAppDir, cancellationToken);
 
             return true;
+        }
+
+        public IEnumerable<(string nuspecEffectivePath, string sha1)> ParseChecksumManifest([NotNull] string content)
+        {
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            return content
+                .Split(_snapFilesystem.FixedNewlineChar)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Split(':'))
+                .Select(x => (nuspecEffectivePath: x[0], sha1: x[1]))
+                .OrderBy(x => x.nuspecEffectivePath);
         }
     }
 }

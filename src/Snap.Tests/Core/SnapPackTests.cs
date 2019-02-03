@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Mono.Cecil;
 using NuGet.Packaging;
@@ -21,12 +23,14 @@ namespace Snap.Tests.Core
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly ISnapCryptoProvider _snapCryptoProvider;
 
         public SnapPackTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
+            _snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), new SnapEmbeddedResources());
+            _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources());
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, new SnapEmbeddedResources());
             _snapAppWriter = new SnapAppWriter();
             _snapEmbeddedResources = new SnapEmbeddedResources();
@@ -66,6 +70,67 @@ namespace Snap.Tests.Core
             }.AsReadOnly();
 
             Assert.Equal(assemblies, _snapPack.AlwaysRemoveTheseAssemblies);
+        }
+        
+        [Fact]
+        public async Task TestPackIncludesChecksumManifest()
+        {
+            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
+            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
+            testDllReflector.SetSnapAware();
+
+            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
+                { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+            };
+
+            var snapApp = _baseFixture.BuildSnapApp();
+            
+            var (nupkgMemoryStream, packageDetails) = await _baseFixture
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+
+            using (testDllAssemblyDefinition)
+            using (nupkgMemoryStream)
+            using (var packageArchiveReader = new PackageArchiveReader(nupkgMemoryStream))
+            using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var appDirName = $"app-{packageDetails.App.Version}";
+                var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
+
+                await _snapExtractor.ExtractAsync(packageArchiveReader, appDir, true);
+
+                var checksumFilename = _snapFilesystem.PathCombine(appDir, "checksum");
+                Assert.True(_snapFilesystem.FileExists(checksumFilename));
+
+                var checksums =
+                    _snapExtractor.ParseChecksumManifest(
+                        await _snapFilesystem.FileReadAllTextAsync(checksumFilename, CancellationToken.None)).ToList();
+
+                var expectedLayout = new List<string>
+                    {
+                        _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, testDllAssemblyDefinition.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", testDllAssemblyDefinition.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", "subdirectory2", testDllAssemblyDefinition.BuildRelativeFilename())
+                    }
+                    .OrderBy(x => x)
+                    .ToList();
+                
+                Assert.Equal(expectedLayout.Count, checksums.Count);
+
+                for (var i = 0; i < expectedLayout.Count; i++)
+                {
+                    var (checksumNuspecEffectivePath, checksumNuspecSha1) = checksums[i];
+                    var expectedNuspecEffectivePath = expectedLayout[i];
+                    
+                    Assert.True(checksumNuspecEffectivePath.StartsWith(_snapPack.NuspecRootTargetPath));
+                    Assert.Equal(expectedNuspecEffectivePath, checksumNuspecEffectivePath);
+                    Assert.Equal(40, checksumNuspecSha1.Length);                                        
+                }
+            }
         }
 
         [Fact]
@@ -108,9 +173,9 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
                     _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
                     _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
-                    _snapFilesystem.PathCombine(appDir, "test.dll"),
-                    _snapFilesystem.PathCombine(appDir, "subdirectory", "test.dll"),
-                    _snapFilesystem.PathCombine(appDir, "subdirectory", "subdirectory2", "test.dll")
+                    _snapFilesystem.PathCombine(appDir, testDllAssemblyDefinition.BuildRelativeFilename()),
+                    _snapFilesystem.PathCombine(appDir, "subdirectory", testDllAssemblyDefinition.BuildRelativeFilename()),
+                    _snapFilesystem.PathCombine(appDir, "subdirectory", "subdirectory2", testDllAssemblyDefinition.BuildRelativeFilename())
                 }
                     .OrderBy(x => x)
                     .ToList();
@@ -121,7 +186,7 @@ namespace Snap.Tests.Core
                 {
                     var stat = _snapFilesystem.FileStat(x);
                     Assert.NotNull(stat);
-                    Assert.True(stat.Length > 0);
+                    Assert.True(stat.Length > 0, x);
                 });
 
                 for (var i = 0; i < expectedLayout.Count; i++)

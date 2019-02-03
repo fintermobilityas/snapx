@@ -129,7 +129,7 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(30);
             Logger.Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
-            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, cancellationToken))
+            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, false, cancellationToken))
             {
                 Logger.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
                 return;
@@ -201,7 +201,7 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(60);
             Logger.Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
-            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, cancellationToken))
+            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, false, cancellationToken))
             {
                 Logger.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
                 return;

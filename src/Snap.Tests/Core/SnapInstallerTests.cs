@@ -33,18 +33,20 @@ namespace Snap.Tests.Core
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapOsProcessManager _snapOsProcessManager;
+        readonly ISnapCryptoProvider _snapCryptoProvider;
 
         public SnapInstallerTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
             _snapOsMock = new Mock<ISnapOs>();
 
+            _snapCryptoProvider = new SnapCryptoProvider();
             _snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
             _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapFilesystem, _snapOsMock.Object);

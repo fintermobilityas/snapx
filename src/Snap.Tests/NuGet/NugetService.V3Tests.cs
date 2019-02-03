@@ -25,13 +25,15 @@ namespace Snap.Tests.NuGet
         readonly INugetService _nugetService;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapPack _snapPack;
+        readonly ISnapCryptoProvider _snapCryptoProvider;
 
         public NugetServiceV3Tests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
+            _snapCryptoProvider = new SnapCryptoProvider();
             _nugetService = new NugetService(new NugetLogger());
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), new SnapEmbeddedResources());
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources());
         }
 
         [Fact]

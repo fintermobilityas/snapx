@@ -343,7 +343,7 @@ namespace Snap.Extensions
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
             var snapAppDll = filesystem.PathCombine(workingDirectory, snapAppWriter.SnapAppDllFilename);
-            if (!File.Exists(snapAppDll))
+            if (!filesystem.FileExists(snapAppDll))
             {
                 throw new FileNotFoundException(snapAppDll);
             }

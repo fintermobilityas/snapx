@@ -36,7 +36,7 @@ namespace Snap.Core
         Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
         void FileDelete(string fileName);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
-        FileStream FileRead(string fileName);
+        FileStream FileRead(string fileName, int bufferSize = 8196, bool useAsync = true);
         FileStream FileWrite(string fileName, bool overwrite = true);
         Task<AssemblyDefinition> FileReadAssemblyDefinitionAsync(string filename, CancellationToken cancellationToken);
         bool FileExists(string fileName);
@@ -104,10 +104,10 @@ namespace Snap.Core
             }
         }
 
-        public FileStream FileRead([NotNull] string fileName)
+        public FileStream FileRead([NotNull] string fileName, int bufferSize = 8196, bool useAsync = true)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
-            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
         }
 
         public FileStream FileWrite([NotNull] string fileName, bool overwrite = true)
@@ -264,7 +264,7 @@ namespace Snap.Core
 
             var dstStream = new MemoryStream();
 
-            using (var srcStream = File.OpenRead(filename))
+            using (var srcStream = FileRead(filename))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
             }

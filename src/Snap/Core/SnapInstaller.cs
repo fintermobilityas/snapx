@@ -71,7 +71,7 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncReader(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
             {                
                 await UpdateAsync(nupkgAbsoluteFilename, rootAppDirectory, asyncPackageCoreReader, snapProgressSource, cancellationToken);
             }
@@ -154,7 +154,7 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncReader(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
             {
                 await InstallAsync(nupkgAbsoluteFilename, rootAppDirectory, asyncPackageCoreReader, snapProgressSource, cancellationToken);
             }

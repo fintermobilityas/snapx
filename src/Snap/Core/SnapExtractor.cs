@@ -16,7 +16,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapExtractor
     {
-        IAsyncPackageCoreReader GetAsyncReader(string nupkg);
+        IAsyncPackageCoreReader GetAsyncPackageCoreReader(string nupkg);
         Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, 
             CancellationToken cancellationToken = default, ILog logger = null);
         Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory,
@@ -38,13 +38,10 @@ namespace Snap.Core
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
 
-        public IAsyncPackageCoreReader GetAsyncReader(string nupkg)
+        public IAsyncPackageCoreReader GetAsyncPackageCoreReader(string nupkg)
         {
             if (string.IsNullOrEmpty(nupkg)) throw new ArgumentException("Value cannot be null or empty.", nameof(nupkg));
-
-            var stream = File.OpenRead(nupkg);
-            var zipArchive = new ZipArchive(stream, ZipArchiveMode.Read);
-            return new PackageArchiveReader(zipArchive);
+            return new PackageArchiveReader(nupkg);
         }
 
         public Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null)
@@ -52,7 +49,7 @@ namespace Snap.Core
             if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            using (var asyncPackageCoreReader = GetAsyncReader(nupkg))
+            using (var asyncPackageCoreReader = GetAsyncPackageCoreReader(nupkg))
             {
                 return ExtractAsync(asyncPackageCoreReader, destinationDirectory, includeChecksumManifest, cancellationToken, logger);
             }

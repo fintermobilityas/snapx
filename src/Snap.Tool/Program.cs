@@ -120,7 +120,7 @@ namespace Snap.Tool
             sw.Restart();
             try
             {
-                var asyncPackageCoreReader = snapExtractor.GetAsyncReader(nupkgFilename);
+                var asyncPackageCoreReader = snapExtractor.GetAsyncPackageCoreReader(nupkgFilename);
                 if (asyncPackageCoreReader == null)
                 {
                     Logger.Error($"Unknown error reading nupkg: {nupkgFilename}.");

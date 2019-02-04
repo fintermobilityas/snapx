@@ -16,7 +16,6 @@ using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Models;
-using Snap.Logging;
 
 namespace Snap.AnyOS
 {

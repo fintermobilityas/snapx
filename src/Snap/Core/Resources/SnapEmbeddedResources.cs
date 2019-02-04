@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Snap.AnyOS.Unix;
-using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Resources;
 

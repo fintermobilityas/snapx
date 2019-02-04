@@ -14,6 +14,7 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Frameworks;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -34,8 +35,8 @@ namespace Snap.Core
         public string CurrentNupkgFilename { get; set; }
         public SnapApp PreviousSnapApp { get; }
         public SnapApp CurrentSnapApp { get; }
-        public PackageArchiveReader PreviousNupkgPackageArchiveReader { get; set; }
-        public PackageArchiveReader CurrentNupkgPackageArchiveReader { get; set; }
+        public IAsyncPackageCoreReader PreviousNupkgAsyncPackageCoreReader { get; set; }
+        public IAsyncPackageCoreReader CurrentNupkgAsyncPackageCoreReader { get; set; }
 
         SnapPackDeltaReport()
         {
@@ -50,14 +51,14 @@ namespace Snap.Core
             [NotNull] SnapApp currentSnapApp,
             [NotNull] string previousNugpkgFilename,
             [NotNull] string currentNupkgFilename,
-            [NotNull] PackageArchiveReader previousNupkgPackageArchiveReader, [NotNull] PackageArchiveReader currentNupkgPackageArchiveReader) : this()
+            [NotNull] IAsyncPackageCoreReader previousNupkgAsyncPackageCoreReader, [NotNull] IAsyncPackageCoreReader currentNupkgAsyncPackageCoreReader) : this()
         {
             PreviousSnapApp = previousSnapApp ?? throw new ArgumentNullException(nameof(previousSnapApp));
             CurrentSnapApp = currentSnapApp ?? throw new ArgumentNullException(nameof(currentSnapApp));
             PreviousNupkgFilename = previousNugpkgFilename ?? throw new ArgumentNullException(nameof(previousNugpkgFilename));
             CurrentNupkgFilename = currentNupkgFilename ?? throw new ArgumentNullException(nameof(currentNupkgFilename));
-            PreviousNupkgPackageArchiveReader = previousNupkgPackageArchiveReader ?? throw new ArgumentNullException(nameof(previousNupkgPackageArchiveReader));
-            CurrentNupkgPackageArchiveReader = currentNupkgPackageArchiveReader ?? throw new ArgumentNullException(nameof(currentNupkgPackageArchiveReader));
+            PreviousNupkgAsyncPackageCoreReader = previousNupkgAsyncPackageCoreReader ?? throw new ArgumentNullException(nameof(previousNupkgAsyncPackageCoreReader));
+            CurrentNupkgAsyncPackageCoreReader = currentNupkgAsyncPackageCoreReader ?? throw new ArgumentNullException(nameof(currentNupkgAsyncPackageCoreReader));
         }
 
         public void SortAndVerifyIntegrity()
@@ -100,8 +101,8 @@ namespace Snap.Core
 
         public void Dispose()
         {
-            PreviousNupkgPackageArchiveReader?.Dispose();
-            CurrentNupkgPackageArchiveReader?.Dispose();
+            PreviousNupkgAsyncPackageCoreReader?.Dispose();
+            CurrentNupkgAsyncPackageCoreReader?.Dispose();
         }
     }
 
@@ -191,10 +192,10 @@ namespace Snap.Core
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default);
         Task<MemoryStream> ReassambleFullPackageAsync([NotNull] string deltaNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath,
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default);
-        Task<SnapApp> GetSnapAppAsync(PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken = default);
+        Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
         IEnumerable<SnapPackFileChecksum> ParseChecksumManifest(string content);
-        int CountNonNugetFiles(PackageArchiveReader packageArchiveReader);
-        IEnumerable<string> GetFiles([NotNull] PackageArchiveReader packageArchiveReader);
+        Task<int> CountNonNugetFilesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
+        Task<IEnumerable<string>> GetFilesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -207,13 +208,13 @@ namespace Snap.Core
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
         {
-            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapDllFilename),
-            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename)
+            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
 
         public IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
         {
-            _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename)
+            _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
 
         public string NuspecTargetFrameworkMoniker { get; }
@@ -233,8 +234,8 @@ namespace Snap.Core
 
             SnapUniqueTargetPathFolderName = BuildSnapNuspecUniqueFolderName();
             NuspecTargetFrameworkMoniker = NuGetFramework.AnyFramework.Framework;
-            NuspecRootTargetPath = snapFilesystem.PathCombine("lib", NuspecTargetFrameworkMoniker);
-            SnapNuspecTargetPath = snapFilesystem.PathCombine(NuspecRootTargetPath, SnapUniqueTargetPathFolderName);
+            NuspecRootTargetPath = snapFilesystem.PathCombine("lib", NuspecTargetFrameworkMoniker).ForwardSlashesSafe();
+            SnapNuspecTargetPath = snapFilesystem.PathCombine(NuspecRootTargetPath, SnapUniqueTargetPathFolderName).ForwardSlashesSafe();
             ChecksumManifestFilename = "Snap.Checksum.Manifest";
         }
 
@@ -386,7 +387,7 @@ namespace Snap.Core
 
             using (deltaReport)
             {
-                var currentManifestData = await deltaReport.CurrentNupkgPackageArchiveReader.GetManifestMetadataAsync(cancellationToken);
+                var currentManifestData = await deltaReport.CurrentNupkgAsyncPackageCoreReader.GetManifestMetadataAsync(cancellationToken);
                 if (currentManifestData == null)
                 {
                     throw new Exception($"Unable to extract manifest data from current nupkg: {currentNupkgAbsolutePath}.");
@@ -434,7 +435,7 @@ namespace Snap.Core
                         throw new InvalidOperationException($"Fatal error! Expected to replace assembly: {neverGenerateBsDiffThisAssembly}.");
                     }
    
-                    srcStream = await deltaReport.CurrentNupkgPackageArchiveReader.GetStream(file.TargetPath).ReadToEndAsync(cancellationToken, true);
+                    srcStream = await deltaReport.CurrentNupkgAsyncPackageCoreReader.GetStreamAsync(file.TargetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
                     packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, file.TargetPath, string.Empty));
                 }
                 
@@ -444,8 +445,8 @@ namespace Snap.Core
                 foreach (var file in deltaReport.Modified)
                 {
                     var deltaStream = new MemoryStream();
-                    using (var oldDataStream = await deltaReport.PreviousNupkgPackageArchiveReader.GetStream(file.TargetPath).ReadToEndAsync(cancellationToken, true))
-                    using (var newDataStream = await deltaReport.CurrentNupkgPackageArchiveReader.GetStream(file.TargetPath).ReadToEndAsync(cancellationToken, true))
+                    using (var oldDataStream = await deltaReport.PreviousNupkgAsyncPackageCoreReader.GetStreamAsync(file.TargetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
+                    using (var newDataStream = await deltaReport.CurrentNupkgAsyncPackageCoreReader.GetStreamAsync(file.TargetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
                     {
                         SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), deltaStream);
                     }
@@ -480,11 +481,11 @@ namespace Snap.Core
         }
 
         public async Task<IEnumerable<SnapPackFileChecksum>> GetChecksumsManifestAsync(
-            [NotNull] PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken)
+            [NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             var targetPath = _snapFilesystem.PathCombine(SnapNuspecTargetPath, ChecksumManifestFilename);
-            using (var inputStream = await packageArchiveReader.GetStream(targetPath).ReadToEndAsync(cancellationToken, true))
+            using (var inputStream = await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
             using (var streamReader = new StreamReader(inputStream))
             {
                 var checksumManifestUtf8Content = await streamReader.ReadToEndAsync();
@@ -492,13 +493,13 @@ namespace Snap.Core
             }
         }
 
-        public async Task<SnapApp> GetSnapAppAsync([NotNull] PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken = default)
+        public async Task<SnapApp> GetSnapAppAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
 
             var targetPath = _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename);
             
-            using (var assemblyStream = await packageArchiveReader.GetStream(targetPath).ReadToEndAsync(cancellationToken, true))
+            using (var assemblyStream = await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
             using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyStream, new ReaderParameters(ReadingMode.Immediate)))
             {
                 var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader, _snapAppWriter);
@@ -525,10 +526,10 @@ namespace Snap.Core
 
             foreach (var file in nuspec.Files)
             {
-                var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? _snapFilesystem.DirectorySeparator;
-                if (!targetPath.StartsWith(_snapFilesystem.DirectorySeparator))
+                var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? "/";
+                if (!targetPath.StartsWith(_snapFilesystem.DirectorySeparatorChar.ToString()))
                 {
-                    targetPath = $"{_snapFilesystem.DirectorySeparator}{targetPath}";
+                    targetPath = $"{_snapFilesystem.DirectorySeparatorChar}{targetPath}";
                 }
 
                 file.Target = $"$anytarget${targetPath}";
@@ -552,16 +553,16 @@ namespace Snap.Core
                 .OrderBy(x => x.TargetPath);
         }
 
-        public int CountNonNugetFiles([NotNull] PackageArchiveReader packageArchiveReader)
+        public async Task<int> CountNonNugetFilesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
-            return GetFiles(packageArchiveReader).Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x)).Count(x => x.StartsWith(NuspecRootTargetPath));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+            return (await GetFilesAsync(asyncPackageCoreReader, cancellationToken)).Count(x => x.StartsWith(NuspecRootTargetPath));
         }
 
-        public IEnumerable<string> GetFiles([NotNull] PackageArchiveReader packageArchiveReader)
+        public async Task<IEnumerable<string>> GetFilesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
-            return packageArchiveReader.GetFiles().Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+            return (await asyncPackageCoreReader.GetFilesAsync(cancellationToken));
         }
 
         void EnsureCoreRunSupportsThisPlatform()
@@ -622,8 +623,8 @@ namespace Snap.Core
                         throw new NotSupportedException($"Unknown package file type: {x.GetType().FullName}");
                 }
 
-                return (stream, filename, effectivePath: targetPath);
-            }).OrderBy(x => x.effectivePath);
+                return (stream, filename, targetPath: targetPath.ForwardSlashesSafe());
+            }).OrderBy(x => x.targetPath);
 
             foreach (var (inputStream, filename, targetPath) in packageFiles)
             {

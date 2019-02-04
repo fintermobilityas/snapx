@@ -169,14 +169,13 @@ namespace Snap.Tests.Core
                     }
                     .Concat(installSnapAwareApps)
                     .Concat(updateSnapAwareApps)
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();                
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
                     .Where(x => x != installNupkgAbsoluteFilename)
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
               
@@ -286,14 +285,13 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename))
                     }
                     .Concat(snapAwareApps)
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
+                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
                     .Where(x => x != nupkgAbsoluteFilename)
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectorySeperator(x))
                     .OrderBy(x => x)
                     .ToList();
 

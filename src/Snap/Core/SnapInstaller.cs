@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
@@ -70,13 +71,13 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            using (var packageArchiveReader = _snapExtractor.ReadPackage(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncReader(nupkgAbsoluteFilename))
             {                
-                await UpdateAsync(nupkgAbsoluteFilename, rootAppDirectory, packageArchiveReader, snapProgressSource, cancellationToken);
+                await UpdateAsync(nupkgAbsoluteFilename, rootAppDirectory, asyncPackageCoreReader, snapProgressSource, cancellationToken);
             }
         }
 
-        public async Task UpdateAsync([NotNull] string nupkgAbsoluteFilename, [NotNull] string rootAppDirectory, PackageArchiveReader packageArchiveReader, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
+        public async Task UpdateAsync([NotNull] string nupkgAbsoluteFilename, [NotNull] string rootAppDirectory, IAsyncPackageCoreReader asyncPackageCoreReader, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
@@ -85,7 +86,7 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(0);
             Logger.Debug("Attempting to get snap app details from nupkg.");
-            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
    
             Logger.Info($"Updating snap id: {snapApp.Id}. " +
                                  $"Version: {snapApp.Version}. ");
@@ -129,7 +130,8 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(30);
             Logger.Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
-            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, false, cancellationToken))
+            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, rootAppInstallDirectory, false, cancellationToken);
+            if (!extractedFiles.Any())
             {
                 Logger.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
                 return;
@@ -138,7 +140,7 @@ namespace Snap.Core
             snapProgressSource?.Raise(90);
 
             Logger.Info("Performing post install tasks.");
-            var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(cancellationToken);
+            var nuspecReader = await asyncPackageCoreReader.GetNuspecReaderAsync(cancellationToken);
             
             await InvokePostInstall(snapApp, nuspecReader,
                 rootAppDirectory, rootAppInstallDirectory, snapApp.Version, false, cancellationToken);
@@ -152,21 +154,21 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            using (var packageArchiveReader = _snapExtractor.ReadPackage(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncReader(nupkgAbsoluteFilename))
             {
-                await InstallAsync(nupkgAbsoluteFilename, rootAppDirectory, packageArchiveReader, snapProgressSource, cancellationToken);
+                await InstallAsync(nupkgAbsoluteFilename, rootAppDirectory, asyncPackageCoreReader, snapProgressSource, cancellationToken);
             }
         }
 
-        public async Task InstallAsync(string nupkgAbsoluteFilename, string rootAppDirectory, PackageArchiveReader packageArchiveReader, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
+        public async Task InstallAsync(string nupkgAbsoluteFilename, string rootAppDirectory, IAsyncPackageCoreReader asyncPackageCoreReader, ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
             
             snapProgressSource?.Raise(0);
        
             Logger.Debug("Attempting to get snap app details from nupkg.");
-            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
    
             Logger.Info($"Installing snap id: {snapApp.Id}. " +
                                  $"Version: {snapApp.Version}. ");
@@ -201,7 +203,8 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(60);
             Logger.Info($"Extracting nupkg to root app install directory: {rootAppInstallDirectory}.");
-            if (!await _snapExtractor.ExtractAsync(packageArchiveReader, rootAppInstallDirectory, false, cancellationToken))
+            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, rootAppInstallDirectory, false, cancellationToken);
+            if (!extractedFiles.Any())
             {
                 Logger.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
                 return;
@@ -209,7 +212,7 @@ namespace Snap.Core
             
             snapProgressSource?.Raise(90);
             Logger.Info("Performing post install tasks.");
-            var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(cancellationToken);
+            var nuspecReader = await asyncPackageCoreReader.GetNuspecReaderAsync(cancellationToken);
             
             await InvokePostInstall(snapApp, nuspecReader,
                 rootAppDirectory, rootAppInstallDirectory, snapApp.Version, true, cancellationToken);

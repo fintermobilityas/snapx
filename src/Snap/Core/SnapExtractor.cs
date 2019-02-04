@@ -3,28 +3,30 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Common;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using Snap.Core.Resources;
 using Snap.Extensions;
+using Snap.Logging;
 
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapExtractor
     {
-        PackageArchiveReader ReadPackage(string nupkg);
-        Task ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
-        Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory,
-            bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null);
+        IAsyncPackageCoreReader GetAsyncReader(string nupkg);
+        Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null);
+        Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory,
+            bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null);
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
     {
+        readonly ILog _logger = LogProvider.For<SnapExtractor>();
+
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapPack _snapPack;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
@@ -36,7 +38,7 @@ namespace Snap.Core
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
 
-        public PackageArchiveReader ReadPackage(string nupkg)
+        public IAsyncPackageCoreReader GetAsyncReader(string nupkg)
         {
             if (string.IsNullOrEmpty(nupkg)) throw new ArgumentException("Value cannot be null or empty.", nameof(nupkg));
 
@@ -45,70 +47,80 @@ namespace Snap.Core
             return new PackageArchiveReader(zipArchive);
         }
 
-        public Task ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null)
+        public Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null)
         {
             if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            using (var packageArchiveReader = ReadPackage(nupkg))
+            using (var asyncPackageCoreReader = GetAsyncReader(nupkg))
             {
-                return ExtractAsync(packageArchiveReader, destinationDirectory, includeChecksumManifest, cancellationToken, logger);
+                return ExtractAsync(asyncPackageCoreReader, destinationDirectory, includeChecksumManifest, cancellationToken, logger);
             }
         }
 
-        public async Task<bool> ExtractAsync(PackageArchiveReader packageArchiveReader, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILogger logger = null)
+        public async Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory,
+            bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            var nuspecRootTargetPath = _snapPack.NuspecRootTargetPath.ForwardSlashesSafe();
-            var nuspecSnapRootTargetPath = _snapPack.SnapNuspecTargetPath.ForwardSlashesSafe();
-
-            var snapApp = await _snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
             var rootAppDir = _snapFilesystem.DirectoryGetParent(destinationDirectory);
 
-            string Extractor(string sourcePath, string targetPath, Stream sourceStream)
+            var snapFilesCount = await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, cancellationToken);
+            if (snapFilesCount <= 0)
             {
-                var isSnapRootTargetItem = sourcePath.StartsWith(nuspecSnapRootTargetPath);
+                logger?.Error($"Unable to find any files in target path: {_snapPack.NuspecRootTargetPath}.");
+                return new List<string>();
+            }
 
+            var extractedFiles = new List<string>();
+
+            _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
+         
+            foreach (var sourcePath in await _snapPack.GetFilesAsync(asyncPackageCoreReader, cancellationToken))
+            {
+                var isSnapItem = sourcePath.StartsWith(_snapPack.NuspecRootTargetPath);
+                if (!isSnapItem)
+                {
+                    continue;
+                }
+
+                var isSnapRootTargetItem = sourcePath.StartsWith(_snapPack.SnapNuspecTargetPath);
+                
                 if (!includeChecksumManifest 
                     && isSnapRootTargetItem 
                     && sourcePath.EndsWith(_snapPack.ChecksumManifestFilename))
                 {
-                    return null;
+                    continue;
                 }
-                
-                var dstFilename = isSnapRootTargetItem ? 
-                    _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(sourcePath)) :
-                    targetPath.Replace(_snapFilesystem.PathEnsureThisOsDirectorySeperator(nuspecRootTargetPath), string.Empty);
 
-                var dstDirectory = _snapFilesystem.PathGetDirectoryName(dstFilename);
-
-                _snapFilesystem.DirectoryCreateIfNotExists(dstDirectory);
-
-                using (var targetStream = _snapFilesystem.FileWrite(dstFilename))
+                string dstFilename;
+                if (isSnapRootTargetItem)
                 {
-                    sourceStream.CopyTo(targetStream);
+                    dstFilename = _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(sourcePath));
+                }
+                else
+                {
+                    var targetPath = sourcePath.Substring(_snapPack.NuspecRootTargetPath.Length + 1);
+                    dstFilename = _snapFilesystem.PathCombine(destinationDirectory,  
+                        _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(targetPath));
                 }
 
-                return dstFilename;
+                var thisDestinationDir = _snapFilesystem.PathGetDirectoryName(dstFilename);
+                _snapFilesystem.DirectoryCreateIfNotExists(thisDestinationDir);
+
+                var srcStream = await asyncPackageCoreReader.GetStreamAsync(sourcePath, cancellationToken);
+
+                await _snapFilesystem.FileWriteAsync(srcStream, dstFilename, cancellationToken);
+
+                extractedFiles.Add(dstFilename);
             }
+           
+            var coreRunFilename = await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, snapApp.Id, rootAppDir, cancellationToken);
+            extractedFiles.Add(coreRunFilename);
 
-            var files = packageArchiveReader.GetFiles().Where(x => x.StartsWith(nuspecRootTargetPath)).ToList();
-            if (!files.Any())
-            {
-                logger?.LogError($"Unable to find any files in target path: {nuspecRootTargetPath}.");
-                return false;
-            }
-
-            _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
-
-            await packageArchiveReader.CopyFilesAsync(destinationDirectory, files, Extractor, logger ?? NullLogger.Instance, cancellationToken);
-
-            await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, 
-                snapApp.Id, rootAppDir, cancellationToken);
-
-            return true;
+            return extractedFiles;
         }
 
     }

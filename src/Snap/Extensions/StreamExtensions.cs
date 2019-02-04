@@ -20,6 +20,12 @@ namespace Snap.Extensions
             #endif
         }
 
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Task<Stream> srcStreamTask, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = false)
+        {
+            var srcStream = await srcStreamTask;
+            return await srcStream.ReadToEndAsync(cancellationToken, leaveSrcStreamOpen);
+        }
+
         public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = false)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));

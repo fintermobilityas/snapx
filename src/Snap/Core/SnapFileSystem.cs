@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -18,7 +17,7 @@ namespace Snap.Core
     internal interface ISnapFilesystem
     {
         char FixedNewlineChar { get; }
-        string DirectorySeparator { get; }
+        char DirectorySeparatorChar { get; }
         void DirectoryCreate(string directory);
         void DirectoryCreateIfNotExists(string directory);
         bool DirectoryExists(string directory);
@@ -30,7 +29,6 @@ namespace Snap.Core
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
         IEnumerable<string> DirectoryGetAllFiles(string rootPath);
-        string PathGetFileName(string filename);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
         Task FileWriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
@@ -51,7 +49,9 @@ namespace Snap.Core
         string PathGetDirectoryName(string path);
         string PathGetFullPath(string path);
         string PathGetExtension(string path);
-        string PathEnsureThisOsDirectorySeperator(string path);
+        string PathNormalize([NotNull] string path);
+        string PathEnsureThisOsDirectoryPathSeperator([NotNull] string path);
+        string PathGetFileName(string filename);
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -59,7 +59,36 @@ namespace Snap.Core
         static readonly ILog Logger = LogProvider.For<SnapFilesystem>();
 
         public char FixedNewlineChar => '\n';
-        public string DirectorySeparator => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? @"\" : "/";
+        public char DirectorySeparatorChar => Path.DirectorySeparatorChar;
+
+        public string PathNormalize(string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (!path.EndsWith(DirectorySeparatorChar.ToString()))
+            {
+                path += DirectorySeparatorChar.ToString();
+            }
+
+            return PathGetFullPath(path);
+        }
+
+        public string PathEnsureThisOsDirectoryPathSeperator(string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return path.TrailingSlashesSafe();
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return path.ForwardSlashesSafe();
+            }
+
+            throw new PlatformNotSupportedException();
+        }
 
         public async Task FileWriteStringContentAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
         {
@@ -87,7 +116,7 @@ namespace Snap.Core
             var fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
             if (overwrite)
             {
-                fileStream.SetLength(0);                
+                fileStream.SetLength(0);
             }
             return fileStream;
         }
@@ -358,7 +387,7 @@ namespace Snap.Core
             if (path4 == null) throw new ArgumentNullException(nameof(path4));
             return Path.Combine(path1, path2, path3, path4);
         }
-        
+
         public string PathGetDirectoryName([NotNull] string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
@@ -377,31 +406,11 @@ namespace Snap.Core
             return Path.GetExtension(path);
         }
 
-        public string PathEnsureThisOsDirectorySeperator([NotNull] string path)
-        {
-            if (path == null) throw new ArgumentNullException(nameof(path));
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return path.TrailingSlashesSafe();
-            }
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return path.ForwardSlashesSafe();
-            }
-
-            throw new PlatformNotSupportedException();
-        }
-
         public string DirectoryGetParent([NotNull] string path)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            if (!path.EndsWith(DirectorySeparator))
-            {
-                path += DirectorySeparator;
-            }
+            path = PathNormalize(path);
 
             var parentDirectory = Directory.GetParent(path)?.Parent?.FullName;
 

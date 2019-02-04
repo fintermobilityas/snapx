@@ -5,17 +5,27 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Configuration;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using Snap.Core.Models;
 using Snap.NuGet;
 
 namespace Snap.Extensions
 {
     internal static class NuGetExtensions
-    {        
-        internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this PackageArchiveReader packageArchiveReader, CancellationToken cancellationToken)
+    {
+        internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
-            if (packageArchiveReader == null) throw new ArgumentNullException(nameof(packageArchiveReader));
-            using (var nuspecStream = await packageArchiveReader.GetNuspec().ReadToEndAsync(cancellationToken, true))
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken, true))
+            {
+                return new NuspecReader(nuspecStream);
+            }
+        }
+
+        internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
+        {
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken, true))
             {
                 return Manifest.ReadFrom(nuspecStream, false)?.Metadata;
             }

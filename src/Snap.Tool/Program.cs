@@ -123,14 +123,14 @@ namespace Snap.Tool
             sw.Restart();
             try
             {
-                var packageArchiveReader = snapExtractor.ReadPackage(nupkgFilename);
-                if (packageArchiveReader == null)
+                var asyncPackageCoreReader = snapExtractor.GetAsyncReader(nupkgFilename);
+                if (asyncPackageCoreReader == null)
                 {
                     Logger.Error($"Unknown error reading nupkg: {nupkgFilename}.");
                     return -1;
                 }
 
-                var packageIdentity = await packageArchiveReader.GetIdentityAsync(CancellationToken.None);
+                var packageIdentity = await asyncPackageCoreReader.GetIdentityAsync(CancellationToken.None);
                 var rootAppDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, packageIdentity.Id);
 
                 await snapInstaller.InstallAsync(nupkgFilename, rootAppDirectory);

@@ -34,8 +34,10 @@ namespace Snap.Core
         public string CurrentNupkgFilename { get; set; }
         public SnapApp PreviousSnapApp { get; }
         public SnapApp CurrentSnapApp { get; }
-        public IAsyncPackageCoreReader PreviousNupkgAsyncPackageCoreReader { get; set; }
-        public IAsyncPackageCoreReader CurrentNupkgAsyncPackageCoreReader { get; set; }
+        public IAsyncPackageCoreReader PreviousNupkgAsyncPackageCoreReader { get; }
+        public IAsyncPackageCoreReader CurrentNupkgAsyncPackageCoreReader { get; }
+        public string PreviousNupkgSha1Checksum { get; }
+        public string CurrentNupkgSha1Checksum { get; }
 
         SnapPackDeltaReport()
         {
@@ -46,12 +48,16 @@ namespace Snap.Core
         }
 
         public SnapPackDeltaReport(
+            [NotNull] string previousNupkgSha1Checksum,
+            [NotNull] string currentNupkgSha1Checksum,
             [NotNull] SnapApp previousSnapApp,
             [NotNull] SnapApp currentSnapApp,
             [NotNull] string previousNugpkgFilename,
             [NotNull] string currentNupkgFilename,
             [NotNull] IAsyncPackageCoreReader previousNupkgAsyncPackageCoreReader, [NotNull] IAsyncPackageCoreReader currentNupkgAsyncPackageCoreReader) : this()
         {
+            PreviousNupkgSha1Checksum = previousNupkgSha1Checksum ?? throw new ArgumentNullException(nameof(previousNupkgSha1Checksum));
+            CurrentNupkgSha1Checksum = currentNupkgSha1Checksum ?? throw new ArgumentNullException(nameof(currentNupkgSha1Checksum));
             PreviousSnapApp = previousSnapApp ?? throw new ArgumentNullException(nameof(previousSnapApp));
             CurrentSnapApp = currentSnapApp ?? throw new ArgumentNullException(nameof(currentSnapApp));
             PreviousNupkgFilename = previousNugpkgFilename ?? throw new ArgumentNullException(nameof(previousNugpkgFilename));
@@ -278,6 +284,10 @@ namespace Snap.Core
 
             var previousNupkgStream = _snapFilesystem.FileRead(previousNupkgAbsolutePath);
             var currentNupkgMemoryStream = _snapFilesystem.FileRead(currentNupkgAbsolutePath);
+
+            var previousNupkgSha1Checksum = _snapCryptoProvider.Sha1(previousNupkgStream);
+            var currentNupkgSha1Checksum = _snapCryptoProvider.Sha1(currentNupkgMemoryStream);
+
             var previousNupkgPackageArchiveReader = new PackageArchiveReader(previousNupkgStream);
             var currentNupkgPackageArchiveReader = new PackageArchiveReader(currentNupkgMemoryStream);
             
@@ -318,10 +328,12 @@ namespace Snap.Core
             var currentChecksums = (await GetChecksumsManifestAsync(currentNupkgPackageArchiveReader, cancellationToken)).ToList();
 
             var deltaReport = new SnapPackDeltaReport(
+                previousNupkgSha1Checksum,
+                currentNupkgSha1Checksum,
                 previousSnapApp,
                 currentSnapApp,
-                previousNupkgAbsolutePath,
-                currentNupkgAbsolutePath,
+                previousSnapApp.BuildNugetLocalFilename(),
+                currentSnapApp.BuildNugetLocalFilename(),
                 previousNupkgPackageArchiveReader,
                 currentNupkgPackageArchiveReader);
 
@@ -396,7 +408,6 @@ namespace Snap.Core
 
                 var snapApp = new SnapApp(deltaReport.CurrentSnapApp)
                 {
-                    DeltaSrcFilename = deltaReport.PreviousSnapApp.BuildNugetLocalFilename(),
                     DeltaReport = new SnapAppDeltaReport(deltaReport)
                 };
 
@@ -627,7 +638,7 @@ namespace Snap.Core
 
             foreach (var (inputStream, filename, targetPath) in packageFiles)
             {
-                using (var shaStream = await inputStream.ReadToEndAsync(cancellationToken, leaveSrcStreamOpen: true))
+                using (var shaStream = await inputStream.ReadToEndAsync(cancellationToken, true))
                 {
                     stringBuilder.Append($"{targetPath}:{filename}:{_snapCryptoProvider.Sha1(shaStream)}");
                     stringBuilder.Append(_snapFilesystem.FixedNewlineChar);

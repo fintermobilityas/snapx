@@ -40,19 +40,6 @@ namespace Snap.Core.Models
         }
     }
 
-    public sealed class SnapsCertificate
-    {
-        public string Name { get; set; }
-        public string Csn { get; set; }
-        public string Sha256 { get; set; }
-
-        [UsedImplicitly]
-        public SnapsCertificate()
-        {
-
-        }
-    }
-
     public sealed class SnapsTarget
     {
         public OSPlatform Os { get; set; }

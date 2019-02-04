@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using Snap.Core.Resources;
-using Snap.Extensions;
 using Snap.Logging;
 
 namespace Snap.Core
@@ -18,7 +17,8 @@ namespace Snap.Core
     internal interface ISnapExtractor
     {
         IAsyncPackageCoreReader GetAsyncReader(string nupkg);
-        Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null);
+        Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, bool includeChecksumManifest = false, 
+            CancellationToken cancellationToken = default, ILog logger = null);
         Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory,
             bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null);
     }

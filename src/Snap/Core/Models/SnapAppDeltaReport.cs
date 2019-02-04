@@ -11,6 +11,10 @@ namespace Snap.Core.Models
         public List<string> Modified { get; set; }
         public List<string> Unmodified { get; set; }
         public List<string> Deleted { get; set; }
+        public string PreviousFullNupkgFilename { get; set; }
+        public string CurrentFullNupkgFilename { get; set; }
+        public string PreviousFullNupkgSha1Checksum { get; set; }
+        public string CurrentFullNupkgSha1Checksum { get; set; }
 
         public SnapAppDeltaReport()
         {
@@ -23,7 +27,12 @@ namespace Snap.Core.Models
         public SnapAppDeltaReport([NotNull] SnapAppDeltaReport deltaReport) : this()
         {
             if (deltaReport == null) throw new ArgumentNullException(nameof(deltaReport));
-            
+                        
+            PreviousFullNupkgFilename = deltaReport.PreviousFullNupkgFilename;
+            CurrentFullNupkgFilename = deltaReport.CurrentFullNupkgFilename;
+            PreviousFullNupkgSha1Checksum = deltaReport.PreviousFullNupkgSha1Checksum;
+            CurrentFullNupkgSha1Checksum = deltaReport.CurrentFullNupkgSha1Checksum;
+
             New.AddRange(deltaReport.New);
             Modified.AddRange(deltaReport.Modified);
             Unmodified.AddRange(deltaReport.Unmodified);
@@ -35,7 +44,12 @@ namespace Snap.Core.Models
         internal SnapAppDeltaReport([NotNull] SnapPackDeltaReport deltaReport) : this()
         {
             if (deltaReport == null) throw new ArgumentNullException(nameof(deltaReport));
-            
+
+            PreviousFullNupkgFilename = deltaReport.PreviousNupkgFilename;
+            CurrentFullNupkgFilename = deltaReport.CurrentNupkgFilename;
+            PreviousFullNupkgSha1Checksum = deltaReport.PreviousNupkgSha1Checksum;
+            CurrentFullNupkgSha1Checksum = deltaReport.CurrentNupkgSha1Checksum;
+
             New.AddRange(deltaReport.New.Select(x => x.TargetPath));
             Modified.AddRange(deltaReport.Modified.Select(x => x.TargetPath));
             Unmodified.AddRange(deltaReport.Unmodified.Select(x => x.TargetPath));

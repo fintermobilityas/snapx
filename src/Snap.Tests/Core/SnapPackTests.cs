@@ -643,8 +643,14 @@ namespace Snap.Tests.Core
             {
                 var snapAppDelta = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader);
                 
+                Assert.Contains("delta", snapAppDelta.BuildNugetLocalFilename());
+
                 Assert.True(snapAppDelta.Delta);
-                Assert.Equal(snapAppDelta.DeltaSrcFilename, previousNupkgSnapApp.BuildNugetLocalFilename());
+                Assert.NotNull(snapAppDelta.DeltaReport);
+                Assert.Equal(snapAppDelta.DeltaReport.PreviousFullNupkgFilename, previousNupkgSnapApp.BuildNugetLocalFilename());
+                Assert.Equal(snapAppDelta.DeltaReport.CurrentFullNupkgFilename, currentNupkgSnapApp.BuildNugetLocalFilename());
+                Assert.Equal(40, snapAppDelta.DeltaReport.PreviousFullNupkgSha1Checksum.Length);
+                Assert.Equal(40, snapAppDelta.DeltaReport.CurrentFullNupkgSha1Checksum.Length);
 
                 var expectedLayout = new List<string>
                 {

@@ -13,6 +13,8 @@ namespace Snap.Core
     {
         string Sha512(byte[] content);
         string Sha512(Stream content);
+        string Sha1(StringBuilder content, Encoding encoding);
+        string Sha1(byte[] content);
         string Sha1(Stream content);
         string Sha1(AssemblyDefinition assemblyDefinition);
     }
@@ -39,16 +41,34 @@ namespace Snap.Core
             return HashToString(hash);
         }
 
-        public string Sha1(Stream content)
+        public string Sha1([NotNull] StringBuilder content, [NotNull] Encoding encoding)
         {
-            var sha512 = SHA1.Create();
-            var hash = sha512.ComputeHash(content);
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
+            return Sha1(encoding.GetBytes(content.ToString()));
+        }
+
+        public string Sha1([NotNull] byte[] content)
+        {
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            var sha1 = SHA1.Create();
+            var hash = sha1.ComputeHash(content);
 
             return HashToString(hash);
         }
 
-        public string Sha1(AssemblyDefinition assemblyDefinition)
+        public string Sha1([NotNull] Stream content)
         {
+            if (content == null) throw new ArgumentNullException(nameof(content));
+            var sha1 = SHA1.Create();
+            var hash = sha1.ComputeHash(content);
+
+            return HashToString(hash);
+        }
+
+        public string Sha1([NotNull] AssemblyDefinition assemblyDefinition)
+        {
+            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
             using (var outputStream = new MemoryStream())
             {
                 assemblyDefinition.Write(outputStream);

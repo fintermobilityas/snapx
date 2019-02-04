@@ -17,8 +17,7 @@ namespace Snap.Core.Models
         public SnapTarget Target { get; set; }
         public List<SnapChannel> Channels { get; set; }
         [YamlIgnore]
-        public bool Delta => DeltaSrcFilename != null;
-        public string DeltaSrcFilename { get; set; }
+        public bool Delta => DeltaReport != null;
         public SnapAppDeltaReport DeltaReport { get; set; }
 
         [UsedImplicitly]
@@ -32,8 +31,7 @@ namespace Snap.Core.Models
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
-            DeltaSrcFilename = app.DeltaSrcFilename;
-            DeltaReport = Delta ? new SnapAppDeltaReport(app.DeltaReport) : null; 
+            DeltaReport = app.Delta ? new SnapAppDeltaReport(app.DeltaReport) : null;
             if (app.Target != null)
             {
                 Target = new SnapTarget(app.Target);

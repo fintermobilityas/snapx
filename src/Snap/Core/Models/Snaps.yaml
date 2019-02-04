@@ -1,20 +1,25 @@
 ﻿channels:
   - name: test
-    push-feed: myget.private
-    update-feed: myget.public.readonly
-    update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+    pushFeed: nuget.org
+    updateFeed: nuget.org
+  - name: staging
+    pushFeed: nuget.org
+    updateFeed: nuget.org
   - name: production
-    push-feed: myget.private
-    update-feed: myget.public.readonly
-    update-feed-dynamic: https://myawesomesite.com/returns/a/random/nuget/mirror
+    pushFeed: nuget.org
+    updateFeed: nuget.org
 apps:
-- id: demoapp
-  version: 1.0.0
-  certificate: safenet-ev-codesign
-  channels: [test, production]
-  targets:
-    - name: demoapp-win-x64
-      os: windows
-      nuspec: test.nuspec
-      framework: netcoreapp2.1
-      rid: win-x64
+  - id: demoapp
+    version: 1.0.0
+    channels:
+      - test
+      - staging
+      - production
+    targets:
+      - os: windows
+        framework: netcoreapp2.1
+        rid: win-x64
+        nuspec: demoapp.nuspec
+generic:
+  packages: snap/packages
+  nuspecs: snap/nuspecs

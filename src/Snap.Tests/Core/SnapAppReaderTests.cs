@@ -113,6 +113,12 @@ namespace Snap.Tests.Core
 
             Assert.Equal(snapAppsBefore.Channels.Count, snapAppsAfter.Channels.Count);
             Assert.Equal(snapAppsBefore.Apps.Count, snapAppsAfter.Apps.Count);
+            Assert.NotNull(snapAppsBefore.Generic);
+            Assert.NotNull(snapAppsAfter.Generic);
+            
+            // Generic.
+            Assert.Equal(snapAppsBefore.Generic.Nuspecs, snapAppsAfter.Generic.Nuspecs);
+            Assert.Equal(snapAppsBefore.Generic.Packages, snapAppsAfter.Generic.Packages);
             
             // Channels.
             for (var index = 0; index < snapAppsBefore.Channels.Count; index++)

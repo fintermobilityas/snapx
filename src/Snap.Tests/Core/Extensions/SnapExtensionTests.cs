@@ -607,20 +607,34 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApp = new SnapApp
             {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0),                
                 Channels = new List<SnapChannel>
                 {
                     new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
                     new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"},
                     new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgMirrorFeed, Name = "production"}
                 },
-                Target = new SnapTarget()
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Rid = "win-x64",
+                    Nuspec = "test.nuspec",
+                    Framework = "netcoreapp2.1"                   
+                }
             };
 
             var snapApps = new SnapApps
             {
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> { new SnapsApp(snapApp) }
+                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
+                Generic = new SnapAppsGeneric
+                {
+                    Packages = "./packages"
+                }
             };
+            
+            var a = new SnapAppWriter().ToSnapAppsYamlString(snapApps);
 
             var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(new List<PackageSource>
             {

@@ -34,6 +34,15 @@ namespace Snap.Tests.Core
             var snapAppYamlStr = _snapAppWriter.ToSnapAppYamlString(snapApp);
             Assert.NotNull(snapAppYamlStr);
         }
+        
+        [Fact]
+        public void TestToSnapAppsYamlString()
+        {
+            var snapApps = _baseFixture.BuildSnapApps();
+
+            var snapAppsYamlStr = _snapAppWriter.ToSnapAppsYamlString(snapApps);
+            Assert.NotNull(snapAppsYamlStr);
+        }
 
         [Fact]
         public void TestBuildSnapAppAssembly()

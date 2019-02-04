@@ -97,7 +97,12 @@ namespace Snap.Shared.Tests
             return new SnapApps
             {
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> { new SnapsApp(snapApp) }
+                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
+                Generic = new SnapAppsGeneric
+                {
+                    Nuspecs = "snap/nuspecs",
+                    Packages = "snap/packages"
+                }
             };
         }
 

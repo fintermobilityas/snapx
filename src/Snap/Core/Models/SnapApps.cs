@@ -69,7 +69,6 @@ namespace Snap.Core.Models
         public SemanticVersion Version { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
-        public bool Delta { get; set; }
 
         [UsedImplicitly]
         public SnapsApp()
@@ -83,9 +82,26 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
             Version = snapApp.Version;
-            Delta = snapApp.Delta;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
+        }
+    }
+
+    public sealed class SnapAppsGeneric
+    {
+        public string Packages { get; set; }
+        public string Nuspecs { get; set; }
+
+        public SnapAppsGeneric()
+        {
+            
+        }
+
+        public SnapAppsGeneric([NotNull] SnapAppsGeneric generic)
+        {
+            if (generic == null) throw new ArgumentNullException(nameof(generic));
+            Packages = generic.Packages;
+            Nuspecs = generic.Nuspecs;
         }
     }
 
@@ -94,11 +110,13 @@ namespace Snap.Core.Models
     {
         public List<SnapsChannel> Channels { get; set; }
         public List<SnapsApp> Apps { get; set; }
+        public SnapAppsGeneric Generic { get; set; }
 
         public SnapApps()
         {
             Channels = new List<SnapsChannel>();
             Apps = new List<SnapsApp>();
+            Generic = new SnapAppsGeneric();
         }
 
         internal SnapApps([NotNull] SnapApp snapApp)
@@ -106,6 +124,7 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
             Apps = new List<SnapsApp> { new SnapsApp(snapApp) };
+            Generic = new SnapAppsGeneric();
         }
 
     }

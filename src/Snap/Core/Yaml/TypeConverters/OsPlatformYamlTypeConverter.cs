@@ -32,10 +32,6 @@ namespace Snap.Core.Yaml.TypeConverters
             {
                 osPlatform = "unknown";
             }
-            else if (osPlatform.Equals("anyos", StringComparison.InvariantCultureIgnoreCase))
-            {
-                osPlatform = "anyos";            
-            } 
 
             return OSPlatform.Create(osPlatform.ToUpperInvariant());
         }

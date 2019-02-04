@@ -342,21 +342,6 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Theory]
-        [InlineData("linux", false)]
-        [InlineData("anyos", true)]
-        [InlineData("ANYOS", true)]
-        [InlineData("AnYOS", true)]
-        public void TestIsAnyOs(string osPlatform, bool expectedAnyOsPlatform)
-        {
-            if (expectedAnyOsPlatform)
-            {
-                Assert.True(OSPlatform.Create(osPlatform).IsAnyOs());
-                return;
-            }
-            Assert.False(OSPlatform.Create(osPlatform).IsAnyOs());
-        }
-
-        [Theory]
         [InlineData("snap://www.example.org", "http://www.example.org/")]
         [InlineData("snaps://www.example.org", "https://www.example.org/")]
         [InlineData("http://www.example.org", null)]

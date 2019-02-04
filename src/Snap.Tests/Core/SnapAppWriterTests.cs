@@ -50,7 +50,6 @@ namespace Snap.Tests.Core
         [Theory]
         [InlineData("WINDOWS")]
         [InlineData("LINUX")]
-        [InlineData("ANYOS")]
         public async Task TestOptimizeSnapDllForPackageArchive(string osPlatformStr)
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);
@@ -68,15 +67,6 @@ namespace Snap.Tests.Core
                     (optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName, true), true);
 
                 Assert.NotNull(optimizedEmbeddedResources);
-
-                if (osPlatform.IsAnyOs())
-                {
-                    Assert.NotNull(optimizedEmbeddedResources.CoreRunLinux);
-                    Assert.NotNull(optimizedEmbeddedResources.CoreRunWindows);
-                    Assert.True(optimizedEmbeddedResources.CoreRunLinux.Length > 0);
-                    Assert.True(optimizedEmbeddedResources.CoreRunWindows.Length > 0);
-                    return;
-                }
 
                 Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
 

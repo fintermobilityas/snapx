@@ -84,11 +84,6 @@ namespace Snap.Core
                 throw new PlatformNotSupportedException();
             }
 
-            if (osPlatform.IsAnyOs())
-            {
-                return assemblyDefinition;
-            }
-
             var cecilReflector = new CecilAssemblyReflector(assemblyDefinition);
             var cecilResourceFlector = cecilReflector.GetResourceReflector();
 

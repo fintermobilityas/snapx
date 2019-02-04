@@ -23,8 +23,6 @@ namespace Snap.Extensions
         static readonly Regex AppNameRegex = new Regex(@"^\w+([_.]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
-        static readonly OSPlatform AnyOs = OSPlatform.Create("AnyOs");
-
         internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -400,14 +398,10 @@ namespace Snap.Extensions
             return snapFilesystem.PathGetDirectoryName(assembly.Location).GetSnapStubExecutableFullPath(snapFilesystem, snapAppReader, snapAppWriter, out stubExecutableExeName);
         }
 
-        internal static bool IsAnyOs(this OSPlatform oSPlatform)
-        {
-            return oSPlatform.ToString().Equals(AnyOs.ToString(), StringComparison.InvariantCultureIgnoreCase);
-        }
 
         internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)
         {
-            return oSPlatform == OSPlatform.Linux || oSPlatform == OSPlatform.Windows || oSPlatform.IsAnyOs();
+            return oSPlatform == OSPlatform.Linux || oSPlatform == OSPlatform.Windows;
         }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
 
@@ -23,10 +23,5 @@
     <PropertyGroup>
         <SnapCoreUnitTestFilename>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)\Snap.ILRepacked.UnitTest.dll</SnapCoreUnitTestFilename>
     </PropertyGroup>
-    
-    <Target Name="CopyDependenciesForUnitTests" AfterTargets="Build" Condition="$(IsNetCoreApp)">
-        <Message Importance="high" Text="$(AssemblyName): Copying unit test dlls." />
-        <Copy SourceFiles="..\Snap.Update\$(OutputPath)Snap.Update.dll" DestinationFiles="$(MSBuildThisFileDirectory)$(OutputPath)Snap.Update.UnitTest.dll" />
-    </Target>
 
 </Project>

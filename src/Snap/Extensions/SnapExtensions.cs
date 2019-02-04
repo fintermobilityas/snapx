@@ -50,8 +50,26 @@ namespace Snap.Extensions
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return snapApp.BuildNugetUpstreamPackageIdImpl(snapApp.Delta);
+        }
+        
+        internal static string BuildFullNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return snapApp.BuildNugetUpstreamPackageIdImpl(false);
+        }
+        
+        internal static string BuildDeltaNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return snapApp.BuildNugetUpstreamPackageIdImpl(true);
+        }
+        
+        static string BuildNugetUpstreamPackageIdImpl([NotNull] this SnapApp snapApp, bool delta = false)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
-            var fullOrDelta = snapApp.Delta ? "delta" : "full";
+            var fullOrDelta = delta ? "delta" : "full";
             return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Target.Rid}-{channel.Name}".ToLowerInvariant();
         }
 

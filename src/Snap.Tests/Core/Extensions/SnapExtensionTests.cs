@@ -110,6 +110,67 @@ namespace Snap.Tests.Core.Extensions
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
+        [Fact]
+        public void TestBuildFullNugetUpstreamPackageId()
+        {
+            var currentChannel = new SnapChannel
+            {
+                Name = "test",
+                Current = true
+            };
+
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                Channels = new List<SnapChannel>
+                {
+                    currentChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+            var expectedPackageId = $"{snapApp.Id}-full-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildFullNugetUpstreamPackageId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildDeltaNugetUpstreamPackageId()
+        {
+            var currentChannel = new SnapChannel
+            {
+                Name = "test",
+                Current = true
+            };
+
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                Channels = new List<SnapChannel>
+                {
+                    currentChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}-delta-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildDeltaNugetUpstreamPackageId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

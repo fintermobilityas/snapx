@@ -59,7 +59,7 @@ namespace Snap.NuGet
             if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
             if (source == null) throw new ArgumentNullException(nameof(source));
 
-            return await DownloadByPackageIdentityAsync(source, packageIdentity, string.Empty, cancellationToken);
+            return await DownloadByPackageIdentityAsync(source, packageIdentity, packagesFolder, cancellationToken);
         }
 
         public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, [NotNull] ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)

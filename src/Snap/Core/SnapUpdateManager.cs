@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Versioning;
+using NuGet.Packaging;
 using Snap.AnyOS;
 using Snap.Core.Models;
+using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Logging;
@@ -17,9 +19,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapUpdateManager
     {
-        Task<SemanticVersion> GetLatestVersionAsync(CancellationToken cancellationToken = default);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
-        Task SwitchChannelAsync(SnapApp snapApp, string newChannelName, CancellationToken cancellationToken = default);
     }
 
     public sealed class SnapUpdateManager : ISnapUpdateManager
@@ -31,12 +31,14 @@ namespace Snap.Core
         static readonly ILog Logger = LogProvider.For<SnapUpdateManager>();
 
         readonly string _workingDirectory;
+        readonly string _rootDirectory;
+        readonly string _packagesDirectory;
         readonly SnapApp _snapApp;
         readonly INugetService _nugetService;
-        readonly string _nugetPackageId;
         readonly INuGetPackageSources _nugetPackageSources;
         readonly ISnapOs _snapOs;
-        readonly string _rootDirectory;
+        readonly ISnapInstaller _snapInstaller;
+        readonly ISnapPack _snapPack;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -53,20 +55,26 @@ namespace Snap.Core
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }
 
-        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null, ISnapOs snapOs = null)
+        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null, 
+            ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null, 
+            ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
+            ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
         {
-            _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
-            _rootDirectory = Path.Combine(_workingDirectory, "..\\");
-            _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
-            _nugetService = nugetService ?? new NugetService(new NugetLogger());
             _snapOs = snapOs ?? SnapOs.AnyOs;
-            _nugetPackageId = _snapApp.BuildNugetUpstreamPackageId();
-            _nugetPackageSources = _snapApp.BuildNugetSources();
-
-            if (_nugetPackageId.ToSemanticVersionSafe() == null)
-            {
-                throw new Exception("Unable to determine nuget package version.");
-            }
+            _rootDirectory = _snapOs.Filesystem.DirectoryGetParent(_workingDirectory);
+            _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
+            _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
+            _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
+            _nugetPackageSources = snapApp.BuildNugetSources();
+            
+            _nugetService = nugetService ?? new NugetService(new NugetLogger());
+            snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
+            snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
+            snapAppReader = snapAppReader ?? new SnapAppReader();
+            snapAppWriter = snapAppWriter ?? new SnapAppWriter();
+            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
+            snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
+            _snapInstaller = snapInstaller ?? new SnapInstaller(snapExtractor, _snapPack, _snapOs.Filesystem, _snapOs);
 
             if (!_nugetPackageSources.Items.Any())
             {
@@ -77,37 +85,215 @@ namespace Snap.Core
             {
                 throw new Exception("Nuget package sources settings cannot be null.");
             }
-        }
-
-        public async Task<SemanticVersion> GetLatestVersionAsync(CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                var packages = await _nugetService.FindByPackageNameAsync(_nugetPackageId, false, _nugetPackageSources, cancellationToken);
-                var mostRecentPackage = packages.Where(x => x.Identity.Version > _snapApp.Version).OrderByDescending(x => x.Identity.Version).FirstOrDefault();
-                return mostRecentPackage?.Identity.Version;
-            }
-            catch (Exception e)
-            {
-                Logger.ErrorException("Unable to check for updates", e);
-                return null;
-            }
+            
+            _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
         }
 
         public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken = default)
         {
-            var latestReleaseAsync = await GetLatestVersionAsync(cancellationToken);
-            if (latestReleaseAsync == null)
+            try
+            {
+                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception thrown when attempting to update to latest release.", e);
+                return null;
+            }
+        }
+
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
+        {
+            snapProgressSource?.Raise(0);
+
+            var deltaUpdates = (await _nugetService.FindByPackageNameAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+                .Where(x => x.Identity.Version > _snapApp.Version)
+                .OrderBy(x => x.Identity.Version)
+                .ToList();
+
+            snapProgressSource?.Raise(10);
+
+            if (!deltaUpdates.Any())
+            {
+                Logger.Info("Delta updates was not found, falling back to full update.");
+                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+            }
+
+            snapProgressSource?.Raise(20);
+
+            Logger.Info($"Delta updates found: {string.Join(",", deltaUpdates.Select(x => x.Identity.Version))}. Starting paralell downloads.");
+
+            var downloadResultsTasks =
+                deltaUpdates.Select(x => _nugetService.DownloadByPackageIdentityAsync(x.Identity, x.Source, _packagesDirectory, cancellationToken));
+            var downloadResourceResults = await Task.WhenAll(downloadResultsTasks);
+            var downloadsFailed = downloadResourceResults.Where(x => x.IsMaybeASuccessfullDownloadSafe()).ToList();
+            if (downloadsFailed.Any())
+            {
+                Logger.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. Falling back to full installation.");
+                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+            }
+
+            snapProgressSource?.Raise(40);
+
+            Logger.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
+
+            var deltas = deltaUpdates.Select(x =>
+            {
+                var snapAppDelta = new SnapApp(_snapApp)
+                {
+                    Version = x.Identity.Version
+                };
+
+                return _snapOs.Filesystem.PathCombine(_packagesDirectory, snapAppDelta.BuildNugetLocalFilename());
+            }).ToList();
+
+            snapProgressSource?.Raise(50);
+
+            var deltaSnaps = new List<(SnapApp app, string nupkg)>();
+
+            var index = 0;
+            var total = deltas.Count;
+            foreach (var deltaNupkg in deltas)
+            {
+                if (!_snapOs.Filesystem.FileExists(deltaNupkg))
+                {
+                    Logger.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}.");
+                    continue;
+                }
+
+                using (var asyncCoreReader = new PackageArchiveReader(deltaNupkg))
+                {
+                    var snapApp = await _snapPack.GetSnapAppAsync(asyncCoreReader, cancellationToken);
+                    if (snapApp == null)
+                    {
+                        Logger.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}.");
+                        return null;
+                    }
+
+                    if (!snapApp.Delta)
+                    {
+                        Logger.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
+                        return null;
+                    }
+
+                    deltaSnaps.Add((snapApp, deltaNupkg));
+                }
+
+                index++;
+            }
+
+            snapProgressSource?.Raise(60);
+
+            index = 0;
+
+            string fullNupkg = null;
+            SnapApp updatedSnapApp = null;
+
+            foreach (var (deltaSnap, deltaNupkg) in deltaSnaps)
+            {
+                var thisDeltaFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, deltaSnap.BuildFullNugetUpstreamPackageId());
+                if (!_snapOs.Filesystem.FileExists(thisDeltaFullNupkg))
+                {
+                    Logger.Error($"Failed to apply delta update {index} of {total}. Full nupkg was not found: {thisDeltaFullNupkg}. Falling back to full nupkg installation.");
+                    return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                }
+
+                Logger.Info($"Reassembling delta update {index} of {total}. Full nupkg: {thisDeltaFullNupkg}. Delta nupkg: {deltaNupkg}.");
+
+                var (nupkgStream, snapApp) =
+                    await _snapPack.ReassambleFullPackageAsync(deltaSnap.DeltaReport.FullNupkgFilename, thisDeltaFullNupkg, cancellationToken: cancellationToken);
+
+                fullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapApp.BuildNugetLocalFilename());
+                updatedSnapApp = snapApp;
+
+                Logger.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {fullNupkg}.");
+
+                await _snapOs.Filesystem.FileWriteAsync(nupkgStream, fullNupkg, cancellationToken);
+            }
+
+            snapProgressSource?.Raise(70);
+
+            Logger.Info($"Finished building deltas. Attempting to install full nupkg: {fullNupkg}.");
+
+            if (updatedSnapApp == null)
+            {
+                Logger.Error($"Unable to install full nupkg because {nameof(updatedSnapApp)} is null. Falling back to full nupkg installation.");
+                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+            }
+            
+            if (!_snapOs.Filesystem.FileExists(fullNupkg))
+            {
+                Logger.Error($"Unable to install final full nupkg because it does not exist on disk: {fullNupkg}. Falling back to full nupkg installation.");
+                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+            }
+
+            var appDir = _snapOs.Filesystem.PathCombine(_rootDirectory, $"app-{updatedSnapApp.Version}");
+            updatedSnapApp = await _snapInstaller.UpdateAsync(fullNupkg, appDir, cancellationToken: cancellationToken);
+            
+            if (updatedSnapApp == null)
+            {
+                Logger.Error("Full installation did not succeed, reason unknown.");
+                return null;
+            }
+            
+            snapProgressSource?.Raise(100);
+
+            return updatedSnapApp;
+        }
+
+        async Task<SnapApp> InstallFullNupkg(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
+        {
+            snapProgressSource?.Raise(0);
+
+            var update =
+                (await _nugetService.FindByPackageNameAsync(_snapApp.BuildFullNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+                .Where(x => x.Identity.Version > _snapApp.Version)
+                .OrderBy(x => x.Identity.Version)
+                .FirstOrDefault();
+
+            if (update == null || update.Identity.Version == _snapApp.Version)
             {
                 return null;
             }
+            
+            Logger.Info($"Full nupkg update available: {update.Identity}. Starting download...");
+            var downloadResourceResult = await _nugetService.DownloadByPackageIdentityAsync(update.Identity, update.Source, _packagesDirectory, cancellationToken);
+            if (downloadResourceResult.IsMaybeASuccessfullDownloadSafe())
+            {
+                Logger.Error($"Failed to download full nupkg: {update.Identity}. Reason: {downloadResourceResult.Status}.");
+                return null;
+            }
 
-            throw new NotImplementedException();
-        }
+            snapProgressSource?.Raise(50);
 
-        public Task SwitchChannelAsync(SnapApp snapApp, string newChannelName, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
+            Logger.Info("Successfully downloaded full nupkg update.");
+
+            var updatedSnapApp = new SnapApp(_snapApp)
+            {
+                Version = update.Identity.Version
+            };
+
+            var nupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, updatedSnapApp.BuildNugetLocalFilename());
+            if (!_snapOs.Filesystem.FileExists(nupkg))
+            {
+                Logger.Error($"Unable to apply full update, local nupkg does not exist: {nupkg}.");
+                return null;
+            }
+            
+            Logger.Info($"Ready to install full nupkg: {nupkg}.");
+
+            snapProgressSource?.Raise(70);
+
+            updatedSnapApp = await _snapInstaller.UpdateAsync(nupkg, _rootDirectory, cancellationToken: cancellationToken);
+            if (updatedSnapApp == null)
+            {
+                Logger.Error("Full installation did not succeed, reason unknown.");
+                return null;
+            }
+
+            snapProgressSource?.Raise(100);
+
+            return updatedSnapApp;
         }
     }
 }

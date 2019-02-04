@@ -6,6 +6,7 @@ using JetBrains.Annotations;
 using NuGet.Configuration;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Protocol.Core.Types;
 using Snap.Core.Models;
 using Snap.NuGet;
 
@@ -13,6 +14,12 @@ namespace Snap.Extensions
 {
     internal static class NuGetExtensions
     {
+        internal static bool IsMaybeASuccessfullDownloadSafe(this DownloadResourceResult downloadResourceResult)
+        {
+            return downloadResourceResult != null && (downloadResourceResult.Status == DownloadResourceResultStatus.Available ||
+                                                      downloadResourceResult.Status == DownloadResourceResultStatus.AvailableWithoutStream);
+        }
+        
         internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));

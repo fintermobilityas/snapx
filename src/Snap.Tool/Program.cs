@@ -59,7 +59,7 @@ namespace Snap.Tool
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
             var snapPack = new SnapPack(snapFilesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
-            var snapExtractor = new SnapExtractor(snapFilesystem, snapPack, snapEmbeddedResources);
+            var snapExtractor = new SnapExtractor(snapFilesystem, snapPack);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapFilesystem, snapOs);
             var snapSpecsReader = new SnapAppReader();
             var nugetLogger = new NugetLogger();

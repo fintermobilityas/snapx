@@ -2,8 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Core.Models;
 using Snap.Resources;
@@ -16,9 +14,8 @@ namespace Snap.Core.Resources
         bool IsOptimized { get; }
         MemoryStream CoreRunWindows { get; }
         MemoryStream CoreRunLinux { get; }
-        string GetCoreRunExeFilenameForSnapApp([NotNull] SnapApp snapApp);
-        string GetCoreRunExeFilename(string appId = "corerun");
-        Task<string> ExtractCoreRunExecutableAsync(ISnapFilesystem filesystem, string appId, string destinationFolder, CancellationToken cancellationToken);
+        (MemoryStream memoryStream, string filename) GetCoreRunForSnapApp(SnapApp snapApp);
+        string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
     }
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
@@ -55,13 +52,30 @@ namespace Snap.Core.Resources
             }
         }
 
+        public (MemoryStream memoryStream, string filename) GetCoreRunForSnapApp([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp));
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp));
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
         public string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return GetCoreRunExeFilename(snapApp.Id);
         }
 
-        public string GetCoreRunExeFilename(string appId = "corerun")
+        static string GetCoreRunExeFilename(string appId = "corerun")
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -74,52 +88,6 @@ namespace Snap.Core.Resources
             }
 
             throw new PlatformNotSupportedException();
-        }
-
-        public Task<string> ExtractCoreRunExecutableAsync([NotNull] ISnapFilesystem filesystem, string appId, [NotNull] string destinationFolder, CancellationToken cancellationToken)
-        {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (destinationFolder == null) throw new ArgumentNullException(nameof(destinationFolder));
-
-            MemoryStream coreRunMemoryStream;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                coreRunMemoryStream = CoreRunWindows;
-            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                coreRunMemoryStream = CoreRunLinux;
-            }
-            else
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            return ExtractAsync(filesystem, coreRunMemoryStream, destinationFolder, GetCoreRunExeFilename(appId), cancellationToken);
-        }
-
-        async Task<string> ExtractAsync([NotNull] ISnapFilesystem filesystem, [NotNull] MemoryStream srcStream, [NotNull] string destinationFolder, [NotNull] string relativeFilename, CancellationToken cancellationToken)
-        {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
-            if (destinationFolder == null) throw new ArgumentNullException(nameof(destinationFolder));
-            if (relativeFilename == null) throw new ArgumentNullException(nameof(relativeFilename));
-            
-            filesystem.DirectoryCreateIfNotExists(destinationFolder);
-
-            var filename = filesystem.PathCombine(destinationFolder, relativeFilename);
-            using (srcStream)
-            {
-                await filesystem.FileWriteAsync(srcStream, filename, cancellationToken);
-
-                // Todo: Determine if we should chmod or not. 
-//                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-//                {
-//                    var returnValue = NativeMethodsUnix.chmod(filename, 755); // chmod +x
-//                    Debug.Assert(returnValue == 0, $"Failed to chmod on corerun executable: {filename}.");
-//                }
-//                
-                return filename;
-            }
         }
     }
 }

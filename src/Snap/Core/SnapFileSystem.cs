@@ -410,8 +410,6 @@ namespace Snap.Core
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
 
-            path = PathNormalize(path);
-
             var parentDirectory = Directory.GetParent(path)?.Parent?.FullName;
 
             return parentDirectory;

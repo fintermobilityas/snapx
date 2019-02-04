@@ -38,5 +38,18 @@ namespace Snap.Extensions
             }
             return outputStream;
         }
+
+        public static MemoryStream DuplicateStream([NotNull] this MemoryStream srcStream)
+        {
+            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
+            var dupedStream = new MemoryStream();
+            
+            srcStream.Seek(0, SeekOrigin.Begin);
+            srcStream.CopyTo(dupedStream);
+            
+            dupedStream.Seek(0, SeekOrigin.Begin);
+            
+            return dupedStream;
+        }
     }
 }

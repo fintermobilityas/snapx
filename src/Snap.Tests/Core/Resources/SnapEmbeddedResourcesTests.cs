@@ -29,27 +29,5 @@ namespace Snap.Tests.Core.Resources
             Assert.NotNull(_snapEmbeddedResources.CoreRunLinux);
             Assert.NotNull(_snapEmbeddedResources.CoreRunWindows);
         }
-
-        [Fact]
-        public async Task TestExtractCoreRunExecutableAsync()
-        {
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            {
-                const string snapAppId = "demoapp";
-
-                var coreRunExeFilename = _snapEmbeddedResources.GetCoreRunExeFilename(snapAppId);
-                var expectedDstFilename = Path.Combine(tmpDir.WorkingDirectory, coreRunExeFilename);
-                var dstFilename = await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, snapAppId, tmpDir.WorkingDirectory, CancellationToken.None);
-
-                Assert.True(_snapFilesystem.FileExists(expectedDstFilename));
-
-                // For some fucked up reason, File.Exists does not work when a file does not have an extension on Windows.
-                var coreRunFileName = _snapFilesystem.DirectoryGetAllFilesRecursively(tmpDir.WorkingDirectory).SingleOrDefault(x => _snapFilesystem.PathGetFileName(x) == coreRunExeFilename);
-                Assert.NotNull(coreRunExeFilename);
-                Assert.NotNull(coreRunFileName);
-                Assert.Equal(expectedDstFilename, dstFilename);
-            }
-        }
-
     }
 }

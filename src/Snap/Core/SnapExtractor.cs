@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -24,9 +25,7 @@ namespace Snap.Core
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
-    {
-        readonly ILog _logger = LogProvider.For<SnapExtractor>();
-
+    {   
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapPack _snapPack;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
@@ -61,15 +60,15 @@ namespace Snap.Core
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
-            var rootAppDir = _snapFilesystem.DirectoryGetParent(destinationDirectory);
-
             var snapFilesCount = await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, cancellationToken);
             if (snapFilesCount <= 0)
             {
                 logger?.Error($"Unable to find any files in target path: {_snapPack.NuspecRootTargetPath}.");
                 return new List<string>();
             }
+
+            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
+            var coreRunExeFilename = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp);
 
             var extractedFiles = new List<string>();
 
@@ -95,7 +94,13 @@ namespace Snap.Core
                 string dstFilename;
                 if (isSnapRootTargetItem)
                 {
-                    dstFilename = _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(sourcePath));
+                    var sourcePathFilename = _snapFilesystem.PathGetFileName(sourcePath);
+                    dstFilename = _snapFilesystem.PathCombine(destinationDirectory, sourcePathFilename);
+
+                    if (sourcePathFilename == coreRunExeFilename)
+                    {
+                        dstFilename = _snapFilesystem.PathCombine(_snapFilesystem.DirectoryGetParent(dstFilename), sourcePathFilename);
+                    }
                 }
                 else
                 {
@@ -114,10 +119,7 @@ namespace Snap.Core
                 extractedFiles.Add(dstFilename);
             }
            
-            var coreRunFilename = await _snapEmbeddedResources.ExtractCoreRunExecutableAsync(_snapFilesystem, snapApp.Id, rootAppDir, cancellationToken);
-            extractedFiles.Add(coreRunFilename);
-
-            return extractedFiles;
+            return extractedFiles.OrderBy(x => x).ToList();
         }
 
     }

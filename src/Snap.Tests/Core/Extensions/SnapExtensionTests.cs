@@ -36,14 +36,14 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("DEMOApp.1", true)]
         [InlineData("DemOApp_1", true)]
         [InlineData("demoapp-1", false)]
-        public void TestIsValidAppName(string appName, bool isValid)
+        public void TestIsValidAppId(string appName, bool isValid)
         {
             var snapApp = new SnapApp
             {
                 Id = appName
             };
             
-            Assert.Equal(isValid, snapApp.IsValidAppName());
+            Assert.Equal(isValid, snapApp.IsValidAppId());
         }
         
         [Theory]

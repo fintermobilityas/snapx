@@ -4,3 +4,6 @@
 [submodule "src/Snap.CoreRun/vendor/easyloggingpp"]
 	path = src/Snap.CoreRun/vendor/easyloggingpp
 	url = https://github.com/zuhd-org/easyloggingpp.git
+[submodule "src/Snap.DemoApp"]
+	path = src/Snap.DemoApp
+	url = git@github.com:peters/snap.demoapp.git

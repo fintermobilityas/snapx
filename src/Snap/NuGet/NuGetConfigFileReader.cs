@@ -36,13 +36,6 @@ namespace Snap.NuGet
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (sources == null) throw new ArgumentNullException(nameof(sources));
-
-            foreach (var source in sources)
-            {
-                Logger.Info(
-                    $"Read [{source.Name}] : {source.SourceUri} from file: {source.Source}.");
-            }
-
             return new NuGetPackageSources(settings, sources);
         }
     }

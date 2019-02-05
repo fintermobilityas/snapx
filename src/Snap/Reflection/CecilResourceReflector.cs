@@ -11,6 +11,7 @@ namespace Snap.Reflection
     {
         IEnumerable<Resource> GetResources();
         void RemoveOrThrow([NotNull] string name);
+        void RemoveAllOrThrow(string @namespace);
     }
 
     internal class CecilResourceReflector : IResourceReflector
@@ -37,6 +38,21 @@ namespace Snap.Reflection
             }
 
             _assemblyDefinition.MainModule.Resources.Remove(resource);
+        }
+
+        public void RemoveAllOrThrow(string @namespace)
+        {
+            var resourcesRemoved = 0;
+            foreach (var resource in GetResources().Where(x => @namespace == null || x.Name.StartsWith(@namespace)).ToList())
+            {
+                RemoveOrThrow(resource.Name);
+                resourcesRemoved++;
+            }
+
+            if (resourcesRemoved <= 0)
+            {
+                throw new Exception($"Failed to remove any resources from assembly: {_assemblyDefinition.FullName}.");
+            }
         }
     }
 }

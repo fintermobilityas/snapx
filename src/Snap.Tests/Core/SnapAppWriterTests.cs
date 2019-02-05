@@ -78,22 +78,8 @@ namespace Snap.Tests.Core
                 Assert.NotNull(optimizedEmbeddedResources);
 
                 Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
-
-                if (osPlatform == OSPlatform.Windows)
-                {
-                    Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
-                    Assert.True(optimizedEmbeddedResources.CoreRunWindows.Length > 0);
-                    return;
-                }
-
-                if (osPlatform == OSPlatform.Linux)
-                {
-                    Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
-                    Assert.True(optimizedEmbeddedResources.CoreRunLinux.Length > 0);
-                    return;
-                }
-
-                throw new PlatformNotSupportedException();
+                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
+                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
             }
         }
 

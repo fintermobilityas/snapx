@@ -11,6 +11,7 @@ using Snap.Core.Yaml.Emitters;
 using Snap.Core.Yaml.TypeConverters;
 using Snap.Extensions;
 using Snap.Reflection;
+using Snap.Resources;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using EmbeddedResource = Mono.Cecil.EmbeddedResource;
@@ -89,28 +90,18 @@ namespace Snap.Core
 
             void PruneResources()
             {
-                var coreRunResourceName = "Snap.Resources.corerun.";
-                if (osPlatform == OSPlatform.Windows)
-                {
-                    coreRunResourceName += "corerun";
-                }
-                else if (osPlatform == OSPlatform.Linux)
-                {
-                    coreRunResourceName += "corerun.exe";
-                }
-
-                cecilResourceFlector.RemoveOrThrow(coreRunResourceName);
-
-                cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsOptimized, (typedDefinition, getterName, setterName, propertyDefinition) =>
-                {                    
-                    var getIlProcessor = propertyDefinition.GetMethod.Body.GetILProcessor();
-                    getIlProcessor.Body.Instructions.Clear();
-                    getIlProcessor.Emit(OpCodes.Ldc_I4_1);
-                    getIlProcessor.Emit(OpCodes.Ret);
-                });
+                cecilResourceFlector.RemoveAllOrThrow(typeof(SnapEmbeddedResourcesTypeRoot).Namespace);
             }
 
             PruneResources();
+
+            cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsOptimized, (typedDefinition, getterName, setterName, propertyDefinition) =>
+            {                    
+                var getIlProcessor = propertyDefinition.GetMethod.Body.GetILProcessor();
+                getIlProcessor.Body.Instructions.Clear();
+                getIlProcessor.Emit(OpCodes.Ldc_I4_1);
+                getIlProcessor.Emit(OpCodes.Ret);
+            });
 
             return assemblyDefinition;
         }

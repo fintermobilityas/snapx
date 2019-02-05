@@ -92,16 +92,10 @@ namespace Snap.Core.Models
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
 
+        [UsedImplicitly]
         public SnapAppsGeneric()
         {
             
-        }
-
-        public SnapAppsGeneric([NotNull] SnapAppsGeneric generic)
-        {
-            if (generic == null) throw new ArgumentNullException(nameof(generic));
-            Packages = generic.Packages;
-            Nuspecs = generic.Nuspecs;
         }
     }
 

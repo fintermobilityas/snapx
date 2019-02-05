@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -44,7 +45,7 @@ namespace Snap.Tests.Core
             Assert.NotNull(snapAppsYamlStr);
         }
 
-        [Fact]
+        [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly()
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
@@ -56,6 +57,7 @@ namespace Snap.Tests.Core
             }
         }
 
+        [ExcludeFromCodeCoverage]
         [Theory]
         [InlineData("WINDOWS")]
         [InlineData("LINUX")]

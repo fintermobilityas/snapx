@@ -4,12 +4,12 @@ using CommandLine;
 namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [Verb("promote", HelpText = "Promotes a nupkg to the default release channel.")]
+    [Verb("promote", HelpText = "Promotes a nupkg to the next release channel.")]
     internal class PromoteNupkgOptions : BaseSubOptions
     {
-        [Option('a', "app", HelpText = "Snap app name", Required = true)]
+        [Option('a', "app", HelpText = "Application name", Required = true)]
         public string App { get; set; }
-        [Option("all", HelpText = "Promotes app in all remaining channels", Required = true)]
+        [Option("all", HelpText = "Promotes the application to all release channels", Required = true)]
         public bool All { get; set; }
     }
 }

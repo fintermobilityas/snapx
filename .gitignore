@@ -7,3 +7,5 @@ build/
 .idea/
 
 src/Snap\.sln\.DotSettings\.user
+
+\.vscode/

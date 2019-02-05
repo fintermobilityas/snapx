@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -98,6 +99,12 @@ namespace Snap.NuGet
             var nuGetConfigFileReader = new NuGetConfigFileReader();
             var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
             var configFilePaths = nugetMachineWideSettings.Settings.GetConfigFilePaths();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                configFilePaths.Add("~/");
+            }
+            
             var packageSources = configFilePaths
                 .Select(configFilePath => nuGetConfigFileReader.ReadNugetSources(configFilePath)).ToList();
 

@@ -96,10 +96,12 @@ namespace Snap.AnyOS
             OsImpl = snapOsImpl ?? throw new ArgumentNullException(nameof(snapOsImpl));
         }
 
-        public void CreateShortcutsForExecutable(SnapApp snapApp, NuspecReader nuspecReader, string rootAppDirectory, string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations,
+        public void CreateShortcutsForExecutable(SnapApp snapApp, NuspecReader nuspecReader, string rootAppDirectory, 
+            string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations,
             string programArguments, bool updateOnly, CancellationToken cancellationToken)
         {
-            OsImpl.CreateShortcutsForExecutableAsync(snapApp, nuspecReader, rootAppDirectory, rootAppInstallDirectory, exeName, icon, locations, programArguments, updateOnly, cancellationToken);
+            OsImpl.CreateShortcutsForExecutableAsync(snapApp, nuspecReader, rootAppDirectory, rootAppInstallDirectory,
+                exeName, icon, locations, programArguments, updateOnly, cancellationToken);
         }
 
         public List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1)
@@ -117,13 +119,15 @@ namespace Snap.AnyOS
             return OsImpl.GetProcessesAsync(cancellationToken);
         }
 
-        public async Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync([NotNull] string workingDirectory, CancellationToken cancellationToken)
+        public async Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync([NotNull] string workingDirectory,
+            CancellationToken cancellationToken)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             var processes = await GetProcessesAsync(cancellationToken);
             
             return processes.Where(x => x.Pid > 0 && x.WorkingDirectory.StartsWith(workingDirectory, 
-                                                 DistroType == SnapOsDistroType.Windows ?  StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
+                                                 DistroType == SnapOsDistroType.Windows ? 
+                                                     StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
         }
 
         public async Task KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken)
@@ -178,7 +182,8 @@ namespace Snap.AnyOS
                     return null;
                 }
 
-                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
+                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), 
+                    NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
                 {
                     return null;
                 }

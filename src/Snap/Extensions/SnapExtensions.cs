@@ -43,7 +43,7 @@ namespace Snap.Extensions
         {
             return ChannelNameRegex.IsMatch(value);
         }
-
+        
         internal static bool IsValidAppId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -57,18 +57,6 @@ namespace Snap.Extensions
             return channel.Name.IsValidChannelName();
         }
         
-        internal static bool IsValidAppId([NotNull] this SnapsApp snapApp)
-        {
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return snapApp.Id.IsValidAppId();
-        }
-        
-        internal static bool IsValidChannelName([NotNull] this SnapsChannel channel)
-        {
-            if (channel == null) throw new ArgumentNullException(nameof(channel));
-            return channel.Name.IsValidChannelName();
-        }
-  
         internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));

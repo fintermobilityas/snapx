@@ -658,6 +658,7 @@ namespace Snap.Core
             const string nuspecXmlNs = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
             
             var nugetVersion = new NuGetVersion(packageDetails.App.Version.ToFullString());
+            var upstreamPackageId = packageDetails.App.BuildNugetUpstreamPackageId();
 
             MemoryStream RewriteNuspecStreamWithEssentials()
             {
@@ -671,6 +672,16 @@ namespace Snap.Core
                 if (metadata == null)
                 {
                     throw new Exception("The required element 'metadata' is missing from the nuspec.");
+                }
+
+                var id = metadata.Descendants(XName.Get("id", nuspecXmlNs)).SingleOrDefault();
+                if (id != null)
+                {
+                    id.Value = upstreamPackageId;
+                }
+                else
+                {
+                    metadata.Add(new XElement("id", upstreamPackageId));
                 }
 
                 var title = metadata.Descendants(XName.Get("title", nuspecXmlNs)).SingleOrDefault();
@@ -705,8 +716,6 @@ namespace Snap.Core
             using (var nuspecStreamRewritten = RewriteNuspecStreamWithEssentials())
             {
                 var manifest = Manifest.ReadFrom(nuspecStreamRewritten, propertyProvider, true);
-
-                manifest.Metadata.Id = packageDetails.App.BuildNugetUpstreamPackageId();
 
                 if (!manifest.Files.Any())
                 {

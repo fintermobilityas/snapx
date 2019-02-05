@@ -28,34 +28,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommandLineParser" Version="2.4.3">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
-        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.3">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
+        <PackageReference Include="CommandLineParser" Version="2.4.3" /> 
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
-
-    <Target Name="SnapToolStandaloneReleaseTarget" AfterTargets="Build" Condition="'$(SnapToolStandaloneRelease)' == 'true' AND '$(TargetFramework)' != ''">
-        <PropertyGroup>
-            <SnapToolILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapToolILRepackWorkingDirectory>
-        </PropertyGroup>
-
-        <ItemGroup>
-            <SnapCoreILRepackInputAssemblies Include="CommandLine.dll" />
-        </ItemGroup>
-
-        <ILRepack
-            OutputType="$(OutputType)"
-            MainAssembly="$(AssemblyName).dll"
-            OutputAssembly="$(AssemblyName).ILRepacked.dll"
-            InputAssemblies="@(SnapCoreILRepackInputAssemblies)"
-            WorkingDirectory="$(SnapToolILRepackWorkingDirectory)" />
-
-    </Target>
 
 </Project>

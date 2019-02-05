@@ -2,14 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
+using JetBrains.Annotations;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Logging;
+using Snap.Core.Models;
 using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.Tool.Options;
 using Snap.Logging;
 using Snap.NuGet;
@@ -72,13 +76,14 @@ namespace Snap.Tool
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             
-            return Parser.Default.ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, ReleasifyOptions, Sha512Options>(args)
+            return Parser.Default.ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, ReleasifyOptions, Sha1Options, Sha512Options>(args)
                 .MapResult(
                     (PromoteNupkgOptions opts) => SnapPromoteNupkg(opts, nugetService),
                     (PushNupkgOptions options) => SnapPushNupkg(options, nugetService),
                     (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, snapInstaller).Result,
-                    (ReleasifyOptions opts) => SnapReleasify(opts),
+                    (ReleasifyOptions opts) => SnapReleasify(opts, snapFilesystem, snapAppReader),
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
+                    (Sha1Options opts) => SnapSha1(opts, snapFilesystem, snapCryptoProvider),
                     errs =>
                     {
                         snapOs.EnsureConsole();
@@ -96,8 +101,16 @@ namespace Snap.Tool
             return -1;
         }
 
-        static int SnapReleasify(ReleasifyOptions releasifyOptions)
+        static int SnapReleasify(ReleasifyOptions releasifyOptions, ISnapFilesystem filesystem, ISnapAppReader appReader)
         {
+            var snapsApp = BuildSnapsAppFromCurrentDirectory(filesystem, appReader, releasifyOptions.App);
+            if (snapsApp == null)
+            {
+                return -1;
+            }
+            
+            Logger.Info($"");
+            
             return -1;
         }
 
@@ -164,6 +177,113 @@ namespace Snap.Tool
                 Logger.Error($"Error computing SHA512-checksum for filename: {sha512Options.Filename}.", e);
                 return -1;
             }
+        }
+        
+        static int SnapSha1(Sha1Options sha1Options, ISnapFilesystem snapFilesystem, ISnapCryptoProvider snapCryptoProvider)
+        {
+            if (sha1Options.Filename == null || !snapFilesystem.FileExists(sha1Options.Filename))
+            {
+                Logger.Error($"File not found: {sha1Options.Filename}.");
+                return -1;
+            }
+
+            try
+            {
+                using (var fileStream = new FileStream(sha1Options.Filename, FileMode.Open, FileAccess.Read))
+                {
+                    Logger.Info(snapCryptoProvider.Sha1(fileStream));
+                }
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Error computing SHA1-checksum for filename: {sha1Options.Filename}.", e);
+                return -1;
+            }
+        }
+
+        static SnapsApp BuildSnapsAppFromCurrentDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, string id)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            
+            var snapApps = BuildSnapAppsFromCurrentDirectory(filesystem, reader);
+            var snapApp = snapApps?.Apps.SingleOrDefault(x => x.Id == id);
+            if (snapApp == null)
+            {
+                Logger.Error($"Unable to find any snaps with id {id} in snaps manifest.");
+                return null;
+            }
+
+            return snapApp;
+        }
+        
+        static SnapApps BuildSnapAppsFromCurrentDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            var snapsFilename = filesystem.PathCombine(filesystem.DirectoryGetCurrentWorkingDirectory(), ".snaps");
+            if (!filesystem.FileExists(snapsFilename))
+            {
+                Logger.Error($"Snaps manifest does not exist on disk: {snapsFilename}.");
+                goto error;
+            }
+
+            var content = filesystem.FileReadAllText(snapsFilename);
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                Logger.Error($"Snaps manifest exists but does not contain valid yaml content: {snapsFilename}.");
+                goto error;
+            }
+
+            try
+            {
+                var snapApps = reader.BuildSnapAppsFromYamlString(content);
+                if (snapApps == null)
+                {
+                    Logger.Error($"Snaps manifest does not contain any apps.");
+                    goto error;
+                }
+
+                var snapIds = snapApps.Apps.DistinctBy(x => x.Id).ToList();
+                if (snapApps.Apps.Count != snapIds.Count)
+                {
+                    Logger.Error($"Snap names in manifest must be unique: {string.Join(",", snapIds)}.");
+                    goto error;
+                }
+
+                foreach (var snapApp in snapApps.Apps)
+                {
+                    if (!snapApp.IsValidAppId())
+                    {
+                        Logger.Error($"The following snap id is invalid: {snapApp.Id}.");
+                        goto error;
+                    }
+
+                    var channelNames = snapApp.Channels.Distinct().ToList();
+                    if (channelNames.Count != snapApp.Channels.Count)
+                    {
+                        Logger.Error($"Channel list must be unique: {string.Join(",", channelNames)}. Snap id: {snapApp.Id}.");
+                        goto error;
+                    }
+                    
+                    foreach (var channelName in snapApp.Channels.Where(x => !x.IsValidChannelName()))
+                    {
+                        Logger.Error($"The following channel name is invalid: {channelName}. Snap id: {snapApp.Id}.");
+                        goto error;
+                    }
+                    
+                }
+                
+                return snapApps;
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException($"Exception thrown while parsing snaps manifest from filename: {snapsFilename}.", e);
+            }
+
+            error:
+            return null;
         }
         
     }

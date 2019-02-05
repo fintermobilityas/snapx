@@ -1,5 +1,9 @@
 <Project>
-
+    
+    <PropertyGroup>
+        <SnapNupkg Condition="$(SnapNupkg) == ''">false</SnapNupkg>
+    </PropertyGroup>
+    
     <PropertyGroup>
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapCoreILRepackWorkingDirectory>
     </PropertyGroup>
@@ -34,8 +38,8 @@
         <SnapCoreILRepackInputAssemblies Include="NuGet.Packaging.dll" />
         <SnapCoreILRepackInputAssemblies Include="NuGet.Protocol.dll" />
         <SnapCoreILRepackInputAssemblies Include="NuGet.Versioning.dll" />
-        <SnapCoreILRepackInputAssemblies Include="YamlDotNet.NetCore.dll" />
         <SnapCoreILRepackInputAssemblies Include="SharpCompress.dll" />
+        <SnapCoreILRepackInputAssemblies Include="YamlDotNet.NetCore.dll" />
     </ItemGroup>
 
     <ItemGroup>
@@ -44,46 +48,46 @@
 
     <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.2">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="NuGet.Packaging" Version="$(NugetVersion)">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="NuGet.Protocol" Version="$(NugetVersion)">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="System.Drawing.Common" Version="4.5.1" Condition="'$(IsNetFullFramework)' == 'false'">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="FasterFlect.NETStandard" Version="1.0.9">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Jetbrains.Annotations" Version="2018.3.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="SharpCompress" Version="0.22.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="System.ValueTuple" Version="4.5.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="System.ValueTuple" Version="4.5.0">
-            <PrivateAssets>all</PrivateAssets>
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 

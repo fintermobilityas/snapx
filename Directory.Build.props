@@ -1,6 +1,6 @@
 <Project>
 
-    <Import Project="version.props" />
+    <Import Project="Version.props" />
 
     <PropertyGroup>
         <Authors>Peter Rekdal Sunde</Authors>

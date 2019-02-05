@@ -23,7 +23,7 @@ namespace Snap.Tool
 {
     internal class Program
     {
-        private static readonly ILog Logger = LogProvider.For<Program>(); 
+        static readonly ILog Logger = LogProvider.For<Program>(); 
        
         static int Main(string[] args)
         {
@@ -53,7 +53,7 @@ namespace Snap.Tool
             }
             catch (Exception e)
             {
-                Logger.Error($"Exception thrown while initializing snap os.", e);
+                Logger.Error("Exception thrown while initializing snap os.", e);
                 return -1;
             }
             
@@ -80,7 +80,7 @@ namespace Snap.Tool
                 .MapResult(
                     (PromoteNupkgOptions opts) => SnapPromoteNupkg(opts, nugetService),
                     (PushNupkgOptions options) => SnapPushNupkg(options, nugetService),
-                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, snapInstaller).Result,
+                    (InstallNupkgOptions opts) => SnapInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, snapInstaller).GetAwaiter().GetResult(),
                     (ReleasifyOptions opts) => SnapReleasify(opts, snapFilesystem, snapAppReader),
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
                     (Sha1Options opts) => SnapSha1(opts, snapFilesystem, snapCryptoProvider),

@@ -44,4 +44,4 @@ Exec "& dotnet build -c Debug src/Snap.Tool -f netcoreapp2.1"
 Exec "& dotnet pack -c Debug src/Snap.Tool --no-build"
 Exec "& dotnet tool install --global --add-source ./nupkgs dotnet-snap"
 
-. snap 
+. dotsnap 

@@ -130,7 +130,7 @@ namespace Snap.AnyOS.Unix
 
         public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)
         {
-            var processes = Process.GetProcesses().Select(process => OsProcessManager.Build(process.Id, process.ProcessName, null, null)).ToList();
+            var processes = Process.GetProcesses().Select(process => OsProcessManager.Build(process.Id, process.ProcessName)).ToList();
             return Task.FromResult(processes);
         }
 

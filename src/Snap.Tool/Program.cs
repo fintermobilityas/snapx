@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -29,7 +29,6 @@ namespace Snap.Tool
         {
             try
             {
-                LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(LogLevel.Info));
                 return MainImplAsync(args);
             }
             catch (Exception e)

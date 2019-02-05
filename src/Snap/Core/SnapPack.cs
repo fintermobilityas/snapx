@@ -9,11 +9,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Versioning;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -644,39 +647,89 @@ namespace Snap.Core
             }
         }
 
-        MemoryStream RewriteNuspec([NotNull] ISnapPackageDetails packageDetails, MemoryStream memoryStream,
+        MemoryStream RewriteNuspec([NotNull] ISnapPackageDetails packageDetails, MemoryStream nuspecStream,
             [NotNull] Func<string, string> propertyProvider, [NotNull] string baseDirectory)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
-            if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
+            if (nuspecStream == null) throw new ArgumentNullException(nameof(nuspecStream));
             if (propertyProvider == null) throw new ArgumentNullException(nameof(propertyProvider));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
 
-            var nuspec = Manifest.ReadFrom(memoryStream, propertyProvider, true);
+            const string nuspecXmlNs = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
+            
+            var nugetVersion = new NuGetVersion(packageDetails.App.Version.ToFullString());
 
-            nuspec.Metadata.Id = packageDetails.App.BuildNugetUpstreamPackageId();
-
-            if (!nuspec.Files.Any())
+            MemoryStream RewriteNuspecStreamWithEssentials()
             {
-                throw new Exception("Nuspec does not contain any files.");
-            }
-
-            foreach (var file in nuspec.Files)
-            {
-                var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? "/";
-                if (!targetPath.StartsWith(_snapFilesystem.DirectorySeparatorChar.ToString()))
+                var nuspecDocument = XmlUtility.LoadSafe(nuspecStream);
+                if (nuspecDocument == null)
                 {
-                    targetPath = $"{_snapFilesystem.DirectorySeparatorChar}{targetPath}";
+                    throw new Exception("Failed to parse nuspec.");
                 }
 
-                file.Target = $"$anytarget${targetPath}";
+                var metadata = nuspecDocument.Descendants(XName.Get("metadata", nuspecXmlNs)).SingleOrDefault();
+                if (metadata == null)
+                {
+                    throw new Exception("The required element 'metadata' is missing from the nuspec.");
+                }
+
+                var title = metadata.Descendants(XName.Get("title", nuspecXmlNs)).SingleOrDefault();
+                if (title == null)
+                {
+                    throw new Exception($"The required element 'description' is missing from the nuspec.");
+                }
+                
+                var version = metadata.Descendants(XName.Get("version", nuspecXmlNs)).SingleOrDefault();
+                if (version == null)
+                {
+                    metadata.Add(new XElement("version", nugetVersion.ToFullString()));
+                }
+                else
+                {
+                    version.Value = nugetVersion.ToFullString();
+                }
+
+                var description = metadata.Descendants(XName.Get("description", nuspecXmlNs)).SingleOrDefault();
+                if (description == null)
+                {
+                    metadata.Add(new XElement("description", title.Value));
+                }
+                
+                var rewrittenNuspecStream = new MemoryStream();
+                nuspecDocument.Save(rewrittenNuspecStream);
+                rewrittenNuspecStream.Seek(0, SeekOrigin.Begin);
+
+                return rewrittenNuspecStream;
             }
 
-            var outputStream = new MemoryStream();
-            nuspec.Save(outputStream);
-            outputStream.Seek(0, SeekOrigin.Begin);
+            using (var nuspecStreamRewritten = RewriteNuspecStreamWithEssentials())
+            {
+                var manifest = Manifest.ReadFrom(nuspecStreamRewritten, propertyProvider, true);
 
-            return outputStream;
+                manifest.Metadata.Id = packageDetails.App.BuildNugetUpstreamPackageId();
+
+                if (!manifest.Files.Any())
+                {
+                    throw new Exception("Nuspec does not contain any files.");
+                }
+
+                foreach (var file in manifest.Files)
+                {
+                    var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? "/";
+                    if (!targetPath.StartsWith(_snapFilesystem.DirectorySeparatorChar.ToString()))
+                    {
+                        targetPath = $"{_snapFilesystem.DirectorySeparatorChar}{targetPath}";
+                    }
+
+                    file.Target = $"$anytarget${targetPath}";
+                }
+
+                var outputStream = new MemoryStream();
+                manifest.Save(outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                return outputStream;
+            }                      
         }
 
         public IEnumerable<SnapPackFileChecksum> ParseChecksumManifest([NotNull] string content)
@@ -864,7 +917,7 @@ namespace Snap.Core
                 throw new Exception("Snap app version cannot be null.");
             }
 
-            if (!packageDetails.App.IsValidAppName())
+            if (!packageDetails.App.IsValidAppId())
             {
                 throw new Exception($"Snap app id is invalid: {packageDetails.App.Id}.");
             }

@@ -248,10 +248,7 @@ namespace Snap.Shared.Tests
     <metadata>
         <id>demoapp</id>
         <title>Random Title</title>
-        <version>$version$</version>
         <authors>Peter Rekdal Sunde</authors>
-        <requireLicenseAcceptance>false</requireLicenseAcceptance>
-        <description>YOLO</description>
     </metadata>
     <files> 
 		{string.Join("\n", files)}						    

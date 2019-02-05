@@ -10,14 +10,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{543B57A3-A18F-48A6-950B-7849A45FEC93}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.Tests", "Snap.Tests\Snap.Tests.csproj", "{4F05300A-9D3D-4262-A4FC-40D5876B7A8C}"
-	ProjectSection(ProjectDependencies) = postProject
-		{06A5BB01-62E6-45BE-AB30-770A9021C47B} = {06A5BB01-62E6-45BE-AB30-770A9021C47B}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.NetCoreApp.Tests", "Snap.NetCoreApp.Tests\Snap.NetCoreApp.Tests.csproj", "{29327A7C-6BE4-4F17-9CE4-9B4CCADBD970}"
-	ProjectSection(ProjectDependencies) = postProject
-		{06A5BB01-62E6-45BE-AB30-770A9021C47B} = {06A5BB01-62E6-45BE-AB30-770A9021C47B}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.Shared.Tests", "Snap.Shared.Tests\Snap.Shared.Tests.csproj", "{17505CF3-7001-415C-B08B-86B642893717}"
 EndProject

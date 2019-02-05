@@ -23,6 +23,7 @@ namespace Snap.Core
         bool DirectoryExists(string directory);
         void DirectoryDelete(string directory);
         Task DirectoryDeleteAsync(string directory);
+        string DirectoryGetCurrentWorkingDirectory();
         Task DirectoryDeleteOrJustGiveUpAsync(string directory);
         string DirectoryGetParent(string path);
         IEnumerable<string> EnumerateDirectories(string path);
@@ -34,6 +35,7 @@ namespace Snap.Core
         Task FileWriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
+        string FileReadAllText(string filename);
         void FileDelete(string fileName);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
         FileStream FileRead(string fileName, int bufferSize = 8196, bool useAsync = true);
@@ -162,6 +164,16 @@ namespace Snap.Core
             using (var streamReader = new StreamReader(stream))
             {
                 return await streamReader.ReadToEndAsync();
+            }
+        }
+
+        public string FileReadAllText([NotNull] string filename)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            using (var stream = FileRead(filename))
+            using (var streamReader = new StreamReader(stream))
+            {
+                return streamReader.ReadToEnd();
             }
         }
 
@@ -337,6 +349,11 @@ namespace Snap.Core
                 var message = $"DeleteDirectory: could not delete - {directory}";
                 Logger.ErrorException(message, ex);
             }
+        }
+
+        public string DirectoryGetCurrentWorkingDirectory()
+        {
+            return Directory.GetCurrentDirectory();
         }
 
         public async Task DirectoryDeleteOrJustGiveUpAsync([NotNull] string directory)

@@ -51,7 +51,7 @@ namespace Snap.Reflection
 
             if (resourcesRemoved <= 0)
             {
-                throw new Exception($"Failed to remove any resources from assembly: {_assemblyDefinition.FullName}.");
+                throw new Exception($"Failed to remove any resources from assembly: {_assemblyDefinition.FullName}");
             }
         }
     }

@@ -9,8 +9,8 @@ namespace Snap.Extensions
 {
     internal static class CecilExtensions
     {
-        const string ExpressionCannotBeNullMessage = "The expression cannot be null.";
-        const string InvalidExpressionMessage = "Invalid expression.";
+        const string ExpressionCannotBeNullMessage = "The expression cannot be null";
+        const string InvalidExpressionMessage = "Invalid expression";
 
         public static byte[] ToByteArray([NotNull] this AssemblyDefinition assemblyDefinition, WriterParameters writerParameters = null)
         {

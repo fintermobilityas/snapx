@@ -43,12 +43,12 @@ namespace Snap.Core.Resources
 
             if (_coreRunWindows == null)
             {
-                throw new Exception("corerun.exe was not found in current assembly resources manifest.");
+                throw new Exception("corerun.exe was not found in current assembly resources manifest");
             }
 
-            if (_coreRunWindows == null)
+            if (_coreRunLinux == null)
             {
-                throw new Exception("corerun was not found in current assembly resources manifest.");
+                throw new Exception("corerun was not found in current assembly resources manifest");
             }
         }
 
@@ -56,14 +56,14 @@ namespace Snap.Core.Resources
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (snapApp.Target.Os == OSPlatform.Windows)
             {
                 return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp));
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp));
+                return (CoreRunLinux, GetCoreRunExeFilenameForSnapApp(snapApp));
             }
 
             throw new PlatformNotSupportedException();
@@ -72,17 +72,17 @@ namespace Snap.Core.Resources
         public string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return GetCoreRunExeFilename(snapApp.Id);
+            return GetCoreRunExeFilename(snapApp.Id, snapApp.Target.Os);
         }
 
-        static string GetCoreRunExeFilename(string appId = "corerun")
+        static string GetCoreRunExeFilename(string appId, OSPlatform osPlatform)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (osPlatform == OSPlatform.Windows)
             {
                 return $"{appId}.exe";
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (osPlatform == OSPlatform.Linux)
             {
                 return $"{appId}";
             }

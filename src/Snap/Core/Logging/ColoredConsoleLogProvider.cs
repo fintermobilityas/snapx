@@ -12,7 +12,7 @@ namespace Snap.Core.Logging
     {
         readonly LogLevel _logLevel;
 
-        private static readonly Dictionary<LogLevel, ConsoleColor> Colors = new Dictionary<LogLevel, ConsoleColor>
+        static readonly Dictionary<LogLevel, ConsoleColor> Colors = new Dictionary<LogLevel, ConsoleColor>
             {
                 {LogLevel.Fatal, ConsoleColor.Red},
                 {LogLevel.Error, ConsoleColor.Red},
@@ -36,7 +36,7 @@ namespace Snap.Core.Logging
                     return true; // All log levels are enabled
                 }
 
-                if (Colors.TryGetValue(logLevel, out ConsoleColor consoleColor))
+                if (Colors.TryGetValue(logLevel, out var consoleColor))
                 {
                     var originalForground = Console.ForegroundColor;
                     try

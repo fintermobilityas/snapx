@@ -10,19 +10,20 @@ using Snap.Logging;
 
 namespace Snap.NuGet
 {
-    class NuGetMachineWideSettings : IMachineWideSettings
+    internal class NuGetMachineWideSettings : IMachineWideSettings
     {
-        static readonly ILog _logger = LogProvider.For<NuGetMachineWideSettings>();
-        static string[] EmptyStringArray = new string[] { };
+        static readonly string[] EmptyStringArray = { };
 
         readonly Lazy<ISettings> _settings;
 
         public ISettings Settings => _settings.Value;
 
-        public NuGetMachineWideSettings([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
+        public NuGetMachineWideSettings([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, ILog logger = null)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+            logger = logger ?? LogProvider.For<NuGetMachineWideSettings>();
 
             var baseDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.MachineWideConfigDirectory);
             _settings = new Lazy<ISettings>(() =>
@@ -45,7 +46,7 @@ namespace Snap.NuGet
                 }
                 catch (Exception e)
                 {
-                    _logger.ErrorException("Error loading machine wide settings.", e.InnerException ?? e);
+                    logger.ErrorException("Error loading machine wide settings", e.InnerException ?? e);
                     return new NullSettings();
                 }
 

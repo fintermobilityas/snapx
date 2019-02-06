@@ -95,11 +95,11 @@ namespace Snap.AnyOS.Unix
                 if (chmodRetValue != 0)
                 {
                     _logger.Warn(
-                        $"Failed to change file permissions for shortcut: {absoluteDesktopShortcutPath}. Return value: {chmodRetValue}.");
+                        $"Failed to change file permissions for shortcut: {absoluteDesktopShortcutPath}. Return value: {chmodRetValue}");
                 }
 
                 _logger.Debug(
-                    $"Successfully created desktop shortcut for exe: {exeName}. Automatic startup: {autoStartup}. Location: {absoluteDesktopShortcutPath}.");
+                    $"Successfully created desktop shortcut for exe: {exeName}. Automatic startup: {autoStartup}. Location: {absoluteDesktopShortcutPath}");
             }
         }
 

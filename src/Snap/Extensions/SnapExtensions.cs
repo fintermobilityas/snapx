@@ -20,7 +20,7 @@ namespace Snap.Extensions
     public static class SnapExtensions
     {
         // https://github.com/NuGet/NuGet.Client/blob/dev/src/NuGet.Core/NuGet.Packaging/PackageCreation/Utility/PackageIdValidator.cs#L14
-        static readonly Regex AppNameRegex = new Regex(@"^\w+([_.]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
         internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
@@ -29,14 +29,14 @@ namespace Snap.Extensions
             var channel = snapApp.Channels.SingleOrDefault(x => x.Current);
             if (channel == null)
             {
-                throw new Exception($"Current channel not found. Application id: {snapApp.Id}.");
+                throw new Exception($"Current channel not found. Snap id: {snapApp.Id}");
             }
             return channel;
         }
         
         internal static bool IsValidAppId([NotNull] this string value)
         {
-            return AppNameRegex.IsMatch(value);
+            return AppIdRegex.IsMatch(value);
         }
         
         internal static bool IsValidChannelName([NotNull] this string value)
@@ -80,7 +80,7 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
             var fullOrDelta = delta ? "delta" : "full";
-            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Target.Rid}-{channel.Name}".ToLowerInvariant();
+            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_{channel.Name}".ToLowerInvariant();
         }
 
         internal static string BuildNugetLocalFilename([NotNull] this SnapApp snapApp)
@@ -88,7 +88,7 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
             var fullOrDelta = snapApp.Delta ? "delta" : "full";
-            return $"{snapApp.Id}-{fullOrDelta}-{snapApp.Version.ToMajorMinorPatch()}-{snapApp.Target.Rid}-{channel.Name}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
         }
 
         internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] InMemorySettings inMemorySettings)
@@ -197,18 +197,18 @@ namespace Snap.Extensions
             return true;
         }
 
-        internal static IEnumerable<SnapApp> BuildSnapApp([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources)
+        internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             foreach (var snapsApp in snapApps.Apps)
             {
                 foreach (var snapsTarget in snapsApp.Targets)
                 {
-                    yield return snapApps.BuildSnapAppRelease(snapsApp.Id, snapsTarget.Rid, snapsApp.Version, nuGetPackageSources);
+                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, snapsApp.Version, nuGetPackageSources);
                 }
             }
         }
 
-        internal static SnapApp BuildSnapAppRelease([NotNull] this SnapApps snapApps, string id, [NotNull] string rid, [NotNull] SemanticVersion releaseVersion,
+        internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid, [NotNull] SemanticVersion releaseVersion,
             [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
@@ -216,24 +216,44 @@ namespace Snap.Extensions
             if (releaseVersion == null) throw new ArgumentNullException(nameof(releaseVersion));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
 
-            var snapApp = snapApps.Apps.SingleOrDefault(x => x.Id == id);
+            var snapApp = snapApps.Apps.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase));
             if (snapApp == null)
             {
-                throw new Exception($"Unable to find application with id: {id}.");
+                throw new Exception($"Unable to find snap with id: {id}");
             }
 
-            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => x.Rid == rid);
+            var snapAppUniqueRuntimeIdentifiers = snapApp.Targets.Select(x => x.Rid).ToList();
+            if (snapAppUniqueRuntimeIdentifiers.Distinct().Count() != snapApp.Targets.Count)
+            {
+                throw new Exception($"Target runtime identifiers (rids) must be unique: {string.Join(",", snapAppUniqueRuntimeIdentifiers)}. Snap id: {snapApp.Id}");
+            }
+            
+            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => string.Equals(x.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
             if (snapAppTarget == null)
             {
-                throw new Exception($"Unable to find target with rid: {rid}. Application id: {snapApp.Id}.");
+                throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
+            }
+
+            var snapAppUniqueChannels = snapApp.Channels.Distinct().ToList();
+            if (snapAppUniqueChannels.Count != snapApp.Channels.Count)
+            {
+                throw new Exception($"Channel list must be unique: {string.Join(",", snapApp.Channels)}. Snap id: {snapApp.Id}");
+            }
+
+            var snapAppsDefaultChannel = snapApps.Channels.First();
+            var snapAppDefaultChannel = snapApp.Channels.First();
+
+            if (!string.Equals(snapAppsDefaultChannel.Name, snapAppDefaultChannel, StringComparison.Ordinal))
+            {
+                throw new Exception($"Default channel must be {snapAppsDefaultChannel.Name}. Snap id: {snapApp.Id}");
             }
 
             var snapAppAvailableChannels = snapApps.Channels.Where(rhs => snapApp.Channels.Any(lhs => lhs.Equals(rhs.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
             if (!snapAppAvailableChannels.Any())
             {
-                throw new Exception($"Channel list is empty. Application id: {snapApp.Id}");
+                throw new Exception($"Could not find any global channels. Channel list: {string.Join(",", snapAppUniqueChannels)}. Snap id: {snapApp.Id}");
             }
-
+                      
             var snapFeeds = new List<SnapFeed>();
             snapFeeds.AddRange(nuGetPackageSources.BuildSnapFeeds());
             snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed.TryCreateSnapHttpFeed(out var snapHttpFeed) ? snapHttpFeed : null).Where(x => x != null).DistinctBy(x => x.SourceUri));
@@ -248,7 +268,7 @@ namespace Snap.Extensions
                 var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed);
                 if (pushFeed == null)
                 {
-                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}.");
+                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 var updateFeed = (SnapFeed)
@@ -259,7 +279,7 @@ namespace Snap.Extensions
 
                 if (updateFeed == null)
                 {
-                    throw new Exception($"Unable to resolve update feed: {snapsChannel.UpdateFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}.");
+                    throw new Exception($"Unable to resolve update feed: {snapsChannel.UpdateFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 var currentChannel = i == 0; // Default snap channel is always the first one defined. 
@@ -341,13 +361,13 @@ namespace Snap.Extensions
             var snapReleaseDetailsAttribute = assemblyReflector.GetAttribute<SnapAppReleaseDetailsAttribute>();
             if (snapReleaseDetailsAttribute == null)
             {
-                throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyReflector.FullName}.");
+                throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyReflector.FullName}");
             }
 
             var snapSpecResource = assemblyReflector.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppWriter.SnapAppLibraryName);
             if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
             {
-                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyReflector.FullName}.");
+                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyReflector.FullName}");
             }
 
             using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())
@@ -408,7 +428,7 @@ namespace Snap.Extensions
             var snapSpecDllDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
             if (snapSpecDllDirectory == null)
             {
-                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}.");
+                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}");
             }
 
             return snapSpecDllDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader, snapAppWriter);

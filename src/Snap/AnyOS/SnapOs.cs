@@ -125,7 +125,7 @@ namespace Snap.AnyOS
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             var processes = await GetProcessesAsync(cancellationToken);
             
-            return processes.Where(x => x.Pid > 0 && x.WorkingDirectory.StartsWith(workingDirectory, 
+            return processes.Where(x => x.Pid > 0 && x.WorkingDirectory != null && x.WorkingDirectory.StartsWith(workingDirectory, 
                                                  DistroType == SnapOsDistroType.Windows ? 
                                                      StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
         }

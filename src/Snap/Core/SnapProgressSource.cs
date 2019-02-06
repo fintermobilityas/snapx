@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using JetBrains.Annotations;
 
 namespace Snap.Core
 {
@@ -8,6 +9,7 @@ namespace Snap.Core
     {
         event EventHandler<int> Progress;
         void Raise(int i);
+        void Raise(int i, [NotNull] Action action);
     }
 
     public sealed class SnapProgressSource : ISnapProgressSource
@@ -17,6 +19,13 @@ namespace Snap.Core
         public void Raise(int i)
         {
             Progress?.Invoke(this, i);
+        }
+
+        public void Raise(int i, [NotNull] Action action)
+        {
+            if (action == null) throw new ArgumentNullException(nameof(action));
+            action();
+            Raise(i);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -63,7 +63,7 @@ namespace Snap.Core
             var snapFilesCount = await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, cancellationToken);
             if (snapFilesCount <= 0)
             {
-                logger?.Error($"Unable to find any files in target path: {_snapPack.NuspecRootTargetPath}.");
+                logger?.Error($"Unable to find any files in target path: {_snapPack.NuspecRootTargetPath}");
                 return new List<string>();
             }
 

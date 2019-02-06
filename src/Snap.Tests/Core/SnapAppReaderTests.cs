@@ -132,8 +132,8 @@ namespace Snap.Tests.Core
             }
 
             // Apps.     
-            var snapAppBefore = snapAppsBefore.BuildSnapApp(nuGetPackageSources).ToList();
-            var snapAppAfter = snapAppsAfter.BuildSnapApp(nuGetPackageSources).ToList();
+            var snapAppBefore = snapAppsBefore.BuildSnapApps(nuGetPackageSources).ToList();
+            var snapAppAfter = snapAppsAfter.BuildSnapApps(nuGetPackageSources).ToList();
             Assert.Equal(snapAppBefore.Count, snapAppAfter.Count);
 
             for (var i = 0; i < snapAppsBefore.Apps.Count; i++)

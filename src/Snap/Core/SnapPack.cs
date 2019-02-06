@@ -20,6 +20,7 @@ using NuGet.Versioning;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
+using Snap.Logging;
 using Snap.NuGet;
 
 namespace Snap.Core
@@ -202,7 +203,7 @@ namespace Snap.Core
         string SnapNuspecTargetPath { get; }
         string SnapUniqueTargetPathFolderName { get; }
         string ChecksumManifestFilename { get; }
-        Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, CancellationToken cancellationToken = default);
+        Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackDeltaReport> BuildDeltaReportAsync(
             [NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath, CancellationToken cancellationToken = default);
         Task<(MemoryStream memoryStream, SnapApp snapApp)> BuildDeltaPackageAsync([NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath,
@@ -257,37 +258,62 @@ namespace Snap.Core
             ChecksumManifestFilename = "Snap.Checksum.Manifest";
         }
 
-        public async Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, CancellationToken cancellationToken = default)
+        public async Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
 
+            var sw = new Stopwatch();
+            sw.Restart();
+            
+            packageDetails.SnapProgressSource?.Raise(0);
+            logger?.Info($"Building nuspec properties");
+            
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(packageDetails);
 
             var outputStream = new MemoryStream();
             var progressSource = packageDetails.SnapProgressSource;
 
-            progressSource?.Raise(0);
-
             var alwaysRemoveTheseAssemblies = AlwaysRemoveTheseAssemblies.ToList();
             alwaysRemoveTheseAssemblies.Add(_snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App));
-            
+
+            logger?.Info($"Assemblies that will be replaced in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
+
+            progressSource?.Raise(10);
+
+            logger?.Info($"Rewriting nuspec: {packageDetails.NuspecFilename}.");
+
             using (var nuspecIntermediateStream = await _snapFilesystem.FileReadAsync(packageDetails.NuspecFilename, cancellationToken))
             using (var nuspecStream = RewriteNuspec(packageDetails, nuspecIntermediateStream, nuspecPropertiesResolver, packageDetails.NuspecBaseDirectory))
             {
-                progressSource?.Raise(50);
+                progressSource?.Raise(30);
+
+                logger?.Info($"Building nupkg using base directory: {packageDetails.NuspecBaseDirectory}");
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, nuspecPropertiesResolver);
 
+                progressSource?.Raise(40);
                 EnsureCoreRunSupportsThisPlatform();
+                
+                progressSource?.Raise(50);
+                logger?.Info($"Replacing assemblies in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.Files.Remove(new PhysicalPackageFile {TargetPath = targetPath}));
+                
+                progressSource?.Raise(60);
+                logger?.Info($"Adding snap assemblies");
                 await AddSnapAssemblies(packageBuilder, packageDetails.App, cancellationToken);
+ 
+                progressSource?.Raise(70);
+                logger?.Info($"Adding checkingsum manifest");
                 await AddChecksumManifestAsync(packageBuilder, cancellationToken);
 
+                logger?.Info($"Saving nupkg to stream");
+                progressSource?.Raise(80);
+                
                 packageBuilder.Save(outputStream);
-
                 outputStream.Seek(0, SeekOrigin.Begin);
 
                 progressSource?.Raise(100);
+                logger?.Info($"Nupkg has been successfully releasified: {packageDetails.App.BuildNugetLocalFilename()} in {sw.Elapsed.TotalSeconds:F1}s.");
 
                 return outputStream;
             }
@@ -310,13 +336,13 @@ namespace Snap.Core
             var previousSnapApp = await GetSnapAppAsync(previousNupkgPackageArchiveReader, cancellationToken);
             if (previousSnapApp == null)
             {
-                throw new Exception($"Unable to build snap app from previous nupkg: {previousNupkgAbsolutePath}.");
+                throw new Exception($"Unable to build snap app from previous nupkg: {previousNupkgAbsolutePath}");
             }
 
             var currentSnapApp = await GetSnapAppAsync(currentNupkgPackageArchiveReader, cancellationToken);
             if (currentSnapApp == null)
             {
-                throw new Exception($"Unable to build snap app from current nupkg: {currentNupkgAbsolutePath}.");
+                throw new Exception($"Unable to build snap app from current nupkg: {currentNupkgAbsolutePath}");
             }
 
             if (previousSnapApp.Version > currentSnapApp.Version)
@@ -329,14 +355,14 @@ namespace Snap.Core
             if (previousSnapApp.Target.Os != currentSnapApp.Target.Os)
             {
                 var message = "You cannot build a delta package between two packages that target different operating systems. " +
-                              $"Previous os: {previousSnapApp.Target.Os}. Current os: {currentSnapApp.Target.Os}.";
+                              $"Previous os: {previousSnapApp.Target.Os}. Current os: {currentSnapApp.Target.Os}";
                 throw new Exception(message);
             }
             
             if (previousSnapApp.Target.Rid != currentSnapApp.Target.Rid)
             {
                 var message = "You cannot build a delta package between two packages that target different runtime identifiers. " +
-                              $"Previous rid: {previousSnapApp.Target.Rid}. Current rid: {currentSnapApp.Target.Rid}.";
+                              $"Previous rid: {previousSnapApp.Target.Rid}. Current rid: {currentSnapApp.Target.Rid}";
                 throw new Exception(message);
             }
 
@@ -408,7 +434,7 @@ namespace Snap.Core
             if (deltaReport == null)
             {
                 throw new Exception(
-                    $"Unknown error building delta report between previous and current nupkg. Previous: {previousNupkgAbsolutePath}. Current: {currentNupkgAbsolutePath}.");
+                    $"Unknown error building delta report between previous and current nupkg. Previous: {previousNupkgAbsolutePath}. Current: {currentNupkgAbsolutePath}");
             }
 
             if (deltaReport.PreviousNupkgSha1Checksum == deltaReport.CurrentNupkgSha1Checksum)
@@ -425,7 +451,7 @@ namespace Snap.Core
                 var currentManifestData = await deltaReport.CurrentNupkgAsyncPackageCoreReader.GetManifestMetadataAsync(cancellationToken);
                 if (currentManifestData == null)
                 {
-                    throw new Exception($"Unable to extract manifest data from current nupkg: {currentNupkgAbsolutePath}.");
+                    throw new Exception($"Unable to extract manifest data from current nupkg: {currentNupkgAbsolutePath}");
                 }
 
                 progressSource?.Raise(50);
@@ -466,7 +492,7 @@ namespace Snap.Core
                             }
                         }
                         
-                        throw new InvalidOperationException($"Fatal error! Expected to replace assembly: {neverGenerateBsDiffThisAssembly}.");
+                        throw new InvalidOperationException($"Fatal error! Expected to replace assembly: {neverGenerateBsDiffThisAssembly}");
                     }
    
                     srcStream = await deltaReport.CurrentNupkgAsyncPackageCoreReader.GetStreamAsync(file.TargetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
@@ -564,7 +590,7 @@ namespace Snap.Core
             var currentManifestData = await deltaCoreReader.GetManifestMetadataAsync(cancellationToken);
             if (currentManifestData == null)
             {
-                throw new Exception($"Unable to extract manifest data from current nupkg: {deltaNupkgAbsolutePath}.");
+                throw new Exception($"Unable to extract manifest data from current nupkg: {deltaNupkgAbsolutePath}");
             }
             
             var packageBuilder = new PackageBuilder();
@@ -665,13 +691,13 @@ namespace Snap.Core
                 var nuspecDocument = XmlUtility.LoadSafe(nuspecStream);
                 if (nuspecDocument == null)
                 {
-                    throw new Exception("Failed to parse nuspec.");
+                    throw new Exception("Failed to parse nuspec");
                 }
 
                 var metadata = nuspecDocument.Descendants(XName.Get("metadata", nuspecXmlNs)).SingleOrDefault();
                 if (metadata == null)
                 {
-                    throw new Exception("The required element 'metadata' is missing from the nuspec.");
+                    throw new Exception("The required element 'metadata' is missing from the nuspec");
                 }
 
                 var id = metadata.Descendants(XName.Get("id", nuspecXmlNs)).SingleOrDefault();
@@ -687,7 +713,7 @@ namespace Snap.Core
                 var title = metadata.Descendants(XName.Get("title", nuspecXmlNs)).SingleOrDefault();
                 if (title == null)
                 {
-                    throw new Exception($"The required element 'description' is missing from the nuspec.");
+                    throw new Exception($"The required element 'description' is missing from the nuspec");
                 }
                 
                 var version = metadata.Descendants(XName.Get("version", nuspecXmlNs)).SingleOrDefault();
@@ -705,6 +731,25 @@ namespace Snap.Core
                 {
                     metadata.Add(new XElement("description", title.Value));
                 }
+
+                var files = nuspecDocument.Descendants(XName.Get("files", nuspecXmlNs)).SingleOrDefault();
+                if (files == null)
+                {
+                    throw new Exception($"The required element 'description' is missing from the nuspec");
+                }
+
+                foreach (var file in files.Descendants())
+                {                    
+                    var targetAttribute = file.Attribute("target");
+                    if (targetAttribute == null)
+                    {
+                        file.SetAttributeValue("target", "$anytarget$");
+                        continue;
+                    }
+
+                    var targetAttributeValue = !targetAttribute.Value.ForwardSlashesSafe().StartsWith("/") ? $"/{targetAttribute.Value}" : targetAttribute.Value.ForwardSlashesSafe();
+                    file.SetAttributeValue("target", $"$anytarget${targetAttributeValue}");
+                }
                 
                 var rewrittenNuspecStream = new MemoryStream();
                 nuspecDocument.Save(rewrittenNuspecStream);
@@ -719,18 +764,7 @@ namespace Snap.Core
 
                 if (!manifest.Files.Any())
                 {
-                    throw new Exception("Nuspec does not contain any files.");
-                }
-
-                foreach (var file in manifest.Files)
-                {
-                    var targetPath = file.Source?.Replace(baseDirectory, string.Empty).ForwardSlashesSafe() ?? "/";
-                    if (!targetPath.StartsWith(_snapFilesystem.DirectorySeparatorChar.ToString()))
-                    {
-                        targetPath = $"{_snapFilesystem.DirectorySeparatorChar}{targetPath}";
-                    }
-
-                    file.Target = $"$anytarget${targetPath}";
+                    throw new Exception("Nuspec does not contain any files");
                 }
 
                 var outputStream = new MemoryStream();
@@ -785,7 +819,7 @@ namespace Snap.Core
                 {
                     if (coreRun.Length <= 0)
                     {
-                        throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}.");
+                        throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}");
                     }
                 }
 
@@ -847,7 +881,7 @@ namespace Snap.Core
 
             if (snapApp.Delta)
             {
-                throw new Exception("It's illegal to add snap assemblies to a delta package.");
+                throw new Exception("It's illegal to add snap assemblies to a delta package");
             }
             
             // Snap.dll
@@ -895,7 +929,7 @@ namespace Snap.Core
             Guid.TryParse(guidStr, out var assemblyGuid);
             if (assemblyGuid == Guid.Empty)
             {
-                throw new Exception("Fatal error! Assembly guid is empty.");
+                throw new Exception("Fatal error! Assembly guid is empty");
             }
 
             return assemblyGuid.ToString("N");
@@ -908,32 +942,32 @@ namespace Snap.Core
             if (packageDetails.NuspecBaseDirectory == null ||
                 !_snapFilesystem.DirectoryExists(packageDetails.NuspecBaseDirectory))
             {
-                throw new DirectoryNotFoundException($"Unable to find base directory: {packageDetails.NuspecBaseDirectory}.");
+                throw new DirectoryNotFoundException($"Unable to find base directory: {packageDetails.NuspecBaseDirectory}");
             }
 
             if (!_snapFilesystem.FileExists(packageDetails.NuspecFilename))
             {
-                throw new FileNotFoundException($"Unable to find nuspec filename: {packageDetails.NuspecFilename}.");
+                throw new FileNotFoundException($"Unable to find nuspec filename: {packageDetails.NuspecFilename}");
             }
 
             if (packageDetails.App == null)
             {
-                throw new Exception("Snap app cannot be null.");
+                throw new Exception("Snap app cannot be null");
             }
 
             if (packageDetails.App.Version == null)
             {
-                throw new Exception("Snap app version cannot be null.");
+                throw new Exception("Snap app version cannot be null");
             }
 
             if (!packageDetails.App.IsValidAppId())
             {
-                throw new Exception($"Snap app id is invalid: {packageDetails.App.Id}.");
+                throw new Exception($"Snap id is invalid: {packageDetails.App.Id}");
             }
 
             if (!packageDetails.App.IsValidChannelName())
             {
-                throw new Exception($"Invalid channel name: {packageDetails.App.GetCurrentChannelOrThrow().Name}. App id: {packageDetails.App.Id}.");
+                throw new Exception($"Invalid channel name: {packageDetails.App.GetCurrentChannelOrThrow().Name}. Snap id: {packageDetails.App.Id}");
             }
         }
 

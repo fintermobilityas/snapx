@@ -14,29 +14,34 @@ namespace Snap.NuGet
 
     internal class NugetLogger : LoggerBase, ISnapNugetLogger
     {
-        static readonly ILog Logger = LogProvider.For<NugetLogger>();
+        static ILog _logger;
+
+        public NugetLogger(ILog logger)
+        {
+            _logger = logger ?? LogProvider.For<NugetLogger>();
+        }
 
         public override void Log(ILogMessage message)
         {
             switch (message.Level)
             {
                 case LogLevel.Verbose:
-                    Logger.Trace($"[nuget]: {message.Message}");
+                    _logger.Trace($"[nuget]: {message.Message}");
                     break;
                 case LogLevel.Debug:
-                    Logger.Debug($"[nuget]: {message.Message}");
+                    _logger.Debug($"[nuget]: {message.Message}");
                     break;
                 case LogLevel.Information:
-                    Logger.Info($"[nuget]: {message.Message}");
+                    _logger.Info($"[nuget]: {message.Message}");
                     break;
                 case LogLevel.Minimal:
-                    Logger.Trace($"[nuget]: {message.Message}");
+                    _logger.Trace($"[nuget]: {message.Message}");
                     break;
                 case LogLevel.Warning:
-                    Logger.Warn($"[nuget]: {message.Message}");
+                    _logger.Warn($"[nuget]: {message.Message}");
                     break;
                 case LogLevel.Error:
-                    Logger.Error($"[nuget]: {message.Message}");
+                    _logger.Error($"[nuget]: {message.Message}");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException($"[nuget]: Invalid log level {message.Level}");

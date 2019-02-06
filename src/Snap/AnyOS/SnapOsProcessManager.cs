@@ -64,7 +64,7 @@ namespace Snap.AnyOS
             var pi = Process.Start(processStartInfo);
             if (pi == null)
             {
-                throw new Exception($"Error invoking process: {processStartInfo.FileName}. Arguments: {processStartInfo.Arguments}.");
+                throw new Exception($"Error invoking process: {processStartInfo.FileName}. Arguments: {processStartInfo.Arguments}");
             }
 
             await Task.Run(() =>

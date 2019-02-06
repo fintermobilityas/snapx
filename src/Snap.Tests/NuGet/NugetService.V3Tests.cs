@@ -11,6 +11,7 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Resources;
+using Snap.Logging;
 using Snap.NuGet;
 using Snap.Reflection;
 using Snap.Shared.Tests;
@@ -31,7 +32,7 @@ namespace Snap.Tests.NuGet
         {
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
-            _nugetService = new NugetService(new NugetLogger());
+            _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
             _snapFilesystem = new SnapFilesystem();
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources());
         }
@@ -108,7 +109,7 @@ namespace Snap.Tests.NuGet
             Assert.Equal(packageIdentity, upstreamPackageIdentity);
         }
 
-        [Fact(Skip = "Todo: Mock me. Only for works for YouPark employees right now.")]
+        [Fact(Skip = "Todo: Mock me. Only for works for YouPark employees right now")]
         public async Task TestPushAsync()
         {
             var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources(_snapFilesystem, _baseFixture.WorkingDirectory);

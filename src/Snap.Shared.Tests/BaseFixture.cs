@@ -70,6 +70,19 @@ namespace Snap.Shared.Tests
                 UpdateFeed = updateFeedNuget
             };
 
+            OSPlatform osPlatform;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                osPlatform = OSPlatform.Windows;
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                osPlatform = OSPlatform.Linux;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+            
             return new SnapApp
             {
                 Id = "demoapp",
@@ -82,7 +95,7 @@ namespace Snap.Shared.Tests
                 },
                 Target = new SnapTarget
                 {
-                    Os = OSPlatform.Windows,
+                    Os = osPlatform,
                     Framework = "netcoreapp2.1",
                     Rid = "unknown-x64",
                     Nuspec = "test.nuspec"
@@ -250,7 +263,7 @@ namespace Snap.Shared.Tests
         <authors>Peter Rekdal Sunde</authors>
     </metadata>
     <files> 
-		{string.Join("\n", files)}						    
+        <file src=""**\*.dll"" />					    
     </files>
 </package>";
 
@@ -274,7 +287,7 @@ namespace Snap.Shared.Tests
 
                 await filesystem.FileWriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, cancellationToken);
+                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, cancellationToken: cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);
             }
         }

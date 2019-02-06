@@ -187,7 +187,7 @@ namespace Snap.AnyOS.Windows
         {
             if (Environment.OSVersion.Version < new Version(6, 1))
             {
-                Logger.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting...", Environment.OSVersion.VersionString);
+                Logger.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting", Environment.OSVersion.VersionString);
                 return;
             }
 
@@ -199,7 +199,7 @@ namespace Snap.AnyOS.Windows
 
             if (!Filesystem.DirectoryExists(taskbarPath))
             {
-                Logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping...");
+                Logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping");
                 return;
             }
 

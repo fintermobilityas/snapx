@@ -34,7 +34,6 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("demoapp.1", true)]
         [InlineData("demoapp_1", true)]
         [InlineData("DEMOApp.1", true)]
-        [InlineData("DemOApp_1", true)]
         [InlineData("demoapp-1", false)]
         public void TestIsValidAppId(string appName, bool isValid)
         {
@@ -104,7 +103,7 @@ namespace Snap.Tests.Core.Extensions
 
             var fullOrDelta = !snapApp.Delta ? "full" : "delta";
 
-            var expectedPackageId = $"{snapApp.Id}-{fullOrDelta}-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_{currentChannel.Name}".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -134,7 +133,7 @@ namespace Snap.Tests.Core.Extensions
                     Rid = "win7-x64"
                 }
             };
-            var expectedPackageId = $"{snapApp.Id}-full-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_{currentChannel.Name}".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildFullNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -165,7 +164,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapApp.Id}-delta-{snapApp.Target.Rid}-{currentChannel.Name}".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_{currentChannel.Name}".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildDeltaNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -201,7 +200,7 @@ namespace Snap.Tests.Core.Extensions
 
             var fullOrDelta = !snapApp.Delta ? "full" : "delta";
 
-            var expectedPackageId = $"{snapApp.Id}-{fullOrDelta}-{snapApp.Version.ToMajorMinorPatch()}-{snapApp.Target.Rid}-{currentChannel.Name}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{currentChannel.Name}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -472,7 +471,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapAppRelease(snapAppBefore.Id, snapAppBefore.Target.Rid,
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid,
                 new SemanticVersion(1, 1, 0), snapAppBefore.BuildNugetSources());
 
             // Generic

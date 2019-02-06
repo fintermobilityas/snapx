@@ -4,7 +4,7 @@ using CommandLine;
 namespace Snap.Tool.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [Verb("push", HelpText = "Pushes a nupkg to the default release channel.")]
+    [Verb("push", HelpText = "Pushes a nupkg to the default release channel")]
     internal class PushNupkgOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Snap app name", Required = true)]

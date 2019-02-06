@@ -5,6 +5,7 @@ using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Snap.Logging;
 using Snap.NuGet;
 using Xunit;
 
@@ -16,7 +17,7 @@ namespace Snap.Tests.NuGet
 
         public NugetServiceV2Tests()
         {
-            _nugetService = new NugetService(new NugetLogger());
+            _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
         }
 
         [Fact]

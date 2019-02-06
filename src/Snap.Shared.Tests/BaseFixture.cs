@@ -275,7 +275,7 @@ namespace Snap.Shared.Tests
                 files.Add($"<file src=\"{pair.Key}\" />");
             }
 
-            var (coreRunMemoryStream, coreRunExeFilename, _) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (coreRunMemoryStream, coreRunExeFilename, osPlatform) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
             coreRunMemoryStream.Dispose();
             
             var nuspecContent = $@"<?xml version=""1.0""?>

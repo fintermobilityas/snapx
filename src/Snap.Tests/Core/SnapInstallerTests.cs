@@ -248,7 +248,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
                         // App assemblies
-                        _snapFilesystem.PathCombine(appDir, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
+                        _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(appDir, $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
                         _snapFilesystem.PathCombine(appDir, $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
                         // Nupkg

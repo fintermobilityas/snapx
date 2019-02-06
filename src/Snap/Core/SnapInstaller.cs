@@ -10,6 +10,7 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
+using Snap.AnyOS.Unix;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
@@ -244,9 +245,26 @@ namespace Snap.Core
             string rootAppDirectory, string rootAppInstallDirectory, SemanticVersion currentVersion,
             bool isInitialInstall, CancellationToken cancellationToken)
         {
+            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            var mainExecutableAbsolutePath = !isWindows ? 
+                _snapFilesystem.PathCombine(rootAppDirectory, snapApp.Id) : null;
+
+            if (!isWindows 
+                && mainExecutableAbsolutePath != null
+                && _snapFilesystem.FileExists(mainExecutableAbsolutePath))
+            {
+                Logger.Info($"Attempting to change file permission for main executable: {mainExecutableAbsolutePath}.");
+                
+                var success = NativeMethodsUnix.chmod(mainExecutableAbsolutePath, 755);
+                
+                Logger.Info($"Permissions changed successfully: {success}.");
+            }
+             
             var allSnapAwareApps = _snapFilesystem
                 .EnumerateFiles(rootAppDirectory)
-                .Where(x => x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
+                .Where(x => 
+                    x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase) 
+                    || mainExecutableAbsolutePath != null && string.Equals(x.FullName, mainExecutableAbsolutePath))
                 .Select(x => x.FullName)
                 .ToList();
 

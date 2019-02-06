@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Mono.Cecil;
 
 namespace Snap.Shared.Tests.Extensions
@@ -9,7 +10,18 @@ namespace Snap.Shared.Tests.Extensions
         public static string BuildRelativeFilename(this AssemblyDefinition assemblyDefinition)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            return assemblyDefinition.MainModule.Kind == ModuleKind.Dll ? $"{assemblyDefinition.Name.Name}.dll" : $"{assemblyDefinition.Name.Name}.exe";
+            var assemblyName = $"{assemblyDefinition.Name.Name}";
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                assemblyName = assemblyDefinition.MainModule.Kind == ModuleKind.Dll ? $"{assemblyName}.dll" : $"{assemblyName}.exe";
+            }
+            else
+            {
+                assemblyName = assemblyDefinition.MainModule.Kind == ModuleKind.Dll ? $"{assemblyName}.dll" : $"{assemblyName}";
+            }
+
+            return assemblyName;
         }
 
         public static string GetFullPath(this AssemblyDefinition assemblyDefinition, string workingDirectory)

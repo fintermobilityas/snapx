@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -229,7 +229,7 @@ namespace Snap.Core
             _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
 
-        public IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
+        public IEnumerable<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
         {
             _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
@@ -264,7 +264,7 @@ namespace Snap.Core
             sw.Restart();
             
             packageDetails.SnapProgressSource?.Raise(0);
-            logger?.Info($"Building nuspec properties");
+            logger?.Info("Building nuspec properties");
             
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(packageDetails);
 
@@ -289,13 +289,52 @@ namespace Snap.Core
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, nuspecPropertiesResolver);
 
-                var mainExecutableTargetPath = _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)).ForwardSlashesSafe();
+                var mainExecutableFileName = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App);
+                var mainExecutableTargetPath = _snapFilesystem.PathCombine(NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();               
                 var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath);
-                if (mainExecutablePackageFile == null)
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    throw new Exception($"Main executable is missing in nuspec: {mainExecutableTargetPath}");
-                }
+                    // Remove empty /lib/Any. Wtf, nuget :(
+                    var emptyRootNuspecDirectoryPackageFile = packageBuilder.Files.First();
+                    if (string.Equals(emptyRootNuspecDirectoryPackageFile.Path, NuspecRootTargetPath))
+                    {
+                        packageBuilder.Files.Remove(emptyRootNuspecDirectoryPackageFile);
+                    }
 
+                    // Cross platform my ass, handle files without an extension. These files has to be added manually.
+                    foreach (var file in packageBuilder.Files.Where(x => string.IsNullOrWhiteSpace(_snapFilesystem.PathGetExtension(x.Path))))
+                    {
+                        var fileAbsolutePath = _snapFilesystem.PathCombine(packageDetails.NuspecBaseDirectory, file.Path);
+                        if (!_snapFilesystem.FileExists(fileAbsolutePath))
+                        {
+                            throw new Exception("Missing file without extension in nuspec: {fileAbsolutePath}");
+                        }
+                        
+                        var srcStream = await _snapFilesystem.FileRead(fileAbsolutePath).ReadToEndAsync(cancellationToken, true);
+                        packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, mainExecutableTargetPath, string.Empty));                                            
+                    }
+                                                          
+                    // Special case for main executable that does not have an extension.
+                    if (mainExecutablePackageFile == null)
+                    {
+                        var mainExecutableAbsolutePath = _snapFilesystem.PathCombine(packageDetails.NuspecBaseDirectory, mainExecutableFileName);
+                        if (!_snapFilesystem.FileExists(mainExecutableAbsolutePath))
+                        {
+                            throw new Exception($"Main executable is missing in nuspec: {mainExecutableAbsolutePath}");                                                                    
+                        }
+
+                        var srcStream = await _snapFilesystem.FileRead(mainExecutableAbsolutePath).ReadToEndAsync(cancellationToken, true);
+                        packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, mainExecutableTargetPath, string.Empty));                                            
+                    }
+                }
+                else
+                {
+                    if (mainExecutablePackageFile == null)
+                    {
+                        throw new Exception($"Main executable is missing in nuspec: {mainExecutableTargetPath}");                                                                                            
+                    }
+                }
+                                
                 progressSource?.Raise(40);
                 EnsureCoreRunSupportsThisPlatform();
                 
@@ -304,14 +343,14 @@ namespace Snap.Core
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.Files.Remove(new PhysicalPackageFile {TargetPath = targetPath}));
                 
                 progressSource?.Raise(60);
-                logger?.Info($"Adding snap assemblies");
+                logger?.Info("Adding snap assemblies");
                 await AddSnapAssemblies(packageBuilder, packageDetails.App, cancellationToken);
  
                 progressSource?.Raise(70);
-                logger?.Info($"Adding checkingsum manifest");
+                logger?.Info("Adding checkingsum manifest");
                 await AddChecksumManifestAsync(packageBuilder, cancellationToken);
 
-                logger?.Info($"Saving nupkg to stream");
+                logger?.Info("Saving nupkg to stream");
                 progressSource?.Raise(80);
                 
                 packageBuilder.Save(outputStream);
@@ -718,7 +757,7 @@ namespace Snap.Core
                 var title = metadata.Descendants(XName.Get("title", nuspecXmlNs)).SingleOrDefault();
                 if (title == null)
                 {
-                    throw new Exception($"The required element 'description' is missing from the nuspec");
+                    throw new Exception("The required element 'description' is missing from the nuspec");
                 }
                 
                 var version = metadata.Descendants(XName.Get("version", nuspecXmlNs)).SingleOrDefault();
@@ -740,7 +779,7 @@ namespace Snap.Core
                 var files = nuspecDocument.Descendants(XName.Get("files", nuspecXmlNs)).SingleOrDefault();
                 if (files == null)
                 {
-                    throw new Exception($"The required element 'description' is missing from the nuspec");
+                    throw new Exception("The required element 'description' is missing from the nuspec");
                 }
 
                 foreach (var file in files.Descendants())

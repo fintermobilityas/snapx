@@ -60,7 +60,7 @@ namespace Snap.Tool.Core
             }
             else if (osPlatform == OSPlatform.Linux)
             {
-                _coreRunPtr = NativeMethodsUnix.dlopen(coreRunLibLinux);
+                _coreRunPtr = NativeMethodsUnix.dlopen(coreRunLibLinux, SnapCoreRunLibDecls.RTLD_NOW | SnapCoreRunLibDecls.RTLD_LOCAL);
 
                 if (_coreRunPtr == IntPtr.Zero)
                 {
@@ -141,7 +141,7 @@ namespace Snap.Tool.Core
             [DllImport("libdl.so")]
             public static extern IntPtr dlsym(IntPtr handle, string symbol);
             [DllImport("libdl.so")]
-            public static extern IntPtr dlopen(string lpFileName);
+            public static extern IntPtr dlopen(string filename, int flags);
             [DllImport("libdl.so")]
             public static extern int dlclose(IntPtr hModule);
         }
@@ -150,6 +150,9 @@ namespace Snap.Tool.Core
         [SuppressMessage("ReSharper", "InconsistentNaming")]
         static class SnapCoreRunLibDecls
         {
+            public const int RTLD_LOCAL = 1; 
+            public const int RTLD_NOW = 2; 
+            
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
             public delegate int pal_rc_is_snap_aware([MarshalAs(UnmanagedType.LPStr)] string filename);
             [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet =  CharSet.Unicode)]

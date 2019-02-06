@@ -101,11 +101,11 @@ namespace Snap.NuGet
             var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
             var configFilePaths = nugetMachineWideSettings.Settings.GetConfigFilePaths();
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (!configFilePaths.Any() && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 configFilePaths.Add("~/");
             }
-            
+                        
             var packageSources = configFilePaths
                 .Select(configFilePath => nuGetConfigFileReader.ReadNugetSources(configFilePath)).ToList();
 

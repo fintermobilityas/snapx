@@ -14,7 +14,7 @@ namespace Snap.Core.Resources
         bool IsOptimized { get; }
         MemoryStream CoreRunWindows { get; }
         MemoryStream CoreRunLinux { get; }
-        (MemoryStream memoryStream, string filename) GetCoreRunForSnapApp(SnapApp snapApp);
+        (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
     }
@@ -53,18 +53,18 @@ namespace Snap.Core.Resources
             }
         }
 
-        public (MemoryStream memoryStream, string filename) GetCoreRunForSnapApp([NotNull] SnapApp snapApp)
+        public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             
             if (snapApp.Target.Os == OSPlatform.Windows)
             {
-                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp));
+                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp), OSPlatform.Windows);
             }
 
             if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                return (CoreRunLinux, GetCoreRunExeFilenameForSnapApp(snapApp));
+                return (CoreRunLinux, GetCoreRunExeFilenameForSnapApp(snapApp), OSPlatform.Linux);
             }
 
             throw new PlatformNotSupportedException();

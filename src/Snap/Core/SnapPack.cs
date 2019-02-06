@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,7 +22,6 @@ using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
-using ICustomAttributeProvider = Mono.Cecil.ICustomAttributeProvider;
 
 namespace Snap.Core
 {
@@ -199,7 +197,6 @@ namespace Snap.Core
     internal interface ISnapPack
     {
         IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
-        IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies { get; }
         string NuspecTargetFrameworkMoniker { get; }
         string NuspecRootTargetPath { get; }
         string SnapNuspecTargetPath { get; }
@@ -217,7 +214,6 @@ namespace Snap.Core
         Task<int> CountNonNugetFilesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
         Task<IEnumerable<string>> GetFilesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
         Task<IEnumerable<SnapPackFileChecksum>> GetChecksumManifestAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
-        List<string> GetAllSnapAwareApps([NotNull] string directory, int minimumVersion = 1);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -301,11 +297,6 @@ namespace Snap.Core
                     throw new Exception($"Main executable is missing in nuspec: {mainExecutableTargetPath}");
                 }
 
-                if (!IsSnapAware(mainExecutablePackageFile))
-                {
-                    throw new Exception($"Main executable is not marked as snap aware: {mainExecutableTargetPath}.");
-                }
-                
                 progressSource?.Raise(40);
                 EnsureCoreRunSupportsThisPlatform();
                 
@@ -813,26 +804,6 @@ namespace Snap.Core
             return (await asyncPackageCoreReader.GetFilesAsync(cancellationToken));
         }
         
-        public List<string> GetAllSnapAwareApps([NotNull] string directory, int minimumVersion = 1)
-        {
-            if (directory == null) throw new ArgumentNullException(nameof(directory));
-
-            return _snapFilesystem
-                .EnumerateFiles(directory)
-                .Where(x => x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => x.FullName)
-                .Where(x =>
-                {                    
-                    var version = SnapUtility.Retry(() =>
-                    {                    
-                        var assemblyDefinition = AssemblyDefinition.ReadAssembly(x);
-                        return GetAssemblySnapAwareVersion(assemblyDefinition);
-                    }, throwException: false) ?? -1;
-                    return version >= minimumVersion;
-                })
-                .ToList();
-        }
-
         void EnsureCoreRunSupportsThisPlatform()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -941,7 +912,7 @@ namespace Snap.Core
             }
             
             // Corerun
-            var (coreRunStream, coreRunFilename) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (coreRunStream, coreRunFilename, _) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
             packageBuilder.Files.Add(BuildInMemoryPackageFile(coreRunStream, SnapNuspecTargetPath, coreRunFilename));
             
         }
@@ -1036,68 +1007,6 @@ namespace Snap.Core
             }
 
             return (nuspecProperties, NuspecPropertyProvider);
-        }
-        
-        bool IsSnapAware([NotNull] IPackageFile packageFile)
-        {
-            if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
-            try
-            {
-                var assemblyDefinition = AssemblyDefinition.ReadAssembly(packageFile.GetStream(), new ReaderParameters(ReadingMode.Immediate));
-                return GetAssemblySnapAwareVersion(assemblyDefinition) > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        static int? GetAssemblySnapAwareVersion(ICustomAttributeProvider assembly)
-        {
-            if (assembly == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                if (!assembly.HasCustomAttributes)
-                {
-                    return null;
-                }
-
-                var attrs = assembly.CustomAttributes;
-                var attribute = attrs.FirstOrDefault(x =>
-                {
-                    if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName)
-                    {
-                        return false;
-                    }
-
-                    if (x.ConstructorArguments.Count != 2)
-                    {
-                        return false;
-                    }
-
-                    var attributeValue = x.ConstructorArguments[0].Value.ToString();
-                    return attributeValue == "SnapAwareVersion";
-                });
-
-                if (attribute == null)
-                {
-                    return null;
-                }
-
-                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), 
-                    NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
-                {
-                    return null;
-                }
-
-                return result;
-            }
-            catch (FileLoadException) { return null; }
-            catch (BadImageFormatException) { return null; }
         }
     }
 }

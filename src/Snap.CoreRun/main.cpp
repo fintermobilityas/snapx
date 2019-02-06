@@ -39,23 +39,6 @@ int corerun_main(int argc, char *argv[], const int cmd_show_windows)
         return -1;
     }
 
-#if _DEBUG && PLATFORM_WINDOWS
-    std::vector<std::string> args;
-    args.emplace_back(strdup(argv[0]));
-    args.emplace_back("--coreclr-min-version=2.2.0");
-    args.emplace_back("--coreclr-exe=C:\\Users\\peters\\Documents\\GitHub\\snap\\src\\Snap.Update\\bin\\Debug\\netcoreapp2.1\\Snap.Update.dll");
-    args.emplace_back("--test1234");
-    args.emplace_back("--testq213=222");
-    
-    argc = static_cast<int>(args.size());
-    argv = new char*[argc];
-
-    for (auto i = 0; i < argc; i++)
-    {
-        argv[i] = strdup(args[i].c_str());
-    }
-#endif
-
     // This is necessary because cxxopts hijacks argc/argv :( 
     const auto core_clr_arguments_maybe = get_core_clr_arguments(argc, argv);
 

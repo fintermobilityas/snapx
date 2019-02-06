@@ -385,9 +385,6 @@ namespace snap {
         static std::vector<core_clr_directory> get_core_directories_from_path(const char* core_clr_root_path,
             const version::Semver200_version& clr_minimum_version);
 
-        static core_clr_instance* try_load_core_clr(const std::string & executable_path, const char* executable_working_directory, const std::vector<std::string>& arguments,
-            const version::Semver200_version & clr_minimum_version);
-
         static core_clr_instance* try_load_core_clr(const char* directory_path, const version::Semver200_version& core_clr_version);
 
         static std::vector<std::string> get_trusted_platform_assemblies(const char* trusted_platform_assemblies_path);

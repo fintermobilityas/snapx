@@ -862,31 +862,6 @@ namespace Snap.Tests.Core
                 var snapAppAfter = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader);
                 Assert.NotNull(snapAppAfter);
             }
-        }
-
-        [Fact]
-        public void TestGetAllSnapAwareApps()
-        {
-            var snapApp = _baseFixture.BuildSnapApp();
-
-            using (var snapAwareExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp))
-            using (var notSnapAwareExeAssemblyDefinition = _baseFixture.BuildEmptyExecutable("mynotsnapwareexe"))
-            using (var dllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mydll"))
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            {
-                var snapAwareExePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, snapAwareExeAssemblyDefinition.BuildRelativeFilename());
-                snapAwareExeAssemblyDefinition.Write(snapAwareExePath);
-
-                var dllPath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, dllAssemblyDefinition.BuildRelativeFilename());
-                dllAssemblyDefinition.Write(dllPath);
-                                
-                var notSnapAwareExePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, notSnapAwareExeAssemblyDefinition.BuildRelativeFilename());
-                notSnapAwareExeAssemblyDefinition.Write(notSnapAwareExePath);
-
-                var snapAwareApps = _snapPack.GetAllSnapAwareApps(tmpDir.WorkingDirectory).OrderBy(x => x).ToList();
-                Assert.Single(snapAwareApps);
-                Assert.Equal(snapAwareExePath, snapAwareApps[0]);
-            }
-        }
+        }        
     }
 }

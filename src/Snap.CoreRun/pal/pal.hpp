@@ -1,7 +1,6 @@
 #pragma once
 
 #include "pal_string.hpp"
-#include "easylogging++.h"
 
 #ifdef PLATFORM_WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
@@ -17,6 +16,8 @@
 #define PAL_DIRECTORY_SEPARATOR_C '\\'
 #define PAL_CORECLR_TPA_SEPARATOR_STR ";"
 #define PAL_CORECLR_TPA_SEPARATOR_C ';'
+#define PAL_API __declspec( dllexport )
+#define PAL_CALLING_CONVENTION __cdecl
 #elif PLATFORM_LINUX
 #include <limits.h>
 #define PAL_MAX_PATH PATH_MAX
@@ -26,6 +27,13 @@
 #define PAL_DIRECTORY_SEPARATOR_C '/'
 #define PAL_CORECLR_TPA_SEPARATOR_STR ":"
 #define PAL_CORECLR_TPA_SEPARATOR_C ':'
+#if defined(__GNUC__)
+#define PAL_API __attribute__((visibility("default")))
+#define PAL_CALLING_CONVENTION 
+#else
+#define PAL_API 
+#define PAL_CALLING_CONVENTION
+#endif
 #else
 #error Unsupported platform
 #endif
@@ -63,3 +71,14 @@ BOOL pal_fs_directory_exists(const char* path_in, BOOL* directory_exists_out);
 BOOL pal_str_endswith(const char* src, const char* str);
 BOOL pal_str_startswith(const char* src, const char* str);
 BOOL pal_str_iequals(const char* lhs, const char* rhs);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+PAL_API int PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char* filename_in);
+PAL_API int PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in);
+
+#ifdef __cplusplus
+}
+#endif

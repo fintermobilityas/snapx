@@ -2,6 +2,8 @@
 
 project(corerun CXX)
 
+add_subdirectory(pal)
+
 list(APPEND corerun_INCLUDE_DIRS
    vendor
    vendor/easyloggingpp/src
@@ -15,8 +17,6 @@ set(corerun_SOURCES
    vendor/easyloggingpp/src/easylogging++.cc
    vendor/semver/semver200_comparator.cpp 
    vendor/semver/semver200_parser.cpp
-   pal/pal_string.cpp
-   pal/pal.cpp
 )
 
 include_directories(
@@ -38,28 +38,22 @@ if(WIN32)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows")		
 		set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")			
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")	
+        target_compile_definitions(corerun PRIVATE 
+		    PLATFORM_MINGW
+	    )	
 	endif()
-
-	target_link_libraries(corerun PRIVATE 
-		shlwapi
-		shell32
-	)
-
+	
 	set(CompilerFlags
 		CMAKE_CXX_FLAGS
 		CMAKE_CXX_FLAGS_DEBUG
 		CMAKE_CXX_FLAGS_RELEASE
-		CMAKE_C_FLAGS
-		CMAKE_C_FLAGS_DEBUG
-		CMAKE_C_FLAGS_RELEASE
 	)
 		
 	foreach(CompilerFlag ${CompilerFlags})
 	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
 	
-
 	target_compile_definitions(corerun PRIVATE 
 		PLATFORM_WINDOWS
 		_CRT_NONSTDC_NO_WARNINGS
@@ -69,21 +63,13 @@ if(WIN32)
 
 elseif(UNIX)
 
-	target_link_libraries(corerun PRIVATE
-		dl
-	)
-
 	target_compile_definitions(corerun PRIVATE 
 		PLATFORM_LINUX
 	)	
-
-	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64") 
-		target_compile_definitions(corerun PRIVATE 
-			PLATFORM_LINUX_AARCH64
-		)	
-	endif()
 	
 endif()
+
+target_link_libraries(corerun PUBLIC corerun_pal_static)
 
 set_property(TARGET corerun PROPERTY CXX_STANDARD 17)
 set_property(TARGET corerun PROPERTY CXX_STANDARD_REQUIRED ON)

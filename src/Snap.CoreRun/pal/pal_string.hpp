@@ -4,7 +4,7 @@
 #include <iostream>
 
 // - String internal
-#if PLATFORM_WINDOWS
+#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_MINGW)
 wchar_t* pal_str_widen(const char* utf8_str);
 char* pal_str_narrow(const wchar_t* utf16_str);
 #ifndef TRUE
@@ -13,17 +13,15 @@ char* pal_str_narrow(const wchar_t* utf16_str);
 #ifndef FALSE
 #define FALSE 0
 #endif
-#ifdef __MINGW32__
+#if defined(PLATFORM_MINGW)
 #include <string.h>
 #ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0x0080
 #endif
 #endif
+#elif defined(PLATFORM_LINUX)
 #endif
-
-#if PLATFORM_LINUX
 #include <string.h>
-#endif
 
 template<class TStringClass, class TStorageClass, class TStdString>
 class pal_unicode_string

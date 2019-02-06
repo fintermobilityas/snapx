@@ -3,8 +3,9 @@
 #if PLATFORM_WINDOWS
 #include <shlwapi.h> // PathIsDirectory, PathFileExists etc.
 #include <strsafe.h> // StringCchLengthA
-#if _MINGW32_
-#include <wchar_s.h> // _wgetenv
+#include <cctype> // toupper
+#if !defined(PLATFORM_MINGW)
+#include "rcedit/rcedit.hpp"
 #endif
 #endif
 
@@ -113,17 +114,9 @@ BOOL pal_free_library(void* instance_in)
     }
 #if PLATFORM_WINDOWS
     auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
-    if (!free_library_result)
-    {
-        LOG(WARNING) << "FreeLibrary failed. result: " << free_library_result;
-    }
     return TRUE;
 #elif PLATFORM_LINUX
     auto dlclose_result = dlclose(instance_in);
-    if (dlclose_result != 0)
-    {
-        LOG(WARNING) << "dlclose failed. result: " << dlclose_result;
-    }
     return TRUE;
 #endif
     return FALSE;
@@ -861,4 +854,50 @@ BOOL pal_str_iequals(const char* lhs, const char* rhs)
             });
 
     return iequals ? TRUE : FALSE;
+}
+
+PAL_API int PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char * filename_in)
+{    
+    auto file_exists = FALSE;
+    if(!pal_fs_file_exists(filename_in, &file_exists) || !file_exists) {
+        return FALSE;
+    }
+    
+#if defined(PLATFORM_WINDOWS) && !defined(PLATFORM_MINGW)
+    pal_utf16_string filename_in_utf16_string(filename_in);
+
+    rescle::ResourceUpdater updater;
+    if(!updater.Load(filename_in_utf16_string.data()))
+    {
+        return FALSE;
+    }
+
+    const auto value = updater.GetVersionString(L"SnapAwareVersion");
+    if(value) {
+        return TRUE;
+    }
+#endif
+    return FALSE;
+}
+
+PAL_API int PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in)
+{
+    auto file_exists = FALSE;
+    if(!pal_fs_file_exists(filename_in, &file_exists) || !file_exists) {
+        return FALSE;
+    }
+#if defined(PLATFORM_WINDOWS) && !defined(PLATFORM_MINGW)
+    pal_utf16_string filename_in_utf16_string(filename_in);
+
+    rescle::ResourceUpdater updater;
+    if(!updater.Load(filename_in_utf16_string.data()))
+    {
+        return FALSE;
+    }
+
+    if(updater.SetVersionString(L"SnapAwareVersion", L"1") && updater.Commit()) {
+        return TRUE;    
+    }
+#endif
+    return FALSE;
 }

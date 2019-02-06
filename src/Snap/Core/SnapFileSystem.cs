@@ -39,6 +39,7 @@ namespace Snap.Core
         void FileDelete(string fileName);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
         FileStream FileRead(string fileName, int bufferSize = 8196, bool useAsync = true);
+        FileStream FileReadWrite(string fileName, bool overwrite = true);
         FileStream FileWrite(string fileName, bool overwrite = true);
         Task<AssemblyDefinition> FileReadAssemblyDefinitionAsync(string filename, CancellationToken cancellationToken);
         bool FileExists(string fileName);
@@ -55,6 +56,7 @@ namespace Snap.Core
         string PathEnsureThisOsDirectoryPathSeperator([NotNull] string path);
         string PathGetFileName(string filename);
         string PathChangeExtension(string path, string extension);
+        string PathGetTempPath();
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -111,6 +113,17 @@ namespace Snap.Core
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             return new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
+        }
+
+        public FileStream FileReadWrite([NotNull] string fileName, bool overwrite = true)
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            var fileStream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+            if (overwrite)
+            {
+                fileStream.SetLength(0);
+            }
+            return fileStream;
         }
 
         public FileStream FileWrite([NotNull] string fileName, bool overwrite = true)
@@ -381,6 +394,11 @@ namespace Snap.Core
             if (path == null) throw new ArgumentNullException(nameof(path));
             if (extension == null) throw new ArgumentNullException(nameof(extension));
             return Path.ChangeExtension(path, extension);
+        }
+
+        public string PathGetTempPath()
+        {
+            return Path.GetTempPath() ?? DirectoryGetCurrentWorkingDirectory();
         }
 
         public string PathGetFileNameWithoutExtension([NotNull] string filename)

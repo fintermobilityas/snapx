@@ -17,6 +17,7 @@ namespace Snap.AnyOS.Unix
     {
         readonly ILog _logger = LogProvider.For<SnapOsUnix>();
 
+        public OSPlatform OsPlatform => OSPlatform.Linux;
         public ISnapFilesystem Filesystem { get; }
         public ISnapOsProcessManager OsProcessManager { get; }
         public SnapOsDistroType DistroType { get; private set; } = SnapOsDistroType.Unknown;

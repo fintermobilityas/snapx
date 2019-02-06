@@ -30,6 +30,7 @@ namespace Snap.AnyOS
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapOs
     {
+        OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
         ISnapOsProcessManager OsProcess { get; }
         SnapOsDistroType DistroType { get; }
@@ -48,6 +49,7 @@ namespace Snap.AnyOS
 
     internal interface ISnapOsImpl 
     {
+        OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
         ISnapOsProcessManager OsProcessManager { get; }
         SnapOsDistroType DistroType { get; }
@@ -83,6 +85,7 @@ namespace Snap.AnyOS
             }
         }
 
+        public OSPlatform OsPlatform => OsImpl.OsPlatform;
         public ISnapFilesystem Filesystem => OsImpl.Filesystem;
         public ISnapOsProcessManager OsProcess => OsImpl.OsProcessManager;
         public SnapOsDistroType DistroType => OsImpl.DistroType;

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
@@ -244,7 +245,11 @@ namespace Snap.Core
             string rootAppDirectory, string rootAppInstallDirectory, SemanticVersion currentVersion,
             bool isInitialInstall, CancellationToken cancellationToken)
         {
-            var allSnapAwareApps = _snapPack.GetAllSnapAwareApps(rootAppDirectory);
+            var allSnapAwareApps = _snapFilesystem
+                .EnumerateFiles(rootAppDirectory)
+                .Where(x => x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
+                .Select(x => x.FullName)
+                .ToList();
             if (!allSnapAwareApps.Any())
             {
                 Logger.Warn("No apps are marked as Snap-aware! Aborting post install. " +

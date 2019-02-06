@@ -35,4 +35,15 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
+    <ItemGroup Condition="$(OsPlatform) == 'Windows'">
+        <Content Include="../../build/Windows/win7-x64/$(Configuration)/Snap.CoreRun/pal/$(Configuration)/corerun_pal.dll" CopyToOutputDirectory="PreserveNewest" Pack="true" Link="libcorerun.dll" />
+        <Content Include="../../build/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun/pal/libcorerun_pal.so" CopyToOutputDirectory="PreserveNewest" Pack="true" Link="libcorerun.so" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="$(OsPlatform) == 'Unix'">
+        <Content Include="../../build/Unix/x86_64-w64-mingw32-gcc/$(Configuration)/Snap.CoreRun/pal/corerun_pal.dll" CopyToOutputDirectory="PreserveNewest" Pack="true" Link="libcorerun.dll" />
+        <Content Include="../../build/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun/pal/libcorerun_pal.so" CopyToOutputDirectory="PreserveNewest" Pack="true" Link="libcorerun.dll" />
+    </ItemGroup>
+
+
 </Project>

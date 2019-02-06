@@ -32,10 +32,11 @@ namespace Snap.Tests.Core.Resources
             var snapApp = _baseFixture.BuildSnapApp(appId);
             snapApp.Target.Os = OSPlatform.Create(osPlatform);
             
-            var (memoryStream, filename) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (memoryStream, coreRunFilename, coreRunOsPlatform) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
             Assert.NotNull(memoryStream);
             Assert.True(memoryStream.Length > 0);
-            Assert.Equal(expectedExeFilename, filename);            
+            Assert.Equal(expectedExeFilename, coreRunFilename);         
+            Assert.Equal(snapApp.Target.Os, coreRunOsPlatform);
         }
                 
         [Fact]

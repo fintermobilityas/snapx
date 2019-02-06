@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,6 +32,7 @@ namespace Snap.AnyOS.Windows
         static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
         readonly bool _isUnitTest;
 
+        public OSPlatform OsPlatform => OSPlatform.Windows;
         public ISnapFilesystem Filesystem { get; }
         public ISnapOsProcessManager OsProcessManager { get; }
         public SnapOsDistroType DistroType => SnapOsDistroType.Windows;

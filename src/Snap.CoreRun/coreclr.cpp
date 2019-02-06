@@ -10,11 +10,8 @@ using snap::core_clr_instance_t;
 
 #if PLATFORM_WINDOWS
 static const char* core_clr_dll = "coreclr.dll";
-static const char* core_clr_program_files_directory_path = R"(%ProgramW6432%\dotnet\shared\microsoft.netcore.app)";
 #elif PLATFORM_LINUX
 static const char* core_clr_dll = "libcoreclr.so";
-// Default location on Ubuntu
-static const char* core_clr_usr_share_dotnet_path = "/usr/share/dotnet/shared/Microsoft.NETCore.App"; // NB! case-insensitive
 #endif
 
 int snap::coreclr::run(const std::string& this_executable_path, const std::string & dotnet_executable_path, const std::vector<std::string>& arguments,
@@ -35,7 +32,7 @@ int snap::coreclr::run(const std::string& this_executable_path, const std::strin
         return -1;
     }
 
-    const auto core_clr_instance = try_load_core_clr(dotnet_executable_path, dotnet_executable_working_directory, arguments, clr_minimum_version);
+    auto core_clr_instance = try_load_core_clr(dotnet_executable_path.c_str(), version::Semver200_version());
     if (core_clr_instance == nullptr)
     {
         LOG(ERROR) << "Coreclr: " << core_clr_dll << " not found." << std::endl;
@@ -87,62 +84,6 @@ int snap::coreclr::run(const std::string& this_executable_path, const std::strin
               << "Dotnet assembly exit code: " << dotnet_exit_exit_code << ". ";
 
     return dotnet_exit_exit_code;
-}
-
-core_clr_instance* snap::coreclr::try_load_core_clr(const std::string & executable_path, const char* executable_working_directory, const std::vector<std::string>& arguments,
-    const version::Semver200_version & clr_minimum_version)
-{
-
-    // 1. Try loading from executable working directory if the application is self-contained.
-    auto core_clr_instance = try_load_core_clr(executable_working_directory, version::Semver200_version());
-    if (core_clr_instance != nullptr)
-    {
-        return core_clr_instance;
-    }
-
-    // 2. Try loading from default coreclr well-known directory.
-    char* core_clr_well_known_directory = nullptr;
-#if PLATFORM_WINDOWS
-    if (!pal_env_expand_str(core_clr_program_files_directory_path, &core_clr_well_known_directory))
-    {
-        return nullptr;
-    }
-#else
-    auto core_root_env_variable_exists = pal_env_get_variable("CORE_ROOT", &core_clr_well_known_directory);
-    auto core_root_dir_exists = FALSE;
-
-    if (core_root_env_variable_exists)
-    {
-        pal_fs_directory_exists(core_clr_well_known_directory, &core_root_dir_exists);
-    }
-
-    if (!core_root_dir_exists)
-    {
-        assert(core_clr_well_known_directory == nullptr);
-        core_clr_well_known_directory = new char[strlen(core_clr_usr_share_dotnet_path)];
-        strcpy(core_clr_well_known_directory, core_clr_usr_share_dotnet_path);
-    }
-
-#endif
-
-    assert(core_clr_well_known_directory != nullptr);
-
-    const auto core_clr_directories = get_core_directories_from_path(
-        core_clr_well_known_directory, clr_minimum_version);
-
-    for (const auto& clr_directory : core_clr_directories)
-    {
-        core_clr_instance = try_load_core_clr(clr_directory.get_root_path(), clr_directory.get_version());
-        if (core_clr_instance != nullptr)
-        {
-            break;
-        }
-    }
-
-
-    delete[] core_clr_well_known_directory;
-
-    return core_clr_instance;
 }
 
 std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(const char* core_clr_root_path,

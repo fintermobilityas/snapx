@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
-using NuGet.Versioning;
 
 namespace Snap.Tool.Options
 {

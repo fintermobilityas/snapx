@@ -2,21 +2,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Mono.Cecil;
 using NuGet.Packaging;
 using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Models;
-using ICustomAttributeProvider = Mono.Cecil.ICustomAttributeProvider;
 
 namespace Snap.AnyOS
 {

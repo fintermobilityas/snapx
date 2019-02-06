@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;

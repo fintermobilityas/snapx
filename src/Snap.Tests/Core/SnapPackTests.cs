@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -12,7 +11,6 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
-using Snap.Reflection;
 using Snap.Shared.Tests;
 using Snap.Shared.Tests.Extensions;
 using Xunit;

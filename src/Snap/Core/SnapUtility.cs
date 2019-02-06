@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -79,29 +78,30 @@ namespace Snap.Core
             return new Guid(newGuid);
         }
 
-        public static void Retry(this Action block, int retries = 2)
+        public static void Retry(this Action block, int retries = 2, bool throwException = true)
         {
-            Contract.Requires(retries > 0);
-
             Func<object> thunk = () => {
                 block();
                 return null;
             };
 
-            thunk.Retry(retries);
+            thunk.Retry(retries, throwException);
         }
 
-        public static T Retry<T>(this Func<T> block, int retries = 2)
+        public static T Retry<T>(this Func<T> block, int retries = 2, bool throwException = true)
         {
-            Contract.Requires(retries > 0);
-
             while (true) {
                 try {
                     var ret = block();
                     return ret;
                 } catch (Exception) {
                     if (retries == 0) {
-                        throw;
+                        if (throwException)
+                        {
+                            throw;
+                        }
+
+                        return default;
                     }
 
                     retries--;

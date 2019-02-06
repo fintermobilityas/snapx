@@ -27,10 +27,12 @@ namespace Snap.Tests.NuGet
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapPack _snapPack;
         readonly ISnapCryptoProvider _snapCryptoProvider;
+        readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
         public NugetServiceV3Tests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
+            _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapCryptoProvider = new SnapCryptoProvider();
             _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
             _snapFilesystem = new SnapFilesystem();
@@ -127,7 +129,7 @@ namespace Snap.Tests.NuGet
 
             var snapApp = _baseFixture.BuildSnapApp();
             
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

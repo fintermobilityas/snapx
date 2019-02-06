@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,25 @@ namespace Snap.Extensions
         {
             return downloadResourceResult != null && (downloadResourceResult.Status == DownloadResourceResultStatus.Available ||
                                                       downloadResourceResult.Status == DownloadResourceResultStatus.AvailableWithoutStream);
+        }
+        
+        public static IPackageFile GetPackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)
+        {
+            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            return packageBuilder.Files.SingleOrDefault(x => string.Equals(
+                filename.ForwardSlashesSafe(), 
+                x.Path.ForwardSlashesSafe(), 
+                StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        public static bool ContainsFileCaseInsensitive([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)
+        {
+            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            return packageBuilder.GetPackageFile(filename) != null;
         }
         
         internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)

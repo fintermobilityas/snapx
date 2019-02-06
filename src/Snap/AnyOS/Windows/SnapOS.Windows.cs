@@ -246,61 +246,6 @@ namespace Snap.AnyOS.Windows
             }
         }
 
-        public List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1)
-        {
-            int? GetPeSnapAwareVersion(string executable)
-            {
-                var fullname = Filesystem.PathGetFullPath(executable);
-
-                return SnapUtility.Retry(() =>
-                    SnapOs.GetAssemblySnapAwareVersion(fullname) ?? GetVersionBlockSnapAwareValue(fullname));
-            }
- 
-            var directoryInfo = new DirectoryInfo(directory);
-
-            return directoryInfo
-                .EnumerateFiles()
-                .Where(x => 
-                    x.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) 
-                    || x.Name.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => x.FullName)
-                .Where(x => (GetPeSnapAwareVersion(x) ?? -1) >= minimumVersion)
-                .ToList();
-        }
-
-        static int? GetVersionBlockSnapAwareValue(string executable)
-        {
-            var size = NativeMethodsWindows.GetFileVersionInfoSize(executable, IntPtr.Zero);
-
-            // Nice try, buffer overflow
-            if (size <= 0 || size > 4096)
-            {
-                return null;
-            }
-
-            var buf = new byte[size];
-            if (!NativeMethodsWindows.GetFileVersionInfo(executable, 0, size, buf))
-            {
-                return null;
-            }
-
-            if (!NativeMethodsWindows.VerQueryValue(buf, "\\StringFileInfo\\040904B0\\SnapAwareVersion", out _, out _))
-            {
-                return null;
-            }
-
-            // Comment by Squirrel.Windows author:
-            // ----------------------------------
-
-            // NB: I have **no** idea why, but Atom.exe won't return the version
-            // number "1" despite it being in the resource file and being 100% 
-            // identical to the version block that actually works. I've got stuff
-            // to ship, so we're just going to return '1' if we find the name in 
-            // the block at all. I hate myself for this.
-
-            return 1;
-        }
-
         void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
         {
             Logger.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);

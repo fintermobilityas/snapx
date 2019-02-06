@@ -16,6 +16,7 @@ namespace Snap.Core.Resources
         MemoryStream CoreRunLinux { get; }
         (MemoryStream memoryStream, string filename) GetCoreRunForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
+        string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
     }
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
@@ -75,7 +76,7 @@ namespace Snap.Core.Resources
             return GetCoreRunExeFilename(snapApp.Id, snapApp.Target.Os);
         }
 
-        static string GetCoreRunExeFilename(string appId, OSPlatform osPlatform)
+        public string GetCoreRunExeFilename(string appId, OSPlatform osPlatform)
         {
             if (osPlatform == OSPlatform.Windows)
             {

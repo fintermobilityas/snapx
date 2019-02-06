@@ -16,6 +16,7 @@ using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Models;
+using ICustomAttributeProvider = Mono.Cecil.ICustomAttributeProvider;
 
 namespace Snap.AnyOS
 {
@@ -37,7 +38,6 @@ namespace Snap.AnyOS
             string rootAppInstallDirectory,
             string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly,
             CancellationToken cancellationToken);
-        List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         bool EnsureConsole();
         Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
         Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync(string workingDirectory, CancellationToken cancellationToken);
@@ -55,7 +55,6 @@ namespace Snap.AnyOS
         Task CreateShortcutsForExecutableAsync(SnapApp snapApp, NuspecReader nuspecReader, string rootAppDirectory,
             string rootAppInstallDirectory, string exeName, string icon, SnapShortcutLocation locations,
             string programArguments, bool updateOnly, CancellationToken cancellationToken);
-        List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1);
         bool EnsureConsole();
         Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
     }
@@ -104,11 +103,6 @@ namespace Snap.AnyOS
                 exeName, icon, locations, programArguments, updateOnly, cancellationToken);
         }
 
-        public List<string> GetAllSnapAwareApps(string directory, int minimumVersion = 1)
-        {
-            return OsImpl.GetAllSnapAwareApps(directory, minimumVersion);
-        }
-
         public bool EnsureConsole()
         {
             return OsImpl.EnsureConsole();
@@ -150,49 +144,7 @@ namespace Snap.AnyOS
             Kill(process.Pid);
         }
 
-        internal static int? GetAssemblySnapAwareVersion(string executable)
-        {
-            try
-            {
-                var assembly = AssemblyDefinition.ReadAssembly(executable);
-                if (assembly == null || !assembly.HasCustomAttributes)
-                {
-                    return null;
-                }
-
-                var attrs = assembly.CustomAttributes;
-                var attribute = attrs.FirstOrDefault(x =>
-                {
-                    if (x.AttributeType.FullName != typeof(AssemblyMetadataAttribute).FullName)
-                    {
-                        return false;
-                    }
-
-                    if (x.ConstructorArguments.Count != 2)
-                    {
-                        return false;
-                    }
-
-                    var attributeValue = x.ConstructorArguments[0].Value.ToString();
-                    return attributeValue == "SnapAwareVersion";
-                });
-
-                if (attribute == null)
-                {
-                    return null;
-                }
-
-                if (!int.TryParse(attribute.ConstructorArguments[1].Value.ToString(), 
-                    NumberStyles.Integer, CultureInfo.CurrentCulture, out var result))
-                {
-                    return null;
-                }
-
-                return result;
-            }
-            catch (FileLoadException) { return null; }
-            catch (BadImageFormatException) { return null; }
-        }
+       
 
     }
 }

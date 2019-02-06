@@ -54,6 +54,7 @@ namespace Snap.Core
         string PathNormalize([NotNull] string path);
         string PathEnsureThisOsDirectoryPathSeperator([NotNull] string path);
         string PathGetFileName(string filename);
+        string PathChangeExtension(string path, string extension);
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -373,6 +374,13 @@ namespace Snap.Core
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             return Path.GetFileName(filename);
+        }
+
+        public string PathChangeExtension([NotNull] string path, [NotNull] string extension)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (extension == null) throw new ArgumentNullException(nameof(extension));
+            return Path.ChangeExtension(path, extension);
         }
 
         public string PathGetFileNameWithoutExtension([NotNull] string filename)

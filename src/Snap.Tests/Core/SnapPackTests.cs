@@ -63,18 +63,7 @@ namespace Snap.Tests.Core
         {
             Assert.Equal("a97d941bdd70471289d7330903d8b5b3", _snapPack.SnapUniqueTargetPathFolderName);
         }
-
-        [Fact]
-        public void TestNeverGenerateBsDiffsTheseAssemblies()
-        {
-            var assemblies = new List<string>
-            {
-                _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename)
-            }.Select(x => x.ForwardSlashesSafe()).ToList();
-
-            Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
-        }
-
+        
         [Fact]
         public void TestAlwaysRemoveTheseAssemblies()
         {
@@ -90,30 +79,33 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaReportAsync_Existing_File_Is_Not_Modified()
         {
-            // 1. Previous
-            var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
-            };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
-            var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
-            
-            // 2. Current
-            var currentNupkgAssemblyDefinition = previousNupkgAssemblyDefinition;
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { currentNupkgAssemblyDefinition.BuildRelativeFilename(), currentNupkgAssemblyDefinition }
-            };            
-            
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
+            // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
+            var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
+            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
+            };            
+                        
+            var (previousNupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
+            // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
+            var currentNupkgTestDllAssemblyDefinition = previousNupkgTestDllAssemblyDefinition;
+            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
+                { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
+            };            
+
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -138,13 +130,15 @@ namespace Snap.Tests.Core
                     Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
-                    Assert.Equal(3, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaReport.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
                         _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
                     
                     // Deleted
                     Assert.Empty(deltaReport.Deleted);
@@ -155,30 +149,33 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaReportAsync_Existing_File_Is_Updated()
         {
-            // 1. Previous
-            var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
-            };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
-            var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
-            
-            // 2. Current
-            var currentNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { currentNupkgAssemblyDefinition.BuildRelativeFilename(), currentNupkgAssemblyDefinition }
-            };            
-            
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
+            // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
+            var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
+            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
+            };            
             
+            var (previousNupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
+            
+            // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
+            var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
+            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
+                { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
+            };            
+                        
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -202,14 +199,16 @@ namespace Snap.Tests.Core
                     // Modified
                     Assert.Single(deltaReport.Modified);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        currentNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[0].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[0].TargetPath);
                     
                     // Unmodified
-                    Assert.Equal(2, deltaReport.Unmodified.Count);
+                    Assert.Equal(3, deltaReport.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
                     
                     // Deleted
                     Assert.Empty(deltaReport.Deleted);                    
@@ -220,32 +219,35 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaReportAsync_Existing_File_Is_Deleted_And_New_File_Is_Added()
         {
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
+            var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
+            currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
             // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
             var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
             };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
+                        
             var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test2");
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
             var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgAssemblyDefinition1.BuildRelativeFilename(), currentNupkgAssemblyDefinition1 },
                 { currentNupkgAssemblyDefinition2.BuildRelativeFilename(), currentNupkgAssemblyDefinition2 }
             };            
-            
-            var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
-            currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
-            
+                        
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -274,11 +276,13 @@ namespace Snap.Tests.Core
                     Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
-                    Assert.Equal(2, deltaReport.Unmodified.Count);
+                    Assert.Equal(3, deltaReport.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
 
                     // Deleted
                     Assert.Single(deltaReport.Deleted);                    
@@ -291,31 +295,34 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaReportAsync_New_File_Is_Added()
         {
-            // 1. Previous
-            var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
-            };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
-            var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
-            
-            // 2. Current
-            var currentNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test2");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition },
-                { currentNupkgAssemblyDefinition.BuildRelativeFilename(), currentNupkgAssemblyDefinition }
-            };            
-            
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
+            // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
+            var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
+            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
+            };            
+             
+            var (previousNupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
+            
+            // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
+            var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test2");
+            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition },
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
+                { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
+            };            
             
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -336,19 +343,21 @@ namespace Snap.Tests.Core
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
                         _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
 
                     // Modified
                     Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
-                    Assert.Equal(3, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaReport.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
                         _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        previousNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
                     
                     // Deleted
                     Assert.Empty(deltaReport.Deleted);    
@@ -359,31 +368,35 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaReportAsync_New_File_Is_Added_With_Same_Name_As_Previous_But_Resides_In_Sub_Directory()
         {
-            // 1. Previous
-            var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
-            };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
-            var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
-            
-            // 2. Current
-            var currentNupkgAssemblyDefinition = previousNupkgAssemblyDefinition;
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition },
-                { _snapFilesystem.PathCombine("zzzsubdirectory", previousNupkgAssemblyDefinition.BuildRelativeFilename()), previousNupkgAssemblyDefinition }
-            };            
-            
+             var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
+            // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
+            var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
+            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
+            };            
+             
+            var (previousNupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
+            
+            // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
+            var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test2");
+            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition },
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
+                { _snapFilesystem.PathCombine("zubdirectory", currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()), currentNupkgTestDllAssemblyDefinition },
+                { _snapFilesystem.PathCombine("zubdirectory", "zubdirectory2", currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()), currentNupkgTestDllAssemblyDefinition }
+            };            
             
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -400,23 +413,27 @@ namespace Snap.Tests.Core
                     await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(2, deltaReport.New.Count);
-                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
+                    Assert.Equal(3, deltaReport.New.Count);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
                         _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
-                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        _snapFilesystem.PathCombine("zzzsubdirectory", currentNupkgAssemblyDefinition.BuildRelativeFilename())).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "zubdirectory",
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "zubdirectory", "zubdirectory2",
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[2].TargetPath);
 
                     // Modified
                     Assert.Empty(deltaReport.Modified);
                     
                     // Unmodified
-                    Assert.Equal(3, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaReport.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
                         _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
-                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
                         _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        previousNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                    Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
+                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
                     
                     // Deleted
                     Assert.Empty(deltaReport.Deleted);    
@@ -427,48 +444,48 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestCountNonNugetFilesAsync()
         {
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);            
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
+                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
             };
-
-            var snapApp = _baseFixture.BuildSnapApp();
             
-            var (nupkgMemoryStream, packageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+            var (nupkgMemoryStream, _) = await _baseFixture
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (testDllAssemblyDefinition)
             using (nupkgMemoryStream)
             using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgMemoryStream))
             {                
-                Assert.Equal(7, await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, CancellationToken.None));
+                Assert.Equal(8, await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, CancellationToken.None));
             }
         }
 
         [Fact]
         public async Task TestBuildFullPackageAsync_Includes_A_Snap_Checksum_Manifest()
         {
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);            
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
+                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
             };
-
-            var snapApp = _baseFixture.BuildSnapApp();
             
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (testDllAssemblyDefinition)
             using (nupkgMemoryStream)
@@ -492,6 +509,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp)),
                         _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, testExeAssemblyDefinition.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, testDllAssemblyDefinition.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", testDllAssemblyDefinition.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "subdirectory", "subdirectory2", testDllAssemblyDefinition.BuildRelativeFilename())
@@ -517,23 +535,22 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildFullPackageAsync()
         {
-            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
+            var snapApp = _baseFixture.BuildSnapApp();
+            var mainAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
+            var dllDefinition1 = _baseFixture.BuildEmptyLibrary("test");
+            var dllDefinition2 = _baseFixture.BuildEmptyLibrary("test");
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
-                { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition },
+                { $"subdirectory/{dllDefinition1.BuildRelativeFilename()}", dllDefinition1 },
+                { $"subdirectory/subdirectory2/{dllDefinition2.BuildRelativeFilename()}", dllDefinition2 },
             };
-
-            var snapApp = _baseFixture.BuildSnapApp();
             
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
-            using (testDllAssemblyDefinition)
+            using (mainAssemblyDefinition)
             using (nupkgMemoryStream)
             using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgMemoryStream))
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -554,15 +571,15 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
                     _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
                     _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
-                    _snapFilesystem.PathCombine(appDir, testDllAssemblyDefinition.BuildRelativeFilename()),
-                    _snapFilesystem.PathCombine(appDir, "subdirectory", testDllAssemblyDefinition.BuildRelativeFilename()),
-                    _snapFilesystem.PathCombine(appDir, "subdirectory", "subdirectory2", testDllAssemblyDefinition.BuildRelativeFilename())
+                    _snapFilesystem.PathCombine(appDir, mainAssemblyDefinition.BuildRelativeFilename()),
+                    _snapFilesystem.PathCombine(appDir, "subdirectory", dllDefinition1.BuildRelativeFilename()),
+                    _snapFilesystem.PathCombine(appDir, "subdirectory", "subdirectory2", dllDefinition2.BuildRelativeFilename())
                 }
                     .OrderBy(x => x)
                     .ToList();
 
                 Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
-                Assert.Equal(extractedFiles.Count, expectedLayout.Count);
+                Assert.Equal(expectedLayout.Count, expectedLayout.Count);
 
                 expectedLayout.ForEach(x =>
                 {
@@ -581,33 +598,36 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestBuildDeltaPackageAsync()
         {
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
+
             // 1. Previous
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test1"); 
             var previousNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test2");            
             var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                // Overwritten in current
+                // Modified in current
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgAssemblyDefinition1.BuildRelativeFilename(), previousNupkgAssemblyDefinition1 },
                 // Deleted in current
                 { previousNupkgAssemblyDefinition2.BuildRelativeFilename(), previousNupkgAssemblyDefinition2 }
             };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
-            var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
+                        
+            var (previousNupkgMemoryStream, currentPackageDetails) = await _baseFixture
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(currentPackageDetails.App, true);
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary(previousNupkgAssemblyDefinition1.Name.Name, true);
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
             var currentNupkgAssemblyDefinition3 = _baseFixture.BuildEmptyLibrary("test4");
             var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                // First file in previous nupkg is now overwritten.
+                // Modified
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgAssemblyDefinition1.BuildRelativeFilename(), currentNupkgAssemblyDefinition1 },
                 // New
                 { currentNupkgAssemblyDefinition2.BuildRelativeFilename(), currentNupkgAssemblyDefinition2 },
-                // New
                 { currentNupkgAssemblyDefinition3.BuildRelativeFilename(), currentNupkgAssemblyDefinition3 }
             };            
             
@@ -615,7 +635,7 @@ namespace Snap.Tests.Core
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
             
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             MemoryStream deltaNupkgStream;
             
@@ -648,6 +668,7 @@ namespace Snap.Tests.Core
 
                 var expectedLayout = new List<string>
                 {
+                    _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()),
                     _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgAssemblyDefinition1.BuildRelativeFilename()),
                     _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgAssemblyDefinition2.BuildRelativeFilename()),
                     _snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, currentNupkgAssemblyDefinition3.BuildRelativeFilename()),
@@ -669,62 +690,81 @@ namespace Snap.Tests.Core
 
                 var deltaReport = snapAppDelta.DeltaReport;
                 Assert.NotNull(deltaReport);
-                
+                                
                 // New
                 Assert.Equal(3, deltaReport.New.Count);
-          
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
+                    _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0]);
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                    currentNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1]);
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                    currentNupkgAssemblyDefinition3.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[2]);
+
                 // Modified
-                Assert.Single(deltaReport.Modified);
-                 
+                Assert.Equal(2, deltaReport.Modified.Count);
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                    currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[0]);
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
+                    currentNupkgAssemblyDefinition1.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[1]);
+                
                 // Unmodified
                 Assert.Equal(2, deltaReport.Unmodified.Count);
-                 
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
+                    _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0]);
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
+                    _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1]);
+
                 // Deleted
-                Assert.Single(deltaReport.Deleted);   
+                Assert.Single(deltaReport.Deleted);                    
+                Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
+                    previousNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Deleted[0]);
             }
         }
 
         [Fact]
         public async Task TestReassambleFullPackageAsync()
         {
+            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
+            var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
+            currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+
             var progressSource = new Mock<ISnapProgressSource>();
             progressSource.Setup(x => x.Raise(It.IsAny<int>()));
                 
             // 1. Previous
+
+            var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test1"); 
             var previousNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test2");            
             var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                // Overwritten in current
+                // Modified in current
+                { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgAssemblyDefinition1.BuildRelativeFilename(), previousNupkgAssemblyDefinition1 },
                 // Deleted in current
                 { previousNupkgAssemblyDefinition2.BuildRelativeFilename(), previousNupkgAssemblyDefinition2 }
-            };            
-            
-            var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
-            
+            };               
+                        
             var (previousNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, previousNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(previousNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
+            var currentNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(currentNupkgSnapApp, true);
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary(previousNupkgAssemblyDefinition1.Name.Name, true);
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
             var currentNupkgAssemblyDefinition3 = _baseFixture.BuildEmptyLibrary("test4");
             var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                // First file in previous nupkg is now overwritten.
+                // Modified
+                { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgAssemblyDefinition1.BuildRelativeFilename(), currentNupkgAssemblyDefinition1 },
                 // New
                 { currentNupkgAssemblyDefinition2.BuildRelativeFilename(), currentNupkgAssemblyDefinition2 },
-                // New
                 { currentNupkgAssemblyDefinition3.BuildRelativeFilename(), currentNupkgAssemblyDefinition3 }
-            };            
-            
-            var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
-            currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
+            };     
             
             var (currentNupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, currentNupkgNuspecLayout);
+                .BuildInMemoryPackageAsync(currentNupkgSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {                
@@ -767,16 +807,15 @@ namespace Snap.Tests.Core
                         .ToList();
 
                     var expectedLayout = new List<string>
-                        {
-                            _snapFilesystem.PathCombine(extractDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapAppReassembled)),
-                            _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
-                            _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
-                            _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition1.BuildRelativeFilename()),
-                            _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition2.BuildRelativeFilename()),
-                            _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition3.BuildRelativeFilename())
-                        }
-                        .OrderBy(x => x)
-                        .ToList();
+                    {
+                        _snapFilesystem.PathCombine(extractDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)),
+                        _snapFilesystem.PathCombine(appDir, currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition1.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition2.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition3.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename)
+                    }.Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x)).OrderBy(x => x).ToList();
                     
                     Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
                     Assert.Equal(extractedFiles.Count, expectedLayout.Count);
@@ -809,10 +848,12 @@ namespace Snap.Tests.Core
             var snapAppBefore = _baseFixture.BuildSnapApp();
 
             var testDll = _baseFixture.BuildEmptyLibrary("test");
+            var mainExe = _baseFixture.BuildSnapAwareEmptyExecutable(snapAppBefore);
             
             var (nupkgMemoryStream, _) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapAppBefore, _snapFilesystem, _snapPack, new Dictionary<string, AssemblyDefinition>
+                .BuildInMemoryPackageAsync(snapAppBefore, _snapFilesystem, _snapPack, _snapEmbeddedResources, new Dictionary<string, AssemblyDefinition>
                 {
+                    { mainExe.BuildRelativeFilename(), mainExe },
                     { testDll.BuildRelativeFilename(), testDll }
                 });
 
@@ -823,6 +864,29 @@ namespace Snap.Tests.Core
             }
         }
 
-        
+        [Fact]
+        public void TestGetAllSnapAwareApps()
+        {
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            using (var snapAwareExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp))
+            using (var notSnapAwareExeAssemblyDefinition = _baseFixture.BuildEmptyExecutable("mynotsnapwareexe"))
+            using (var dllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mydll"))
+            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var snapAwareExePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, snapAwareExeAssemblyDefinition.BuildRelativeFilename());
+                snapAwareExeAssemblyDefinition.Write(snapAwareExePath);
+
+                var dllPath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, dllAssemblyDefinition.BuildRelativeFilename());
+                dllAssemblyDefinition.Write(dllPath);
+                                
+                var notSnapAwareExePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, notSnapAwareExeAssemblyDefinition.BuildRelativeFilename());
+                notSnapAwareExeAssemblyDefinition.Write(notSnapAwareExePath);
+
+                var snapAwareApps = _snapPack.GetAllSnapAwareApps(tmpDir.WorkingDirectory).OrderBy(x => x).ToList();
+                Assert.Single(snapAwareApps);
+                Assert.Equal(snapAwareExePath, snapAwareApps[0]);
+            }
+        }
     }
 }

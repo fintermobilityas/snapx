@@ -79,6 +79,12 @@ namespace Snap.Reflection
 
         public void SetSnapAware()
         {
+            if (_assemblyDefinition.MainModule.Kind != ModuleKind.Console
+                && _assemblyDefinition.MainModule.Kind != ModuleKind.Windows)
+            {
+                throw new NotSupportedException($"Only executables are allowed to be marked snap aware.");    
+            }
+            
             var attributeConstructor = _assemblyDefinition.MainModule.ImportReference(
                 typeof(AssemblyMetadataAttribute).GetConstructor(new []{ typeof(string), typeof(string) }));
 

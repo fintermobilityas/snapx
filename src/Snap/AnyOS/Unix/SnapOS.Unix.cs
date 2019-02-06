@@ -102,27 +102,7 @@ namespace Snap.AnyOS.Unix
                     $"Successfully created desktop shortcut for exe: {exeName}. Automatic startup: {autoStartup}. Location: {absoluteDesktopShortcutPath}");
             }
         }
-
-        public List<string> GetAllSnapAwareApps([NotNull] string directory, int minimumVersion = 1)
-        {
-            if (directory == null) throw new ArgumentNullException(nameof(directory));
-
-            int? GetAssemblySnapAwareVersion(string executable)
-            {
-                var fullname = Filesystem.PathGetFullPath(executable);
-
-                return SnapUtility.Retry(() => SnapOs.GetAssemblySnapAwareVersion(fullname));
-            }
-
-            return Filesystem
-                .EnumerateFiles(directory)
-                .Where(x => x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase)
-                            || x.Name.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
-                .Select(x => x.FullName)
-                .Where(x => (GetAssemblySnapAwareVersion(x) ?? -1) >= minimumVersion)
-                .ToList();
-        }
-
+        
         public bool EnsureConsole()
         {
             return false;

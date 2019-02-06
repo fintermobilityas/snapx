@@ -82,30 +82,21 @@ namespace Snap.Tests.Core
                     It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()));
 
-            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mylibrary");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
+            var snapApp = _baseFixture.BuildSnapApp();
 
-            var testExeAssemblyDefinition = _baseFixture.BuildEmptyExecutable("myexe");
-            var testExeReflector = new CecilAssemblyReflector(testExeAssemblyDefinition);
-            testExeReflector.SetSnapAware();
+            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mylibrary");
+            var snapAppExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                // exe
-                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
-                { $"subdirectory/{testExeAssemblyDefinition.BuildRelativeFilename()}", testExeAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testExeAssemblyDefinition.BuildRelativeFilename()}", testExeAssemblyDefinition },
-                // dll
+                { snapAppExeAssemblyDefinition.BuildRelativeFilename(), snapAppExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
             };
-
-            var snapApp = _baseFixture.BuildSnapApp();
             
             var (installNupkgMemoryStream, installPackageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
             
             var updatedSnapApp = new SnapApp(snapApp)
             {
@@ -113,7 +104,7 @@ namespace Snap.Tests.Core
             };
             
             var (updateNupkgMemoryStream, updatePackageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(updatedSnapApp, _snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(updatedSnapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (installNupkgMemoryStream)
             using (updateNupkgMemoryStream)
@@ -130,51 +121,45 @@ namespace Snap.Tests.Core
 
                 // 1. Install
                                        
-                _snapOsMock
-                    .Setup(x => x.GetAllSnapAwareApps(It.IsAny<string>(), It.IsAny<int>()))
-                    .Returns(() => anyOs.GetAllSnapAwareApps(installAppDir));
-
                 await _snapInstaller.InstallAsync(installNupkgAbsoluteFilename, rootDir.WorkingDirectory);
-
-                var coreRunAbsoluteExePath = _snapFilesystem.FileStat(
-                    _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(installPackageDetails.App)));
-                
+               
                 // 2. Update
                 
                 var updateAppDirName = $"app-{updatePackageDetails.App.Version}";
                 var updateAppDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, updateAppDirName);
                 
-                _snapOsMock
-                    .Setup(x => x.GetAllSnapAwareApps(It.IsAny<string>(), It.IsAny<int>()))
-                    .Returns(() => anyOs.GetAllSnapAwareApps(updateAppDir));
-                
                 await _snapInstaller.UpdateAsync(updateNupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object);
                 
-                var updateSnapAwareApps = nuspecLayout.Select(x => _snapFilesystem.PathCombine(updateAppDir, x.Key)).ToList(); 
-                var installSnapAwareApps = nuspecLayout.Select(x => _snapFilesystem.PathCombine(installAppDir, x.Key)).ToList(); 
+                var expectedInstallFiles = nuspecLayout
+                    .Select(x => _snapFilesystem.PathCombine(installAppDir, x.Key))
+                    .ToList(); 
 
+                var expectedUpdatedFiles = nuspecLayout
+                    .Select(x => _snapFilesystem.PathCombine(updateAppDir, x.Key))
+                    .ToList(); 
+                
                 var expectedLayout =  new List<string>
                     {
-                        coreRunAbsoluteExePath.FullName,
+                        // Corerun
+                        _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp)),
                         // Install
                         _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapDllFilename),
-                        _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(installNupkgAbsoluteFilename)),
                         // Update
                         _snapFilesystem.PathCombine(updateAppDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(updateAppDir, _snapAppWriter.SnapDllFilename),
+                        // Packages
+                        _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(installNupkgAbsoluteFilename)),
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(updateNupkgAbsoluteFilename))
                     }
-                    .Concat(installSnapAwareApps)
-                    .Concat(updateSnapAwareApps)
+                    .Concat(expectedInstallFiles)
+                    .Concat(expectedUpdatedFiles)
                     .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();                
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
-                    .Where(x => x != installNupkgAbsoluteFilename)
                     .OrderBy(x => x)
                     .ToList();
               
@@ -191,10 +176,6 @@ namespace Snap.Tests.Core
                 {
                     Assert.Equal(expectedLayout[i], extractedLayout[i]);
                 }
-
-                _snapOsMock.Verify(x => x.GetAllSnapAwareApps(
-                    It.Is<string>(v => v == installAppDir), 
-                    It.Is<int>(v => v == 1)), Times.Once);
                 
                 progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
                 
@@ -232,30 +213,21 @@ namespace Snap.Tests.Core
                     It.IsAny<bool>(),
                     It.IsAny<CancellationToken>()));
 
+            var snapApp = _baseFixture.BuildSnapApp();
+            var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mylibrary");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
-
-            var testExeAssemblyDefinition = _baseFixture.BuildEmptyExecutable("myexe");
-            var testExeReflector = new CecilAssemblyReflector(testExeAssemblyDefinition);
-            testExeReflector.SetSnapAware();
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
                 // exe
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
-                { $"subdirectory/{testExeAssemblyDefinition.BuildRelativeFilename()}", testExeAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testExeAssemblyDefinition.BuildRelativeFilename()}", testExeAssemblyDefinition },
                 // dll
-                { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
             };
 
-            var snapApp = _baseFixture.BuildSnapApp();
-
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
-                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, nuspecLayout);
+                .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (nupkgMemoryStream)
             using (var tmpNupkgDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -268,29 +240,27 @@ namespace Snap.Tests.Core
                 var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
                 var packagesDir = _snapInstaller.GetPackagesDirectory(rootDir.WorkingDirectory);
                                 
-                _snapOsMock
-                    .Setup(x => x.GetAllSnapAwareApps(It.IsAny<string>(), It.IsAny<int>()))
-                    .Returns(() => anyOs.GetAllSnapAwareApps(appDir));
-                
                 await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object);
-
-                var snapAwareApps = nuspecLayout.Select(x => _snapFilesystem.PathCombine(appDir, x.Key)).ToList();
-                
+               
                 var expectedLayout = new List<string>
                     {
+                        // Snap assemblies
                         _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
+                        // App assemblies
+                        _snapFilesystem.PathCombine(appDir, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
+                        _snapFilesystem.PathCombine(appDir, $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
+                        _snapFilesystem.PathCombine(appDir, $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
+                        // Nupkg
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename))
                     }
-                    .Concat(snapAwareApps)
                     .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();
                 
                 var extractedLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
-                    .Where(x => x != nupkgAbsoluteFilename)
                     .OrderBy(x => x)
                     .ToList();
 
@@ -307,13 +277,8 @@ namespace Snap.Tests.Core
                 {
                     Assert.Equal(expectedLayout[i], extractedLayout[i]);
                 }
-
-                _snapOsMock.Verify(x => x.GetAllSnapAwareApps(
-                    It.Is<string>(v => v == appDir), 
-                    It.Is<int>(v => v == 1)), Times.Once);
                 
-                progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
-                
+                progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);                
             }
         }
         

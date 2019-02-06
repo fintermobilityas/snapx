@@ -13,8 +13,10 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
+using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.NuGet;
+using Snap.Reflection;
 using Snap.Shared.Tests.Extensions;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
 
@@ -27,7 +29,7 @@ namespace Snap.Shared.Tests
         
         public string WorkingDirectory => Directory.GetCurrentDirectory();
 
-        public SnapApp BuildSnapApp()
+        public SnapApp BuildSnapApp(string appId = "demoapp")
         {
             var pushFeed = new SnapNugetFeed
             {
@@ -85,7 +87,7 @@ namespace Snap.Shared.Tests
             
             return new SnapApp
             {
-                Id = "demoapp",
+                Id = appId,
                 Version = new SemanticVersion(1, 0, 0),
                 Channels = new List<SnapChannel>
                 {
@@ -190,12 +192,19 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        public AssemblyDefinition BuildEmptyExecutable(string applicationName, IReadOnlyCollection<AssemblyDefinition> references = null)
+        public AssemblyDefinition BuildEmptyExecutable(string applicationName, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
         {
             if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
 
+            var version = randomVersion ? new Version(
+                    RandomVersionSource.Next(0, 1000), 
+                    RandomVersionSource.Next(0, 1000), 
+                    RandomVersionSource.Next(0, 1000), 
+                    RandomVersionSource.Next(0, 1000)) : 
+                new Version(1, 0, 0, 0);
+            
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(applicationName, new Version(1, 0, 0, 0)), applicationName, ModuleKind.Console);
+                new AssemblyNameDefinition(applicationName, version), applicationName, ModuleKind.Console);
 
             var mainModule = assembly.MainModule;
 
@@ -210,6 +219,15 @@ namespace Snap.Shared.Tests
             }
 
             return assembly;
+        }
+
+        public AssemblyDefinition BuildSnapAwareEmptyExecutable([NotNull] SnapApp snapApp, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var testExeAssemblyDefinition = BuildEmptyExecutable(snapApp.Id, randomVersion, references);
+            var testExeAssemblyDefinitionReflector = new CecilAssemblyReflector(testExeAssemblyDefinition);
+            testExeAssemblyDefinitionReflector.SetSnapAware();
+            return testExeAssemblyDefinition;
         }
 
         public AssemblyDefinition BuildLibrary(string libraryName, string className, IReadOnlyCollection<AssemblyDefinition> references = null)
@@ -241,12 +259,13 @@ namespace Snap.Shared.Tests
         }
 
         internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync(
-            [NotNull] SnapApp snapApp, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapPack snapPack, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
+            [NotNull] SnapApp snapApp, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
+            if (snapEmbeddedResources == null) throw new ArgumentNullException(nameof(snapEmbeddedResources));
             if (nuspecFilesLayout == null) throw new ArgumentNullException(nameof(nuspecFilesLayout));
 
             var files = new List<string>();
@@ -256,6 +275,9 @@ namespace Snap.Shared.Tests
                 files.Add($"<file src=\"{pair.Key}\" />");
             }
 
+            var (coreRunMemoryStream, coreRunExeFilename) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            coreRunMemoryStream.Dispose();
+            
             var nuspecContent = $@"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
@@ -263,6 +285,7 @@ namespace Snap.Shared.Tests
         <authors>Peter Rekdal Sunde</authors>
     </metadata>
     <files> 
+        <file src=""{coreRunExeFilename}"" />
         <file src=""**\*.dll"" />					    
     </files>
 </package>";

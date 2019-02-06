@@ -4,7 +4,7 @@ using Mono.Cecil;
 
 namespace Snap.Shared.Tests.Extensions
 {
-    public static class AssemblyDefinitionExtensions
+    internal static class AssemblyDefinitionExtensions
     {
         public static string BuildRelativeFilename(this AssemblyDefinition assemblyDefinition)
         {

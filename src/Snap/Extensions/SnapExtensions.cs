@@ -22,6 +22,23 @@ namespace Snap.Extensions
         // https://github.com/NuGet/NuGet.Client/blob/dev/src/NuGet.Core/NuGet.Packaging/PackageCreation/Utility/PackageIdValidator.cs#L14
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex NetCoreAppRegex = new Regex("^netcoreapp\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+
+        internal static bool IsNetCoreAppSafe(this string framework)
+        {
+            return framework != null && NetCoreAppRegex.IsMatch(framework);
+        }
+
+        internal static bool IsNetFullFrameworkAppSafe(this string framework)
+        {
+            return framework != null && NetFullFrameworkRegex.IsMatch(framework);
+        }
+
+        internal static bool IsNetFrameworkValidSafe(this string framework)
+        {
+            return framework.IsNetCoreAppSafe() || framework.IsNetFullFrameworkAppSafe();
+        }
 
         internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
         {
@@ -232,6 +249,11 @@ namespace Snap.Extensions
             if (snapAppTarget == null)
             {
                 throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
+            }
+
+            if (!snapAppTarget.Framework.IsNetFrameworkValidSafe())
+            {
+                throw new Exception($"Unknown .NET framework: {snapAppTarget.Framework}");
             }
 
             var snapAppUniqueChannels = snapApp.Channels.Distinct().ToList();

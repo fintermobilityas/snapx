@@ -141,7 +141,7 @@ namespace Snap.Tool
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var (snapApps, snapApp, error) = BuildSnapAppFromCurrentDirectory(filesystem, appReader,  nuGetPackageSources, releasifyOptions.App, releasifyOptions.Rid, workingDirectory);
+            var (snapApps, snapApp, error) = BuildSnapAppFromDirectory(filesystem, appReader,  nuGetPackageSources, releasifyOptions.App, releasifyOptions.Rid, workingDirectory);
             if (snapApp == null)
             {
                 if (!error)
@@ -317,7 +317,7 @@ namespace Snap.Tool
             }
         }
 
-        static (SnapApps snapApps, SnapApp snapApp, bool error) BuildSnapAppFromCurrentDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources, string id, [NotNull] string rid,
+        static (SnapApps snapApps, SnapApp snapApp, bool error) BuildSnapAppFromDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources, string id, [NotNull] string rid,
              [NotNull] string workingDirectory)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));

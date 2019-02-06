@@ -244,11 +244,11 @@ namespace Snap.Core
             string rootAppDirectory, string rootAppInstallDirectory, SemanticVersion currentVersion,
             bool isInitialInstall, CancellationToken cancellationToken)
         {
-            var allSnapAwareApps = _snapOs.GetAllSnapAwareApps(rootAppInstallDirectory);
+            var allSnapAwareApps = _snapPack.GetAllSnapAwareApps(rootAppDirectory);
             if (!allSnapAwareApps.Any())
             {
                 Logger.Warn("No apps are marked as Snap-aware! Aborting post install. " +
-                                    "This is NOT a critical error it just means that the application has to be manually started by a human.");
+                                     "This is NOT a critical error it just means that the application has to be manually started by a human.");
                 return;
             }
 

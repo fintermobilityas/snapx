@@ -147,7 +147,7 @@ namespace Snap.Core
             
             await InvokePostInstall(snapApp, nuspecReader,
                 rootAppDirectory, rootAppInstallDirectory, snapApp.Version, false, cancellationToken);
-            Logger.Info("Post install tasks completed, snap has been successfully updated");
+            Logger.Info("Post install tasks completed");
 
             snapProgressSource?.Raise(100);
 
@@ -233,7 +233,7 @@ namespace Snap.Core
             
             await InvokePostInstall(snapApp, nuspecReader,
                 rootAppDirectory, rootAppInstallDirectory, snapApp.Version, true, cancellationToken);
-            Logger.Info("Post install tasks completed, snap has been successfully installed");
+            Logger.Info("Post install tasks completed");
 
             snapProgressSource?.Raise(100);
 
@@ -249,6 +249,7 @@ namespace Snap.Core
                 .Where(x => x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
                 .Select(x => x.FullName)
                 .ToList();
+
             if (!allSnapAwareApps.Any())
             {
                 Logger.Warn("No apps are marked as Snap-aware! Aborting post install. " +
@@ -263,14 +264,14 @@ namespace Snap.Core
 
             allSnapAwareApps.ForEach(x =>
             {
-                var absoluteExeFilename = _snapFilesystem.PathGetFileName(x);
+                var exeName = _snapFilesystem.PathGetFileName(x);
 
                 _snapOs
                     .CreateShortcutsForExecutable(snapApp, 
                         nuspecReader,
                         rootAppDirectory,
                         rootAppInstallDirectory,
-                        absoluteExeFilename,
+                        exeName,
                         null,
                         SnapShortcutLocation.Desktop | SnapShortcutLocation.StartMenu,
                         null,

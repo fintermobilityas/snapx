@@ -251,11 +251,6 @@ namespace snapx
                 if (packageAbsolutePath == null) throw new ArgumentNullException(nameof(packageAbsolutePath));
                 if (bytes <= 0) throw new ArgumentOutOfRangeException(nameof(bytes));
 
-                var thisPushStopwatch = new Stopwatch();
-                thisPushStopwatch.Restart();
-
-                var packageRelativeFilename = filesystem.PathGetFileName(packageAbsolutePath);
-
                 return SnapUtility.Retry(async () =>
                 {
                     await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, nugetLogger);

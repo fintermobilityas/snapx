@@ -11,7 +11,7 @@
         <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
         <IsPackable>true</IsPackable>
         <PackAsTool>true</PackAsTool>
-        <ToolCommandName>dotsnap</ToolCommandName>
+        <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 

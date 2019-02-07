@@ -385,7 +385,7 @@ namespace Snap.Tests.Core.Extensions
             var workingDirectory = _baseFixture.WorkingDirectory;
 
             var expectedStubExecutableName = $"{snapApp.Id}.exe";
-            var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
+            var expectedStubExecutableFullPath = _fileSystem.PathCombine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
@@ -404,7 +404,7 @@ namespace Snap.Tests.Core.Extensions
             var workingDirectory = _baseFixture.WorkingDirectory;
 
             var expectedStubExecutableName = $"{snapApp.Id}.exe";
-            var expectedStubExecutableFullPath = Path.Combine(workingDirectory, $"..\\{expectedStubExecutableName}");
+            var expectedStubExecutableFullPath = _fileSystem.PathCombine(workingDirectory, $"..\\{expectedStubExecutableName}");
 
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))

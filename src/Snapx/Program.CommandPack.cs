@@ -33,7 +33,7 @@ namespace snapx
 
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
-
+            
             var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader, 
                 nuGetPackageSources, packOptions.App, packOptions.Rid, workingDirectory);
             if (snapApp == null)
@@ -45,7 +45,9 @@ namespace snapx
 
                 return -1;
             }
-
+            
+            var snapAppsCopy = new SnapApps(snapApps);
+            
             snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
                 filesystem.PathCombine(workingDirectory, "packages") :
                 filesystem.PathGetFullPath(snapApps.Generic.Packages);
@@ -164,7 +166,7 @@ namespace snapx
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
                 if (previousSnapApp == null)
                 {                    
-                    UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapApps, snapApp);
+                    UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapAppsCopy, snapApp);
 
                     if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
                     {
@@ -191,7 +193,7 @@ namespace snapx
                 filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default).GetAwaiter().GetResult();
             }
 
-            UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapApps, snapApp);
+            UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapAppsCopy, snapApp);
 
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
             {

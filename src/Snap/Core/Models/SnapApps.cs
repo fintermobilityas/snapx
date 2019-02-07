@@ -38,6 +38,14 @@ namespace Snap.Core.Models
                     throw new NotSupportedException($"Unknown feed type: {snapChannel.UpdateFeed?.GetType()}.");
             }
         }
+
+        public SnapsChannel([NotNull] SnapsChannel snapChannel)
+        {
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
+            Name = snapChannel.Name;
+            PushFeed = snapChannel.PushFeed;
+            UpdateFeed = snapChannel.UpdateFeed;
+        }
     }
 
     public sealed class SnapsTarget
@@ -54,6 +62,15 @@ namespace Snap.Core.Models
         }
 
         internal SnapsTarget([NotNull] SnapTarget target)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            Os = target.Os;
+            Framework = target.Framework;
+            Rid = target.Rid;
+            Nuspec = target.Nuspec;
+        }
+
+        public SnapsTarget([NotNull] SnapsTarget target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
@@ -85,6 +102,15 @@ namespace Snap.Core.Models
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
         }
+
+        public SnapsApp([NotNull] SnapsApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            Id = snapApp.Id;
+            Version = snapApp.Version;
+            Channels = snapApp.Channels;
+            Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
+        }
     }
 
     public enum SnapAppsBumpStrategy
@@ -104,25 +130,35 @@ namespace Snap.Core.Models
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapAppsGeneric
     {
+        public string Artifacts { get; set; }
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
         public SnapAppsBumpStrategy BumpStrategy { get; set; }
         public SnapAppsPackStrategy PackStrategy { get; set; }
-        public string Artifacts { get; set; }
 
         [UsedImplicitly]
         public SnapAppsGeneric()
         {
             
         }
+
+        public SnapAppsGeneric([NotNull] SnapAppsGeneric snapAppsGeneric)
+        {
+            if (snapAppsGeneric == null) throw new ArgumentNullException(nameof(snapAppsGeneric));
+            Artifacts = snapAppsGeneric.Artifacts;
+            Packages = snapAppsGeneric.Packages;
+            Nuspecs = snapAppsGeneric.Nuspecs;
+            BumpStrategy = snapAppsGeneric.BumpStrategy;
+            PackStrategy = snapAppsGeneric.PackStrategy;
+        }
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapApps
     {
+        public SnapAppsGeneric Generic { get; set; }
         public List<SnapsChannel> Channels { get; set; }
         public List<SnapsApp> Apps { get; set; }
-        public SnapAppsGeneric Generic { get; set; }
 
         public SnapApps()
         {
@@ -137,6 +173,14 @@ namespace Snap.Core.Models
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
             Apps = new List<SnapsApp> { new SnapsApp(snapApp) };
             Generic = new SnapAppsGeneric();
+        }
+
+        public SnapApps([NotNull] SnapApps snapApps)
+        {
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            Channels = snapApps.Channels.Select(x => new SnapsChannel(x)).ToList();
+            Apps = snapApps.Apps.Select(x => new SnapsApp(x)).ToList();
+            Generic = new SnapAppsGeneric(snapApps.Generic);
         }
 
     }

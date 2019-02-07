@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -50,8 +50,9 @@ namespace snapx
                 filesystem.PathCombine(workingDirectory, "packages") :
                 filesystem.PathGetFullPath(snapApps.Generic.Packages);
 
-            packOptions.PublishDirectory =
-                packOptions.PublishDirectory == null ? string.Empty : filesystem.PathGetFullPath(packOptions.PublishDirectory);
+            packOptions.ArtifactsDirectory =
+                packOptions.ArtifactsDirectory == null ? string.Empty : 
+                    filesystem.PathCombine(workingDirectory, packOptions.ArtifactsDirectory);
 
             filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
             
@@ -114,16 +115,17 @@ namespace snapx
 
             if (snapApps.Generic.Artifacts != null)
             {
-                packOptions.PublishDirectory = snapApps.Generic.Artifacts;
+                packOptions.ArtifactsDirectory = filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts);
             }
 
-            if (!filesystem.DirectoryExists(packOptions.PublishDirectory))
+            if (!filesystem.DirectoryExists(packOptions.ArtifactsDirectory))
             {
-                logger.Error($"Publish directory does not exist: {packOptions.PublishDirectory}");
+                logger.Error($"Artifacts directory does not exist: {packOptions.ArtifactsDirectory}");
                 return -1;
             }
 
             logger.Info($"Packages directory: {snapApps.Generic.Packages}");
+            logger.Info($"Artifacts directory {packOptions.ArtifactsDirectory}");
             logger.Info($"Bump strategy: {snapApps.Generic.BumpStrategy}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
             logger.Info('-'.Repeat(TerminalWidth));
@@ -138,14 +140,13 @@ namespace snapx
             logger.Info($"Rid: {snapApp.Target.Rid}");
             logger.Info($"OS: {snapApp.Target.Os.ToString().ToLowerInvariant()}");
             logger.Info($"Nuspec: {nuspecFilename}");
-            logger.Info($"Nuspec base directory: {packOptions.PublishDirectory}");
                         
             logger.Info('-'.Repeat(TerminalWidth));
 
             var snapPackageDetails = new SnapPackageDetails
             {
                 App = snapApp,
-                NuspecBaseDirectory = packOptions.PublishDirectory,
+                NuspecBaseDirectory = packOptions.ArtifactsDirectory,
                 NuspecFilename = nuspecFilename,
                 SnapProgressSource = new SnapProgressSource()
             };

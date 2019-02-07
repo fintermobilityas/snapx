@@ -40,7 +40,7 @@ namespace snapx
             {
                 if (!error)
                 {
-                    logger.Error($"Snap with id {packOptions.App} was not found in manifest");
+                    logger.Error($"Snap with id {packOptions.App} was not found in manifest: {snapsManifestAbsoluteFilename}");
                 }
 
                 return -1;

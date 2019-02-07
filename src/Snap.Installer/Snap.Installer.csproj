@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <Import Project="..\Snap\Snap.Deps.targets" />
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="**\*.xaml" SubType="Designer" />        
+        <EmbeddedResource Include="Assets\**\*" />        
+        <EmbeddedResource Remove="Assets\AssetsTypeRoot.cs" />
+        <EmbeddedResource Include="../Snap.CoreRun/resources/CoreRun.ico" Link="Assets\snap.ico" />
+        <Compile Update="**\*.xaml.cs" DependentUpon="%(Filename)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="0.7.1-cibuild0001356-beta" />
+        <PackageReference Include="Avalonia.Desktop" Version="0.7.1-cibuild0001356-beta" />
+        <PackageReference Include="Avalonia.ReactiveUI" Version="0.7.0" />
+        <PackageReference Include="LightInject" Version="5.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Snap\Snap.csproj" />
+    </ItemGroup>
+
+</Project>

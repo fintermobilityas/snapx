@@ -295,7 +295,7 @@ namespace Snap.Tool
             var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());
             using (var currentNupkgStream = snapPack.BuildFullPackageAsync(snapPackageDetails, SnapReleasifyLogger).GetAwaiter().GetResult())
             {
-                SnapReleasifyLogger.Info($"Writing nupkg to packages directory: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {currentNupkgStream.Length.BytesAsHumanReadable()}.");
+                SnapReleasifyLogger.Info($"Writing nupkg: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {currentNupkgStream.Length.BytesAsHumanReadable()}.");
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
                 if (previousSnapApp == null)
                 {
@@ -314,7 +314,7 @@ namespace Snap.Tool
             using (deltaNupkgStream)
             {
                 var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, deltaSnapApp.BuildNugetLocalFilename());
-                SnapReleasifyLogger.Info($"Writing nupkg to packages directory: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {deltaNupkgStream.Length.BytesAsHumanReadable()}.");
+                SnapReleasifyLogger.Info($"Writing nupkg: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {deltaNupkgStream.Length.BytesAsHumanReadable()}.");
                 filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default).GetAwaiter().GetResult();
             }
 

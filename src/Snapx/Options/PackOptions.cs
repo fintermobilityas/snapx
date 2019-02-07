@@ -10,7 +10,7 @@ namespace snapx.Options
     internal class PackOptions : BaseSubOptions
     {
         [Option("id", HelpText = "Application id", Required = true)]
-        public string App { get; set; }
+        public string AppId { get; set; }
         [Option('r', "rid", HelpText = "Runtime identifier target name, e.g win7-x64", Required = true)]
         public string Rid { get; set; }
         [Option('d', "artifacts-directory", HelpText = "Self-contained dotnet publish directory")]

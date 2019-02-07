@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -146,14 +146,14 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var (snapApps, snapAppsList, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
-            var snapApp = snapAppsList?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase)
+            var (snapApps, snapAppTargets, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
+            var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase)
                                                          && string.Equals(x.Target.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
         }
 
-        static (SnapApps snapApps, List<SnapApp>, string snapsAbsoluteFilename) BuildSnapAppsFromDirectory(
+        static (SnapApps snapApps, List<SnapApp> snapAppTargets, string snapsAbsoluteFilename) BuildSnapAppsFromDirectory(
             [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] string workingDirectory)
         {

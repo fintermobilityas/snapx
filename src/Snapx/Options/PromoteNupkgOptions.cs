@@ -9,9 +9,9 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PromoteNupkgOptions : BaseSubOptions
     {
-        [Option('a', "app", HelpText = "Application name", Required = true)]
-        public string App { get; set; }
-        [Option("all", HelpText = "Promotes the application to all release channels", Required = true)]
+        [Option("id", HelpText = "Application id", Required = true)]
+        public string AppId { get; set; }
+        [Option("all", HelpText = "Promotes the application to all channels")]
         public bool All { get; set; }
     }
 }

@@ -35,12 +35,12 @@ namespace snapx
             stopwatch.Restart();
             
             var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader, 
-                nuGetPackageSources, packOptions.App, packOptions.Rid, workingDirectory);
+                nuGetPackageSources, packOptions.AppId, packOptions.Rid, workingDirectory);
             if (snapApp == null)
             {
                 if (!error)
                 {
-                    logger.Error($"Snap with id {packOptions.App} was not found in manifest: {snapsManifestAbsoluteFilename}");
+                    logger.Error($"Snap with id {packOptions.AppId} was not found in manifest: {snapsManifestAbsoluteFilename}");
                 }
 
                 return -1;

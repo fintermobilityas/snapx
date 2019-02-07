@@ -23,28 +23,30 @@ namespace Snap.NuGet
 
         public override void Log(ILogMessage message)
         {
+            message.Message = message.Message?.TrimStart();
+
             switch (message.Level)
             {
                 case LogLevel.Verbose:
-                    _logger.Trace($"[nuget]: {message.Message}");
+                    _logger.Trace($"{message.Message}");
                     break;
                 case LogLevel.Debug:
-                    _logger.Debug($"[nuget]: {message.Message}");
+                    _logger.Debug($"{message.Message}");
                     break;
                 case LogLevel.Information:
-                    _logger.Info($"[nuget]: {message.Message}");
+                    _logger.Info($"{message.Message}");
                     break;
                 case LogLevel.Minimal:
-                    _logger.Trace($"[nuget]: {message.Message}");
+                    _logger.Trace($"{message.Message}");
                     break;
                 case LogLevel.Warning:
-                    _logger.Warn($"[nuget]: {message.Message}");
+                    _logger.Warn($"{message.Message}");
                     break;
                 case LogLevel.Error:
-                    _logger.Error($"[nuget]: {message.Message}");
+                    _logger.Error($"{message.Message}");
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException($"[nuget]: Invalid log level {message.Level}");
+                    throw new ArgumentOutOfRangeException($"Invalid log level: {message.Level}");
             }
         }
 

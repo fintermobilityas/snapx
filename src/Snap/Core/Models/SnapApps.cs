@@ -89,17 +89,25 @@ namespace Snap.Core.Models
 
     public enum SnapAppsBumpStrategy
     {
-        [UsedImplicitly] None,
+        [UsedImplicitly] Default,
         Major,
         Minor,
         Patch
     }
 
+    public enum SnapAppsPackStrategy
+    {
+        [UsedImplicitly] Default,
+        Push
+    }
+
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapAppsGeneric
     {
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
         public SnapAppsBumpStrategy BumpStrategy { get; set; }
+        public SnapAppsPackStrategy PackStrategy { get; set; }
         public string Artifacts { get; set; }
 
         [UsedImplicitly]

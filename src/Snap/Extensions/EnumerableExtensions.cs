@@ -41,28 +41,5 @@ namespace Snap.Extensions
                     }
                 })));
         }
-
-        public static async Task<List<TReturn>> ForEachAsync<T, TReturn>(this IEnumerable<T> source, Func<T, Task<TReturn>> body, int degreeOfParallelism = 0)
-        {
-            degreeOfParallelism = degreeOfParallelism <= 0 ? Environment.ProcessorCount : degreeOfParallelism;
-
-            var entities = new ConcurrentBag<TReturn>();
-
-            await Task.WhenAll(
-                Partitioner.Create(source)
-                .GetPartitions(degreeOfParallelism)
-                .Select(partition => Task.Run(async () =>
-                {
-                    using (partition)
-                    {
-                        while (partition.MoveNext())
-                        {
-                            entities.Add(await body(partition.Current));
-                        }
-                    }
-                })));
-
-            return entities.ToList();
-        }
     }
 }

@@ -89,7 +89,7 @@ namespace Snap.Core.Models
 
     public enum SnapAppsBumpStrategy
     {
-        None,
+        [UsedImplicitly] None,
         Major,
         Minor,
         Patch
@@ -99,7 +99,8 @@ namespace Snap.Core.Models
     {
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
-        public SnapAppsBumpStrategy BumpStrategy { get;set; }
+        public SnapAppsBumpStrategy BumpStrategy { get; set; }
+        public string Artifacts { get; set; }
 
         [UsedImplicitly]
         public SnapAppsGeneric()

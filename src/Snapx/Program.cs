@@ -67,7 +67,7 @@ namespace snapx
 
             try
             {
-                nuGetPackageSources = new NuGetMachineWidePackageSources(snapOs.Filesystem, snapOs.Filesystem.DirectoryGetCurrentWorkingDirectory());
+                nuGetPackageSources = new NuGetMachineWidePackageSources(snapOs.Filesystem, snapOs.Filesystem.DirectoryWorkingDirectory());
             }
             catch (Exception e)
             {
@@ -75,7 +75,7 @@ namespace snapx
                 return -1;
             }
 
-            var workingDirectory = snapOs.Filesystem.DirectoryGetCurrentWorkingDirectory();
+            var workingDirectory = Environment.CurrentDirectory;
             var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
             var snapCryptoProvider = new SnapCryptoProvider();
@@ -205,12 +205,6 @@ namespace snapx
                 releasifyOptions.PublishDirectory == null ? string.Empty : filesystem.PathGetFullPath(releasifyOptions.PublishDirectory);
 
             filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
-
-            if (!filesystem.DirectoryExists(releasifyOptions.PublishDirectory))
-            {
-                SnapReleasifyLogger.Error($"Publish directory does not exist: {releasifyOptions.PublishDirectory}");
-                return -1;
-            }
             
             var (previousNupkgAbsolutePath, previousSnapApp) = filesystem
                 .EnumerateFiles(snapApps.Generic.Packages)
@@ -259,6 +253,28 @@ namespace snapx
                 case SnapAppsBumpStrategy.Patch:
                     snapApp.Version = previousSnapApp != null ? previousSnapApp.Version.BumpPatch() : snapApp.Version.BumpPatch();
                     break;
+            }
+
+            var artifactsProperties = new Dictionary<string, string>
+            {
+                { "id", snapApp.Id },
+                { "rid", snapApp.Target.Rid },
+                { "version", snapApp.Version.ToNormalizedString() }
+            };
+
+            snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
+                null : filesystem.PathCombine(workingDirectory, 
+                    snapApps.Generic.Artifacts.ExpandProperties(artifactsProperties));
+
+            if (snapApps.Generic.Artifacts != null)
+            {
+                releasifyOptions.PublishDirectory = snapApps.Generic.Artifacts;
+            }
+
+            if (!filesystem.DirectoryExists(releasifyOptions.PublishDirectory))
+            {
+                SnapReleasifyLogger.Error($"Publish directory does not exist: {releasifyOptions.PublishDirectory}");
+                return -1;
             }
 
             SnapReleasifyLogger.Info($"Packages directory: {snapApps.Generic.Packages}");

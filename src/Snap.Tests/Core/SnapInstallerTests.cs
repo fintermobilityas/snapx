@@ -153,7 +153,6 @@ namespace Snap.Tests.Core
                     }
                     .Concat(expectedInstallFiles)
                     .Concat(expectedUpdatedFiles)
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();                
                 
@@ -254,7 +253,6 @@ namespace Snap.Tests.Core
                         // Nupkg
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename))
                     }
-                    .Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x))
                     .OrderBy(x => x)
                     .ToList();
                 

@@ -23,7 +23,7 @@ namespace Snap.Core
         bool DirectoryExists(string directory);
         void DirectoryDelete(string directory);
         Task DirectoryDeleteAsync(string directory);
-        string DirectoryGetCurrentWorkingDirectory();
+        string DirectoryWorkingDirectory();
         Task DirectoryDeleteOrJustGiveUpAsync(string directory);
         string DirectoryGetParent(string path);
         IEnumerable<string> EnumerateDirectories(string path);
@@ -365,7 +365,7 @@ namespace Snap.Core
             }
         }
 
-        public string DirectoryGetCurrentWorkingDirectory()
+        public string DirectoryWorkingDirectory()
         {
             return Directory.GetCurrentDirectory();
         }
@@ -398,7 +398,7 @@ namespace Snap.Core
 
         public string PathGetTempPath()
         {
-            return Path.GetTempPath() ?? DirectoryGetCurrentWorkingDirectory();
+            return Path.GetTempPath() ?? DirectoryWorkingDirectory();
         }
 
         public string PathGetFileNameWithoutExtension([NotNull] string filename)
@@ -411,7 +411,7 @@ namespace Snap.Core
         {
             if (path1 == null) throw new ArgumentNullException(nameof(path1));
             if (path2 == null) throw new ArgumentNullException(nameof(path2));
-            return Path.Combine(path1, path2);
+            return PathEnsureThisOsDirectoryPathSeperator(Path.Combine(path1, path2));
         }
 
         public string PathCombine([NotNull] string path1, [NotNull] string path2, [NotNull] string path3)
@@ -419,7 +419,7 @@ namespace Snap.Core
             if (path1 == null) throw new ArgumentNullException(nameof(path1));
             if (path2 == null) throw new ArgumentNullException(nameof(path2));
             if (path3 == null) throw new ArgumentNullException(nameof(path3));
-            return Path.Combine(path1, path2, path3);
+            return PathEnsureThisOsDirectoryPathSeperator(Path.Combine(path1, path2, path3));
         }
 
         public string PathCombine([NotNull] string path1, [NotNull] string path2, [NotNull] string path3, [NotNull] string path4)
@@ -428,7 +428,7 @@ namespace Snap.Core
             if (path2 == null) throw new ArgumentNullException(nameof(path2));
             if (path3 == null) throw new ArgumentNullException(nameof(path3));
             if (path4 == null) throw new ArgumentNullException(nameof(path4));
-            return Path.Combine(path1, path2, path3, path4);
+            return PathEnsureThisOsDirectoryPathSeperator(Path.Combine(path1, path2, path3, path4));
         }
 
         public string PathGetDirectoryName([NotNull] string path)

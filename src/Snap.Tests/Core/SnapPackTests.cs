@@ -813,7 +813,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(appDir, currentNupkgAssemblyDefinition3.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename)
-                    }.Select(x => _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(x)).OrderBy(x => x).ToList();
+                    }.OrderBy(x => x).ToList();
                     
                     Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
                     Assert.Equal(extractedFiles.Count, expectedLayout.Count);

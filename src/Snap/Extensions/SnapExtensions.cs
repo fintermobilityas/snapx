@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
@@ -24,6 +26,28 @@ namespace Snap.Extensions
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetCoreAppRegex = new Regex("^netcoreapp\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+
+        internal static string ExpandProperties([NotNull] this string value, [NotNull] Dictionary<string, string> properties)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (properties == null) throw new ArgumentNullException(nameof(properties));
+            if (properties.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(properties));
+
+            foreach (var match in ExpansionRegex.Matches(value).Cast<Match>())
+            {
+                var key = match.Value.Replace("$", string.Empty);
+
+                if (!properties.ContainsKey(key))
+                {
+                    throw new Exception($"Failed to expand key: {key}.");
+                }
+
+                value = value.Replace(match.Value, properties[key]);
+            }
+
+            return value;
+        }
 
         internal static bool IsNetCoreAppSafe(this string framework)
         {

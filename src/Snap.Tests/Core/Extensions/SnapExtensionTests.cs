@@ -31,6 +31,16 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Theory]
+        [InlineData(".builds", "id=demoapp;rid=linux-x64;version=1.0.0", ".builds")]
+        [InlineData(".builds/$id$/$rid$/$version$", "id=demoapp;rid=linux-x64;version=1.0.0", ".builds/demoapp/linux-x64/1.0.0")]
+        public void TestExpandProperties(string valueStr, string dictionaryString, string expectedString)
+        {
+            var properties = BuildExpansionProperties(dictionaryString);
+            var value = valueStr.ExpandProperties(properties);
+            Assert.Equal(value, expectedString);
+        }
+
+        [Theory]
         [InlineData("netCoreApp22", false)]
         [InlineData("netcoreapp22", false)]
         [InlineData("netCoreApp2.1", true)]
@@ -667,5 +677,24 @@ namespace Snap.Tests.Core.Extensions
             var nugetOrgMirrorPackageSource = nugetPackageSources.Items.Skip(1).First();
             Assert.Equal(nugetOrgMirrorPackageSource.Name, nugetOrgMirrorFeed.Name);
         }
+
+        
+        static Dictionary<string, string> BuildExpansionProperties(string value)
+        {
+            if (value == null)
+            {
+                return new Dictionary<string, string>();
+            }
+
+            var lines = value.Split(';').ToList();
+            var properties = new Dictionary<string, string>();
+            foreach (var kv in lines.Select(x => x.Split('=')))
+            {
+                properties[kv[0]] = kv[1];
+            }
+
+            return properties;
+        }
+
     }
 }

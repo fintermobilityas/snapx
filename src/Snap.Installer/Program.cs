@@ -43,16 +43,10 @@ namespace Snap.Installer
                 result
                     .UseWin32()
                     .UseDirect2D1();
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                result.UseSkia();
-            }
-            else
-            {
-                result.UsePlatformDetect();
+                return result;
             }
 
+            result.UsePlatformDetect();
             return result;
         }
     }

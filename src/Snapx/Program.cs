@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -71,6 +71,11 @@ namespace snapx
             }
 
             var workingDirectory = Environment.CurrentDirectory;
+            if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparatorChar))
+            {
+                workingDirectory += snapOs.Filesystem.DirectorySeparatorChar;
+            }
+            
             var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
             var snapCryptoProvider = new SnapCryptoProvider();

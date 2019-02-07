@@ -75,7 +75,7 @@ namespace Snap.Tool
 
             var workingDirectory = snapOs.Filesystem.DirectoryGetCurrentWorkingDirectory();
             var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
-            var snapCoreRunLib = new SnapCoreRunLibAnyOs(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
+            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
             var snapCryptoProvider = new SnapCryptoProvider();
             var snapEmbeddedResources = new SnapEmbeddedResources();
             var snapAppReader = new SnapAppReader();
@@ -87,17 +87,17 @@ namespace Snap.Tool
             var nugetLogger = new NugetLogger(Logger);
             var nugetService = new NugetService(nugetLogger);
 
-            return MainAsync(args, snapCoreRunLib, snapOs, nugetService, snapExtractor, snapOs.Filesystem, snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, snapPack, snapAppWriter, workingDirectory);
+            return MainAsync(args, coreRunLib, snapOs, nugetService, snapExtractor, snapOs.Filesystem, snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, snapPack, snapAppWriter, workingDirectory);
         }
 
         static int MainAsync([NotNull] IEnumerable<string> args,
-            [NotNull] SnapCoreRunLibAnyOs snapCoreRunLib,
+            [NotNull] CoreRunLib coreRunLib,
             [NotNull] ISnapOs snapOs, [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapFilesystem snapFilesystem,
             [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapCryptoProvider snapCryptoProvider,
             [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack, ISnapAppWriter snapAppWriter, [NotNull] string workingDirectory)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            if (snapCoreRunLib == null) throw new ArgumentNullException(nameof(snapCoreRunLib));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
@@ -119,7 +119,7 @@ namespace Snap.Tool
                     (ReleasifyOptions opts) => SnapReleasify(opts, snapFilesystem, snapAppReader, nuGetPackageSources, snapPack, workingDirectory),
                     (Sha512Options opts) => SnapSha512(opts, snapFilesystem, snapCryptoProvider),
                     (Sha1Options opts) => SnapSha1(opts, snapFilesystem, snapCryptoProvider),
-                    (RcEditOptions opts) => SnapRcEdit(opts, snapCoreRunLib, snapFilesystem),
+                    (RcEditOptions opts) => SnapRcEdit(opts, coreRunLib, snapFilesystem),
                     errs =>
                     {
                         snapOs.EnsureConsole();
@@ -127,10 +127,10 @@ namespace Snap.Tool
                     });            
         }
 
-        static int SnapRcEdit([NotNull] RcEditOptions opts, [NotNull] SnapCoreRunLibAnyOs snapCoreRunLib, [NotNull] ISnapFilesystem snapFilesystem)
+        static int SnapRcEdit([NotNull] RcEditOptions opts, [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapFilesystem snapFilesystem)
         {
             if (opts == null) throw new ArgumentNullException(nameof(opts));
-            if (snapCoreRunLib == null) throw new ArgumentNullException(nameof(snapCoreRunLib));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
 
             if (opts.ConvertSubSystemToWindowsGui)

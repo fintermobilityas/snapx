@@ -87,10 +87,19 @@ namespace Snap.Core.Models
         }
     }
 
+    public enum SnapAppsBumpStrategy
+    {
+        None,
+        Major,
+        Minor,
+        Patch
+    }
+
     public sealed class SnapAppsGeneric
     {
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
+        public SnapAppsBumpStrategy BumpStrategy { get;set; }
 
         [UsedImplicitly]
         public SnapAppsGeneric()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Snap.Logging;
 
 namespace Snap.Extensions
@@ -8,6 +9,14 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class LoggerExtensions
     {
+        public static void InfoWithDashses([NotNull] this ILog This, [NotNull] string message)
+        {
+            if (This == null) throw new ArgumentNullException(nameof(This));
+            if (message == null) throw new ArgumentNullException(nameof(message));
+            This.Info(message);
+            This.Info('-'.Repeat(message.Length));
+        }
+
         public static void LogIfThrows(this ILog This, LogLevel level, string message, Action block)
         {
             try

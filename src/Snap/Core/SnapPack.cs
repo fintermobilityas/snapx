@@ -205,7 +205,7 @@ namespace Snap.Core
         Task<SnapPackDeltaReport> BuildDeltaReportAsync(
             [NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath, CancellationToken cancellationToken = default);
         Task<(MemoryStream memoryStream, SnapApp snapApp)> BuildDeltaPackageAsync([NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath,
-            ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default);
+            ISnapProgressSource progressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
         Task<(MemoryStream outputStream, SnapApp nextSnapApp)> ReassambleFullPackageAsync([NotNull] string deltaNupkgAbsolutePath, [NotNull] string fullNupkgAbsolutePath,
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default);
         Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
@@ -264,7 +264,7 @@ namespace Snap.Core
             sw.Restart();
             
             packageDetails.SnapProgressSource?.Raise(0);
-            logger?.Info("Building nuspec properties");
+            logger?.Debug("Building nuspec properties");
             
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(packageDetails);
 
@@ -274,18 +274,18 @@ namespace Snap.Core
             var alwaysRemoveTheseAssemblies = AlwaysRemoveTheseAssemblies.ToList();
             alwaysRemoveTheseAssemblies.Add(_snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App));
 
-            logger?.Info($"Assemblies that will be replaced in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
+            logger?.Debug($"Assemblies that will be replaced in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
 
             progressSource?.Raise(10);
 
-            logger?.Info($"Rewriting nuspec: {packageDetails.NuspecFilename}.");
+            logger?.Debug($"Rewriting nuspec: {packageDetails.NuspecFilename}.");
 
             using (var nuspecIntermediateStream = await _snapFilesystem.FileReadAsync(packageDetails.NuspecFilename, cancellationToken))
             using (var nuspecStream = RewriteNuspec(packageDetails, nuspecIntermediateStream, nuspecPropertiesResolver, packageDetails.NuspecBaseDirectory))
             {
                 progressSource?.Raise(30);
 
-                logger?.Info($"Building nupkg using base directory: {packageDetails.NuspecBaseDirectory}");
+                logger?.Debug($"Building nupkg using base directory: {packageDetails.NuspecBaseDirectory}");
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, nuspecPropertiesResolver);
 
@@ -339,31 +339,32 @@ namespace Snap.Core
                 EnsureCoreRunSupportsThisPlatform();
                 
                 progressSource?.Raise(50);
-                logger?.Info($"Replacing assemblies in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
+                logger?.Debug($"Replacing assemblies in nupkg: {string.Join(",", alwaysRemoveTheseAssemblies)}");
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.Files.Remove(new PhysicalPackageFile {TargetPath = targetPath}));
                 
                 progressSource?.Raise(60);
-                logger?.Info("Adding snap assemblies");
+                logger?.Debug("Adding snap assemblies");
                 await AddSnapAssemblies(packageBuilder, packageDetails.App, cancellationToken);
  
                 progressSource?.Raise(70);
-                logger?.Info("Adding checkingsum manifest");
+                logger?.Debug("Adding checkingsum manifest");
                 await AddChecksumManifestAsync(packageBuilder, cancellationToken);
 
-                logger?.Info("Saving nupkg to stream");
+                logger?.Debug("Saving nupkg to stream");
                 progressSource?.Raise(80);
                 
                 packageBuilder.Save(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
 
                 progressSource?.Raise(100);
-                logger?.Info($"Nupkg has been successfully releasified: {packageDetails.App.BuildNugetLocalFilename()} in {sw.Elapsed.TotalSeconds:F1}s.");
+                logger?.Debug($"Nupkg has been successfully releasified: {packageDetails.App.BuildNugetLocalFilename()} in {sw.Elapsed.TotalSeconds:F1}s.");
 
                 return outputStream;
             }
         }
 
-        public async Task<SnapPackDeltaReport> BuildDeltaReportAsync(string previousNupkgAbsolutePath, string currentNupkgAbsolutePath, CancellationToken cancellationToken = default)
+        public async Task<SnapPackDeltaReport> BuildDeltaReportAsync(string previousNupkgAbsolutePath, string currentNupkgAbsolutePath,
+            CancellationToken cancellationToken = default)
         {
             if (previousNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(previousNupkgAbsolutePath));
             if (currentNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(currentNupkgAbsolutePath));
@@ -467,6 +468,7 @@ namespace Snap.Core
         public async Task<(MemoryStream memoryStream, SnapApp snapApp)> BuildDeltaPackageAsync(string previousNupkgAbsolutePath,
             string currentNupkgAbsolutePath,
             ISnapProgressSource progressSource = null,
+            ILog logger = null, 
             CancellationToken cancellationToken = default)
         {
             if (previousNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(previousNupkgAbsolutePath));

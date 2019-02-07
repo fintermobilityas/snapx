@@ -126,7 +126,7 @@ namespace snapx
                     errs =>
                     {
                         snapOs.EnsureConsole();
-                        return 1;
+                        return 0;
                     });
         }
         

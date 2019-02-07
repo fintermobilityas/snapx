@@ -26,7 +26,7 @@ namespace snapx
 
         const int TerminalWidth = 80;
 
-        static int Main(string[] args)
+        internal static int Main(string[] args)
         {
             try
             {

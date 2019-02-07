@@ -46,10 +46,12 @@ namespace snapx
 
             if (osPlatform == OSPlatform.Windows)
             {
+                filename += ".dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)
             {
+                filename += ".so";
                 _libPtr = NativeMethodsUnix.dlopen(filename, NativeMethodsUnix.libdl_RTLD_NOW | NativeMethodsUnix.libdl_RTLD_LOCAL);
             }
 

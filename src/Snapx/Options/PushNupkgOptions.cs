@@ -1,10 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
+using JetBrains.Annotations;
 
-namespace Snap.Tool.Options
+namespace snapx.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("push", HelpText = "Pushes a nupkg to the default release channel")]
+    [UsedImplicitly]
     internal class PushNupkgOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Snap app name", Required = true)]

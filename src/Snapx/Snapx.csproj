@@ -5,9 +5,9 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
-        <RootNamespace>Snap.Tool</RootNamespace>
-        <AssemblyName>Snap.Tool</AssemblyName>
-        <PackageId>dotnet-snap</PackageId>
+        <RootNamespace>snapx</RootNamespace>
+        <AssemblyName>snapx</AssemblyName>
+        <PackageId>snapx</PackageId>
         <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
         <IsPackable>true</IsPackable>
         <PackAsTool>true</PackAsTool>

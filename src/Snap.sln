@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.271
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap", "Snap\Snap.csproj", "{4D87A673-63F1-4872-8BC6-A00866460FB7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.Tool", "Snap.Tool\Snap.Tool.csproj", "{01CE9C1B-1EFB-4469-8C2C-020B785F3465}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snapx", "Snapx\Snapx.csproj", "{01CE9C1B-1EFB-4469-8C2C-020B785F3465}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{543B57A3-A18F-48A6-950B-7849A45FEC93}"
 EndProject

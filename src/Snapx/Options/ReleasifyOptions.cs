@@ -1,10 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using CommandLine;
+using JetBrains.Annotations;
 
-namespace Snap.Tool.Options
+namespace snapx.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("releasify", HelpText = "Create a new release for a given app")]
+    [UsedImplicitly]
     internal class ReleasifyOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Application name", Required = true)]

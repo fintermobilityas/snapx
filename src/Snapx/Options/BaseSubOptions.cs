@@ -1,4 +1,4 @@
-﻿namespace Snap.Tool.Options
+﻿namespace snapx.Options
 {
     internal abstract class BaseSubOptions
     {

@@ -1,8 +1,10 @@
 using CommandLine;
+using JetBrains.Annotations;
 
-namespace Snap.Tool.Options
+namespace snapx.Options
 {
     [Verb("sha1", HelpText = "Calculate SHA-1 for a given file")]
+    [UsedImplicitly]
     internal class Sha1Options : BaseSubOptions
     {
         [Option('f', "filename", HelpText = "Input filename", Required = true)]

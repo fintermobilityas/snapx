@@ -1,8 +1,10 @@
 ﻿using CommandLine;
+using JetBrains.Annotations;
 
-namespace Snap.Tool.Options
+namespace snapx.Options
 {
-    [Verb("rcedit", HelpText = "Resource manipulation for .NET executables")]
+    [Verb("rcedit", HelpText = "Manipulate resources for windows or linux binaries. Supports: PE/ELF binaries.")]
+    [UsedImplicitly]
     internal class RcEditOptions : BaseSubOptions
     {
         [Option('f', "filename", HelpText = "Input filename", Required = true)]

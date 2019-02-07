@@ -38,10 +38,10 @@ function Exec
 	}
 }
 
-Exec "& dotnet tool uninstall -g dotnet-snap"
-Exec "& dotnet clean src/Snap.Tool"
-Exec "& dotnet build -c Debug src/Snap.Tool -f netcoreapp2.1"
-Exec "& dotnet pack -c Debug src/Snap.Tool --no-build"
-Exec "& dotnet tool install --global --add-source ./nupkgs dotnet-snap"
+Exec "& dotnet tool uninstall -g snapx"
+Exec "& dotnet clean src/Snapx"
+Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.1"
+Exec "& dotnet pack -c Release src/Snapx --no-build"
+Exec "& dotnet tool install --global --add-source ./nupkgs snapx"
 
-. dotsnap 
+. snapx 

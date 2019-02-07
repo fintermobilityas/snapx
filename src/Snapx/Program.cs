@@ -11,19 +11,18 @@ using CommandLine;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Versioning;
+using snapx.Options;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Logging;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
-using Snap.Tool.Options;
 using Snap.Logging;
 using Snap.NuGet;
-using Snap.Tool.Core;
 using LogLevel = Snap.Logging.LogLevel;
 
-namespace Snap.Tool
+namespace snapx
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     internal class Program
@@ -114,7 +113,9 @@ namespace Snap.Tool
 
             if (args == null) throw new ArgumentNullException(nameof(args));
 
-            return Parser.Default.ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, ReleasifyOptions, Sha1Options, Sha512Options, RcEditOptions>(args)
+            return Parser
+                .Default
+                .ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, ReleasifyOptions, Sha1Options, Sha512Options, RcEditOptions>(args)
                 .MapResult(
                     (PromoteNupkgOptions opts) => SnapPromoteNupkg(opts, nugetService),
                     (PushNupkgOptions options) => SnapPushNupkg(options, nugetService),

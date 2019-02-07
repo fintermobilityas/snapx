@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Extensions;
 
-namespace Snap.Tool.Core
+namespace snapx
 {   
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ICoreRunLib : IDisposable

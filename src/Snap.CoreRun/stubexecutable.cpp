@@ -1,6 +1,12 @@
 #include "stubexecutable.hpp"
 #include "vendor/semver/semver200.h"
 
+#if PLATFORM_LINUX
+#include <unistd.h> // fork
+#include <sys/types.h> // pid_t
+#include <sys/wait.h> // wait
+#endif
+
 using std::string;
 
 int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
@@ -19,7 +25,8 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         return -1;
     }
 
-    const auto executable_full_path(working_dir + PAL_CORECLR_TPA_SEPARATOR_STR + app_name);
+    const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_C + app_name);
+#if PLATFORM_WINDOWS
 
     std::string cmd_line("\"");
     cmd_line += executable_full_path;
@@ -30,7 +37,6 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         cmd_line += argument;
     }
 
-#if PLATFORM_WINDOWS
     pal_utf16_string lp_command_line_utf16_string(cmd_line);
     pal_utf16_string lp_current_directory_utf16_string(working_dir);
 
@@ -67,11 +73,33 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
 
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);
-#else
-    return -1;
+#elif PLATFORM_LINUX
+    const auto argv = new char*[arguments.size() + 1];
+    argv[0] = strdup(executable_full_path.c_str());
+    for(auto i = 1; i < arguments.size(); i++) {
+        argv[i] = strdup(arguments[i].c_str());
+    }
+
+    const auto pid = fork();
+    auto exitCode = -1;
+    if(pid != 0) {
+        LOG(ERROR) << "Unknown error forking: " << pid;
+    } else {
+        chdir(working_dir.c_str());
+        if(execvp(executable_full_path.c_str(), argv)) {
+            LOG(ERROR) << "Unknown error executing executable: " << executable_full_path << ". "
+                       << "Working directory: " << working_dir << ".";
+        } else {
+            exitCode = 0;
+        }
+    }
+
+    delete[] argv;
+
+    return exitCode;
 #endif
 
-    return 0;
+    return -1;
 }
 
 std::string snap::stubexecutable::find_root_app_dir()

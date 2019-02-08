@@ -120,8 +120,7 @@ std::string snap::stubexecutable::find_latest_app_dir()
         return std::string();
     }
 
-    version::Semver200_version acc("0.0.0");
-    std::string acc_s;
+    version::Semver200_version most_recent_semver("0.0.0");
 
     for (const auto &directory : paths)
     {
@@ -151,17 +150,16 @@ std::string snap::stubexecutable::find_latest_app_dir()
             continue;
         }
 
-        if (current_app_semver <= acc) {
+        if (current_app_semver <= most_recent_semver) {
             continue;
         }
 
-        acc = current_app_semver;
-        acc_s = current_app_ver;
+        most_recent_semver = current_app_semver;
     }
 
     root_app_directory.assign(find_root_app_dir());
     std::stringstream ret;
-    ret << root_app_directory << PAL_DIRECTORY_SEPARATOR_STR << "app-" << acc_s;
+    ret << root_app_directory << PAL_DIRECTORY_SEPARATOR_STR << "app-" << most_recent_semver;
 
     return ret.str();
 }

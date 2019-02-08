@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
+    <Import Project="Snap.Installer.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -15,15 +16,6 @@
         <EmbeddedResource Remove="Assets\AssetsTypeRoot.cs" />
         <EmbeddedResource Include="../Snap.CoreRun/resources/CoreRun.ico" Link="Assets\snap.ico" />
         <Compile Update="**\*.xaml.cs" DependentUpon="%(Filename)" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.7.1-cibuild0001356-beta" />
-        <PackageReference Include="Avalonia.Desktop" Version="0.7.1-cibuild0001356-beta" />
-        <PackageReference Include="Avalonia.ReactiveUI" Version="0.7.0" />
-        <PackageReference Include="LightInject" Version="5.4.0" />
-        <PackageReference Include="CommandLineParser" Version="2.4.3" />
-        <PackageReference Include="NLog" Version="4.5.11" /> 
     </ItemGroup>
 
     <ItemGroup>

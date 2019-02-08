@@ -119,18 +119,17 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions>(args)
+                .ParseArguments<PromoteNupkgOptions, PushNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions, Snap.Installer.Options.InstallOptions>(args)
                 .MapResult(
                     (PromoteNupkgOptions opts) => CommandPromoteNupkg(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetService, SnapPromoteLogger, workingDirectory),
                     (PushNupkgOptions options) => CommandPushNupkg(options, nugetService),
-                    (InstallNupkgOptions opts) => CommandInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, 
-                        snapInstaller, snapPack, snapAppWriter).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPack(opts, snapFilesystem, snapAppReader, snapAppWriter,
                         nuGetPackageSources, snapPack, nugetService, SnapPackLogger, workingDirectory),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (Sha1Options opts) => CommandSha1(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
+                    (Snap.Installer.Options.InstallOptions opts) => Snap.Installer.Program.Main(args.ToArray()),
                     errs =>
                     {
                         snapOs.EnsureConsole();

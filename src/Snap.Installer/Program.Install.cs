@@ -109,7 +109,14 @@ namespace Snap.Installer
                     goto finished;
                 }
 
-                var channel = snapApp.Channels.SingleOrDefault(x => x.Name == options.Channel);
+                if (snapApp.Delta)
+                {
+                    logger.Error($"Installing delta packages is not supported.");
+                    exitCode = -1;
+                    goto finished;
+                }
+
+                var channel = snapApp.Channels.SingleOrDefault(x => x.Name == options.Channel) ?? snapApp.Channels.FirstOrDefault();
                 if (channel == null)
                 {
                     logger.Error($"Unknown channel: {options.Channel}");

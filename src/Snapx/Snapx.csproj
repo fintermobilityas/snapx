@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
+    <Import Project="..\Snap.Installer\Snap.Installer.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -33,6 +34,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
+        <ProjectReference Include="..\Snap.Installer\Snap.Installer.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="$(OsPlatform) == 'Windows'">

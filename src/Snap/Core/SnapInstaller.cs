@@ -251,9 +251,9 @@ namespace Snap.Core
             {
                 logger?.Info($"Attempting to change file permission for main executable: {mainExecutableAbsolutePath}.");
                 
-                var success = NativeMethodsUnix.chmod(mainExecutableAbsolutePath, 755);
+                var chmodResult = NativeMethodsUnix.chmod(mainExecutableAbsolutePath, 755);
                 
-                logger?.Info($"Permissions changed successfully: {success}.");
+                logger?.Info($"Permissions changed successfully: {(chmodResult == 0? "true" : "false")}.");
             }
              
             var allSnapAwareApps = _snapFilesystem
@@ -292,13 +292,6 @@ namespace Snap.Core
                         isInitialInstall == false,
                         cancellationToken);
             });
-
-            if (!isInitialInstall)
-            {
-                return;
-            }
-
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), "--snap-firstrun");
         }
 
         Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 

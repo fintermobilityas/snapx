@@ -825,8 +825,14 @@ BOOL pal_str_endswith(const char * src, const char * str)
         return FALSE;
     }
 
-    const auto diff = strlen(src) - strlen(str);
-    return diff > 0 && 0 == strcmp(&src[diff], str) ? TRUE : FALSE;
+    const auto value = std::string(src);
+    const auto ending = std::string(str);
+
+    if (ending.size() > value.size()) {
+        return FALSE;
+    }
+
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin()) ? TRUE : FALSE;
 }
 
 BOOL pal_str_startswith(const char * src, const char * str)
@@ -836,11 +842,10 @@ BOOL pal_str_startswith(const char * src, const char * str)
         return FALSE;
     }
 
-    const auto src_len = strlen(src);
-    const auto suffix_len = strlen(str);
-    const auto starts_with = src_len < suffix_len ? false : strncmp(src, str, src_len) == 0;
+    const auto lhs = std::string(src);
+    const auto rhs = std::string(str);
 
-    return starts_with ? TRUE : FALSE;
+    return lhs.rfind(rhs) == 0 ? TRUE : FALSE;
 }
 
 BOOL pal_str_iequals(const char* lhs, const char* rhs)

@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Snap.Core;
+using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
@@ -54,6 +56,38 @@ namespace Snap.Tests.Core
             {
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
                 Assert.NotNull(snapAppAfter);
+            }
+        }
+
+        [Fact, ExcludeFromCodeCoverage]
+        public void TestBuildSnapAppAssembly_Prunes_PushFeed_Credentials()
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            snapAppBefore.Channels.Clear();
+            snapAppBefore.Channels.Add(new SnapChannel
+            {
+                PushFeed = new SnapNugetFeed
+                {
+                    Source = new Uri("https://nuget.org"),
+                    ApiKey = "myapikey",
+                    Password = "mypassword",
+                    Username = "myusername"
+                },
+                UpdateFeed = new SnapHttpFeed
+                {
+                    Source = new Uri("https://example.org")
+                }
+            });
+
+            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
+            {
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                Assert.NotNull(snapAppAfter);
+
+                var snapAppAfterChannel = snapAppAfter.Channels.Single();
+                Assert.Null(snapAppAfterChannel.PushFeed.ApiKey);
+                Assert.Null(snapAppAfterChannel.PushFeed.Username);
+                Assert.Null(snapAppAfterChannel.PushFeed.Password);
             }
         }
 

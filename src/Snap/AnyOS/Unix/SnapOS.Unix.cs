@@ -17,6 +17,7 @@ namespace Snap.AnyOS.Unix
     {
         readonly ILog _logger = LogProvider.For<SnapOsUnix>();
 
+        public ISnapOsTaskbar Taskbar => throw new PlatformNotSupportedException("Todo: Implement taskbar progressbar");
         public OSPlatform OsPlatform => OSPlatform.Linux;
         public ISnapFilesystem Filesystem { get; }
         public ISnapOsProcessManager OsProcessManager { get; }

@@ -17,7 +17,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.Shared.Tests", "Snap.S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snapx.Tests", "Snapx.Tests\Snapx.Tests.csproj", "{EA56F532-68B6-47CE-819E-D18580ED9213}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snap.Installer", "Snap.Installer\Snap.Installer.csproj", "{26A7B91C-F729-461E-B4FF-5A7B2669D8F1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Snap.Installer", "Snap.Installer\Snap.Installer.csproj", "{26A7B91C-F729-461E-B4FF-5A7B2669D8F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Snap.Installer.Tests", "Snap.Installer.Tests\Snap.Installer.Tests.csproj", "{A2760262-EE24-4505-88A8-176B8313949C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +70,12 @@ Global
 		{26A7B91C-F729-461E-B4FF-5A7B2669D8F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26A7B91C-F729-461E-B4FF-5A7B2669D8F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26A7B91C-F729-461E-B4FF-5A7B2669D8F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.CIBuild|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.CIBuild|Any CPU.Build.0 = Debug|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2760262-EE24-4505-88A8-176B8313949C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -77,6 +85,7 @@ Global
 		{29327A7C-6BE4-4F17-9CE4-9B4CCADBD970} = {543B57A3-A18F-48A6-950B-7849A45FEC93}
 		{17505CF3-7001-415C-B08B-86B642893717} = {543B57A3-A18F-48A6-950B-7849A45FEC93}
 		{EA56F532-68B6-47CE-819E-D18580ED9213} = {543B57A3-A18F-48A6-950B-7849A45FEC93}
+		{A2760262-EE24-4505-88A8-176B8313949C} = {543B57A3-A18F-48A6-950B-7849A45FEC93}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {16A54F8D-2909-4DF2-AD57-172371EB1B7D}

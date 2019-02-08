@@ -1,36 +1,63 @@
-﻿using Avalonia;
+﻿using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Avalonia;
+using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml;
-using LightInject;
+using Avalonia.Threading;
 using Snap.Installer.Controls;
 using Snap.Installer.Core;
 using Snap.Installer.ViewModels;
+using Snap.Logging;
 
 namespace Snap.Installer
 {
     internal sealed class MainWindow : ChromeLessWindow
     {
-        readonly IInstallerEmbeddedResources _installerEmbeddedResources;
-        MainWindowViewModel _viewModel;
+        readonly ILog _logger;
 
-        public static IEnvironment Environment { get; set; }
+        public static ISnapInstallerEnvironment Environment { get; set; }
+        public static MainWindowViewModel ViewModel { get; set; }
+        public static ManualResetEventSlim OnStartEvent { get; set; }
 
         public MainWindow()
         {
-            _installerEmbeddedResources = Environment.Container.GetInstance<IInstallerEmbeddedResources>();
+            Debug.Assert(Environment != null, nameof(Environment) + " != null");
+            
+            _logger = Environment.BuildLogger<MainWindow>();
 
             InitializeComponent();
 #if DEBUG
             this.AttachDevTools();
 #endif
 
-            DataContext = _viewModel;
+            DataContext = ViewModel;
+
+            Environment.CancellationToken.Register(() =>
+            {
+                _logger.Info("Cancellation detected, closing main window.");
+                Dispatcher.UIThread.InvokeAsync(Close);
+            });
+        }
+
+        protected override void OnOpened(EventArgs eventArgs)
+        {
+            var thisHandle = PlatformImpl.Handle.Handle;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                NativeMethodsWindows.FocusThisWindow(thisHandle);
+            }
+
+            OnStartEvent.Set();
+
+            base.OnOpened(eventArgs);
         }
 
         void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
-
-            _viewModel = new MainWindowViewModel(_installerEmbeddedResources, Environment.CancellationToken);
         }
     }
 }

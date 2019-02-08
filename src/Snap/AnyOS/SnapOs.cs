@@ -25,6 +25,7 @@ namespace Snap.AnyOS
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapOs
     {
+        ISnapOsTaskbar Taskbar { get; }
         OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
         ISnapOsProcessManager OsProcess { get; }
@@ -44,6 +45,7 @@ namespace Snap.AnyOS
 
     internal interface ISnapOsImpl 
     {
+        ISnapOsTaskbar Taskbar {get;}
         OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
         ISnapOsProcessManager OsProcessManager { get; }
@@ -80,6 +82,7 @@ namespace Snap.AnyOS
             }
         }
 
+        public ISnapOsTaskbar Taskbar => OsImpl.Taskbar;
         public OSPlatform OsPlatform => OsImpl.OsPlatform;
         public ISnapFilesystem Filesystem => OsImpl.Filesystem;
         public ISnapOsProcessManager OsProcess => OsImpl.OsProcessManager;

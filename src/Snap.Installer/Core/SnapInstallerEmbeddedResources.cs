@@ -6,16 +6,16 @@ using Snap.Installer.Assets;
 
 namespace Snap.Installer.Core
 {
-    internal interface IInstallerEmbeddedResources : IEmbedResources
+    internal interface ISnapInstallerEmbeddedResources : IEmbedResources
     {
         List<byte[]> GifAnimation { get; }
     }
 
-    internal sealed class InstallerEmbeddedResources : EmbeddedResources, IInstallerEmbeddedResources
+    internal sealed class SnapInstallerEmbeddedResources : EmbeddedResources, ISnapInstallerEmbeddedResources
     {
         public List<byte[]> GifAnimation { get; }
 
-        public InstallerEmbeddedResources()
+        public SnapInstallerEmbeddedResources()
         {
             AddFromTypeRoot(typeof(AssetsTypeRoot), x => x.StartsWith("Snap.Installer.Assets"));
 

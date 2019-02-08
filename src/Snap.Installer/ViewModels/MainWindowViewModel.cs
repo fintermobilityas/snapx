@@ -4,14 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using JetBrains.Annotations;
 using ReactiveUI;
+using Snap.Core;
 using Snap.Installer.Core;
 using Bitmap = Avalonia.Media.Imaging.Bitmap;
 
 namespace Snap.Installer.ViewModels
 {
-    internal class MainWindowViewModel : ViewModelBase
+    internal sealed class MainWindowViewModel : ViewModelBase
     {
         readonly CancellationToken _cancellationToken;
         readonly List<Bitmap> _bitmaps;
@@ -41,48 +43,68 @@ namespace Snap.Installer.ViewModels
             set => this.RaiseAndSetIfChanged(ref _bitmap, value);
         }
 
-        public MainWindowViewModel([NotNull] IInstallerEmbeddedResources installerEmbeddedResources, CancellationToken cancellationToken)
+        public MainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapProgressSource progressSource, CancellationToken cancellationToken)
         {
-            if (installerEmbeddedResources == null) throw new ArgumentNullException(nameof(installerEmbeddedResources));
+            if (snapInstallerEmbeddedResources == null) throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
+            if (progressSource == null) throw new ArgumentNullException(nameof(progressSource));
 
-            _bitmaps = installerEmbeddedResources.GifAnimation.Select(x => new Bitmap(new MemoryStream(x))).ToList();
+            _bitmaps = snapInstallerEmbeddedResources.GifAnimation.Select(x => new Bitmap(new MemoryStream(x))).ToList();
             _cancellationToken = cancellationToken;
-            
-            StatusText = "Please wait while unpacking application...";
-            Progress = 30;
+
+            StatusText = string.Empty;
+            Progress = 0;
+
+            progressSource.Progress += (sender, installationProgressPercentage) =>
+            {
+               Dispatcher.UIThread.InvokeAsync(() => Progress = installationProgressPercentage);
+            };
             
             Task.Run(AnimateAsync);
         }
 
+        public Task SetStatusTextAsync(string text)
+        {
+            return Dispatcher.UIThread.InvokeAsync(() => StatusText = text);
+        }
+
         async Task AnimateAsync()
         {
-            var index = 0;
-            const int delay = 40;
-            while (await MoveNextAsync(delay))
+            const int framePerMilliseconds = 40;
+
+            async Task<bool> AnimateAsync()
             {
-                Bitmap = _bitmaps[index++];
+                try
+                {
+                    await Task.Delay(framePerMilliseconds, _cancellationToken);
+                    return true;
+                }
+                catch (OperationCanceledException)
+                {
+                    return false;
+                }
+            }
+
+            var bitmapCount = _bitmaps.Count; 
+            if (bitmapCount <= 0)
+            {
+                throw new Exception("Unable to start animation, application does not contain any bitmaps.");
+            }
+
+            var bitmapIndex = 0;
+            while (await AnimateAsync())
+            {
+                Bitmap = _bitmaps[bitmapIndex++];
                 
-                if (index < _bitmaps.Count)
+                if (bitmapIndex < bitmapCount)
                 {
                     continue;
                 }
 
-                index = 0;
+                bitmapIndex = 0;
             }
         }
         
-        async Task<bool> MoveNextAsync(int delay)
-        {
-            try
-            {
-                await Task.Delay(delay, _cancellationToken);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
+
         
     }
 }

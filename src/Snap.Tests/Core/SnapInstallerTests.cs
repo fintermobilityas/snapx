@@ -236,7 +236,7 @@ namespace Snap.Tests.Core
 
                 var appDirName = $"app-{packageDetails.App.Version}";
                 var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
-                var packagesDir = _snapInstaller.GetPackagesDirectory(rootDir.WorkingDirectory);
+                var packagesDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "packages");
                                 
                 await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object);
                

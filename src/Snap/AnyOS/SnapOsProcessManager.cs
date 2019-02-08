@@ -19,6 +19,7 @@ namespace Snap.AnyOS
     [SuppressMessage("ReSharper", "NotAccessedField.Global")]
     internal interface ISnapOsProcessManager
     {
+        Process Current { get; }
         SnapOsProcess Build(int pid, string name, string workingDirectory = default, string exeAbsoluteLocation = default);
         Task<(int exitCode, string standardOutput)> RunAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<(int exitCode, string standardOutput)> RunAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
@@ -26,6 +27,8 @@ namespace Snap.AnyOS
     
     internal sealed class SnapOsProcessManager : ISnapOsProcessManager
     {
+        public Process Current => Process.GetCurrentProcess();
+
         public SnapOsProcess Build(int pid, string name, string workingDirectory = default, string exeAbsoluteLocation = default)
         {
             return new SnapOsProcess

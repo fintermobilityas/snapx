@@ -1,8 +1,10 @@
 ﻿using ReactiveUI;
+using Snap.Installer.Core;
 
 namespace Snap.Installer.ViewModels
-{
-    public class ViewModelBase : ReactiveObject
+{    
+    internal abstract class ViewModelBase : ReactiveObject
     {
+        
     }
 }

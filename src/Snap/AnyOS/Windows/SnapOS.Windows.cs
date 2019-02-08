@@ -32,6 +32,7 @@ namespace Snap.AnyOS.Windows
         static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
         readonly bool _isUnitTest;
 
+        public ISnapOsTaskbar Taskbar => throw new PlatformNotSupportedException("Todo: Implement taskbar progressbar");
         public OSPlatform OsPlatform => OSPlatform.Windows;
         public ISnapFilesystem Filesystem { get; }
         public ISnapOsProcessManager OsProcessManager { get; }

@@ -1,11 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>Snap.Installer</RootNamespace>
+        <AssemblyName>Snap.Installer</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,6 +22,8 @@
         <PackageReference Include="Avalonia.Desktop" Version="0.7.1-cibuild0001356-beta" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="0.7.0" />
         <PackageReference Include="LightInject" Version="5.4.0" />
+        <PackageReference Include="CommandLineParser" Version="2.4.3" />
+        <PackageReference Include="NLog" Version="4.5.11" /> 
     </ItemGroup>
 
     <ItemGroup>

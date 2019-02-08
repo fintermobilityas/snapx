@@ -9,6 +9,8 @@ FATAL: In-source builds are not allowed.
 ")
 endif()
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+
 set(SNAP_VERSION_MAJOR 1)
 set(SNAP_VERSION_MINOR 0)
 set(SNAP_VERSION_PATCH 0)
@@ -40,7 +42,8 @@ if(WIN32)
 	endif()
 elseif(UNIX)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O -DNDEBUG")	
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O -DNDEBUG")
 	endif()
 endif()
 

@@ -192,7 +192,7 @@ namespace Snap.Core
             {
                 await _snapOs.KillAllRunningInsideDirectory(rootAppDirectory, cancellationToken);
                 logger?.Info($"Nuking existing root app directory: {rootAppDirectory}");
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootAppDirectory);
+                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootAppDirectory, snapApp.PersistentAssets);
             }
 
             snapProgressSource?.Raise(20);

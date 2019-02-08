@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -22,9 +23,9 @@ namespace Snap.Core
         void DirectoryCreateIfNotExists(string directory);
         bool DirectoryExists(string directory);
         void DirectoryDelete(string directory);
-        Task DirectoryDeleteAsync(string directory);
+        Task DirectoryDeleteAsync(string directory, List<string> excludePaths = null);
         string DirectoryWorkingDirectory();
-        Task DirectoryDeleteOrJustGiveUpAsync(string directory);
+        Task DirectoryDeleteOrJustGiveUpAsync(string directory, List<string> excludePaths = null);
         string DirectoryGetParent(string path);
         IEnumerable<string> EnumerateDirectories(string path);
         IEnumerable<FileInfo> EnumerateFiles(string path);
@@ -306,7 +307,7 @@ namespace Snap.Core
             Directory.Delete(directory);
         }
 
-        public async Task DirectoryDeleteAsync([NotNull] string directory)
+        public async Task DirectoryDeleteAsync([NotNull] string directory, List<string> excludePaths = null)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             Logger.Debug("Starting to delete folder: {0}", directory);
@@ -317,6 +318,8 @@ namespace Snap.Core
                 return;
             }
 
+            excludePaths = excludePaths?.Where(x => x != null).Select(x => PathCombine(directory, x)).ToList() ?? new List<string>();
+            
             // From http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true/329502#329502
             var files = new string[0];
             try
@@ -342,12 +345,29 @@ namespace Snap.Core
 
             var fileOperations = files.ForEachAsync(file =>
             {
+                foreach (var excludePath in excludePaths)
+                {
+                    if (string.Equals(excludePath, file, StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+                }
                 File.SetAttributes(file, FileAttributes.Normal);
                 File.Delete(file);
             });
 
             var directoryOperations =
-                dirs.ForEachAsync(async dir => await DirectoryDeleteAsync(dir));
+                dirs.ForEachAsync(async dir =>
+                {
+                    foreach (var excludePath in excludePaths)
+                    {
+                        if (string.Equals(excludePath, dir, StringComparison.Ordinal))
+                        {
+                            return;
+                        }
+                    }
+                    await DirectoryDeleteAsync(dir);
+                });
 
             await Task.WhenAll(fileOperations, directoryOperations);
 
@@ -370,12 +390,12 @@ namespace Snap.Core
             return Directory.GetCurrentDirectory();
         }
 
-        public async Task DirectoryDeleteOrJustGiveUpAsync([NotNull] string directory)
+        public async Task DirectoryDeleteOrJustGiveUpAsync([NotNull] string directory, List<string> excludePaths = null)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             try
             {
-                await DirectoryDeleteAsync(directory);
+                await DirectoryDeleteAsync(directory, excludePaths);
             }
             catch (Exception)
             {

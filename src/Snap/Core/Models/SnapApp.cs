@@ -19,11 +19,13 @@ namespace Snap.Core.Models
         [YamlIgnore]
         public bool Delta => DeltaReport != null;
         public SnapAppDeltaReport DeltaReport { get; set; }
+        public List<string> PersistentAssets { get; set; }
 
         [UsedImplicitly]
         public SnapApp()
         {
             Channels = new List<SnapChannel>();
+            PersistentAssets = new List<string>();
         }
 
         internal SnapApp([NotNull] SnapApp app)
@@ -37,9 +39,10 @@ namespace Snap.Core.Models
                 Target = new SnapTarget(app.Target);
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
+            PersistentAssets = app.PersistentAssets;
         }
     }
-
+    
     public abstract class SnapFeed
     {
         public Uri Source { get; set; }

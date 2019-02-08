@@ -279,6 +279,77 @@ namespace Snap.Tests.Core
             }
         }
         
+        [Fact]
+        public async Task TestInstallAsync_Excludes_Persitent_Assets_On_Full_Install()
+        {
+            var anyOs = SnapOs.AnyOs;
+            Assert.NotNull(anyOs);
+            
+            _snapOsMock
+                .Setup(x => x.Filesystem)
+                .Returns(_snapFilesystem);
+
+            _snapOsMock
+                .Setup(x => x.OsProcess)
+                .Returns(_snapOsProcessManager);
+
+            _snapOsMock
+                .Setup(x => x.CreateShortcutsForExecutable(
+                    It.IsAny<SnapApp>(), 
+                    It.IsAny<NuspecReader>(), 
+                    It.IsAny<string>(), 
+                    It.IsAny<string>(),
+                    It.IsAny<string>(), 
+                    It.IsAny<string>(), 
+                    It.IsAny<SnapShortcutLocation>(), 
+                    It.IsAny<string>(), 
+                    It.IsAny<bool>(),
+                    It.IsAny<CancellationToken>()));
+
+            var snapApp = _baseFixture.BuildSnapApp();
+            var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
+
+            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            {
+                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
+            };
+
+            using (var tmpNupkgDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var excludedDirectory = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "excludedDirectory");
+                var excludedFile = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "excludeFile.txt");
+                var excludedFileInsideDirectory = _snapFilesystem.PathCombine(excludedDirectory, "excludedFileInsideDirectory.txt");
+                                
+                _snapFilesystem.DirectoryCreate(excludedDirectory);
+                await _snapFilesystem.FileWriteStringContentAsync(nameof(excludedFile), excludedFile, default);
+                await _snapFilesystem.FileWriteStringContentAsync(nameof(excludedFileInsideDirectory), excludedFileInsideDirectory, default);
+
+                snapApp.PersistentAssets = new List<string>
+                {
+                    nameof(excludedDirectory),
+                    _snapFilesystem.PathGetFileName(excludedFile),
+                    _snapFilesystem.PathCombine(nameof(excludedDirectory), _snapFilesystem.PathGetFileName(excludedFileInsideDirectory))
+                };
+                
+                var (nupkgMemoryStream, _) = await _baseFixture
+                    .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
+
+                var nupkgAbsoluteFilename = await WriteNupkgAsync(snapApp, nupkgMemoryStream,
+                    tmpNupkgDir.WorkingDirectory, CancellationToken.None);
+                
+                await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory);
+                
+                Assert.True(_snapFilesystem.DirectoryExists(excludedDirectory));
+                Assert.True(_snapFilesystem.FileExists(excludedFile));
+                Assert.True(_snapFilesystem.FileExists(excludedFileInsideDirectory));
+
+                Assert.Equal(nameof(excludedFile), await _snapFilesystem.FileReadAllTextAsync(excludedFile, default));
+                Assert.Equal(nameof(excludedFileInsideDirectory), await _snapFilesystem.FileReadAllTextAsync(excludedFileInsideDirectory, default));                
+            }
+        }
+        
+        
         async Task<string> WriteNupkgAsync([NotNull] SnapApp snapApp, [NotNull] Stream nupkgMemoryStream,
             [NotNull] string destDir, CancellationToken cancellationToken)
         {

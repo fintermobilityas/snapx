@@ -234,6 +234,9 @@ namespace Snap.Tests.Core
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
                 }
             }
+            
+            // Persistent assets
+            Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
         }
 
     }

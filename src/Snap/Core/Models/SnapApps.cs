@@ -138,7 +138,8 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
-
+        public List<string> PersistentAssets { get; set; }
+        
         [UsedImplicitly]
         public SnapsApp()
         {
@@ -152,6 +153,7 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
+            PersistentAssets = snapApp.PersistentAssets;
         }
 
         public SnapsApp([NotNull] SnapsApp snapApp)
@@ -160,6 +162,7 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels;
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
+            PersistentAssets = snapApp.PersistentAssets;
         }
     }
 

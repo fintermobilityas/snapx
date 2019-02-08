@@ -103,6 +103,10 @@ namespace Snap.Tests.Core
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
                     Nuspec = "test.nuspec"
+                },
+                PersistentAssets = new List<string>
+                {
+                    "application.json"
                 }
             };
 

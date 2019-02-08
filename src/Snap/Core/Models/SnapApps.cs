@@ -145,6 +145,7 @@ namespace Snap.Core.Models
         {
             Channels = new List<string>();
             Targets = new List<SnapsTarget>();
+            PersistentAssets = new List<string>();
         }
 
         internal SnapsApp([NotNull] SnapApp snapApp)

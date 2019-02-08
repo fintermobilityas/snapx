@@ -77,12 +77,18 @@ namespace Snap.Installer
 
                 try
                 {
-                    snapInstaller.InstallAsync(nupkgAbsolutePath, rootAppDirectory,
+                    var snapAppInstalled = snapInstaller.InstallAsync(nupkgAbsolutePath, rootAppDirectory,
                         asyncPackageCoreReader, installerProgressSource, loggerForwarded, cancellationToken).GetAwaiter().GetResult();
 
+                    if (snapAppInstalled == null)
+                    {
+                        exitCode = -1;
+                        goto done;
+                    }
+                    
                     loggerForwarded.Info($"Successfully installed {snapApp.Id}.");
 
-                    exitCode = 1;
+                    exitCode = 0;
                 }
                 catch (Exception e)
                 {
@@ -90,6 +96,8 @@ namespace Snap.Installer
                     exitCode = -1;
                 }
 
+                done:
+                
                 // Allow the user to read final log message.
                 Thread.Sleep(3000);
 
@@ -111,7 +119,7 @@ namespace Snap.Installer
 
                 if (snapApp.Delta)
                 {
-                    logger.Error($"Installing delta packages is not supported.");
+                    logger.Error("Installing delta packages is not supported.");
                     exitCode = -1;
                     goto finished;
                 }

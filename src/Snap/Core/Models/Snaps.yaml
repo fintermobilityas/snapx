@@ -1,25 +1,32 @@
-﻿channels:
-  - name: test
-    pushFeed: nuget.org
-    updateFeed: nuget.org
-  - name: staging
-    pushFeed: nuget.org
-    updateFeed: nuget.org
-  - name: production
-    pushFeed: nuget.org
-    updateFeed: nuget.org
-apps:
-  - id: demoapp
-    version: 1.0.0
-    channels:
-      - test
-      - staging
-      - production
-    targets:
-      - os: windows
-        framework: netcoreapp2.1
-        rid: win-x64
-        nuspec: demoapp.nuspec
-generic:
+﻿generic:
+  artifacts: ./build/$id$/$rid$
   packages: snap/packages
   nuspecs: snap/nuspecs
+  packStrategy: Default
+channels:
+- name: test
+  pushFeed: !nuget
+    name: nuget.org
+  updateFeed: !nuget
+    name: nuget.org
+- name: staging
+  pushFeed: !nuget
+    name: nuget.org
+  updateFeed: !http
+    source: https://mydynamicupdatefeed.com/
+- name: production
+  pushFeed: !nuget
+    name: nuget.org
+  updateFeed: !nuget
+    name: nuget.org
+apps:
+- id: demoapp
+  channels:
+  - test
+  - staging
+  - production
+  targets:
+  - os: windows
+    framework: netcoreapp2.1
+    rid: unknown-x64
+    nuspec: test.nuspec

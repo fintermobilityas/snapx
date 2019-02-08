@@ -53,14 +53,17 @@ namespace Snap.Tests.Core
              var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 Username = "myusername",
                 Password = "mypassword",
                 ApiKey = "myapikey"
             };
 
-            "snaps://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
+            var updateFeedHttp = new SnapHttpFeed
+            {
+                Source = new Uri("https://mydynamicupdatefeed.com")
+            };
 
             var testChannel = new SnapChannel
             {
@@ -127,8 +130,20 @@ namespace Snap.Tests.Core
                 var rhsChannel = snapAppsAfter.Channels[index];
 
                 Assert.Equal(lhsChannel.Name, rhsChannel.Name);
-                Assert.Equal(lhsChannel.PushFeed, rhsChannel.PushFeed);
-                Assert.Equal(lhsChannel.UpdateFeed, rhsChannel.UpdateFeed);
+                Assert.Equal(lhsChannel.PushFeed.Name, rhsChannel.PushFeed.Name);
+                switch (lhsChannel.UpdateFeed)
+                {
+                    case SnapsNugetFeed lhsSnapsNugetFeed:
+                        var rhsSnapsNugetFeed = (SnapsNugetFeed) rhsChannel.UpdateFeed;
+                        Assert.Equal(lhsSnapsNugetFeed.Name, rhsSnapsNugetFeed.Name);
+                        break;
+                    case SnapsHttpFeed lhsSnapsHttpFeed:
+                        var rhsSnapsHttpFeed = (SnapsHttpFeed) rhsChannel.UpdateFeed;
+                        Assert.Equal(lhsSnapsHttpFeed.Source, rhsSnapsHttpFeed.Source);
+                        break;
+                    default:
+                        throw new NotSupportedException($"Unsupported feed type: {lhsChannel.UpdateFeed?.GetType().Name}");
+                }
             }
 
             // Apps.     
@@ -189,7 +204,7 @@ namespace Snap.Tests.Core
                 var rhsNugetPushFeed = rhsChannel.PushFeed;
 
                 Assert.Equal(lhsNugetPushFeed.Name, rhsNugetPushFeed.Name);
-                Assert.Equal(lhsNugetPushFeed.SourceUri, rhsNugetPushFeed.SourceUri);
+                Assert.Equal(lhsNugetPushFeed.Source, rhsNugetPushFeed.Source);
                 Assert.Equal(lhsNugetPushFeed.ProtocolVersion, rhsNugetPushFeed.ProtocolVersion);
                 Assert.Equal(lhsNugetPushFeed.ApiKey, rhsNugetPushFeed.ApiKey);
                 Assert.Equal(lhsNugetPushFeed.Username, rhsNugetPushFeed.Username);
@@ -203,7 +218,7 @@ namespace Snap.Tests.Core
                     case SnapNugetFeed rhsNugetUpdateFeed:
                         var lhsNugetUpdateFeed = (SnapNugetFeed)lhsUpdateFeed;
                         Assert.Equal(lhsNugetUpdateFeed.Name, rhsNugetUpdateFeed.Name);
-                        Assert.Equal(lhsNugetUpdateFeed.SourceUri, rhsNugetUpdateFeed.SourceUri);
+                        Assert.Equal(lhsNugetUpdateFeed.Source, rhsNugetUpdateFeed.Source);
                         Assert.Equal(lhsNugetUpdateFeed.ProtocolVersion, rhsNugetUpdateFeed.ProtocolVersion);
                         Assert.Equal(lhsNugetUpdateFeed.ApiKey, rhsNugetUpdateFeed.ApiKey);
                         Assert.Equal(lhsNugetUpdateFeed.Username, rhsNugetUpdateFeed.Username);
@@ -211,9 +226,9 @@ namespace Snap.Tests.Core
                         break;
                     case SnapHttpFeed rhsHttpUpdateFeed:
                         var lhsHttpUpdateFeed = (SnapHttpFeed)lhsUpdateFeed;
-                        Assert.NotNull(lhsHttpUpdateFeed.SourceUri);
-                        Assert.NotNull(rhsHttpUpdateFeed.SourceUri);
-                        Assert.Equal(lhsHttpUpdateFeed.SourceUri, rhsHttpUpdateFeed.SourceUri);
+                        Assert.NotNull(lhsHttpUpdateFeed.Source);
+                        Assert.NotNull(rhsHttpUpdateFeed.Source);
+                        Assert.Equal(lhsHttpUpdateFeed.Source, rhsHttpUpdateFeed.Source);
                         break;
                     default:
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());

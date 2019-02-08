@@ -2,51 +2,51 @@
 version: 1.0.0
 target:
   os: windows
-  name: demoapp-win7-x64
   framework: netcoreapp2.1
   rid: win7-x64
   nuspec: test.nuspec
 channels:
 - name: test
   current: true
-  pushFeed: !NugetFeed
+  pushFeed: !nuget
     name: nuget.org
     username: myusername
     password: mypassword
     protocolVersion: V3
     apiKey: myapikey
-    sourceUri: https://api.nuget.org/v3/index.json
-  updateFeed: !NugetFeed
+    source: https://api.nuget.org/v3/index.json
+  updateFeed: !nuget
     name: nuget.org
     username: myusername
     password: mypassword
     protocolVersion: V3
     apiKey: myapikey
-    sourceUri: https://api.nuget.org/v3/index.json
+    source: https://api.nuget.org/v3/index.json
 - name: staging
   current: false
-  pushFeed: !NugetFeed
+  pushFeed: !nuget
     name: nuget.org
     username: myusername
     password: mypassword
     protocolVersion: V3
     apiKey: myapikey
-    sourceUri: https://api.nuget.org/v3/index.json
-  updateFeed: !HttpFeed
-    sourceUri: https://mydynamicupdatefeed.com/
+    source: https://api.nuget.org/v3/index.json
+  updateFeed: !http
+    source: https://mydynamicupdatefeed.com/
 - name: production
   current: false
-  pushFeed: !NugetFeed
+  pushFeed: !nuget
     name: nuget.org
     username: myusername
     password: mypassword
     protocolVersion: V3
     apiKey: myapikey
-    sourceUri: https://api.nuget.org/v3/index.json
-  updateFeed: !NugetFeed
+    source: https://api.nuget.org/v3/index.json
+  updateFeed: !nuget
     name: nuget.org
     username: myusername
     password: mypassword
     protocolVersion: V3
     apiKey: myapikey
-    sourceUri: https://api.nuget.org/v3/index.json
+    source: https://api.nuget.org/v3/index.json
+deltaReport: 

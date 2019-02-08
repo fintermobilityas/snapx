@@ -24,19 +24,38 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class SnapAppReader : ISnapAppReader
     {
-        internal static readonly Dictionary<string, Type> AbstractClassTypeMappings = new Dictionary<string, Type>
+        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApp = new Dictionary<string, Type>
         {
-            { "NugetFeed", typeof(SnapNugetFeed) }, // SnapFeed
-            { "HttpFeed", typeof(SnapHttpFeed)} // SnapFeed
+            { "nuget", typeof(SnapNugetFeed) }, 
+            { "http", typeof(SnapHttpFeed)},
         };
 
-        static readonly Deserializer Deserializer = new DeserializerBuilder()
-            .WithNamingConvention(new CamelCaseNamingConvention())
-            .WithTypeConverter(new SemanticVersionYamlTypeConverter())
-            .WithTypeConverter(new UriYamlTypeConverter())
-            .WithTypeConverter(new OsPlatformYamlTypeConverter())
-            .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappings), selector => selector.After<TagNodeTypeResolver>())
-            .Build();
+        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApps = new Dictionary<string, Type>
+        {
+            { "nuget", typeof(SnapsNugetFeed) },
+            { "http", typeof(SnapsHttpFeed)}
+        };
+
+        static readonly Deserializer DeserializerSnapApp = Build(new DeserializerBuilder()
+            .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappingsSnapApp),
+                selector => selector.After<TagNodeTypeResolver>()
+            )
+        );
+
+        static readonly Deserializer DeserializerSnapApps = Build(new DeserializerBuilder()
+            .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappingsSnapApps),
+                selector => selector.After<TagNodeTypeResolver>()
+            )
+        );
+ 
+        static Deserializer Build(DeserializerBuilder builder)
+        {
+            return builder.WithNamingConvention(new CamelCaseNamingConvention())
+                .WithTypeConverter(new SemanticVersionYamlTypeConverter())
+                .WithTypeConverter(new UriYamlTypeConverter())
+                .WithTypeConverter(new OsPlatformYamlTypeConverter())
+                .Build();
+        }
 
         public SnapApps BuildSnapAppsFromStream(MemoryStream stream)
         {
@@ -51,12 +70,12 @@ namespace Snap.Core
         public SnapApp BuildSnapAppFromYamlString(string yamlString)
         {
             if (string.IsNullOrWhiteSpace(yamlString)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(yamlString));
-            return Deserializer.Deserialize<SnapApp>(yamlString);
+            return DeserializerSnapApp.Deserialize<SnapApp>(yamlString);
         }
 
         public SnapApps BuildSnapAppsFromYamlString(string yamlString)
         {
-            return Deserializer.Deserialize<SnapApps>(yamlString);
+            return DeserializerSnapApps.Deserialize<SnapApps>(yamlString);
         }
     }
 }

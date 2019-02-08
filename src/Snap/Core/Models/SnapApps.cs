@@ -4,15 +4,68 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
-using NuGet.Versioning;
 
 namespace Snap.Core.Models
 {
+    public abstract class SnapsFeed
+    {
+    }
+
+    public sealed class SnapsNugetFeed : SnapsFeed
+    {
+        public string Name { get; set; }
+
+        [UsedImplicitly]
+        public SnapsNugetFeed()
+        {
+            
+        }
+
+        public SnapsNugetFeed([NotNull] SnapsNugetFeed feed)
+        {
+            if (feed == null) throw new ArgumentNullException(nameof(feed));
+            Name = feed.Name;
+        }
+
+        public SnapsNugetFeed([NotNull] SnapNugetFeed feed) : this(new SnapsNugetFeed
+        {
+            Name = feed.Name
+        })
+        {
+            if (feed == null) throw new ArgumentNullException(nameof(feed));
+        }
+    }
+
+    public sealed class SnapsHttpFeed : SnapsFeed
+    {
+        public Uri Source { get; set; }
+
+        [UsedImplicitly]
+        public SnapsHttpFeed()
+        {
+            
+        }
+
+        public SnapsHttpFeed([NotNull] SnapsHttpFeed feed)
+        {
+            if (feed == null) throw new ArgumentNullException(nameof(feed));
+            Source = feed.Source;
+        }
+
+        public SnapsHttpFeed([NotNull] SnapHttpFeed feed) : this(new SnapsHttpFeed
+        {
+            Source = feed.Source
+        })
+        {
+            if (feed == null) throw new ArgumentNullException(nameof(feed));
+        }
+    }
+
     public sealed class SnapsChannel
     {
         public string Name { get; set; }
-        public string PushFeed { get; set; }
-        public string UpdateFeed { get; set; }
+        public SnapsNugetFeed PushFeed { get; set; }
+        public SnapsFeed UpdateFeed { get; set; }
 
         [UsedImplicitly]
         public SnapsChannel()
@@ -24,18 +77,18 @@ namespace Snap.Core.Models
         {
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             Name = snapChannel.Name;
-            PushFeed = snapChannel.PushFeed.Name;
+            PushFeed = new SnapsNugetFeed(snapChannel.PushFeed);
 
             switch (snapChannel.UpdateFeed)
             {
                 case SnapNugetFeed snapNugetFeed:
-                    UpdateFeed = snapNugetFeed.Name;
+                    UpdateFeed = new SnapsNugetFeed(snapNugetFeed);
                     break;
                 case SnapHttpFeed snapHttpFeed:
-                    UpdateFeed = snapHttpFeed.ToStringSnapUrl();
+                    UpdateFeed = new SnapsHttpFeed(snapHttpFeed);
                     break;
                 default:
-                    throw new NotSupportedException($"Unknown feed type: {snapChannel.UpdateFeed?.GetType()}.");
+                    throw new NotSupportedException($"Unknown update feed type: {snapChannel.UpdateFeed?.GetType()}.");
             }
         }
 
@@ -83,7 +136,6 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
-        public SemanticVersion Version { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
 
@@ -98,7 +150,6 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
-            Version = snapApp.Version;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
         }
@@ -107,18 +158,9 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
-            Version = snapApp.Version;
             Channels = snapApp.Channels;
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
         }
-    }
-
-    public enum SnapAppsBumpStrategy
-    {
-        [UsedImplicitly] Default,
-        Major,
-        Minor,
-        Patch
     }
 
     public enum SnapAppsPackStrategy
@@ -133,7 +175,6 @@ namespace Snap.Core.Models
         public string Artifacts { get; set; }
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
-        public SnapAppsBumpStrategy BumpStrategy { get; set; }
         public SnapAppsPackStrategy PackStrategy { get; set; }
 
         [UsedImplicitly]
@@ -148,7 +189,6 @@ namespace Snap.Core.Models
             Artifacts = snapAppsGeneric.Artifacts;
             Packages = snapAppsGeneric.Packages;
             Nuspecs = snapAppsGeneric.Nuspecs;
-            BumpStrategy = snapAppsGeneric.BumpStrategy;
             PackStrategy = snapAppsGeneric.PackStrategy;
         }
     }

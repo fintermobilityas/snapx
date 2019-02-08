@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
-using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -137,7 +134,7 @@ namespace Snap.Extensions
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
             if (inMemorySettings == null) throw new ArgumentNullException(nameof(inMemorySettings));
 
-            var packageSource = new PackageSource(snapFeed.SourceUri.ToString(), snapFeed.Name, true, true, false);
+            var packageSource = new PackageSource(snapFeed.Source.ToString(), snapFeed.Name, true, true, false);
 
             var storePasswordInClearText = !inMemorySettings.IsPasswordEncryptionSupported();
             
@@ -197,7 +194,7 @@ namespace Snap.Extensions
             var snapFeed = new SnapNugetFeed
             {
                 Name = packageSource.Name,
-                SourceUri = packageSource.SourceUri,
+                Source = packageSource.SourceUri,
                 ProtocolVersion = (NuGetProtocolVersion)packageSource.ProtocolVersion,
                 Username = packageSource.Credentials?.Username,
                 Password = packageSource.Credentials?.Password,
@@ -207,54 +204,22 @@ namespace Snap.Extensions
             return snapFeed;
         }
 
-        internal static bool TryCreateSnapHttpFeed(this string value, out SnapHttpFeed snapHttpFeed)
-        {
-            snapHttpFeed = null;
-            if (value == null)
-            {
-                return false;
-            }
-
-            const string snapHttpPrefix = "snap://";
-            const string snapHttpsPrefix = "snaps://";
-
-            var http = value.StartsWith(snapHttpPrefix);
-            var https = !http && value.StartsWith(snapHttpsPrefix);
-
-            if (!http && !https)
-            {
-                return false;
-            }
-
-            var substrLen = http ? snapHttpPrefix.Length : snapHttpsPrefix.Length;
-            var sourceUrl = $"{(http ? "http://" : "https://")}{value.Substring(substrLen)}";
-
-            if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var sourceUri))
-            {
-                return false;
-            }
-
-            snapHttpFeed = new SnapHttpFeed(sourceUri);
-            return true;
-        }
-
         internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             foreach (var snapsApp in snapApps.Apps)
             {
                 foreach (var snapsTarget in snapsApp.Targets)
                 {
-                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, snapsApp.Version, nuGetPackageSources);
+                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources);
                 }
             }
         }
 
-        internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid, [NotNull] SemanticVersion releaseVersion,
+        internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid,
             [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             if (rid == null) throw new ArgumentNullException(nameof(rid));
-            if (releaseVersion == null) throw new ArgumentNullException(nameof(releaseVersion));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
 
             var snapApp = snapApps.Apps.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase));
@@ -302,7 +267,7 @@ namespace Snap.Extensions
                       
             var snapFeeds = new List<SnapFeed>();
             snapFeeds.AddRange(nuGetPackageSources.BuildSnapFeeds());
-            snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed.TryCreateSnapHttpFeed(out var snapHttpFeed) ? snapHttpFeed : null).Where(x => x != null).DistinctBy(x => x.SourceUri));
+            snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed).OfType<SnapsHttpFeed>().DistinctBy(x => x.Source).Select(x => new SnapHttpFeed(x)));
 
             var snapNugetFeeds = snapFeeds.Where(x => x is SnapNugetFeed).Cast<SnapNugetFeed>().ToList();
             var snapHttpFeeds = snapFeeds.Where(x => x is SnapHttpFeed).Cast<SnapHttpFeed>().ToList();
@@ -311,21 +276,27 @@ namespace Snap.Extensions
             for (var i = 0; i < snapAppAvailableChannels.Count; i++)
             {
                 var snapsChannel = snapAppAvailableChannels[i];
-                var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed);
+                var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed.Name);
                 if (pushFeed == null)
                 {
                     throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
-                var updateFeed = (SnapFeed)
-                                 snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.UpdateFeed)
-                                 ?? snapHttpFeeds.SingleOrDefault(x =>
-                                     snapsChannel.UpdateFeed.TryCreateSnapHttpFeed(out var snapHttpFeed)
-                                     && x.ToStringSnapUrl() == snapHttpFeed.ToStringSnapUrl());
+                SnapFeed updateFeed = null;
+
+                switch (snapsChannel.UpdateFeed)
+                {
+                    case SnapsNugetFeed snapsNugetFeed:
+                        updateFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsNugetFeed.Name);
+                        break;
+                    case SnapsHttpFeed snapsHttpFeed:
+                        updateFeed = snapHttpFeeds.SingleOrDefault(x => x.Source == snapsHttpFeed.Source);
+                        break;
+                }
 
                 if (updateFeed == null)
                 {
-                    throw new Exception($"Unable to resolve update feed: {snapsChannel.UpdateFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
+                    throw new Exception($"Unable to resolve update feed type: {snapsChannel.UpdateFeed?.GetType().Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 var currentChannel = i == 0; // Default snap channel is always the first one defined. 
@@ -335,7 +306,6 @@ namespace Snap.Extensions
             return new SnapApp
             {
                 Id = snapApp.Id,
-                Version = releaseVersion,
                 Channels = snapAppChannels,
                 Target = new SnapTarget(snapAppTarget)
             };
@@ -363,24 +333,22 @@ namespace Snap.Extensions
                 {
                     var packageSources = new List<PackageSource>();
 
-                    var pushFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == x.PushFeed);
+                    var pushFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == x.PushFeed.Name);
                     if (pushFeed != null)
                     {
                         packageSources.Add(pushFeed);
                     }
 
-                    if (x.UpdateFeed.TryCreateSnapHttpFeed(out _))
+                    if (x.UpdateFeed is SnapsNugetFeed snapsNugetFeed)
                     {
-                        goto done;
+                        var updateFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == snapsNugetFeed.Name);
+                        if (updateFeed != null)
+                        {
+                            packageSources.Add(updateFeed);
+                        }
                     }
 
-                    var updateFeed = nuGetPackageSources.Items.SingleOrDefault(packageSource => packageSource.Name == x.UpdateFeed);
-                    if (updateFeed != null)
-                    {
-                        packageSources.Add(updateFeed);
-                    }
 
-                    done:
                     return packageSources;
                 })
                 .DistinctBy(x => x.Name)

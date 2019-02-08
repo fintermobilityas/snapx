@@ -42,7 +42,8 @@ namespace Snap.Core.Models
 
     public abstract class SnapFeed
     {
-        public Uri SourceUri { get; set; }
+        public Uri Source { get; set; }
+        public abstract bool HasCredentials();
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -64,11 +65,16 @@ namespace Snap.Core.Models
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
             Name = snapFeed.Name;
-            SourceUri = snapFeed.SourceUri;
+            Source = snapFeed.Source;
             Username = snapFeed.Username;
             Password = snapFeed.Password;
             ProtocolVersion = snapFeed.ProtocolVersion;
             ApiKey = snapFeed.ApiKey;
+        }
+
+        public override bool HasCredentials()
+        {
+            return Username != null || Password != null || ApiKey != null;
         }
     }
 
@@ -80,45 +86,30 @@ namespace Snap.Core.Models
             
         }
 
-        internal SnapHttpFeed([NotNull] Uri sourceUri)
+        internal SnapHttpFeed([NotNull] Uri uri)
         {
-            SourceUri = sourceUri ?? throw new ArgumentNullException(nameof(sourceUri));
+            Source = uri ?? throw new ArgumentNullException(nameof(uri));
         }
 
         internal SnapHttpFeed([NotNull] SnapHttpFeed httpFeed)
         {
             if (httpFeed == null) throw new ArgumentNullException(nameof(httpFeed));
-            SourceUri = httpFeed.SourceUri;
+            Source = httpFeed.Source;
         }
 
-        internal string ToStringSnapUrl()
+        public SnapHttpFeed([NotNull] SnapsHttpFeed feed) : this(feed.Source)
         {
-            if (SourceUri == null)
-            {
-                return null;
-            }
-
-            var sourceUrl = SourceUri.ToString();
-            string snapUrl;
-
-            switch (SourceUri.Scheme)
-            {
-                case "http":
-                    snapUrl = $"snap{sourceUrl.Substring(4)}";
-                    break;
-                case "https":
-                    snapUrl = $"snaps{sourceUrl.Substring(5)}";
-                    break;
-                default:
-                    throw new NotSupportedException($"Unknown scheme: {SourceUri.Scheme}. Value: {SourceUri}.");
-            }
-
-            return snapUrl;
+            if (feed == null) throw new ArgumentNullException(nameof(feed));
         }
 
         public override string ToString()
         {
-            return SourceUri?.ToString() ?? throw new InvalidOperationException($"{nameof(SourceUri)} should never be null.");
+            return Source?.ToString() ?? throw new InvalidOperationException($"{nameof(Source)} should never be null.");
+        }
+
+        public override bool HasCredentials()
+        {
+            return !string.IsNullOrWhiteSpace(Source?.UserInfo);
         }
     }
 

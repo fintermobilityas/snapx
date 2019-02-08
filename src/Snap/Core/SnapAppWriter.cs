@@ -34,16 +34,30 @@ namespace Snap.Core
         public string SnapAppLibraryName => "Snap.App";
         public string SnapDllFilename => "Snap.dll";
         public string SnapAppDllFilename => SnapAppLibraryName + ".dll";
+      
+        static readonly Serializer YamlSerializerSnapApp = Build(new SerializerBuilder()
+            .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter,
+                SnapAppReader.AbstractClassTypeMappingsSnapApp)
+            )
+        );
 
-        static readonly Serializer YamlSerializer = new SerializerBuilder()
-            .WithNamingConvention(new CamelCaseNamingConvention())
-            .WithTypeConverter(new SemanticVersionYamlTypeConverter())
-            .WithTypeConverter(new UriYamlTypeConverter())
-            .WithTypeConverter(new OsPlatformYamlTypeConverter())
-            .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter, SnapAppReader.AbstractClassTypeMappings))
-            .DisableAliases()
-            .EmitDefaults()
-            .Build();
+        static readonly Serializer YamlSerializerSnapApps = Build(new SerializerBuilder()
+            .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter,
+                SnapAppReader.AbstractClassTypeMappingsSnapApps)
+            )
+        );
+
+        static Serializer Build(SerializerBuilder serializerBuilder)
+        {
+            return serializerBuilder
+                .WithNamingConvention(new CamelCaseNamingConvention())
+                .WithTypeConverter(new SemanticVersionYamlTypeConverter())
+                .WithTypeConverter(new OsPlatformYamlTypeConverter())
+                .WithTypeConverter(new UriYamlTypeConverter())
+                .DisableAliases()
+                .EmitDefaults()
+                .Build();
+        }
 
         public AssemblyDefinition BuildSnapAppAssembly([NotNull] SnapApp snapApp)
         {
@@ -109,13 +123,13 @@ namespace Snap.Core
         public string ToSnapAppYamlString([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return YamlSerializer.Serialize(snapApp);
+            return YamlSerializerSnapApp.Serialize(snapApp);
         }
 
         public string ToSnapAppsYamlString([NotNull] SnapApps snapApps)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
-            return YamlSerializer.Serialize(snapApps);
+            return YamlSerializerSnapApps.Serialize(snapApps);
         }
     }
 }

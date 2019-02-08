@@ -1,5 +1,4 @@
 ﻿using ReactiveUI;
-using Snap.Installer.Core;
 
 namespace Snap.Installer.ViewModels
 {    

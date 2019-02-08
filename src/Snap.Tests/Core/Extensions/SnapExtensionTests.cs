@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -258,7 +257,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Name = "nuget.org",
                 ProtocolVersion = protocolVersion,
-                SourceUri = new Uri(feedUrl),
+                Source = new Uri(feedUrl),
                 Username = "myusername",
                 Password = "mypassword",
                 ApiKey = "myapikey"
@@ -287,7 +286,7 @@ namespace Snap.Tests.Core.Extensions
             Assert.False(packageSource.IsMachineWide);
 
             Assert.Equal(snapNugetFeed.Name, packageSource.Name);
-            Assert.Equal(snapNugetFeed.SourceUri.ToString(), packageSource.TrySourceAsUri.ToString());
+            Assert.Equal(snapNugetFeed.Source.ToString(), packageSource.TrySourceAsUri.ToString());
             Assert.Equal((int)snapNugetFeed.ProtocolVersion, packageSource.ProtocolVersion);
             Assert.NotNull(packageSource.Credentials);
 
@@ -332,7 +331,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Name = "nuget.org",
                 ProtocolVersion = protocolVersion,
-                SourceUri = new Uri(feedUrl),
+                Source = new Uri(feedUrl),
                 Username = "myusername",
                 Password = "mypassword",
                 ApiKey = "myapikey"
@@ -361,7 +360,7 @@ namespace Snap.Tests.Core.Extensions
             var snapNugetFeedAfter = snapFeeds.Items.Single();
             Assert.Equal(snapNugetFeed.Name, snapNugetFeedAfter.Name);
             Assert.Equal((int)snapNugetFeed.ProtocolVersion, snapNugetFeedAfter.ProtocolVersion);
-            Assert.Equal(snapNugetFeed.SourceUri, snapNugetFeedAfter.SourceUri);
+            Assert.Equal(snapNugetFeed.Source, snapNugetFeedAfter.SourceUri);
             Assert.Equal(snapNugetFeed.Username, snapNugetFeedAfter.Credentials.Username);
             var credential = snapNugetFeedAfter.Credentials;
             if (nugetPackageSources.IsPasswordEncryptionSupported())
@@ -430,33 +429,24 @@ namespace Snap.Tests.Core.Extensions
             }
         }
 
-        [Theory]
-        [InlineData("snap://www.example.org", "http://www.example.org/")]
-        [InlineData("snaps://www.example.org", "https://www.example.org/")]
-        [InlineData("http://www.example.org", null)]
-        [InlineData("https://www.example.org", null)]
-        public void TestTryCreateSnapHttpFeed(string url, string expectedUrl)
-        {
-            var success = url.TryCreateSnapHttpFeed(out var snapHttpFeed);
-            Assert.Equal(expectedUrl != null, success);
-            Assert.Equal(expectedUrl, snapHttpFeed?.ToString());
-        }
-
         [Fact]
         public void TestBuildSnapApp()
         {
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 Username = "myusername",
                 Password = "mypassword",
                 ApiKey = "myapikey"
             };
-
-            "snaps://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
-
+            
+            var updateFeedHttp = new SnapHttpFeed
+            {
+                Source = new Uri("https://mydynamicupdatefeed.com")
+            };
+            
             var testChannel = new SnapChannel
             {
                 Name = "test",
@@ -500,8 +490,8 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid,
-                new SemanticVersion(1, 1, 0), snapAppBefore.BuildNugetSources());
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources());
+            snapAppAfter.Version = snapAppBefore.Version.BumpMajor();
 
             // Generic
             Assert.Equal(snapAppBefore.Id, snapAppAfter.Id);
@@ -546,7 +536,7 @@ namespace Snap.Tests.Core.Extensions
                 var rhsNugetPushFeed = rhsChannel.PushFeed;
 
                 Assert.Equal(lhsNugetPushFeed.Name, rhsNugetPushFeed.Name);
-                Assert.Equal(lhsNugetPushFeed.SourceUri, rhsNugetPushFeed.SourceUri);
+                Assert.Equal(lhsNugetPushFeed.Source, rhsNugetPushFeed.Source);
                 Assert.Equal(lhsNugetPushFeed.ProtocolVersion, rhsNugetPushFeed.ProtocolVersion);
                 Assert.Equal(lhsNugetPushFeed.ApiKey, rhsNugetPushFeed.ApiKey);
                 Assert.Equal(lhsNugetPushFeed.Username, rhsNugetPushFeed.Username);
@@ -568,7 +558,7 @@ namespace Snap.Tests.Core.Extensions
                     case SnapNugetFeed rhsNugetUpdateFeed:
                         var lhsNugetUpdateFeed = (SnapNugetFeed)lhsUpdateFeed;
                         Assert.Equal(lhsNugetUpdateFeed.Name, rhsNugetUpdateFeed.Name);
-                        Assert.Equal(lhsNugetUpdateFeed.SourceUri, rhsNugetUpdateFeed.SourceUri);
+                        Assert.Equal(lhsNugetUpdateFeed.Source, rhsNugetUpdateFeed.Source);
                         Assert.Equal(lhsNugetUpdateFeed.ProtocolVersion, rhsNugetUpdateFeed.ProtocolVersion);
                         Assert.Equal(lhsNugetUpdateFeed.ApiKey, rhsNugetUpdateFeed.ApiKey);
                         Assert.Equal(lhsNugetUpdateFeed.Username, rhsNugetUpdateFeed.Username);
@@ -583,9 +573,9 @@ namespace Snap.Tests.Core.Extensions
                         break;
                     case SnapHttpFeed rhsHttpUpdateFeed:
                         var lhsHttpUpdateFeed = (SnapHttpFeed) lhsUpdateFeed;
-                        Assert.NotNull(lhsHttpUpdateFeed.SourceUri);
-                        Assert.NotNull(rhsHttpUpdateFeed.SourceUri);
-                        Assert.Equal(lhsHttpUpdateFeed.SourceUri, rhsHttpUpdateFeed.SourceUri);
+                        Assert.NotNull(lhsHttpUpdateFeed.Source);
+                        Assert.NotNull(rhsHttpUpdateFeed.Source);
+                        Assert.Equal(lhsHttpUpdateFeed.Source, rhsHttpUpdateFeed.Source);
                         break;
                     default:
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
@@ -599,7 +589,7 @@ namespace Snap.Tests.Core.Extensions
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl)
+                Source = new Uri(NuGetConstants.V3FeedUrl)
             };
 
             var snapApp = new SnapApp
@@ -624,13 +614,13 @@ namespace Snap.Tests.Core.Extensions
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl)
+                Source = new Uri(NuGetConstants.V3FeedUrl)
             };
 
             var nugetOrgMirrorFeed = new SnapNugetFeed
             {
                 Name = "nuget.org (mirror)",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl)
+                Source = new Uri(NuGetConstants.V3FeedUrl)
             };
 
             var snapApp = new SnapApp
@@ -666,8 +656,8 @@ namespace Snap.Tests.Core.Extensions
 
             var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(new List<PackageSource>
             {
-                new PackageSource(nugetOrgFeed.SourceUri.ToString(), nugetOrgFeed.Name),
-                new PackageSource(nugetOrgMirrorFeed.SourceUri.ToString(), nugetOrgMirrorFeed.Name)
+                new PackageSource(nugetOrgFeed.Source.ToString(), nugetOrgFeed.Name),
+                new PackageSource(nugetOrgMirrorFeed.Source.ToString(), nugetOrgMirrorFeed.Name)
             }));
             Assert.Equal(2, nugetPackageSources.Items.Count);
 

@@ -14,7 +14,6 @@ using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
-using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Reflection;
 using Snap.Shared.Tests.Extensions;
@@ -34,7 +33,7 @@ namespace Snap.Shared.Tests
             var pushFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 ApiKey = "myapikey"
             };
@@ -42,13 +41,16 @@ namespace Snap.Shared.Tests
             var updateFeedNuget = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                SourceUri = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 Username = "myusername",
                 Password = "mypassword"
             };
 
-            "snaps://mydynamicupdatefeed.com".TryCreateSnapHttpFeed(out var updateFeedHttp);
+            var updateFeedHttp = new SnapHttpFeed
+            {
+                Source = new Uri("https://mydynamicupdatefeed.com")
+            };
 
             var testChannel = new SnapChannel
             {

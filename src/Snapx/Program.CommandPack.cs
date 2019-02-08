@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
@@ -45,9 +44,7 @@ namespace snapx
 
                 return -1;
             }
-            
-            var snapAppsCopy = new SnapApps(snapApps);
-            
+                        
             snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
                 filesystem.PathCombine(workingDirectory, "packages") :
                 filesystem.PathGetFullPath(snapApps.Generic.Packages);
@@ -83,26 +80,21 @@ namespace snapx
                 return -1;
             }
 
-            switch (snapApps.Generic.BumpStrategy)
+            if (!SemanticVersion.TryParse(packOptions.Version, out var semanticVersion))
             {
-                default:                    
-                    if (!SemanticVersion.TryParse(packOptions.Version, out var semanticVersion))
-                    {
-                        logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
-                        return -1;
-                    }
-                    snapApp.Version = semanticVersion;
-                    break;
-                case SnapAppsBumpStrategy.Major:
-                    snapApp.Version = previousSnapApp != null ? previousSnapApp.Version.BumpMajor() : snapApp.Version.BumpMajor();
-                    break;
-                case SnapAppsBumpStrategy.Minor:
-                    snapApp.Version = previousSnapApp != null ? previousSnapApp.Version.BumpMinor() : snapApp.Version.BumpMinor();
-                    break;
-                case SnapAppsBumpStrategy.Patch:
-                    snapApp.Version = previousSnapApp != null ? previousSnapApp.Version.BumpPatch() : snapApp.Version.BumpPatch();
-                    break;
+                logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
+                return -1;
             }
+
+            if (packOptions.Force)
+            {
+                previousSnapApp = null;
+                previousNupkgAbsolutePath = null;
+
+                logger.Warn("Force enabled! Previous release will be overwritten.");
+            }
+
+            snapApp.Version = semanticVersion;
 
             var artifactsProperties = new Dictionary<string, string>
             {
@@ -128,7 +120,6 @@ namespace snapx
 
             logger.Info($"Packages directory: {snapApps.Generic.Packages}");
             logger.Info($"Artifacts directory {packOptions.ArtifactsDirectory}");
-            logger.Info($"Bump strategy: {snapApps.Generic.BumpStrategy}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
             logger.Info('-'.Repeat(TerminalWidth));
             if (previousSnapApp != null)
@@ -166,8 +157,6 @@ namespace snapx
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
                 if (previousSnapApp == null)
                 {                    
-                    UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapAppsCopy, snapApp);
-
                     if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
                     {
                         PushPackages(logger, filesystem, nugetService, snapApp, 
@@ -193,8 +182,6 @@ namespace snapx
                 filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default).GetAwaiter().GetResult();
             }
 
-            UpdateSnapsManifest(filesystem, appWriter, logger, snapsManifestAbsoluteFilename, snapAppsCopy, snapApp);
-
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
             {
                 PushPackages(logger, filesystem, nugetService, snapApp, 
@@ -205,25 +192,6 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalWidth));
             logger.Info($"Releasify completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
             return 0;
-        }
-
-        static void UpdateSnapsManifest([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppWriter appWriter, 
-            [NotNull] ILog logger, [NotNull] string filename,
-            [NotNull] SnapApps snapApps, SnapApp snapApp)
-        {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (appWriter == null) throw new ArgumentNullException(nameof(appWriter));
-            if (logger == null) throw new ArgumentNullException(nameof(logger));
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
-
-            logger.Info($"Writing updated snaps manifest to disk: {filename}");
-
-            var snapsApp = snapApps.Apps.Single(x => x.Id == snapApp.Id);
-            snapsApp.Version = snapApp.Version;
-
-            var content = appWriter.ToSnapAppsYamlString(snapApps);
-            filesystem.FileWriteStringContentAsync(content, filename, default).GetAwaiter().GetResult();
         }
 
         static void PushPackages([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem, 
@@ -243,6 +211,21 @@ namespace snapx
             var channel = snapApp.Channels.First();
             var nugetSources = snapApp.BuildNugetSources();
             var packageSource = nugetSources.Items.Single(x => x.Name == channel.PushFeed.Name);
+
+            if (channel.UpdateFeed.HasCredentials())
+            {
+                if (!"y|yes".AskUser("Update feed contains credentials, do you still want to publish application? [y|n]"))
+                {
+                    logger.Error("Publish aborted.");
+                    return;
+                }
+            }
+
+            if (!"y|yes".AskUser($"Ready to publish application to {packageSource.Name}. Do you want to continue? [y|n]"))
+            {
+                logger.Error("Publish aborted.");
+                return;
+            }
 
             var nugetLogger = new NugetLogger(logger);
             var stopwatch = new Stopwatch();

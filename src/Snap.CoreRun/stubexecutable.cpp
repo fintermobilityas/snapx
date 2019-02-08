@@ -82,15 +82,18 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
 
     const auto pid = fork();
     auto exitCode = -1;
-    if(pid != 0) {
+    if(pid < 0) {
         LOG(ERROR) << "Unknown error forking: " << pid;
     } else {
-        chdir(working_dir.c_str());
-        if(execvp(executable_full_path.c_str(), argv)) {
-            LOG(ERROR) << "Unknown error executing executable: " << executable_full_path << ". "
-                       << "Working directory: " << working_dir << ".";
+        if(0 != chdir(working_dir.c_str())) {
+            LOG(ERROR) << "Failed to change working directory to: " << working_dir;
         } else {
-            exitCode = 0;
+            if(execvp(executable_full_path.c_str(), argv) < 0)  {
+                LOG(ERROR) << "Unknown error executing executable: " << executable_full_path << ". "
+                           << "Working directory: " << working_dir << ".";
+            } else {
+                exitCode = 0;
+            }
         }
     }
 

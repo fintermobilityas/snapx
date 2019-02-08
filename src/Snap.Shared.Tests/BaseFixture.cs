@@ -27,6 +27,7 @@ namespace Snap.Shared.Tests
         static readonly Random RandomVersionSource = new Random();
         
         public string WorkingDirectory => Directory.GetCurrentDirectory();
+        public string NugetTempDirectory => Path.Combine(WorkingDirectory, "nuget");
 
         public SnapApp BuildSnapApp(string appId = "demoapp")
         {

@@ -209,7 +209,7 @@ namespace snapx
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Length);
 
             var channel = snapApp.Channels.First();
-            var nugetSources = snapApp.BuildNugetSources();
+            var nugetSources = snapApp.BuildNugetSources(filesystem.PathGetTempPath());
             var packageSource = nugetSources.Items.Single(x => x.Name == channel.PushFeed.Name);
 
             if (channel.UpdateFeed.HasCredentials())

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using Snap.AnyOS;
+using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -17,7 +18,7 @@ using Snap.Logging;
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    public interface ISnapUpdateManager
+    public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
     }
@@ -39,6 +40,7 @@ namespace Snap.Core
         readonly ISnapOs _snapOs;
         readonly ISnapInstaller _snapInstaller;
         readonly ISnapPack _snapPack;
+        readonly DisposableTempDirectory _nugetSourcesTempDirectory;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -64,8 +66,10 @@ namespace Snap.Core
             _rootDirectory = _snapOs.Filesystem.DirectoryGetParent(_workingDirectory);
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
             _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
+            _nugetSourcesTempDirectory = new DisposableTempDirectory(
+                _snapOs.Filesystem.PathCombine(_snapOs.SpecialFolders.InstallerCacheDirectory, "temp", "nuget"), _snapOs.Filesystem);
             _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
-            _nugetPackageSources = snapApp.BuildNugetSources();
+            _nugetPackageSources = snapApp.BuildNugetSources(_nugetSourcesTempDirectory.WorkingDirectory);
             
             _nugetService = nugetService ?? new NugetService(new NugetLogger(Logger));
             snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
@@ -294,6 +298,11 @@ namespace Snap.Core
             snapProgressSource?.Raise(100);
 
             return updatedSnapApp;
+        }
+
+        public void Dispose()
+        {
+            _nugetSourcesTempDirectory?.Dispose();
         }
     }
 }

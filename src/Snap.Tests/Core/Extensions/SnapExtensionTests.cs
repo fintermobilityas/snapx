@@ -275,7 +275,7 @@ namespace Snap.Tests.Core.Extensions
                 Channels = new List<SnapChannel> { snapChannel }
             };
 
-            var nuGetPackageSources = snapApp.BuildNugetSources();
+            var nuGetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
             Assert.Single(nuGetPackageSources.Items);
 
             var packageSource = nuGetPackageSources.Items.Single();
@@ -349,11 +349,11 @@ namespace Snap.Tests.Core.Extensions
                 Channels = new List<SnapChannel> { snapChannel }
             };
 
-            var nugetPackageSources = snapApp.BuildNugetSources();
+            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
             Assert.NotNull(nugetPackageSources.Settings);
             Assert.Single(nugetPackageSources.Items);
 
-            var snapFeeds = snapApp.BuildNugetSources();
+            var snapFeeds = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
             Assert.NotNull(snapFeeds.Settings);
             Assert.Single(snapFeeds.Items);
 
@@ -490,7 +490,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources());
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory));
             snapAppAfter.Version = snapAppBefore.Version.BumpMajor();
 
             // Generic
@@ -601,7 +601,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var nugetPackageSources = snapApp.BuildNugetSources();
+            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
             Assert.Single(nugetPackageSources.Items);
 
             var packageSource = nugetPackageSources.Items.First();
@@ -654,7 +654,7 @@ namespace Snap.Tests.Core.Extensions
             
             var a = new SnapAppWriter().ToSnapAppsYamlString(snapApps);
 
-            var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(new List<PackageSource>
+            var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(_baseFixture.NugetTempDirectory, new List<PackageSource>
             {
                 new PackageSource(nugetOrgFeed.Source.ToString(), nugetOrgFeed.Name),
                 new PackageSource(nugetOrgMirrorFeed.Source.ToString(), nugetOrgMirrorFeed.Name)

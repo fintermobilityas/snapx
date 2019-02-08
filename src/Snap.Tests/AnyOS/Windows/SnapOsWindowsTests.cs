@@ -23,6 +23,17 @@ namespace Snap.Tests.AnyOS.Windows
         public void TestDistroType()
         {
             Assert.Equal(SnapOsDistroType.Windows, _snapOs.DistroType);
-        }   
+        }
+
+        [Fact]
+        public void TestSpecialFolders()
+        {
+            Assert.NotEmpty(_snapOs.SpecialFolders.ApplicationData);
+            Assert.NotEmpty(_snapOs.SpecialFolders.LocalApplicationData);
+            Assert.NotEmpty(_snapOs.SpecialFolders.DesktopDirectory);
+            Assert.NotEmpty(_snapOs.SpecialFolders.StartupDirectory);
+            Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);
+            Assert.NotEmpty(_snapOs.SpecialFolders.InstallerCacheDirectory);
+        }
     }
 }

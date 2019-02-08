@@ -116,7 +116,7 @@ namespace Snap.NuGet
 
     internal class NuGetInMemoryPackageSources : NuGetPackageSources
     {
-        public NuGetInMemoryPackageSources(IEnumerable<PackageSource> packageSources) : base(new InMemorySettings(),
+        public NuGetInMemoryPackageSources(string tempDirectory, IEnumerable<PackageSource> packageSources) : base(new NugetTempSettings(tempDirectory),
             packageSources)
         {
         }

@@ -21,8 +21,9 @@ namespace snapx
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     internal partial class Program
     {
-        static readonly ILog SnapLogger = LogProvider.GetLogger("Snap");
-        static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snap.Pack");
+        static readonly ILog SnapLogger = LogProvider.GetLogger("Snapx");
+        static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snapx.Pack");
+        static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
 
         const int TerminalWidth = 80;
 
@@ -120,7 +121,8 @@ namespace snapx
                 .Default
                 .ParseArguments<PromoteNupkgOptions, PushNupkgOptions, InstallNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions>(args)
                 .MapResult(
-                    (PromoteNupkgOptions opts) => CommandPromoteNupkg(opts, nugetService),
+                    (PromoteNupkgOptions opts) => CommandPromoteNupkg(opts, snapFilesystem,  snapAppReader,
+                        nuGetPackageSources, nugetService, SnapPromoteLogger, workingDirectory),
                     (PushNupkgOptions options) => CommandPushNupkg(options, nugetService),
                     (InstallNupkgOptions opts) => CommandInstallNupkg(opts, snapOs, snapFilesystem, snapExtractor, 
                         snapInstaller, snapPack, snapAppWriter).GetAwaiter().GetResult(),

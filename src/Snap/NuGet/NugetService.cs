@@ -21,8 +21,9 @@ namespace Snap.NuGet
     internal interface INugetService
     {
         Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, INuGetPackageSources packageSources, CancellationToken cancellationToken);
-        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageNameAsync(string packageName, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
-        Task<DownloadResourceResult> DownloadByPackageIdentityAsync([NotNull] PackageIdentity packageIdentity, [NotNull] PackageSource source, string packagesFolder, CancellationToken cancellationToken);
+        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
+        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
+        Task<DownloadResourceResult> DownloadByPackageIdAsync([NotNull] PackageIdentity packageIdentity, [NotNull] PackageSource source, string packagesFolder, CancellationToken cancellationToken);
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default, int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
     }
 
@@ -38,13 +39,13 @@ namespace Snap.NuGet
             _nugetLogger = snapNugetLogger ?? throw new ArgumentNullException(nameof(snapNugetLogger));
         }
 
-        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageNameAsync([NotNull] string packageName, bool includePrerelease,
+        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync([NotNull] string packageId, bool includePrerelease,
             [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken)
         {
-            if (packageName == null) throw new ArgumentNullException(nameof(packageName));
+            if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
 
-            var tasks = packageSources.Items.Select(x => FindByPackageNameAsync(packageName, includePrerelease, x, cancellationToken));
+            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, includePrerelease, x, cancellationToken));
 
             var results = await Task.WhenAll(tasks);
 
@@ -54,7 +55,13 @@ namespace Snap.NuGet
                 .ToList();
         }
 
-        public async Task<DownloadResourceResult> DownloadByPackageIdentityAsync(PackageIdentity packageIdentity, PackageSource source, string packagesFolder, CancellationToken cancellationToken)
+        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken)
+        {
+            var results = await FindByPackageIdAsync(packageId, includePrerelease, packageSources, cancellationToken);
+            return results.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
+        }
+
+        public async Task<DownloadResourceResult> DownloadByPackageIdAsync(PackageIdentity packageIdentity, PackageSource source, string packagesFolder, CancellationToken cancellationToken)
         {
             if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -137,11 +144,11 @@ namespace Snap.NuGet
             return metadatas;
         }
 
-        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageNameAsync(string packageName, bool includePrerelease, PackageSource source, CancellationToken cancellationToken)
+        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, PackageSource source, CancellationToken cancellationToken)
         {
             var sourceRepository = _packageSources.Get(source);
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-            var metadatas = await FindPackageByIdAsync(metadataResource, packageName, includePrerelease, cancellationToken);
+            var metadatas = await FindPackageByIdAsync(metadataResource, packageId, includePrerelease, cancellationToken);
             return metadatas.Select(m => BuildNuGetPackageSearchMedatadata(source, m));
         }
 

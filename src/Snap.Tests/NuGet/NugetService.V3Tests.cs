@@ -65,12 +65,12 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestFindByPackageNameAsync()
+        public async Task TestFindByPackageIdAsync()
         {
             var packageSources = new NugetOrgOfficialV3PackageSources();
 
             var packages = await _nugetService
-                .FindByPackageNameAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
+                .FindByPackageIdAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
 
             Assert.NotEmpty(packages);
 
@@ -81,7 +81,7 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task SearchAsync()
+        public async Task TestSearchAsync()
         {
             var packageSources = new NugetOrgOfficialV3PackageSources();
 
@@ -100,7 +100,7 @@ namespace Snap.Tests.NuGet
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();
 
-            var downloadResourceResult = await _nugetService.DownloadByPackageIdentityAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
+            var downloadResourceResult = await _nugetService.DownloadByPackageIdAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
             Assert.True(downloadResourceResult.PackageStream.CanRead);

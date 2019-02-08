@@ -83,7 +83,7 @@ namespace snapx
                 }
                 
                 logger.Info($"Upstream version: {mostRecentMedatadata.Identity.Version}.");
-                logger.Info($"Downloading nupkg...");
+                logger.Info("Downloading nupkg...");
             }
 
             return -1;

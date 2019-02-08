@@ -99,7 +99,7 @@ namespace Snap.Installer
                 done:
                 
                 // Allow the user to read final log message.
-                Thread.Sleep(3000);
+                Thread.Sleep(exitCode == 0 ? 3000 : 10000);
 
                 environment.Shutdown();
             }

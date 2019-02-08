@@ -66,7 +66,7 @@ namespace snapx
                         return (absolutePath: x.FullName, snapApp: snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult());
                     }
                 })
-                .Where(x => !x.snapApp.Delta)
+                .Where(x => !x.snapApp.Delta && string.Equals(x.snapApp.Target.Rid, snapApp.Target.Rid))
                 .OrderByDescending(x => x.snapApp.Version)
                 .FirstOrDefault();
 

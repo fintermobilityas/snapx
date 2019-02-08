@@ -266,12 +266,11 @@ namespace Snap.Core
 
             if (!allSnapAwareApps.Any())
             {
-                logger?.Warn("No apps are marked as Snap-aware! Aborting post install. " +
-                                     "This is NOT a critical error it just means that the application has to be manually started by a human.");
+                logger?.Warn($"Could not find any apps that are marked snap aware in root app directory: {rootAppDirectory}.");
                 return;
             }
 
-            logger?.Info($"Snap enabled apps ({allSnapAwareApps.Count}): {string.Join(",", allSnapAwareApps)}");
+            logger?.Info($"Snap enabled apps: {string.Join(",", allSnapAwareApps)}");
 
             await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
                 $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");
@@ -297,8 +296,9 @@ namespace Snap.Core
         Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 
             TimeSpan cancelInvokeProcessesAfterTs, string args, ILog logger = null)
         {
-            logger?.Info($"Invoking {allSnapAwareApps.Count} processes with arguments: {args}. " +
-                        $"They have {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds to complete before we continue.");
+            logger?.Info(
+                $"Invoking {allSnapAwareApps.Count} processes with arguments: {args}. " +
+                         $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
             return allSnapAwareApps.ForEachAsync(async exe =>
             {

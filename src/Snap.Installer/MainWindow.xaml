@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Width="800"
         Height="600"
@@ -10,9 +10,6 @@
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
-        <Style Selector="ProgressBar">
-            
         </Style>
     </Window.Styles>
     <StackPanel>

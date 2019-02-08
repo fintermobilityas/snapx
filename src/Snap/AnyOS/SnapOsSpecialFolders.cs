@@ -10,6 +10,7 @@ namespace Snap.AnyOS
         string DesktopDirectory { get; }
         string StartupDirectory { get; }
         string StartMenu { get; }
+        string InstallerCacheDirectory { get; }
     }
 
     internal abstract class SnapOsSpecialFolders : ISnapOsSpecialFolders
@@ -19,8 +20,9 @@ namespace Snap.AnyOS
         public virtual string DesktopDirectory => throw new PlatformNotSupportedException();
         public virtual string StartupDirectory => throw new PlatformNotSupportedException();
         public virtual string StartMenu => throw new PlatformNotSupportedException();
+        public virtual string InstallerCacheDirectory => throw new PlatformNotSupportedException();
 
-        public static ISnapOsSpecialFolders AnyOS
+        public static ISnapOsSpecialFolders AnyOs
         {
             get
             {
@@ -46,6 +48,7 @@ namespace Snap.AnyOS
         public override string DesktopDirectory { get; } = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         public override string StartupDirectory { get; } = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
         public override string StartMenu { get; } = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu);
+        public override string InstallerCacheDirectory => ApplicationData + "\\" + "snapx";
     }
 
     internal sealed class SnapOsSpecialFoldersUnix : SnapOsSpecialFolders
@@ -55,5 +58,6 @@ namespace Snap.AnyOS
         public override string DesktopDirectory { get; } = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         public override string StartupDirectory => DesktopDirectory;
         public override string StartMenu => DesktopDirectory;
+        public override string InstallerCacheDirectory => ApplicationData + "/" + "snapx";
     }
 }

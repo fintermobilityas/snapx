@@ -64,7 +64,7 @@ namespace Snap.AnyOS
             {
                 var snapFilesystem = new SnapFilesystem();
                 var snapProcess = new SnapOsProcessManager();
-                var snapSpecialFolders = SnapOsSpecialFolders.AnyOS;
+                var snapSpecialFolders = SnapOsSpecialFolders.AnyOs;
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {

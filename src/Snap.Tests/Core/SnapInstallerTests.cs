@@ -322,8 +322,8 @@ namespace Snap.Tests.Core
                 var excludedFileInsideDirectory = _snapFilesystem.PathCombine(excludedDirectory, "excludedFileInsideDirectory.txt");
                                 
                 _snapFilesystem.DirectoryCreate(excludedDirectory);
-                await _snapFilesystem.FileWriteStringContentAsync(nameof(excludedFile), excludedFile, default);
-                await _snapFilesystem.FileWriteStringContentAsync(nameof(excludedFileInsideDirectory), excludedFileInsideDirectory, default);
+                await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFile), excludedFile, default);
+                await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFileInsideDirectory), excludedFileInsideDirectory, default);
 
                 snapApp.PersistentAssets = new List<string>
                 {

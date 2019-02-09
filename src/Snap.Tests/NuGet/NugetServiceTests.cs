@@ -49,7 +49,7 @@ namespace Snap.Tests.NuGet
                 @"<?xml version=""1.0"" encoding=""utf-8""?><configuration><packageSources><add key=""nuget.org"" value=""https://api.nuget.org/v3/index.json"" /></packageSources><activePackageSource><add key=""All"" value=""(Aggregate source)"" /></activePackageSource> </configuration>";
 
             var dstFilename = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "nuget.config");
-            await _snapFilesystem.FileWriteStringContentAsync(nugetConfigXml, dstFilename, CancellationToken.None);
+            await _snapFilesystem.FileWriteUtf8StringAsync(nugetConfigXml, dstFilename, CancellationToken.None);
         }
     }
 }

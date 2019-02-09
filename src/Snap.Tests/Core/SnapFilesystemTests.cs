@@ -30,7 +30,7 @@ namespace Snap.Tests.Core
                 _snapFilesystem.DirectoryCreate(subDirectory);
 
                 var testFile = _snapFilesystem.PathCombine(subDirectory, "mytEstFile.txt");
-                await _snapFilesystem.FileWriteStringContentAsync("yolo", testFile, default);
+                await _snapFilesystem.FileWriteUtf8StringAsync("yolo", testFile, default);
                 
                 await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootDirectory);
                 
@@ -64,10 +64,10 @@ namespace Snap.Tests.Core
                 _snapFilesystem.DirectoryCreate(deleteThisDirectory);
 
                 var excludeFile = _snapFilesystem.PathCombine(rootDirectory, "excludeFile.txt");
-                await _snapFilesystem.FileWriteStringContentAsync("yolo", excludeFile, default);
+                await _snapFilesystem.FileWriteUtf8StringAsync("yolo", excludeFile, default);
 
                 var deleteThisFile = _snapFilesystem.PathCombine(rootDirectory, "deleteThisFile.txt");
-                await _snapFilesystem.FileWriteStringContentAsync("yolo2", excludeFile, default);
+                await _snapFilesystem.FileWriteUtf8StringAsync("yolo2", excludeFile, default);
 
                 await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootDirectory, new List<string>
                 {

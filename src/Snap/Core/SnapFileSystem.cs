@@ -33,7 +33,7 @@ namespace Snap.Core
         IEnumerable<string> DirectoryGetAllFiles(string rootPath);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
-        Task FileWriteStringContentAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
+        Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
         string FileReadAllText(string filename);
@@ -58,6 +58,7 @@ namespace Snap.Core
         string PathGetFileName(string filename);
         string PathChangeExtension(string path, string extension);
         string PathGetTempPath();
+        void FileMove(string sourceFilename, string destinationFilename);
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -96,17 +97,16 @@ namespace Snap.Core
             throw new PlatformNotSupportedException();
         }
 
-        public async Task FileWriteStringContentAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteUtf8StringAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
         {
             if (utf8Text == null) throw new ArgumentNullException(nameof(utf8Text));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
 
-            using (var outputStream = new MemoryStream())
+            var outputBytes = Encoding.UTF8.GetBytes(utf8Text);
+
+            using (var outputStream = FileWrite(dstFilename))
             {
-                var outputBytes = Encoding.UTF8.GetBytes(utf8Text);
                 await outputStream.WriteAsync(outputBytes, 0, outputBytes.Length, cancellationToken);
-                outputStream.Seek(0, SeekOrigin.Begin);
-                await FileWriteAsync(outputStream, dstFilename, cancellationToken);
             }
         }
 
@@ -419,6 +419,13 @@ namespace Snap.Core
         public string PathGetTempPath()
         {
             return Path.GetTempPath() ?? DirectoryWorkingDirectory();
+        }
+
+        public void FileMove([NotNull] string sourceFilename, [NotNull] string destinationFilename)
+        {
+            if (sourceFilename == null) throw new ArgumentNullException(nameof(sourceFilename));
+            if (destinationFilename == null) throw new ArgumentNullException(nameof(destinationFilename));
+            File.Move(sourceFilename, destinationFilename);
         }
 
         public string PathGetFileNameWithoutExtension([NotNull] string filename)

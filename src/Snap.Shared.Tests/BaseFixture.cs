@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -315,7 +315,7 @@ namespace Snap.Shared.Tests
                     pair.Value.Write(dstFilename);                
                 }
 
-                await filesystem.FileWriteStringContentAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
+                await filesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
                 var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, cancellationToken: cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);

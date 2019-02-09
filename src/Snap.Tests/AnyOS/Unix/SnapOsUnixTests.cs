@@ -68,7 +68,7 @@ Codename:	cosmic";
         [Fact]
         public async Task TestSnapOsUnixNativeMethods_Chmod()
         {
-            await _snapFilesystem.FileWriteStringContentAsync("yolo", "test.txt", CancellationToken.None);
+            await _snapFilesystem.FileWriteUtf8StringAsync("yolo", "test.txt", CancellationToken.None);
 
             Assert.Equal(0,NativeMethodsUnix.chmod("test.txt", 755));            
         }

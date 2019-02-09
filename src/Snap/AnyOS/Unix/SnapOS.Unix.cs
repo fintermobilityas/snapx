@@ -90,7 +90,7 @@ namespace Snap.AnyOS.Unix
                 var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 var absoluteDesktopShortcutPath = Filesystem.PathCombine(desktopPath, $"{exeName}.deskop");
 
-                await Filesystem.FileWriteStringContentAsync(desktopShortcutUtf8Content,
+                await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
                     absoluteDesktopShortcutPath, cancellationToken);
 
                 var chmodRetValue = NativeMethodsUnix.chmod(absoluteDesktopShortcutPath, 755);

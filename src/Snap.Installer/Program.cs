@@ -29,6 +29,17 @@ namespace Snap.Installer
         
         public static int Main(string[] args)
         {
+            if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
+            {
+                while (!Debugger.IsAttached)
+                {
+                    Console.WriteLine("Waiting for debugger to attach...");
+                    Thread.Sleep(1000);
+                }
+                
+                Console.WriteLine("Debugger attached.");
+            }
+
             var logLevel = LogLevel.Info;
             if (args.Any(x => string.Equals("--verbose", x, StringComparison.InvariantCulture)))
             {

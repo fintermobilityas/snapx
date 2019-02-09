@@ -5,7 +5,6 @@ namespace Snap.Installer.Tests
 {
     public class ProgramTests
     {
-        // This test case does not test the installer itself but that it's properly bootstrapped.
         [Fact]
         public void TestMain()
         {            

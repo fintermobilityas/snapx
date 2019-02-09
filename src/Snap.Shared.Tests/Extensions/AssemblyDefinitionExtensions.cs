@@ -1,7 +1,9 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Mono.Cecil;
+using Snap.Core;
 
 namespace Snap.Shared.Tests.Extensions
 {
@@ -24,10 +26,12 @@ namespace Snap.Shared.Tests.Extensions
             return assemblyName;
         }
 
-        public static string GetFullPath(this AssemblyDefinition assemblyDefinition, string workingDirectory)
+        public static string GetFullPath(this AssemblyDefinition assemblyDefinition, [NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            return Path.Combine(workingDirectory, assemblyDefinition.BuildRelativeFilename());
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            return filesystem.PathCombine(workingDirectory, assemblyDefinition.BuildRelativeFilename());
         }
     }
 }

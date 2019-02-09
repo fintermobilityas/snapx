@@ -311,7 +311,9 @@ namespace Snap.Extensions
             {
                 Id = snapApp.Id,
                 Channels = snapAppChannels,
-                Target = new SnapTarget(snapAppTarget)
+                Target = new SnapTarget(snapAppTarget),
+                Shortcuts = snapApp.Shortcuts,
+                PersistentAssets = snapApp.PersistentAssets
             };
         }
 

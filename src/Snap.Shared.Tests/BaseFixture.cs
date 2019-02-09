@@ -21,9 +21,12 @@ using Snap.Shared.Tests.Extensions;
 namespace Snap.Shared.Tests
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBeMadeStatic.Global")]
+    [UsedImplicitly]
     public class BaseFixture
     {
-        static readonly Random RandomVersionSource = new Random();
+        static readonly Random RandomSource = new Random();
         
         public string WorkingDirectory => Directory.GetCurrentDirectory();
         public string NugetTempDirectory => Path.Combine(WorkingDirectory, "nuget");
@@ -159,14 +162,15 @@ namespace Snap.Shared.Tests
             WriteAssemblies(workingDirectory, assemblyDefinitions.ToList(), true);
         }
 
-        internal IDisposable WithDisposableAssemblies(string workingDirectory, ISnapFilesystem filesystem, params AssemblyDefinition[] assemblyDefinitions)
+        internal IDisposable WithDisposableAssemblies(string workingDirectory, [NotNull] ISnapFilesystem filesystem, params AssemblyDefinition[] assemblyDefinitions)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
 
             WriteAndDisposeAssemblies(workingDirectory, assemblyDefinitions);
 
-            return new DisposableFiles(filesystem, assemblyDefinitions.Select(x => x.GetFullPath(workingDirectory)).ToArray());
+            return new DisposableFiles(filesystem, assemblyDefinitions.Select(x => x.GetFullPath(filesystem, workingDirectory)).ToArray());
         }
 
         public AssemblyDefinition BuildEmptyLibrary(string libraryName, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
@@ -174,10 +178,10 @@ namespace Snap.Shared.Tests
             if (libraryName == null) throw new ArgumentNullException(nameof(libraryName));
             
             var version = randomVersion ? new Version(
-                RandomVersionSource.Next(0, 1000), 
-                RandomVersionSource.Next(0, 1000), 
-                RandomVersionSource.Next(0, 1000), 
-                RandomVersionSource.Next(0, 1000)) : 
+                RandomSource.Next(0, 1000), 
+                RandomSource.Next(0, 1000), 
+                RandomSource.Next(0, 1000), 
+                RandomSource.Next(0, 1000)) : 
                 new Version(1, 0, 0, 0);
             
             var assembly = AssemblyDefinition.CreateAssembly(
@@ -203,10 +207,10 @@ namespace Snap.Shared.Tests
             if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
 
             var version = randomVersion ? new Version(
-                    RandomVersionSource.Next(0, 1000), 
-                    RandomVersionSource.Next(0, 1000), 
-                    RandomVersionSource.Next(0, 1000), 
-                    RandomVersionSource.Next(0, 1000)) : 
+                    RandomSource.Next(0, 1000), 
+                    RandomSource.Next(0, 1000), 
+                    RandomSource.Next(0, 1000), 
+                    RandomSource.Next(0, 1000)) : 
                 new Version(1, 0, 0, 0);
             
             var assembly = AssemblyDefinition.CreateAssembly(

@@ -29,7 +29,7 @@ namespace Snap.Tests.AnyOS.Unix
         [Fact]
         public void TestDistroType()
         {
-            // If this test case fails then please submit a PR that returns the correct unix distro type :)
+            // If this test case fails then please open a PR :)
             Assert.Equal(SnapOsDistroType.Ubuntu, _snapOs.DistroType);
         }
 
@@ -61,7 +61,7 @@ Codename:	cosmic";
         
 #if PLATFORM_UNIX
         [Fact]
-        public async Task TestSnapOsUnixNativeMethods_Chmod()
+        public async Task TestNativeMethodsUnix_chmod()
         {
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {

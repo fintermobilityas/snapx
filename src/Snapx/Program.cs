@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using CommandLine;
 using JetBrains.Annotations;
 using snapx.Options;
@@ -32,20 +34,37 @@ namespace snapx
 
         internal static int Main(string[] args)
         {
+            if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
+            {
+                while (!Debugger.IsAttached)
+                {
+                    Console.WriteLine("Waiting for debugger to attach...");
+                    Thread.Sleep(1000);
+                }
+
+                Console.WriteLine("Debugger attached.");
+            }
+            
             try
             {
                 LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(LogLevel.Info));
                 return MainImplAsync(args);
             }
+            catch (YamlException yamlException)
+            {
+                SnapLogger.ErrorException($"Yaml exception trapped. What: {yamlException.InnerException?.Message ?? yamlException.Message}.", yamlException);                
+            }
             catch (Exception e)
             {
-                SnapLogger.Error(e.Message);
-                return -1;
+                SnapLogger.ErrorException("Exception thrown during main.", e);
             }
+            return -1;
         }
 
-        static int MainImplAsync(IEnumerable<string> args)
+        static int MainImplAsync([NotNull] string[] args)
         {
+            if (args == null) throw new ArgumentNullException(nameof(args));
+            
             ISnapOs snapOs;
             try
             {
@@ -100,7 +119,7 @@ namespace snapx
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, snapPack, snapAppWriter, workingDirectory);
         }
 
-        static int MainAsync([NotNull] IEnumerable<string> args,
+        static int MainAsync([NotNull] string[] args,
             [NotNull] CoreRunLib coreRunLib,
             [NotNull] ISnapOs snapOs, [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
@@ -135,7 +154,7 @@ namespace snapx
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (Sha1Options opts) => CommandSha1(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
-                    (InstallOptions opts) => Snap.Installer.Program.Main(args.ToArray()),
+                    (InstallOptions opts) => Snap.Installer.Program.Main(args),
                     errs =>
                     {
                         snapOs.EnsureConsole();
@@ -155,7 +174,7 @@ namespace snapx
 
             var (snapApps, snapAppTargets, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
             var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase)
-                                                         && string.Equals(x.Target.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
+                                                            && string.Equals(x.Target.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
         }

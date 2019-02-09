@@ -69,16 +69,16 @@ namespace snapx
                 promotableSnapApps.Add((promoteableSnapApp, promoteableSnapAppChannel, promoteableSnapApp.BuildNugetUpstreamPackageId()));
             }
 
-            foreach (var promoteableSnapApp in promotableSnapApps)
+            foreach (var (_, _, upstreamPackageId) in promotableSnapApps)
             {
-                logger.Info($"Retrieving most version for nupkg: {promoteableSnapApp.upstreamPackageId}.");
+                logger.Info($"Retrieving most version for nupkg: {upstreamPackageId}.");
                 var mostRecentMedatadata = SnapUtility.Retry(() => 
                     nugetService.FindByMostRecentPackageIdAsync(
-                        promoteableSnapApp.upstreamPackageId, false, nuGetPackageSources, default).GetAwaiter().GetResult());
-
+                        upstreamPackageId, false, nuGetPackageSources, default).GetAwaiter().GetResult());
+                
                 if (mostRecentMedatadata != null)
                 {
-                    logger.Error($"Nupkg is already published: {promoteableSnapApp.upstreamPackageId}");
+                    logger.Error($"Nupkg is already published: {upstreamPackageId}");
                     return -1;
                 }
                 

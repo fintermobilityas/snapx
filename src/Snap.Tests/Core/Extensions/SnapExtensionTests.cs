@@ -485,6 +485,16 @@ namespace Snap.Tests.Core.Extensions
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
                     Nuspec = "test.nuspec"
+                },
+                PersistentAssets = new List<string>
+                {
+                    "subdirectory",
+                    "myjsonfile.json"
+                },
+                Shortcuts = new List<SnapShortcutLocation>
+                {
+                    SnapShortcutLocation.Desktop,
+                    SnapShortcutLocation.Startup
                 }
             };
 
@@ -581,6 +591,10 @@ namespace Snap.Tests.Core.Extensions
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
                 }
             }
+            
+            // Persistent assets
+            Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
+            Assert.Equal(snapAppBefore.Shortcuts, snapAppAfter.Shortcuts);
         }
 
         [Fact]

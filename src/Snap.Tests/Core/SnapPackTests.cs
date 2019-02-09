@@ -467,7 +467,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task TestBuildFullPackageAsync_Includes_A_Snap_Checksum_Manifest()
+        public async Task TestBuildFullPackageAsync_Includes_Checksum_Manifest()
         {
             var snapApp = _baseFixture.BuildSnapApp();
 
@@ -593,7 +593,7 @@ namespace Snap.Tests.Core
         }
         
         [Fact]
-        public async Task TestBuildFullPackageAsync_Filename_Without_Extension()
+        public async Task TestBuildFullPackageAsync_Filenames_Without_Extension()
         {
             var snapApp = _baseFixture.BuildSnapApp();
             var mainAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
@@ -910,7 +910,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task TestGetSnapAppFromPackageArchiveReaderAsync()
+        public async Task TestGetSnapAppAsync()
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
 

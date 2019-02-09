@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +8,7 @@ using Mono.Cecil;
 
 namespace Snap.Core
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapCryptoProvider
     {
         string Sha512(byte[] content);

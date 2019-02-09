@@ -15,6 +15,7 @@ using Snap.Logging;
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapFilesystem
     {
         char FixedNewlineChar { get; }
@@ -35,7 +36,7 @@ namespace Snap.Core
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
         Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
-        Task<string> FileReadAllTextAsync(string fileName, CancellationToken cancellationToken);
+        Task<string> FileReadAllTextAsync(string fileName);
         string FileReadAllText(string filename);
         void FileDelete(string fileName);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
@@ -172,7 +173,7 @@ namespace Snap.Core
             return new FileInfo(fileName);
         }
 
-        public async Task<string> FileReadAllTextAsync([NotNull] string fileName, CancellationToken cancellationToken)
+        public async Task<string> FileReadAllTextAsync([NotNull] string fileName)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             using (var stream = FileRead(fileName))
@@ -204,7 +205,7 @@ namespace Snap.Core
             if (path == null) throw new ArgumentNullException(nameof(path));
             try
             {
-                SnapUtility.Retry(() => File.Delete(path), 2);
+                SnapUtility.Retry(() => File.Delete(path));
             }
             catch (Exception ex)
             {

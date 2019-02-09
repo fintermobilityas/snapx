@@ -348,8 +348,8 @@ namespace Snap.Tests.Core
                 Assert.True(_snapFilesystem.FileExists(excludedFile));
                 Assert.True(_snapFilesystem.FileExists(excludedFileInsideDirectory));
 
-                Assert.Equal(nameof(excludedFile), await _snapFilesystem.FileReadAllTextAsync(excludedFile, default));
-                Assert.Equal(nameof(excludedFileInsideDirectory), await _snapFilesystem.FileReadAllTextAsync(excludedFileInsideDirectory, default));                
+                Assert.Equal(nameof(excludedFile), await _snapFilesystem.FileReadAllTextAsync(excludedFile));
+                Assert.Equal(nameof(excludedFileInsideDirectory), await _snapFilesystem.FileReadAllTextAsync(excludedFileInsideDirectory));                
             }
         }
         

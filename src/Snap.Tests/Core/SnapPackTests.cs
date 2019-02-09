@@ -500,7 +500,7 @@ namespace Snap.Tests.Core
 
                 var checksums =
                     _snapPack.ParseChecksumManifest(
-                        await _snapFilesystem.FileReadAllTextAsync(checksumFilename, CancellationToken.None)).ToList();
+                        await _snapFilesystem.FileReadAllTextAsync(checksumFilename)).ToList();
 
                 var expectedLayout = new List<string>
                     {

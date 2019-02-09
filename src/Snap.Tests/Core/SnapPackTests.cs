@@ -25,15 +25,14 @@ namespace Snap.Tests.Core
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
-        readonly ISnapCryptoProvider _snapCryptoProvider;
 
         public SnapPackTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
-            _snapCryptoProvider = new SnapCryptoProvider();
+            ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), snapCryptoProvider, _snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
             _snapAppWriter = new SnapAppWriter();
         }
@@ -72,6 +71,17 @@ namespace Snap.Tests.Core
             }.Select(x => x.ForwardSlashesSafe()).ToList();
 
             Assert.Equal(assemblies, _snapPack.AlwaysRemoveTheseAssemblies);
+        }
+
+        [Fact]
+        public void TestNeverGenerateBsDiffsTheseAssemblies()
+        {
+            var assemblies = new List<string>
+            {
+                _snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename)
+            }.Select(x => x.ForwardSlashesSafe()).ToList();
+
+            Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
         }
         
         [Fact]

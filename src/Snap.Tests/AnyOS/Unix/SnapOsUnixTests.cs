@@ -1,7 +1,4 @@
 ﻿#if PLATFORM_UNIX
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,9 +6,7 @@ using Snap.AnyOS;
 using Snap.AnyOS.Unix;
 using Snap.Core;
 using Snap.Core.IO;
-using Snap.Reflection;
 using Snap.Shared.Tests;
-using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.AnyOS.Unix

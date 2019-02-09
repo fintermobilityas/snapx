@@ -9,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
 using DotNet.Globbing;
 using JetBrains.Annotations;
@@ -198,6 +197,7 @@ namespace Snap.Core
     internal interface ISnapPack
     {
         IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
+        IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies { get; }
         string NuspecTargetFrameworkMoniker { get; }
         string NuspecRootTargetPath { get; }
         string SnapNuspecTargetPath { get; }
@@ -231,7 +231,7 @@ namespace Snap.Core
             _snapFilesystem.PathCombine(NuspecRootTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
 
-        public IEnumerable<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
+        public IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
         {
             _snapFilesystem.PathCombine(SnapNuspecTargetPath, _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe()
         };
@@ -563,9 +563,6 @@ namespace Snap.Core
             
             var deltaNupkgStream = _snapFilesystem.FileRead(deltaNupkgAbsolutePath);
             var fullNupkgStream = _snapFilesystem.FileRead(fullNupkgAbsolutePath);
-
-            // Checksumming has to happen before reading nupkgs because
-            // the reader is not immutable and modifies the stream somehow.
             var fullNupkgSha1Checksum = _snapCryptoProvider.Sha1(fullNupkgStream);
 
             progressSource?.Raise(10);
@@ -634,6 +631,7 @@ namespace Snap.Core
                 using (var oldDataStream = await fullNupkgCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
                 using (var patchDataStream = await deltaCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
                 {
+                    // ReSharper disable once AccessToDisposedClosure
                     SnapBinaryPatcher.Apply(oldDataStream, () => patchDataStream.DuplicateStream(), deltaStream);
                 }
                 deltaStream.Seek(0, SeekOrigin.Begin);
@@ -668,7 +666,7 @@ namespace Snap.Core
         }
 
         public async Task<IEnumerable<SnapPackFileChecksum>> GetChecksumManifestAsync(
-            [NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
+            IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             var targetPath = _snapFilesystem.PathCombine(SnapNuspecTargetPath, ChecksumManifestFilename);

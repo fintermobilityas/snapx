@@ -14,7 +14,7 @@ namespace Snap.Core
     {
         static readonly ILog Logger = LogProvider.GetLogger(nameof(SnapAwareApp));
 
-        internal static ISnapOs SnapOs { get; }
+        static ISnapOs SnapOs { get; }
 
         static SnapAwareApp()
         {

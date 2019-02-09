@@ -9,6 +9,7 @@ using Mono.Cecil;
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapCryptoProvider
     {
         string Sha512(byte[] content);

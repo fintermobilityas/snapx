@@ -1,19 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Snap.Core.Resources
 {
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IEmbedResources : IDisposable
     {
-        IReadOnlyList<EmbeddedResource> Resources { get; }
+        IEnumerable<EmbeddedResource> Resources { get; }
         void AddFromTypeRoot(Type typeRoot, Func<string, bool> filterFn = null);
         EmbeddedResource Find(Type typeRoot, string filename);
     }
 
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IEmbeddedResource : IDisposable
     {
         Type TypeRoot { get; }
@@ -37,15 +41,6 @@ namespace Snap.Core.Resources
             Filename = filename;
         }
 
-        public string ToString(Encoding encoding)
-        {
-            Stream.Seek(0, SeekOrigin.Begin);
-            using (var streamReader = new StreamReader(Stream, Encoding.UTF8, false, 81920, leaveOpen: true))
-            {
-                return streamReader.ReadToEnd();
-            }
-        }
-
         public void Dispose()
         {
             Stream?.Dispose();
@@ -56,7 +51,7 @@ namespace Snap.Core.Resources
     {
         readonly List<EmbeddedResource> _resources;
 
-        public IReadOnlyList<EmbeddedResource> Resources => _resources.AsReadOnly();
+        public IEnumerable<EmbeddedResource> Resources => _resources.AsReadOnly();
 
         protected internal EmbeddedResources()
         {

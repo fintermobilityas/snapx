@@ -462,7 +462,7 @@ namespace Snap.Tests.Core
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
             var (nupkgMemoryStream, _) = await _baseFixture
@@ -489,7 +489,7 @@ namespace Snap.Tests.Core
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
@@ -552,7 +552,7 @@ namespace Snap.Tests.Core
             {
                 { mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition },
                 { $"subdirectory/{dllDefinition1.BuildRelativeFilename()}", dllDefinition1 },
-                { $"subdirectory/subdirectory2/{dllDefinition2.BuildRelativeFilename()}", dllDefinition2 },
+                { $"subdirectory/subdirectory2/{dllDefinition2.BuildRelativeFilename()}", dllDefinition2 }
             };
             
             var (nupkgMemoryStream, packageDetails) = await _baseFixture

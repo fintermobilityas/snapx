@@ -214,14 +214,14 @@ namespace snapx
 
             if (channel.UpdateFeed.HasCredentials())
             {
-                if (!"y|yes".AskUser("Update feed contains credentials, do you still want to publish application? [y|n]"))
+                if (!"y|yes".Prompt("Update feed contains credentials, do you still want to publish application? [y|n]"))
                 {
                     logger.Error("Publish aborted.");
                     return;
                 }
             }
 
-            if (!"y|yes".AskUser($"Ready to publish application to {packageSource.Name}. Do you want to continue? [y|n]"))
+            if (!"y|yes".Prompt($"Ready to publish application to {packageSource.Name}. Do you want to continue? [y|n]"))
             {
                 logger.Error("Publish aborted.");
                 return;

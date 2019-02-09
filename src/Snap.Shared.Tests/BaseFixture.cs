@@ -17,7 +17,6 @@ using Snap.Core.Resources;
 using Snap.NuGet;
 using Snap.Reflection;
 using Snap.Shared.Tests.Extensions;
-using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Shared.Tests
 {

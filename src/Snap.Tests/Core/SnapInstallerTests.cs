@@ -93,7 +93,7 @@ namespace Snap.Tests.Core
                 { snapAppExeAssemblyDefinition.BuildRelativeFilename(), snapAppExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
             var (installNupkgMemoryStream, installPackageDetails) = await _baseFixture
@@ -224,7 +224,7 @@ namespace Snap.Tests.Core
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 // dll
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
-                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
+                { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
 
             var (nupkgMemoryStream, packageDetails) = await _baseFixture
@@ -315,7 +315,7 @@ namespace Snap.Tests.Core
 
             var nuspecLayout = new Dictionary<string, AssemblyDefinition>
             {
-                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
+                { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition }
             };
 
             using (var tmpNupkgDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

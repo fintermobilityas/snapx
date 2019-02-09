@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Configuration;
@@ -7,6 +8,7 @@ using Snap.Logging;
 
 namespace Snap.NuGet
 {
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface INugetConfigFileReader
     {
         NuGetPackageSources ReadNugetSources(string workingDirectory);

@@ -496,7 +496,7 @@ namespace Snap.AnyOS.Windows
         /// </summary>
         public ShellLink()
         {
-            if (System.Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
                 linkW = (IShellLinkW)new CShellLink();
             }
@@ -1205,7 +1205,7 @@ namespace Snap.AnyOS.Windows
             {
                 if (shfi.hIcon != IntPtr.Zero)
                 {
-                    fileIcon = System.Drawing.Icon.FromHandle(shfi.hIcon);
+                    fileIcon = Icon.FromHandle(shfi.hIcon);
                     // Now owned by the GDI+ object
                     //DestroyIcon(shfi.hIcon);
                 }

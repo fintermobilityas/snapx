@@ -21,7 +21,7 @@ namespace Snap.Core
             Progress?.Invoke(this, i);
         }
 
-        public void Raise(int i, [NotNull] Action action)
+        public void Raise(int i, Action action)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             action();

@@ -12,8 +12,8 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
-using Snap.NuGet;
 using Snap.Logging;
+using Snap.NuGet;
 
 namespace Snap.Core
 {

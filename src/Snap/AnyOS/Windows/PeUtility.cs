@@ -460,7 +460,7 @@ namespace Snap.AnyOS.Windows
 
         }
 
-        public PeUtility([NotNull] string filePath) : this(new FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.ReadWrite))
+        public PeUtility([NotNull] string filePath) : this(new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
         {
 
         }

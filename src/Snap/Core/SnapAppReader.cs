@@ -27,7 +27,7 @@ namespace Snap.Core
         internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApp = new Dictionary<string, Type>
         {
             { "nuget", typeof(SnapNugetFeed) }, 
-            { "http", typeof(SnapHttpFeed)},
+            { "http", typeof(SnapHttpFeed)}
         };
 
         internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApps = new Dictionary<string, Type>

@@ -7,6 +7,7 @@ using Snap.Logging;
 namespace Snap.Extensions
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class LoggerExtensions
     {
         public static void InfoWithDashses([NotNull] this ILog This, [NotNull] string message)

@@ -41,7 +41,7 @@ namespace Snap.Core.UnitTest
                 return (T)Activator.CreateInstance(type);
             }
 
-            return default(T);
+            return default;
         }
     }
 }

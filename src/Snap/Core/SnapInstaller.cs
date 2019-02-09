@@ -268,7 +268,7 @@ namespace Snap.Core
 
             if (!snapApp.Shortcuts.Any())
             {
-                logger?.Warn($"This application does not specify any shortcut locations.");
+                logger?.Warn("This application does not specify any shortcut locations.");
             }
             else
             {

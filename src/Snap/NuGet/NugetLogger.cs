@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using NuGet.Common;
 using Snap.Logging;
-using ILogger = NuGet.Common.ILogger;
 using LogLevel = NuGet.Common.LogLevel;
 
 namespace Snap.NuGet

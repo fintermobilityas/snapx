@@ -122,7 +122,7 @@ namespace Snap.Core.UnitTest
 
                 if (dependencyObject != null)
                 {
-                    _cachedInDesignModeResult = (bool)mInfo.Invoke(null, new object[] { Activator.CreateInstance(dependencyObject) });
+                    _cachedInDesignModeResult = (bool)mInfo.Invoke(null, new[] { Activator.CreateInstance(dependencyObject) });
                 }
             }
             else if ((type = Type.GetType(WpfDesignerPropertiesType, false)) != null)
@@ -132,7 +132,7 @@ namespace Snap.Core.UnitTest
                 var dependencyObject = Type.GetType(WpfDependencyPropertyType, false);
                 if (dependencyObject != null)
                 {
-                    _cachedInDesignModeResult = (bool)mInfo.Invoke(null, new object[] { Activator.CreateInstance(dependencyObject) });
+                    _cachedInDesignModeResult = (bool)mInfo.Invoke(null, new[] { Activator.CreateInstance(dependencyObject) });
                 }
             }
             else if ((type = Type.GetType(WinFormsDesignerPropertiesType, false)) != null)

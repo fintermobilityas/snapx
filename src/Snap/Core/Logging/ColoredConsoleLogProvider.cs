@@ -4,8 +4,6 @@ using System.Globalization;
 using Snap.Logging;
 using Snap.Logging.LogProviders;
 
-using LogLevel = Snap.Logging.LogLevel;
-
 namespace Snap.Core.Logging
 {
     internal class ColoredConsoleLogProvider : LogProviderBase

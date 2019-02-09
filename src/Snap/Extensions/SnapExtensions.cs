@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -16,14 +17,14 @@ using Snap.Reflection;
 
 namespace Snap.Extensions
 {
-    public static class SnapExtensions
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    internal static class SnapExtensions
     {
-        // https://github.com/NuGet/NuGet.Client/blob/dev/src/NuGet.Core/NuGet.Packaging/PackageCreation/Utility/PackageIdValidator.cs#L14
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetCoreAppRegex = new Regex("^netcoreapp\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-        static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+        static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
         internal static string ExpandProperties([NotNull] this string value, [NotNull] Dictionary<string, string> properties)
         {
@@ -31,6 +32,7 @@ namespace Snap.Extensions
             if (properties == null) throw new ArgumentNullException(nameof(properties));
             if (properties.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(properties));
 
+            // ReSharper disable once RedundantEnumerableCastCall
             foreach (var match in ExpansionRegex.Matches(value).Cast<Match>())
             {
                 var key = match.Value.Replace("$", string.Empty);
@@ -104,6 +106,7 @@ namespace Snap.Extensions
         internal static string BuildFullNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            // ReSharper disable once RedundantArgumentDefaultValue
             return snapApp.BuildNugetUpstreamPackageIdImpl(false);
         }
         
@@ -147,6 +150,7 @@ namespace Snap.Extensions
                 string validAuthenticationTypesText = null;
                 
                 packageSource.Credentials = new PackageSourceCredential(packageSource.Name,
+                    // ReSharper disable once ExpressionIsAlwaysNull
                     snapFeed.Username, snapFeed.Password, storePasswordInClearText, validAuthenticationTypesText);
 
                 nugetTempSettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
@@ -460,7 +464,6 @@ namespace Snap.Extensions
 
             return snapFilesystem.PathGetDirectoryName(assembly.Location).GetSnapStubExecutableFullPath(snapFilesystem, snapAppReader, snapAppWriter, out stubExecutableExeName);
         }
-
 
         internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)
         {

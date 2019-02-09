@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using JetBrains.Annotations;
 using ReactiveUI;
 using Snap.Core;
 using Snap.Installer.Core;
-using Bitmap = Avalonia.Media.Imaging.Bitmap;
 
 namespace Snap.Installer.ViewModels
 {

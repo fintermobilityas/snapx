@@ -9,6 +9,7 @@ using Snap.Extensions;
 namespace Snap
 {   
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ICoreRunLib : IDisposable
     {
         bool Chmod(string filename, int mode);

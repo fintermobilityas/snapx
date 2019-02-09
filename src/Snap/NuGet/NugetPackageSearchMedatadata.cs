@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 
 namespace Snap.NuGet
 {
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     internal class NuGetPackageSearchMedatadata
     {
         public PackageIdentity Identity { get; }

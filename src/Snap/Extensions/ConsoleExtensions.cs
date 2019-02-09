@@ -6,7 +6,7 @@ namespace Snap.Extensions
 {
     internal static class ConsoleExtensions
     {
-        public static bool AskUser([NotNull] this string verbsStr, [NotNull] string question, char delimeter = '|')
+        public static bool Prompt([NotNull] this string verbsStr, [NotNull] string question, char delimeter = '|')
         {
             if (verbsStr == null) throw new ArgumentNullException(nameof(verbsStr));
             if (question == null) throw new ArgumentNullException(nameof(question));

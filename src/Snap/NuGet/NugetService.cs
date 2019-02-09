@@ -12,11 +12,6 @@ using NuGet.Protocol.Core.Types;
 
 namespace Snap.NuGet
 {
-    // https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets#packing-using-a-nuspec
-    // https://daveaglick.com/posts/exploring-the-nuget-v3-libraries-part-1
-    // https://daveaglick.com/posts/exploring-the-nuget-v3-libraries-part-2
-    // https://daveaglick.com/posts/exploring-the-nuget-v3-libraries-part-3
-
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface INugetService
     {

@@ -32,14 +32,6 @@ namespace Snap.Extensions
                 StringComparison.InvariantCultureIgnoreCase));
         }
 
-        public static bool ContainsFileCaseInsensitive([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)
-        {
-            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-
-            return packageBuilder.GetPackageFile(filename) != null;
-        }
-        
         internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));

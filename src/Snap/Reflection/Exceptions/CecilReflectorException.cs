@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using Mono.Cecil;
 
 namespace Snap.Reflection.Exceptions
 {
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")] 
     internal abstract class CecilReflectorException : Exception
     {
         public AssemblyDefinition AssemblyDefinition { get; }

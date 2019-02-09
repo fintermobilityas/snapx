@@ -23,14 +23,15 @@ std::vector<std::string> get_core_clr_arguments(int argc, char* argv[])
     return args;
 }
 
-int installer_main(int argc, char *argv[])
-{
-    return -1;
-}
-
 int corerun_main(int argc, char *argv[], const int cmd_show_windows)
 {
     START_EASYLOGGINGPP(argc, argv);
+
+    BOOL is_user_elevated;
+    if(pal_is_elevated(&is_user_elevated) && is_user_elevated) {
+        LOG(ERROR) << "User is elevated, exiting...";
+        return -1;
+    }
 
     char* app_name = nullptr;
     if (!pal_fs_get_own_executable_name(&app_name))

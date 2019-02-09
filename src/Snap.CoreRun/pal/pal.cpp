@@ -27,7 +27,7 @@ static const char* symlink_entrypoint_executable = "/proc/self/exe";
 #include <regex>
 
 // - Generic
-BOOL pal_isdebuggerpresent()
+PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 {
 #if PLATFORM_WINDOWS
     return ::IsDebuggerPresent() ? TRUE : FALSE;
@@ -63,7 +63,7 @@ BOOL pal_isdebuggerpresent()
     return FALSE;
 }
 
-BOOL pal_load_library(const char * name_in, BOOL pinning_required, void** instance_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL pinning_required, void** instance_out)
 {
     if (name_in == nullptr)
     {
@@ -106,7 +106,7 @@ BOOL pal_load_library(const char * name_in, BOOL pinning_required, void** instan
     return FALSE;
 }
 
-BOOL pal_free_library(void* instance_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
 {
     if (instance_in == nullptr)
     {
@@ -122,7 +122,7 @@ BOOL pal_free_library(void* instance_in)
     return FALSE;
 }
 
-BOOL pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out)
 {
     if (instance_in == nullptr)
     {
@@ -155,8 +155,39 @@ BOOL pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out)
     return 0;
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated(BOOL* is_elevated_out) {
+    BOOL is_elevated;
+#if PLATFORM_WINDOWS
+    // https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
+    auto nt_authority = SECURITY_NT_AUTHORITY;
+    PSID administratos_group;
+    is_elevated = AllocateAndInitializeSid(
+            &nt_authority,
+            2,
+            SECURITY_BUILTIN_DOMAIN_RID,
+            DOMAIN_ALIAS_RID_ADMINS,
+            0, 0, 0, 0, 0, 0,
+            &administratos_group);
+    if(is_elevated)
+    {
+        if (!CheckTokenMembership( NULL, administratos_group, &is_elevated))
+        {
+            is_elevated = FALSE;
+        }
+        FreeSid(administratos_group);
+    }
+#elif PLATFORM_LINUX
+    auto uid = getuid();
+    const auto euid = geteuid();
+    is_elevated = uid < 0 || uid != euid ? TRUE : FALSE;
+#endif
+    *is_elevated_out = is_elevated;
+    return TRUE;
+}
+
+
 // - Environment
-BOOL pal_env_get_variable(const char * environment_variable_in, char ** environment_variable_value_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environment_variable_in, char ** environment_variable_value_out)
 {
     if (environment_variable_in == nullptr)
     {
@@ -187,7 +218,7 @@ BOOL pal_env_get_variable(const char * environment_variable_in, char ** environm
 #endif
 }
 
-BOOL pal_env_get_variable_bool(const char * environment_variable_in, BOOL* env_value_bool_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char * environment_variable_in, BOOL* env_value_bool_out)
 {
     char* environment_variable_value_out = nullptr;
     if (!pal_env_get_variable(environment_variable_in, &environment_variable_value_out))
@@ -203,7 +234,7 @@ BOOL pal_env_get_variable_bool(const char * environment_variable_in, BOOL* env_v
     return TRUE;
 }
 
-BOOL pal_env_expand_str(const char * environment_in, char ** environment_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char * environment_in, char ** environment_out)
 {
     if (environment_in == nullptr)
     {
@@ -247,7 +278,7 @@ BOOL pal_env_expand_str(const char * environment_in, char ** environment_out)
 }
 
 // - Filesystem
-BOOL pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out)
 {
     if (path_in == nullptr)
     {
@@ -295,7 +326,7 @@ BOOL pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_ou
 #endif
 }
 
-BOOL pal_fs_get_directory_name(const char * path_in, char ** path_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char * path_in, char ** path_out)
 {
     if (path_in == nullptr)
     {
@@ -317,7 +348,7 @@ BOOL pal_fs_get_directory_name(const char * path_in, char ** path_out)
     return TRUE;
 }
 
-BOOL pal_fs_path_combine(const char * path1, const char * path2, char ** path_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, const char * path2, char ** path_out)
 {
     if (path1 == nullptr
         || path2 == nullptr)
@@ -462,7 +493,7 @@ BOOL pal_fs_path_combine(const char * path1, const char * path2, char ** path_ou
     return FALSE;
 }
 
-BOOL pal_fs_file_exists(const char * file_path_in, BOOL *file_exists_bool_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in, BOOL *file_exists_bool_out)
 {
     if (file_path_in == nullptr)
     {
@@ -479,7 +510,7 @@ BOOL pal_fs_file_exists(const char * file_path_in, BOOL *file_exists_bool_out)
     return FALSE;
 }
 
-BOOL pal_fs_list_impl(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
     const char* filter_extension_in, char *** paths_out, size_t * paths_out_len, const int type)
 {
     if (path_in == nullptr)
@@ -678,19 +709,19 @@ BOOL pal_fs_list_impl(const char * path_in, const pal_fs_list_filter_callback_t 
     return TRUE;
 }
 
-BOOL pal_fs_list_directories(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_directories(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
     const char* filter_extension_in, char *** directories_out, size_t* directories_out_len)
 {
     return pal_fs_list_impl(path_in, filter_callback_in, filter_extension_in, directories_out, directories_out_len, 0);
 }
 
-BOOL pal_fs_list_files(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
     const char* filter_extension_in, char *** files_out, size_t * files_out_len)
 {
     return pal_fs_list_impl(path_in, filter_callback_in, filter_extension_in, files_out, files_out_len, 1);
 }
 
-BOOL pal_fs_get_cwd(char ** working_directory_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out)
 {
 #if PLATFORM_WINDOWS
     pal_utf16_string cwd_utf16_string(PAL_MAX_PATH);
@@ -717,7 +748,7 @@ BOOL pal_fs_get_cwd(char ** working_directory_out)
     return FALSE;
 }
 
-BOOL pal_fs_get_own_executable_name(char ** own_executable_name_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char ** own_executable_name_out)
 {
 #if PLATFORM_WINDOWS
 
@@ -755,7 +786,7 @@ BOOL pal_fs_get_own_executable_name(char ** own_executable_name_out)
     return FALSE;
 }
 
-BOOL pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
 {
     if (path_in == nullptr)
     {
@@ -793,7 +824,7 @@ BOOL pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
     return FALSE;
 }
 
-BOOL pal_fs_directory_exists(const char * path_in, BOOL * directory_exists_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in, BOOL * directory_exists_out)
 {
     if (path_in == nullptr)
     {
@@ -818,7 +849,7 @@ BOOL pal_fs_directory_exists(const char * path_in, BOOL * directory_exists_out)
     return 0;
 }
 
-BOOL pal_str_endswith(const char * src, const char * str)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char * src, const char * str)
 {
     if (src == nullptr || str == nullptr)
     {
@@ -835,7 +866,7 @@ BOOL pal_str_endswith(const char * src, const char * str)
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin()) ? TRUE : FALSE;
 }
 
-BOOL pal_str_startswith(const char * src, const char * str)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_str_startswith(const char * src, const char * str)
 {
     if (src == nullptr || str == nullptr)
     {
@@ -848,7 +879,7 @@ BOOL pal_str_startswith(const char * src, const char * str)
     return lhs.rfind(rhs) == 0 ? TRUE : FALSE;
 }
 
-BOOL pal_str_iequals(const char* lhs, const char* rhs)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char* rhs)
 {
     std::string str1(lhs);
     std::string str2(rhs);

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 
 namespace Snap.Core.Models
 {
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapAppFileDeltaChecksum
     {
         public string TargetPath { get; set; }
@@ -33,6 +36,8 @@ namespace Snap.Core.Models
         }
     }
     
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapAppDeltaSummary
     {
         public List<string> New { get; set; }

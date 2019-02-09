@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -90,6 +91,46 @@ namespace Snap.Tests.Core
                 Assert.Null(snapAppAfterChannel.PushFeed.Password);
             }
         }
+        
+        [Fact, ExcludeFromCodeCoverage]
+        public void TestBuildSnapAppAssembly_Include_Persistent_Assets()
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            
+            snapAppBefore.PersistentAssets = new List<string>
+            {
+                "subdirectory/",
+                "somefile.json"
+            };
+
+            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
+            {
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                Assert.NotNull(snapAppAfter);
+                
+                Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
+            }
+        }
+        
+        [Fact, ExcludeFromCodeCoverage]
+        public void TestBuildSnapAppAssembly_Include_Shortcuts()
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            
+            snapAppBefore.ShortcutLocations = new List<SnapShortcutLocation>
+            {
+                SnapShortcutLocation.Desktop,
+                SnapShortcutLocation.StartMenu
+            };
+
+            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
+            {
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                Assert.NotNull(snapAppAfter);
+                
+                Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
+            }
+        }
 
         [ExcludeFromCodeCoverage]
         [Theory]
@@ -116,6 +157,8 @@ namespace Snap.Tests.Core
                 Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
                 Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
                 Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
+                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
+                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
             }
         }
 

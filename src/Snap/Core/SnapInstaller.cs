@@ -12,6 +12,7 @@ using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.AnyOS.Unix;
 using Snap.Core.Models;
+using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -22,11 +23,7 @@ namespace Snap.Core
     {
         StartMenu = 1 << 0,
         Desktop = 1 << 1,
-        Startup = 1 << 2,
-        /// <summary>
-        /// A shortcut in the application folder, useful for portable applications.
-        /// </summary>
-        AppRoot = 1 << 3
+        Startup = 1 << 2
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -51,14 +48,16 @@ namespace Snap.Core
         readonly ISnapPack _snapPack;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapOs _snapOs;
+        readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
         public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack, [NotNull] ISnapFilesystem snapFilesystem,
-            [NotNull] ISnapOs snapOs)
+            [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
         {
             _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
             _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
+            _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
 
         public async Task<SnapApp> UpdateAsync([NotNull] string nupkgAbsoluteFilename, [NotNull] string baseDirectory,
@@ -186,6 +185,11 @@ namespace Snap.Core
             logger?.Info($"Installing snap id: {snapApp.Id}. " +
                                   $"Version: {snapApp.Version}. ");
 
+            if (snapApp.PersistentAssets.Any())
+            {
+                logger?.Info($"Persistent assets: {string.Join(", ", snapApp.PersistentAssets)}");                
+            }
+            
             snapProgressSource?.Raise(10);
             if (_snapFilesystem.DirectoryExists(baseDirectory))
             {
@@ -241,55 +245,60 @@ namespace Snap.Core
             bool isInitialInstall, ILog logger = null, CancellationToken cancellationToken = default)
         {
             var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            var mainExecutableAbsolutePath = !isWindows ? 
-                _snapFilesystem.PathCombine(baseDirectory, snapApp.Id) : null;
+            var coreRunExePath = _snapFilesystem
+                .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
+            var mainExePath = _snapFilesystem
+                .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
 
-            if (!isWindows 
-                && mainExecutableAbsolutePath != null
-                && _snapFilesystem.FileExists(mainExecutableAbsolutePath))
+            void Chmod(string exePath)
             {
-                logger?.Info($"Attempting to change file permission for main executable: {mainExecutableAbsolutePath}.");
-                
-                var chmodResult = NativeMethodsUnix.chmod(mainExecutableAbsolutePath, 755);
-                
-                logger?.Info($"Permissions changed successfully: {(chmodResult == 0? "true" : "false")}.");
+                if (exePath == null) throw new ArgumentNullException(nameof(exePath));
+                logger?.Info($"Attempting to change file permission for executable: {exePath}.");                
+                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 755) == 0;                
+                logger?.Info($"Permissions changed successfully: {(chmodSuccess ? "true" : "false")}.");
             }
-             
-            var allSnapAwareApps = _snapFilesystem
-                .EnumerateFiles(baseDirectory)
-                .Where(x => 
-                    x.Name.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase) 
-                    || mainExecutableAbsolutePath != null && string.Equals(x.FullName, mainExecutableAbsolutePath))
-                .Select(x => x.FullName)
-                .ToList();
-
-            if (!allSnapAwareApps.Any())
+            
+            if (!isWindows)
             {
-                logger?.Warn($"Could not find any apps that are marked snap aware in root app directory: {baseDirectory}.");
-                return;
+                Chmod(coreRunExePath);
+                Chmod(mainExePath);
             }
 
-            logger?.Info($"Snap enabled apps: {string.Join(",", allSnapAwareApps)}");
+            var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExePath);
 
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
-                $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");
-
-            allSnapAwareApps.ForEach(x =>
+            if (!snapApp.ShortcutLocations.Any())
             {
-                var exeName = _snapFilesystem.PathGetFileName(x);
-
-                _snapOs
-                    .CreateShortcutsForExecutable(snapApp, 
+                logger?.Warn($"This application does not specify any shortcut locations.");
+            }
+            else
+            {
+                var shortCutLocations = snapApp.ShortcutLocations.Select(x => x | x).Last();
+                logger?.Info($"Shortcuts will be created in the following locations: {string.Join(", ", shortCutLocations)}");
+                try
+                {
+                    _snapOs.CreateShortcutsForExecutable(snapApp, 
                         nuspecReader,
                         baseDirectory,
                         appDirectory,
-                        exeName,
+                        coreRunExeFilename,
                         null,
-                        SnapShortcutLocation.Desktop | SnapShortcutLocation.StartMenu,
+                        shortCutLocations,
                         null,
                         isInitialInstall == false,
+                        logger,
                         cancellationToken);
-            });
+                }
+                catch (Exception e)
+                {
+                    logger?.ErrorException($"Exception thrown while creating shortcut for exe: {coreRunExeFilename}", e);
+                }
+            }
+          
+           
+            var allSnapAwareApps = new List<string> {coreRunExePath};
+            
+            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
+                $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");
         }
 
         Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 
@@ -318,17 +327,17 @@ namespace Snap.Core
         }
 
         
-        string GetApplicationDirectory(string rootAppDirectory, SemanticVersion version)
+        string GetApplicationDirectory(string baseDirectory, SemanticVersion version)
         {
-            if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
+            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (version == null) throw new ArgumentNullException(nameof(version));
-            return _snapFilesystem.PathCombine(rootAppDirectory, "app-" + version);
+            return _snapFilesystem.PathCombine(baseDirectory, "app-" + version);
         }
 
-        string GetPackagesDirectory([NotNull] string rootAppDirectory)
+        string GetPackagesDirectory([NotNull] string baseDirectory)
         {
-            if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            return _snapFilesystem.PathCombine(rootAppDirectory, "packages");
+            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            return _snapFilesystem.PathCombine(baseDirectory, "packages");
         }
 
     }

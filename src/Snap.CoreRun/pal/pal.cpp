@@ -1,7 +1,10 @@
 #include "pal.hpp"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // Suppress unused methods
+
 #if PLATFORM_WINDOWS
-#include <shlwapi.h> // PathIsDirectory, PathFileExists etc.
+#include <shlwapi.h> // PathIsDirectory, PathFileExists
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #if !defined(PLATFORM_MINGW)
@@ -93,6 +96,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
     return TRUE;
 
 #elif PLATFORM_LINUX
+    PAL_UNUSED(pinning_required);
 
     auto instance = dlopen(name_in, RTLD_NOW | RTLD_LOCAL);
     if (!instance)
@@ -116,10 +120,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
     auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
     return TRUE;
 #elif PLATFORM_LINUX
-    auto dlclose_result = dlclose(instance_in);
+    dlclose(instance_in);
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out)
@@ -150,16 +155,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const 
     *ptr_out = dlsym_ptr_out;
 
     return TRUE;
+#else
+    return FALSE;
 #endif
-
-    return 0;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated(BOOL* is_elevated_out) {
     BOOL is_elevated;
 #if PLATFORM_WINDOWS
     // https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
-    auto nt_authority = SECURITY_NT_AUTHORITY;
+    SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
     PSID administratos_group;
     is_elevated = AllocateAndInitializeSid(
             &nt_authority,
@@ -278,6 +283,22 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char * environment_
 }
 
 // - Filesystem
+
+BOOL pal_fs_chmod(const char *path_in, int mode) {
+    if(path_in == nullptr) {
+        return FALSE;
+    }
+
+    BOOL is_success;
+#if PLATFORM_WINDOWS
+    pal_utf16_string path_in_utf16_string(path_in);
+    is_success = 0 == _wchmod(path_in_utf16_string.data(), mode) ? TRUE : FALSE;
+#elif PLATFORM_LINUX
+    is_success = 0 == chmod(path_in, mode) ? TRUE : FALSE;
+#endif
+    return is_success;
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out)
 {
     if (path_in == nullptr)
@@ -489,8 +510,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, cons
 
     strcat(buffer, path2);
     return path_combine(buffer);
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in, BOOL *file_exists_bool_out)
@@ -506,8 +528,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
 #elif PLATFORM_LINUX
     *file_exists_bool_out = access(file_path_in, F_OK) != -1;
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const pal_fs_list_filter_callback_t filter_callback_in,
@@ -519,7 +542,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
     }
 
     std::vector<char*> paths;
-    auto paths_success = FALSE;
+    BOOL paths_success;
 
 #if PLATFORM_WINDOWS
 
@@ -625,7 +648,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
             case 1:
                 switch (entry->d_type)
                 {
-                    // Regular file
+                // Regular file
                 case DT_REG:
                     if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
                     {
@@ -637,7 +660,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     absolute_path_s.append(entry->d_name);
                     break;
 
-                    // Handle symlinks and file systems that do not support d_type
+                // Handle symlinks and file systems that do not support d_type
                 case DT_LNK:
                 case DT_UNKNOWN:
                     if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
@@ -845,8 +868,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     }
     *directory_exists_out = FALSE;
     return FALSE;
+#else
+    return FALSE;
 #endif
-    return 0;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char * src, const char * str)
@@ -893,12 +917,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 }
 
 PAL_API int PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char * filename_in)
-{    
+{
     auto file_exists = FALSE;
     if(!pal_fs_file_exists(filename_in, &file_exists) || !file_exists) {
         return FALSE;
     }
-    
+
 #if defined(PLATFORM_WINDOWS) && !defined(PLATFORM_MINGW)
     pal_utf16_string filename_in_utf16_string(filename_in);
 
@@ -937,3 +961,4 @@ PAL_API int PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in
 #endif
     return FALSE;
 }
+#pragma clang diagnostic pop

@@ -68,9 +68,13 @@ Codename:	cosmic";
         [Fact]
         public async Task TestSnapOsUnixNativeMethods_Chmod()
         {
-            await _snapFilesystem.FileWriteUtf8StringAsync("yolo", "test.txt", CancellationToken.None);
+            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var testFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
+                await _snapFilesystem.FileWriteUtf8StringAsync("yolo", testFilename, CancellationToken.None);
 
-            Assert.Equal(0,NativeMethodsUnix.chmod("test.txt", 755));            
+                Assert.Equal(0,NativeMethodsUnix.chmod(testFilename, 755));                            
+            }
         }
 
         [Fact]
@@ -90,6 +94,12 @@ Codename:	cosmic";
             Assert.NotEmpty(_snapOs.SpecialFolders.StartupDirectory);
             Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);
             Assert.NotEmpty(_snapOs.SpecialFolders.InstallerCacheDirectory);
+        }
+
+        [Fact]
+        public void TestUsername()
+        {
+            Assert.NotNull(_snapOsUnix.Username);
         }
 
     }

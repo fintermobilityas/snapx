@@ -100,14 +100,9 @@ namespace Snap.Core
             }
 
             var cecilReflector = new CecilAssemblyReflector(assemblyDefinition);
-            var cecilResourceFlector = cecilReflector.GetResourceReflector();
-
-            void PruneResources()
-            {
-                cecilResourceFlector.RemoveAllOrThrow(typeof(SnapEmbeddedResourcesTypeRoot).Namespace);
-            }
-
-            PruneResources();
+            var cecilResourceReflector = cecilReflector.GetResourceReflector();
+            
+            cecilResourceReflector.RemoveAllOrThrow(typeof(SnapEmbeddedResourcesTypeRoot).Namespace);
 
             cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsOptimized, (typedDefinition, getterName, setterName, propertyDefinition) =>
             {                    

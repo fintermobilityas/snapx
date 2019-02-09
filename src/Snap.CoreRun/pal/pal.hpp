@@ -9,6 +9,8 @@
 #endif
 #endif
 
+#define PAL_UNUSED(x) (void)(x)
+
 #ifdef PLATFORM_WINDOWS
 #define PAL_MAX_PATH MAX_PATH 
 #define PAL_DIRECTORY_SEPARATOR_STR "\\"
@@ -48,6 +50,9 @@ typedef int BOOL;
 // - Callbacks
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // Suppress unused methods
+
 // - Generic
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
@@ -61,11 +66,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char* enviro
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_in, char** environment_out);
 
 // - Filesystem
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, int mode);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char* path_in_lhs, const char* path_in_rhs, char** path_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_directories(const char* path_in, const pal_fs_list_filter_callback_t filter_callback_in, const char* filter_extension_in, char*** directories_out, size_t* directories_out_len);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char* path_in, const pal_fs_list_filter_callback_t filter_callback_in, const char* filter_extension_in, char*** files_out, size_t* files_out_len);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_directories(const char* path_in, pal_fs_list_filter_callback_t filter_callback_in,
+        const char* filter_extension_in, char*** directories_out, size_t* directories_out_len);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char* path_in, pal_fs_list_filter_callback_t filter_callback_in,
+        const char* filter_extension_in, char*** files_out, size_t* files_out_len);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in, BOOL* file_exists_bool_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_executable_name_out);
@@ -79,6 +87,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char* filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in);
+
+#pragma clang diagnostic pop
 
 #ifdef __cplusplus
 }

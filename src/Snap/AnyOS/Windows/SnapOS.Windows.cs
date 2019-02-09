@@ -29,7 +29,6 @@ namespace Snap.AnyOS.Windows
     {
         static long _consoleCreated;
 
-        static readonly ILog Logger = LogProvider.For<SnapOsWindows>();
         readonly bool _isUnitTest;
 
         public ISnapOsTaskbar Taskbar => throw new PlatformNotSupportedException("Todo: Implement taskbar progressbar");
@@ -49,13 +48,14 @@ namespace Snap.AnyOS.Windows
         }
 
         public Task CreateShortcutsForExecutableAsync(SnapApp snapApp, NuspecReader nuspecReader,
-            string rootAppDirectory, string rootAppInstallDirectory, string exeName,
+            string baseDirectory, string appDirectory, string exeName,
             string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly,
-            CancellationToken cancellationToken)
+            ILog logger = null,
+            CancellationToken cancellationToken = default)
         {
             if (nuspecReader == null) throw new ArgumentNullException(nameof(nuspecReader));
-            if (rootAppDirectory == null) throw new ArgumentNullException(nameof(rootAppDirectory));
-            if (rootAppInstallDirectory == null) throw new ArgumentNullException(nameof(rootAppInstallDirectory));
+            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            if (appDirectory == null) throw new ArgumentNullException(nameof(appDirectory));
             if (exeName == null) throw new ArgumentNullException(nameof(exeName));
 
             var packageTitle = nuspecReader.GetTitle();
@@ -99,9 +99,6 @@ namespace Snap.AnyOS.Windows
                     case SnapShortcutLocation.Startup:
                         targetDirectory = SpecialFolders.StartupDirectory;
                         break;
-                    case SnapShortcutLocation.AppRoot:
-                        targetDirectory = rootAppDirectory;
-                        break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(location), location, null);
                 }
@@ -114,9 +111,9 @@ namespace Snap.AnyOS.Windows
                 return Filesystem.PathCombine(targetDirectory, title + ".lnk");
             }
 
-            Logger.Info("About to create shortcuts for {0}, rootAppDir {1}", exeName, rootAppDirectory);
+            logger?.Info("About to create shortcuts for {0}, base directory {1}", exeName, baseDirectory);
 
-            var exePath = Filesystem.PathCombine(rootAppInstallDirectory, exeName);
+            var exePath = Filesystem.PathCombine(appDirectory, exeName);
             var fileVerInfo = FileVersionInfo.GetVersionInfo(exePath);
 
             foreach (var flag in (SnapShortcutLocation[])Enum.GetValues(typeof(SnapShortcutLocation)))
@@ -135,18 +132,18 @@ namespace Snap.AnyOS.Windows
                 // annoy them by recreating it.
                 if (!fileExists && updateOnly)
                 {
-                    Logger.Warn("Wanted to update shortcut {0} but it appears user deleted it", file);
+                    logger?.Warn("Wanted to update shortcut {0} but it appears user deleted it", file);
                     continue;
                 }
 
-                Logger.Info("Creating shortcut for {0} => {1}", exeName, file);
+                logger?.Info("Creating shortcut for {0} => {1}", exeName, file);
 
                 ShellLink shellLink;
-                Logger.ErrorIfThrows(() => SnapUtility.Retry(() =>
+                logger?.ErrorIfThrows(() => SnapUtility.Retry(() =>
                 {
                     Filesystem.FileDelete(file);
 
-                    var target = Filesystem.PathCombine(rootAppInstallDirectory, exeName);
+                    var target = Filesystem.PathCombine(appDirectory, exeName);
                     shellLink = new ShellLink
                     {
                         Target = target,
@@ -167,7 +164,7 @@ namespace Snap.AnyOS.Windows
                     shellLink.SetAppUserModelId(appUserModelId);
                     shellLink.SetToastActivatorCLSID(toastActivatorClsid);
 
-                    Logger.Info($"Saving shortcut: {file}. " +
+                    logger?.Info($"Saving shortcut: {file}. " +
                                 $"Target: {shellLink.Target}. " +
                                 $"Working directory: {shellLink.WorkingDirectory}. " +
                                 $"Arguments: {shellLink.Arguments}. " +
@@ -181,28 +178,28 @@ namespace Snap.AnyOS.Windows
                 }, 4), $"Can't write shortcut: {file}");
             }
 
-            FixPinnedExecutables(rootAppDirectory, packageVersion);
+            FixPinnedExecutables(baseDirectory, packageVersion, logger: logger);
 
             return Task.CompletedTask;
         }
 
-        void FixPinnedExecutables(string rootAppDirectory, SemanticVersion newCurrentVersion, bool removeAll = false)
+        void FixPinnedExecutables(string baseDirectory, SemanticVersion newCurrentVersion, bool removeAll = false, ILog logger = null)
         {
             if (Environment.OSVersion.Version < new Version(6, 1))
             {
-                Logger.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting", Environment.OSVersion.VersionString);
+                logger?.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting", Environment.OSVersion.VersionString);
                 return;
             }
 
             var newCurrentFolder = "app-" + newCurrentVersion;
-            var newAppPath = Filesystem.PathCombine(rootAppDirectory, newCurrentFolder);
+            var newAppPath = Filesystem.PathCombine(baseDirectory, newCurrentFolder);
 
             var taskbarPath = Filesystem.PathCombine(SpecialFolders.ApplicationData,
                 "Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar");
 
             if (!Filesystem.DirectoryExists(taskbarPath))
             {
-                Logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exitsts, skiping");
+                logger.Info("fixPinnedExecutables: PinnedExecutables directory doesn't exist, skipping");
                 return;
             }
 
@@ -210,13 +207,13 @@ namespace Snap.AnyOS.Windows
             {
                 try
                 {
-                    Logger.Debug("Examining Pin: " + file);
+                    logger.Debug("Examining Pin: " + file);
                     return new ShellLink(file.FullName);
                 }
                 catch (Exception ex)
                 {
                     var message = $"File '{file.FullName}' could not be converted into a valid ShellLink";
-                    Logger.WarnException(message, ex);
+                    logger.WarnException(message, ex);
                     return null;
                 }
             });
@@ -229,7 +226,7 @@ namespace Snap.AnyOS.Windows
                 {
                     if (shortcut == null) continue;
                     if (string.IsNullOrWhiteSpace(shortcut.Target)) continue;
-                    if (!shortcut.Target.StartsWith(rootAppDirectory, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (!shortcut.Target.StartsWith(baseDirectory, StringComparison.OrdinalIgnoreCase)) continue;
 
                     if (removeAll)
                     {
@@ -237,40 +234,44 @@ namespace Snap.AnyOS.Windows
                     }
                     else
                     {
-                        UpdateShellLink(rootAppDirectory, shortcut, newAppPath);
+                        UpdateShellLink(baseDirectory, shortcut, newAppPath, logger);
                     }
 
                 }
                 catch (Exception ex)
                 {
                     var message = $"fixPinnedExecutables: shortcut failed: {shortcut?.Target}";
-                    Logger.ErrorException(message, ex);
+                    logger?.ErrorException(message, ex);
                 }
             }
         }
 
-        void UpdateShellLink(string rootAppDirectory, ShellLink shortcut, string newAppPath)
+        void UpdateShellLink([NotNull] string baseDirectory, [NotNull] ShellLink shortcut, [NotNull] string newAppPath, ILog logger = null)
         {
-            Logger.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
+            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            if (shortcut == null) throw new ArgumentNullException(nameof(shortcut));
+            if (newAppPath == null) throw new ArgumentNullException(nameof(newAppPath));
+            
+            logger?.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
 
             var target = Environment.ExpandEnvironmentVariables(shortcut.Target);
             var targetIsUpdateDotExe = target.EndsWith("update.exe", StringComparison.OrdinalIgnoreCase);
 
-            Logger.Info("Old shortcut target: '{0}'", target);
+            logger?.Info("Old shortcut target: '{0}'", target);
 
-            target = Filesystem.PathCombine(rootAppDirectory, Filesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
+            target = Filesystem.PathCombine(baseDirectory, Filesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
-            Logger.Info("New shortcut target: '{0}'", target);
+            logger?.Info("New shortcut target: '{0}'", target);
 
             shortcut.WorkingDirectory = newAppPath;
             shortcut.Target = target;
 
-            Logger.Info("Old iconPath is: '{0}'", shortcut.IconPath);
+            logger?.Info("Old iconPath is: '{0}'", shortcut.IconPath);
             shortcut.IconPath = target;
             shortcut.IconIndex = 0;
 
-            Logger.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
-            Logger.Info("Finished shortcut successfully");
+            logger?.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
+            logger?.Info("Finished shortcut successfully");
         }
         
         public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)

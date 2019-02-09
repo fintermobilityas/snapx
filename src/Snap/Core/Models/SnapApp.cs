@@ -20,12 +20,14 @@ namespace Snap.Core.Models
         public bool Delta => DeltaReport != null;
         public SnapAppDeltaReport DeltaReport { get; set; }
         public List<string> PersistentAssets { get; set; }
+        public List<SnapShortcutLocation> ShortcutLocations { get; set; }
 
         [UsedImplicitly]
         public SnapApp()
         {
             Channels = new List<SnapChannel>();
             PersistentAssets = new List<string>();
+            ShortcutLocations = new List<SnapShortcutLocation>();
         }
 
         internal SnapApp([NotNull] SnapApp app)
@@ -40,6 +42,7 @@ namespace Snap.Core.Models
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
             PersistentAssets = app.PersistentAssets;
+            ShortcutLocations = app.ShortcutLocations;
         }
     }
     

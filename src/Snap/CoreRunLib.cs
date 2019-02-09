@@ -6,29 +6,40 @@ using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Extensions;
 
-namespace snapx
+namespace Snap
 {   
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ICoreRunLib : IDisposable
     {
+        bool Chmod(string filename, int mode);
+        bool IsElevated();
         bool SetSnapAware(string filename);
         bool IsSnapAware(string filename);
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal sealed class CoreRunLib : ICoreRunLib
     {
         IntPtr _libPtr;
         readonly OSPlatform _osPlatform;
 
+        // generic
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+        delegate int pal_is_elevated_delegate(ref bool isElevated);
+        readonly Delegate<pal_is_elevated_delegate> pal_is_elevated;
+
+        // rcedit
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_rc_is_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
+        readonly Delegate<pal_rc_is_snap_aware_delegate> pal_rc_is_snap_aware;
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet =  CharSet.Unicode)]
         delegate int pal_rc_set_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
-
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
-        readonly Delegate<pal_rc_is_snap_aware_delegate> pal_rc_is_snap_aware;
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
         readonly Delegate<pal_rc_set_snap_aware_delegate> pal_rc_set_snap_aware;
+
+        // filesystem
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+        delegate int pal_fs_chmod_delegate(string filename, int mode);
+        readonly Delegate<pal_fs_chmod_delegate> pal_fs_chmod;
 
         public CoreRunLib([NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [NotNull] string workingDirectory)
         {
@@ -61,8 +72,30 @@ namespace snapx
                                                 $"OS: {osPlatform}. Last error: {Marshal.GetLastWin32Error()}.");
             }
 
+            // generic
+            pal_is_elevated = new Delegate<pal_is_elevated_delegate>(_libPtr, osPlatform);
+            
+            // rcedit
             pal_rc_is_snap_aware = new Delegate<pal_rc_is_snap_aware_delegate>(_libPtr, osPlatform);
             pal_rc_set_snap_aware = new Delegate<pal_rc_set_snap_aware_delegate>(_libPtr, osPlatform);
+            
+            // filesystem
+            pal_fs_chmod = new Delegate<pal_fs_chmod_delegate>(_libPtr, osPlatform);
+        }
+
+        public bool Chmod([NotNull] string filename, int mode)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            pal_fs_chmod.ThrowIfDangling();
+            return pal_fs_chmod.Invoke(filename, mode) == 1;
+        }
+
+        public bool IsElevated()
+        {
+            pal_is_elevated.ThrowIfDangling();
+            var isElevated = false;
+            var success = pal_is_elevated.Invoke(ref isElevated) == 1;
+            return success && isElevated;
         }
 
         public bool SetSnapAware([NotNull] string filename)
@@ -88,8 +121,15 @@ namespace snapx
 
             void DisposeDelegates()
             {
+                // generic
+                pal_is_elevated.Unref();
+                
+                // rcedit
                 pal_rc_is_snap_aware.Unref();
                 pal_rc_set_snap_aware.Unref();
+                
+                // filesystem
+                pal_fs_chmod.Unref();
             }
 
             if (_osPlatform == OSPlatform.Windows)
@@ -99,7 +139,8 @@ namespace snapx
                 DisposeDelegates();
                 return;
             }
-            else if (_osPlatform == OSPlatform.Linux)
+
+            if (_osPlatform == OSPlatform.Linux)
             {
                 NativeMethodsUnix.dlclose(_libPtr);
                 _libPtr = IntPtr.Zero;
@@ -124,6 +165,7 @@ namespace snapx
         }
 
         [SuppressMessage("ReSharper", "UnusedMember.Local")]
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         static class NativeMethodsUnix
         {
             public const int libdl_RTLD_LOCAL = 1; 
@@ -138,11 +180,12 @@ namespace snapx
         }
         #pragma warning restore IDE1006 // Naming Styles
 
-        struct Delegate<T> where T: Delegate
+        [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+        sealed class Delegate<T> where T: Delegate
         {
-            public T Invoke { get; private set; }
+            public T Invoke { get; }
             public IntPtr Ptr { get; private set; }
-            public string Symbol { get; private set; }
+            public string Symbol { get; }
 
             public Delegate(IntPtr instancePtr, OSPlatform osPlatform)
             {

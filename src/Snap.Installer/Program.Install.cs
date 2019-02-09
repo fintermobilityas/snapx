@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -22,6 +23,7 @@ namespace Snap.Installer
         static async Task<int> Install([NotNull] InstallOptions options, [NotNull] ISnapInstallerEnvironment environment,
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
+            [NotNull] CoreRunLib coreRunLib,
             [NotNull] ILog logger)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -31,40 +33,45 @@ namespace Snap.Installer
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
+            // NB! All filesystem operations has to be readonly until check that verifies
+            // current user is not elevated to root has run.
+            
             var cancellationToken = environment.CancellationToken;
 
             var nupkgAbsolutePath = options.Filename == null ? null : snapFilesystem.PathGetFullPath(options.Filename);
             if (!snapFilesystem.FileExists(nupkgAbsolutePath))
             {
-                logger.Error($"Unable to find nupkg: {nupkgAbsolutePath}");
+                logger.Error($"Nupkg does not exist: {nupkgAbsolutePath}");
                 return -1;
             }
 
             var nupkgRelativeFilename = snapFilesystem.PathGetFileName(nupkgAbsolutePath);
-            logger.Info($"Found nupkg: {nupkgRelativeFilename}.");
+            logger.Info($"Preparing to unpack nupkg: {nupkgRelativeFilename}.");
 
             var installerProgressSource = new SnapProgressSource();
-            var onMainWindowStartedEvent = new ManualResetEventSlim(false);
+            var onMainWindowVisibleEvent = new ManualResetEventSlim(false);
             var exitCode = -1;
 
-            void InstallInBackground(IAsyncPackageCoreReader asyncPackageCoreReader, SnapApp snapApp, SnapChannel snapChannel, MainWindowViewModel mainWindowViewModel)
+            void InstallInBackground(IAsyncPackageCoreReader asyncPackageCoreReader, SnapApp snapApp, 
+                SnapChannel snapChannel, MainWindowViewModel mainWindowViewModel)
             {
                 if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
                 if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
                 if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
 
-                var rootAppDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
+                var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
 
-                logger.Info("Waiting for main window to load.");
-                onMainWindowStartedEvent.Wait(cancellationToken);
-                onMainWindowStartedEvent.Dispose();
-                logger.Info("Main window loaded.");
+                logger.Info("Waiting for main window to become visible.");
+                onMainWindowVisibleEvent.Wait(cancellationToken);
+                onMainWindowVisibleEvent.Dispose();
+                logger.Info("Main window should now be visible.");
 
-                var loggerForwarded = new LogForwarder(environment.LogLevel, logger, (level, func, exception, parameters) =>
+                var mainWindowLogger = new LogForwarder(environment.LogLevel, logger, (level, func, exception, parameters) =>
                 {
-                    var message = func();
+                    var message = func?.Invoke();
                     if (message == null)
                     {
                         return;
@@ -73,12 +80,20 @@ namespace Snap.Installer
                     SetStatusText(mainWindowViewModel, message);
                 });
 
-                loggerForwarded.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
+                if (coreRunLib.IsElevated())
+                {
+                    var rootUserText = snapOs.OsPlatform == OSPlatform.Windows ? "Administrator" : "root";
+                    mainWindowLogger.Error($"Error! Snaps cannot be installed when current user is elevated as {rootUserText}");
+                    exitCode = -1;
+                    goto done;
+                }
+
+                mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
 
                 try
                 {
-                    var snapAppInstalled = snapInstaller.InstallAsync(nupkgAbsolutePath, rootAppDirectory,
-                        asyncPackageCoreReader, installerProgressSource, loggerForwarded, cancellationToken).GetAwaiter().GetResult();
+                    var snapAppInstalled = snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
+                        asyncPackageCoreReader, installerProgressSource, mainWindowLogger, cancellationToken).GetAwaiter().GetResult();
 
                     if (snapAppInstalled == null)
                     {
@@ -86,19 +101,19 @@ namespace Snap.Installer
                         goto done;
                     }
                     
-                    loggerForwarded.Info($"Successfully installed {snapApp.Id}.");
+                    mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");
 
                     exitCode = 0;
                 }
                 catch (Exception e)
                 {
-                    loggerForwarded.ErrorException("Unknown error during install. Please check logs.", e);
+                    mainWindowLogger.ErrorException("Unknown error during install. Please check logs.", e);
                     exitCode = -1;
                 }
 
                 done:
                 
-                // Allow the user to read final log message.
+                // Give user enough time to read final log message.
                 Thread.Sleep(exitCode == 0 ? 3000 : 10000);
 
                 environment.Shutdown();
@@ -119,7 +134,7 @@ namespace Snap.Installer
 
                 if (snapApp.Delta)
                 {
-                    logger.Error("Installing delta packages is not supported.");
+                    logger.Error("Installing delta applications is not supported.");
                     exitCode = -1;
                     goto finished;
                 }
@@ -127,18 +142,18 @@ namespace Snap.Installer
                 var channel = snapApp.Channels.SingleOrDefault(x => x.Name == options.Channel) ?? snapApp.Channels.FirstOrDefault();
                 if (channel == null)
                 {
-                    logger.Error($"Unknown channel: {options.Channel}");
+                    logger.Error($"Unknown release channel: {options.Channel}");
                     exitCode = -1;
                     goto finished;
                 }
 
-                logger.Info($"Getting ready to install {snapApp.Id}. Channel: {channel.Name}.");
+                logger.Info($"Preparing to install {snapApp.Id}. Channel: {channel.Name}.");
 
                 BuildAvaloniaApp()
                     .BeforeStarting(builder =>
                     {
 
-                        MainWindow.OnStartEvent = onMainWindowStartedEvent;
+                        MainWindow.OnStartEvent = onMainWindowVisibleEvent;
                         MainWindow.Environment = environment;
                         MainWindow.ViewModel = new MainWindowViewModel(snapInstallerEmbeddedResources,
                             installerProgressSource, cancellationToken);
@@ -158,8 +173,8 @@ namespace Snap.Installer
         {
             if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
             if (statusText == null) throw new ArgumentNullException(nameof(statusText));
-            // Do not invoke logging inside this method because of the logger is already intercepted.
-            // Circular invocation -> Stack Overflow!
+            // Do not invoke logging inside this method because the logger is forwarded.
+            // Circular invocation -> Stack overflow!
             mainWindowViewModel.SetStatusTextAsync(statusText).GetAwaiter().GetResult();
         }
 

@@ -48,7 +48,7 @@ namespace Snap.Installer
            
             try
             {
-                var snapOs = SnapOs.AnyOs;
+                var snapOs = SnapOs.AnyOs;               
                 ConfigureNlog(snapOs.Filesystem, snapOs.SpecialFolders);
                 LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(logLevel));
                 var environment = BuildEnvironment(snapOs, environmentCts, logLevel);
@@ -74,20 +74,25 @@ namespace Snap.Installer
                 return UnitTestExitCode;
             }
 
+            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();            
+            var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
+            var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
+
+            var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
+            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisToolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();
             var snapPack = snapInstallerEnvironment.Container.GetInstance<ISnapPack>();
             var snapFilesystem = snapInstallerEnvironment.Container.GetInstance<ISnapFilesystem>();
-            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();
+            snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);         
             
-            snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);
-
             return Parser
                 .Default
                 .ParseArguments<InstallOptions>(args)
                 .MapResult(
                     opts => Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                        snapInstaller, snapFilesystem, snapPack, snapOs, snapInstallerLogger).GetAwaiter().GetResult(),
+                        snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapInstallerLogger).GetAwaiter().GetResult(),
                     notParsedFunc: errs =>
                     {
                         snapInstallerLogger.Error($"Error parsing install option arguments. Args: {string.Join(" ", args)}");
@@ -133,7 +138,8 @@ namespace Snap.Installer
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapPack>(),
                 c.GetInstance<ISnapFilesystem>(),
-                c.GetInstance<ISnapOs>()
+                c.GetInstance<ISnapOs>(),
+                c.GetInstance<ISnapEmbeddedResources>()
             ));
 
             var ioEnvironment = new SnapInstallerIoEnvironment
@@ -142,7 +148,7 @@ namespace Snap.Installer
                 SpecialFolders = container.GetInstance<ISnapOsSpecialFolders>()
             };
 
-            var environment = new SnapInstallerEnvironment(logLevel, globalCts,ApplicationName)
+            var environment = new SnapInstallerEnvironment(logLevel, globalCts, ApplicationName)
             {
                 Container = container,
                 Io = ioEnvironment

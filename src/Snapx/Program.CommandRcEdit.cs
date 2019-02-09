@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using snapx.Options;
+using Snap;
 using Snap.Core;
 using Snap.Extensions;
 using Snap.Logging;

@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using CommandLine;
 using JetBrains.Annotations;
 using snapx.Options;
+using Snap;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Logging;
@@ -78,14 +79,17 @@ namespace snapx
             }
             
             var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
+            
             var snapCryptoProvider = new SnapCryptoProvider();
-            var snapEmbeddedResources = new SnapEmbeddedResources();
+            var snapEmbeddedResources = new SnapEmbeddedResources();            
+            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisToolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            
+            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
             var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
-            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs);
+            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
             var nugetLogger = new NugetLogger(SnapLogger);
             var nugetService = new NugetService(nugetLogger);

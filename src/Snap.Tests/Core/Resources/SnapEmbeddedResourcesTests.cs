@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using Snap.Core;
+using Snap.Core.IO;
 using Snap.Core.Resources;
 using Snap.Shared.Tests;
 using Xunit;
@@ -10,10 +13,14 @@ namespace Snap.Tests.Core.Resources
     {
         readonly BaseFixture _baseFixture;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly ISnapFilesystem _snapFilesystem;
+        readonly ISnapCryptoProvider _snapCryptoProvider;
 
         public SnapEmbeddedResourcesTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
+            _snapCryptoProvider = new SnapCryptoProvider();
+            _snapFilesystem = new SnapFilesystem();
             _snapEmbeddedResources = new SnapEmbeddedResources();
         }
 
@@ -22,6 +29,8 @@ namespace Snap.Tests.Core.Resources
         {
             Assert.NotNull(_snapEmbeddedResources.CoreRunLinux);
             Assert.NotNull(_snapEmbeddedResources.CoreRunWindows);
+            Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindows);
+            Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinux);
         }
 
         [Theory]
@@ -59,6 +68,30 @@ namespace Snap.Tests.Core.Resources
         public void TestGetCoreRunExeFilename_Throws_PlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => _snapEmbeddedResources.GetCoreRunExeFilename("demoapp", OSPlatform.OSX));
+        }
+        
+        [Theory]
+        [InlineData("WINDOWS", "libcorerun.dll")]
+        [InlineData("LINUX", "libcorerun.so")]
+        public async Task TestExtractCoreRunLibAsync(string osPlatformStr, string expectedDllFilename)
+        {
+            var osPlatform = OSPlatform.Create(osPlatformStr);
+
+            using (var tempDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);
+                await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, tempDir.WorkingDirectory, osPlatform);
+                
+                Assert.True(_snapFilesystem.FileExists(expectedDllFilenameAbsolute));
+                Assert.True(_snapFilesystem.FileStat(expectedDllFilenameAbsolute).Length > 0);                
+            }            
+        }
+        
+        [Fact]
+        public async Task TestExtractCoreRunLibAsync_Throws_PlatformNotSupportedException()
+        {
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(async () => 
+                await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, _baseFixture.WorkingDirectory, OSPlatform.OSX));
         }
     }
 }

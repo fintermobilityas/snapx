@@ -78,7 +78,7 @@ namespace Snap.Core
             snapAppWriter = snapAppWriter ?? new SnapAppWriter();
             _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
-            _snapInstaller = snapInstaller ?? new SnapInstaller(snapExtractor, _snapPack, _snapOs.Filesystem, _snapOs);
+            _snapInstaller = snapInstaller ?? new SnapInstaller(snapExtractor, _snapPack, _snapOs.Filesystem, _snapOs, snapEmbeddedResources);
 
             if (!_nugetPackageSources.Items.Any())
             {

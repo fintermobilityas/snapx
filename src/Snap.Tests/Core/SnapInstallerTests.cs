@@ -14,6 +14,7 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
+using Snap.Logging;
 using Snap.Shared.Tests;
 using Snap.Shared.Tests.Extensions;
 using Xunit;
@@ -47,7 +48,7 @@ namespace Snap.Tests.Core
             _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapFilesystem, _snapOsMock.Object);
+            _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapFilesystem, _snapOsMock.Object, _snapEmbeddedResources);
         }
 
         [Fact]
@@ -79,6 +80,7 @@ namespace Snap.Tests.Core
                     It.IsAny<SnapShortcutLocation>(), 
                     It.IsAny<string>(), 
                     It.IsAny<bool>(),
+                    It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 
             var snapApp = _baseFixture.BuildSnapApp();
@@ -209,6 +211,7 @@ namespace Snap.Tests.Core
                     It.IsAny<SnapShortcutLocation>(), 
                     It.IsAny<string>(), 
                     It.IsAny<bool>(),
+                    It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 
             var snapApp = _baseFixture.BuildSnapApp();
@@ -280,7 +283,7 @@ namespace Snap.Tests.Core
         }
         
         [Fact]
-        public async Task TestInstallAsync_Excludes_Persitent_Assets_On_Full_Install()
+        public async Task TestInstallAsync_Excludes_Persistent_Assets_On_Full_Install()
         {
             var anyOs = SnapOs.AnyOs;
             Assert.NotNull(anyOs);
@@ -304,6 +307,7 @@ namespace Snap.Tests.Core
                     It.IsAny<SnapShortcutLocation>(), 
                     It.IsAny<string>(), 
                     It.IsAny<bool>(),
+                    It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 
             var snapApp = _baseFixture.BuildSnapApp();

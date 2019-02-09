@@ -23,6 +23,7 @@ namespace Snap.AnyOS.Unix
         public ISnapOsProcessManager OsProcessManager { get; }
         public SnapOsDistroType DistroType { get; private set; } = SnapOsDistroType.Unknown;
         public ISnapOsSpecialFolders SpecialFolders { get; }
+        public string Username { get; private set; }
 
         public SnapOsUnix([NotNull] ISnapFilesystem filesystem, ISnapOsProcessManager snapOsProcessManager,
             [NotNull] ISnapOsSpecialFolders snapOsSpecialFolders)
@@ -46,14 +47,28 @@ namespace Snap.AnyOS.Unix
                     {
                         var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
                         DistroType = distroId == "Ubuntu" ? SnapOsDistroType.Ubuntu : SnapOsDistroType.Unknown;
-                        return;
                     }
-
-                    DistroType = SnapOsDistroType.Ubuntu;
+                    else
+                    {
+                        DistroType = SnapOsDistroType.Unknown;                        
+                    }
                 }
                 catch (Exception e)
                 {
-                    _logger.Warn("Exception thrown while running lsb_release", e);
+                    _logger.Warn("Exception thrown while executing 'lsb_release'", e);
+                }
+
+                try
+                {
+                    var (whoamiExitCode, whoamiStdOutput) = OsProcessManager.RunAsync("whoami", string.Empty, default).GetAwaiter().GetResult();
+                    if (whoamiExitCode == 0 && !string.IsNullOrWhiteSpace(whoamiStdOutput))
+                    {
+                        Username = whoamiStdOutput;
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.ErrorException("Exception thrown while executing 'whoami'", e);
                 }
 
                 return;
@@ -64,16 +79,24 @@ namespace Snap.AnyOS.Unix
 
         public async Task CreateShortcutsForExecutableAsync(SnapApp snapApp,
             NuspecReader nuspecReader,
-            string rootAppDirectory,
-            string rootAppInstallDirectory,
+            string baseDirectory,
+            string appDirectory,
             string exeName,
             string icon,
             SnapShortcutLocation locations,
             string programArguments,
             bool updateOnly,
-            CancellationToken cancellationToken)
+            ILog logger = null,
+            CancellationToken cancellationToken = default)
         {
-            var exeAbsolutePath = Filesystem.PathCombine(rootAppInstallDirectory, exeName);
+            var exeAbsolutePath = Filesystem.PathCombine(appDirectory, exeName);
+            if (Username == null)
+            {
+                _logger?.Error($"Unable to create shortcut because username is null. Executable: {exeName}");
+                return;
+            }
+            
+            logger?.Info($"Creating shortcuts for executable: {exeAbsolutePath}");
 
             var autoStartup = locations.HasFlag(SnapShortcutLocation.Startup);
             if (locations.HasFlag(SnapShortcutLocation.Desktop))
@@ -82,26 +105,20 @@ namespace Snap.AnyOS.Unix
                     nuspecReader.GetDescription(), autoStartup);
                 if (desktopShortcutUtf8Content == null)
                 {
-                    _logger.Warn(
+                    _logger?.Warn(
                         $"Unknown error while building desktop shortcut for exe: {exeName}. Distro: {DistroType}. Maybe unsupported distro?");
                     return;
                 }
 
-                var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                var absoluteDesktopShortcutPath = Filesystem.PathCombine(desktopPath, $"{exeName}.deskop");
+                var desktopDirectory = Filesystem.PathCombine("/home", Username, "desktop");                                
+                var absoluteDesktopShortcutPath = Filesystem.PathCombine(desktopDirectory, $"{exeName}.deskop");
 
+                _logger?.Info($"Creating desktop shortcut {absoluteDesktopShortcutPath} that is linked to {exeName}. Auto startup during OS boot: {autoStartup}");
+                
                 await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
                     absoluteDesktopShortcutPath, cancellationToken);
 
-                var chmodRetValue = NativeMethodsUnix.chmod(absoluteDesktopShortcutPath, 755);
-                if (chmodRetValue != 0)
-                {
-                    _logger.Warn(
-                        $"Failed to change file permissions for shortcut: {absoluteDesktopShortcutPath}. Return value: {chmodRetValue}");
-                }
-
-                _logger.Debug(
-                    $"Successfully created desktop shortcut for exe: {exeName}. Automatic startup: {autoStartup}. Location: {absoluteDesktopShortcutPath}");
+                _logger?.Debug($"Successfully created desktop shortcut for exe: {exeName}.");
             }
         }
         
@@ -169,25 +186,25 @@ namespace Snap.AnyOS.Unix
             return (distributorId, description, release, codeName);
         }
 
-        string BuildDesktopShortcut([NotNull] SnapApp snapApp, [NotNull] string exe, [NotNull] string description,
+        string BuildDesktopShortcut([NotNull] SnapApp snapApp, [NotNull] string absoluteExePath, [NotNull] string description,
             bool addToMachineStartup)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (exe == null) throw new ArgumentNullException(nameof(exe));
+            if (absoluteExePath == null) throw new ArgumentNullException(nameof(absoluteExePath));
             if (description == null) throw new ArgumentNullException(nameof(description));
 
             var gnomeAutoStartEnabled = addToMachineStartup ? "true" : "false";
 
             switch (DistroType)
             {
-                case SnapOsDistroType.Windows:
+                case SnapOsDistroType.Ubuntu:
                     return $@"
 #!/usr/bin/env xdg-open
 [Desktop Entry]
 Version={snapApp.Id}
 Type=Application
 Terminal=false
-Exec={exe}
+Exec={absoluteExePath}
 Name={snapApp}
 Comment={description}
 X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}

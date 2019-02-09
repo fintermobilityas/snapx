@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -8,6 +9,7 @@ using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.Logging;
 
 namespace Snap.Core
@@ -71,15 +73,12 @@ namespace Snap.Core
             var extractedFiles = new List<string>();
 
             _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
-         
-            foreach (var sourcePath in await _snapPack.GetFilesAsync(asyncPackageCoreReader, cancellationToken))
-            {
-                var isSnapItem = sourcePath.StartsWith(_snapPack.NuspecRootTargetPath);
-                if (!isSnapItem)
-                {
-                    continue;
-                }
 
+            var snapFiles = (await _snapPack.GetFilesAsync(asyncPackageCoreReader, cancellationToken))
+                .Where(x => x.StartsWith(_snapPack.NuspecRootTargetPath))
+                .ToList();
+            foreach (var sourcePath in snapFiles)
+            {
                 var isSnapRootTargetItem = sourcePath.StartsWith(_snapPack.SnapNuspecTargetPath);
                 
                 if (!includeChecksumManifest 

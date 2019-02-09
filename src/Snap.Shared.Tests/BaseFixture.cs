@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -275,26 +275,15 @@ namespace Snap.Shared.Tests
             if (snapEmbeddedResources == null) throw new ArgumentNullException(nameof(snapEmbeddedResources));
             if (nuspecFilesLayout == null) throw new ArgumentNullException(nameof(nuspecFilesLayout));
 
-            var files = new List<string>();
-
-            foreach (var pair in nuspecFilesLayout)
-            {
-                files.Add($"<file src=\"{pair.Key}\" />");
-            }
-
-            var (coreRunMemoryStream, coreRunExeFilename, osPlatform) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (coreRunMemoryStream, _, _) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
             coreRunMemoryStream.Dispose();
             
-            var nuspecContent = $@"<?xml version=""1.0""?>
+            const string nuspecContent = @"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
         <title>Random Title</title>
         <authors>Peter Rekdal Sunde</authors>
     </metadata>
-    <files> 
-        <file src=""{coreRunExeFilename}"" />
-        <file src=""**\*.dll"" />					    
-    </files>
 </package>";
 
             using (var tempDirectory = new DisposableTempDirectory(WorkingDirectory, filesystem))

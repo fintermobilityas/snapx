@@ -560,7 +560,6 @@ namespace Snap.Tests.Core
                 
                 var extractedDiskLayout = _snapFilesystem
                     .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
-                    .ToList()
                     .OrderBy(x => x)
                     .ToList();
 
@@ -576,8 +575,8 @@ namespace Snap.Tests.Core
                     .OrderBy(x => x)
                     .ToList();
 
+                Assert.Equal(expectedLayout.Count, extractedFiles.Count);
                 Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
-                Assert.Equal(expectedLayout.Count, expectedLayout.Count);
 
                 expectedLayout.ForEach(x =>
                 {
@@ -591,6 +590,77 @@ namespace Snap.Tests.Core
                     Assert.Equal(expectedLayout[i], extractedDiskLayout[i]);
                 }
             }
+        }
+        
+        [Fact]
+        public async Task TestBuildFullPackageAsync_Filename_Without_Extension()
+        {
+            var snapApp = _baseFixture.BuildSnapApp();
+            var mainAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
+            var file1AssemblyDefinition = _baseFixture.BuildEmptyLibrary("test", true);
+            var file2AssemblyDefinition = _baseFixture.BuildEmptyLibrary("test", true);
+            var file3AssemblyDefinition = _baseFixture.BuildEmptyLibrary("test", true);
+
+            using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            {
+                var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+                {
+                    { mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition },
+                    { "file1", file1AssemblyDefinition },
+                    { _snapFilesystem.PathCombine("subdirectory", "file1"), file2AssemblyDefinition },
+                    { _snapFilesystem.PathCombine("subdirectory", "file2"), file3AssemblyDefinition }
+                };
+
+                var subdirectory = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "subdirectory");
+                _snapFilesystem.DirectoryCreate(subdirectory);
+                                
+                var (nupkgMemoryStream, packageDetails) = await _baseFixture
+                    .BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
+                    
+                using (mainAssemblyDefinition)
+                using (nupkgMemoryStream)
+                using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgMemoryStream))               
+                {
+                    var appDirName = $"app-{packageDetails.App.Version}";
+                    var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
+                    
+                    var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDir);
+                    
+                    var extractedDiskLayout = _snapFilesystem
+                        .DirectoryGetAllFilesRecursively(rootDir.WorkingDirectory)
+                        .OrderBy(x => x)
+                        .ToList();
+
+                    var expectedLayout = new List<string>
+                    {
+                        _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
+                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(appDir, mainAssemblyDefinition.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, "file1"),
+                        _snapFilesystem.PathCombine(appDir, "subdirectory", "file1"),
+                        _snapFilesystem.PathCombine(appDir, "subdirectory", "file2")
+                    }
+                        .OrderBy(x => x)
+                        .ToList();
+    
+                    Assert.Equal(expectedLayout.Count, extractedFiles.Count);
+                    Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
+    
+                    expectedLayout.ForEach(x =>
+                    {
+                        _snapFilesystem.FileExists(x);
+                        var stat = _snapFilesystem.FileStat(x);
+                        Assert.True(stat.Length > 0);
+                    });
+    
+                    for (var i = 0; i < expectedLayout.Count; i++)
+                    {
+                        Assert.Equal(expectedLayout[i], extractedDiskLayout[i]);
+                    }
+                }
+            }
+            
         }
         
         [Fact]
@@ -800,7 +870,6 @@ namespace Snap.Tests.Core
                 
                     var extractedDiskLayout = _snapFilesystem
                         .DirectoryGetAllFilesRecursively(extractDir.WorkingDirectory)
-                        .ToList()
                         .OrderBy(x => x)
                         .ToList();
 
@@ -815,9 +884,9 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename)
                     }.OrderBy(x => x).ToList();
                     
+                    Assert.Equal(expectedLayout.Count, extractedFiles.Count);
                     Assert.Equal(expectedLayout.Count, extractedDiskLayout.Count);
-                    Assert.Equal(extractedFiles.Count, expectedLayout.Count);
-                    
+
                     expectedLayout.ForEach(x =>
                     {
                         var stat = _snapFilesystem.FileStat(x);

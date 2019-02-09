@@ -9,7 +9,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
+using DotNet.Globbing;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Frameworks;
@@ -280,8 +282,11 @@ namespace Snap.Core
 
             logger?.Debug($"Rewriting nuspec: {packageDetails.NuspecFilename}.");
 
-            using (var nuspecIntermediateStream = await _snapFilesystem.FileReadAsync(packageDetails.NuspecFilename, cancellationToken))
-            using (var nuspecStream = RewriteNuspec(packageDetails, nuspecIntermediateStream, nuspecPropertiesResolver, packageDetails.NuspecBaseDirectory))
+            var nuspecIntermediateStream = await _snapFilesystem.FileReadAsync(packageDetails.NuspecFilename, cancellationToken);
+            var (nuspecStream, packageFiles) = RewriteNuspec(packageDetails, nuspecIntermediateStream, nuspecPropertiesResolver, packageDetails.NuspecBaseDirectory);
+            
+            using (nuspecIntermediateStream)
+            using (nuspecStream)
             {
                 progressSource?.Raise(30);
 
@@ -289,50 +294,20 @@ namespace Snap.Core
 
                 var packageBuilder = new PackageBuilder(nuspecStream, packageDetails.NuspecBaseDirectory, nuspecPropertiesResolver);
 
+                packageBuilder.Files.Clear();
+                
+                foreach (var (filename, targetPath) in packageFiles)
+                {
+                    var srcStream = await _snapFilesystem.FileRead(filename).ReadToEndAsync(cancellationToken);
+                    packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, targetPath, string.Empty));                    
+                }
+                
                 var mainExecutableFileName = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App);
                 var mainExecutableTargetPath = _snapFilesystem.PathCombine(NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();               
                 var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (mainExecutablePackageFile == null)
                 {
-                    // Remove empty /lib/Any. Wtf, nuget :(
-                    var emptyRootNuspecDirectoryPackageFile = packageBuilder.Files.First();
-                    if (string.Equals(emptyRootNuspecDirectoryPackageFile.Path, NuspecRootTargetPath))
-                    {
-                        packageBuilder.Files.Remove(emptyRootNuspecDirectoryPackageFile);
-                    }
-
-                    // Cross platform my ass, handle files without an extension. These files has to be added manually.
-                    foreach (var file in packageBuilder.Files.Where(x => string.IsNullOrWhiteSpace(_snapFilesystem.PathGetExtension(x.Path))))
-                    {
-                        var fileAbsolutePath = _snapFilesystem.PathCombine(packageDetails.NuspecBaseDirectory, file.Path);
-                        if (!_snapFilesystem.FileExists(fileAbsolutePath))
-                        {
-                            throw new Exception("Missing file without extension in nuspec: {fileAbsolutePath}");
-                        }
-                        
-                        var srcStream = await _snapFilesystem.FileRead(fileAbsolutePath).ReadToEndAsync(cancellationToken, true);
-                        packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, mainExecutableTargetPath, string.Empty));                                            
-                    }
-                                                          
-                    // Special case for main executable that does not have an extension.
-                    if (mainExecutablePackageFile == null)
-                    {
-                        var mainExecutableAbsolutePath = _snapFilesystem.PathCombine(packageDetails.NuspecBaseDirectory, mainExecutableFileName);
-                        if (!_snapFilesystem.FileExists(mainExecutableAbsolutePath))
-                        {
-                            throw new Exception($"Main executable is missing in nuspec: {mainExecutableAbsolutePath}");                                                                    
-                        }
-
-                        var srcStream = await _snapFilesystem.FileRead(mainExecutableAbsolutePath).ReadToEndAsync(cancellationToken, true);
-                        packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, mainExecutableTargetPath, string.Empty));                                            
-                    }
-                }
-                else
-                {
-                    if (mainExecutablePackageFile == null)
-                    {
-                        throw new Exception($"Main executable is missing in nuspec: {mainExecutableTargetPath}");                                                                                            
-                    }
+                    throw new Exception($"Main executable is missing in nuspec: {mainExecutableTargetPath}");                                                                                            
                 }
                                 
                 progressSource?.Raise(40);
@@ -719,7 +694,7 @@ namespace Snap.Core
             }
         }
 
-        MemoryStream RewriteNuspec([NotNull] ISnapPackageDetails packageDetails, MemoryStream nuspecStream,
+        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packgeFiles) RewriteNuspec([NotNull] ISnapPackageDetails packageDetails, MemoryStream nuspecStream,
             [NotNull] Func<string, string> propertyProvider, [NotNull] string baseDirectory)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
@@ -731,7 +706,8 @@ namespace Snap.Core
             
             var nugetVersion = new NuGetVersion(packageDetails.App.Version.ToFullString());
             var upstreamPackageId = packageDetails.App.BuildNugetUpstreamPackageId();
-
+            var packageFiles = new List<(string filename, string targetPath)>();
+            
             MemoryStream RewriteNuspecStreamWithEssentials()
             {
                 var nuspecDocument = XmlUtility.LoadSafe(nuspecStream);
@@ -778,23 +754,36 @@ namespace Snap.Core
                     metadata.Add(new XElement("description", title.Value));
                 }
 
-                var files = nuspecDocument.Descendants(XName.Get("files", nuspecXmlNs)).SingleOrDefault();
-                if (files == null)
-                {
-                    throw new Exception("The required element 'description' is missing from the nuspec");
-                }
+                nuspecDocument.Descendants("files").Remove();
 
-                foreach (var file in files.Descendants())
+                var files = nuspecDocument.Descendants(XName.Get("files", nuspecXmlNs)).SingleOrDefault();
+                var excludeAttribute = files?.Attribute("exclude");
+
+                var defaultExcludePattern = new List<Glob>
+                {
+                    Glob.Parse("**/*.nuspec"),
+                    Glob.Parse("**/*.pdb"),
+                    Glob.Parse("**/*.dll.xml")
+                };
+
+                const char excludePatternDelimeter = ';';
+                
+                var excludePatterns = string.IsNullOrWhiteSpace(excludeAttribute?.Value) ? 
+                    defaultExcludePattern :
+                        excludeAttribute.Value.Contains(excludePatternDelimeter) ? 
+                            excludeAttribute.Value.Split(excludePatternDelimeter).Where(x => !string.IsNullOrWhiteSpace(x)).Select(Glob.Parse).ToList() :
+                             new List<Glob> { Glob.Parse(excludeAttribute.Value) };
+
+                var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(packageDetails.NuspecBaseDirectory).ToList();
+                foreach (var fileAbsolutePath in allFiles)
                 {                    
-                    var targetAttribute = file.Attribute("target");
-                    if (targetAttribute == null)
+                    var relativePath = fileAbsolutePath.Replace(packageDetails.NuspecBaseDirectory, string.Empty).Substring(1);
+                    var excludeFile = excludePatterns.Any(x => x.IsMatch(relativePath));
+                    if (excludeFile)
                     {
-                        file.SetAttributeValue("target", "$anytarget$");
                         continue;
                     }
-
-                    var targetAttributeValue = !targetAttribute.Value.ForwardSlashesSafe().StartsWith("/") ? $"/{targetAttribute.Value}" : targetAttribute.Value.ForwardSlashesSafe();
-                    file.SetAttributeValue("target", $"$anytarget${targetAttributeValue}");
+                    packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(NuspecRootTargetPath, relativePath)));
                 }
                 
                 var rewrittenNuspecStream = new MemoryStream();
@@ -807,17 +796,12 @@ namespace Snap.Core
             using (var nuspecStreamRewritten = RewriteNuspecStreamWithEssentials())
             {
                 var manifest = Manifest.ReadFrom(nuspecStreamRewritten, propertyProvider, true);
-
-                if (!manifest.Files.Any())
-                {
-                    throw new Exception("Nuspec does not contain any files");
-                }
-
+                
                 var outputStream = new MemoryStream();
                 manifest.Save(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
 
-                return outputStream;
+                return (outputStream, packageFiles);
             }                      
         }
 
@@ -1023,12 +1007,7 @@ namespace Snap.Core
 
             ValidatePackageDetails(packageDetails);
 
-            var nuspecProperties = new Dictionary<string, string>
-            {
-                {"version", packageDetails.App.Version.ToFullString()},
-                {"basedirectory", packageDetails.NuspecBaseDirectory},
-                {"anytarget", NuspecRootTargetPath}
-            };
+            var nuspecProperties = new Dictionary<string, string>();
 
             if (packageDetails.NuspecProperties != null)
             {

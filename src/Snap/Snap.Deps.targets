@@ -40,6 +40,7 @@
         <SnapCoreILRepackInputAssemblies Include="NuGet.Versioning.dll" />
         <SnapCoreILRepackInputAssemblies Include="SharpCompress.dll" />
         <SnapCoreILRepackInputAssemblies Include="YamlDotNet.NetCore.dll" />
+        <SnapCoreILRepackInputAssemblies Include="DotNet.Glob.dll" />
     </ItemGroup>
 
     <ItemGroup>
@@ -69,6 +70,9 @@
             <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="SharpCompress" Version="0.22.0">
+            <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="DotNet.Glob" Version="2.1.1">
             <PrivateAssets Condition="$(SnapNupkg)">all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

@@ -167,7 +167,7 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var snapsFilename = filesystem.PathCombine(workingDirectory, ".snaps");
+            var snapsFilename = filesystem.PathCombine(workingDirectory, "snapx.yaml");
             if (!filesystem.FileExists(snapsFilename))
             {
                 SnapLogger.Error($"Snap manifest does not exist on disk: {snapsFilename}");

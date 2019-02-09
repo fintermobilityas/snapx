@@ -117,7 +117,7 @@ namespace Snap.Tests.Core
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
             
-            snapAppBefore.ShortcutLocations = new List<SnapShortcutLocation>
+            snapAppBefore.Shortcuts = new List<SnapShortcutLocation>
             {
                 SnapShortcutLocation.Desktop,
                 SnapShortcutLocation.StartMenu

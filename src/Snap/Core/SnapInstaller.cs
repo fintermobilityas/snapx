@@ -266,13 +266,13 @@ namespace Snap.Core
 
             var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExePath);
 
-            if (!snapApp.ShortcutLocations.Any())
+            if (!snapApp.Shortcuts.Any())
             {
                 logger?.Warn($"This application does not specify any shortcut locations.");
             }
             else
             {
-                var shortCutLocations = snapApp.ShortcutLocations.Select(x => x | x).Last();
+                var shortCutLocations = snapApp.Shortcuts.Select(x => x | x).Last();
                 logger?.Info($"Shortcuts will be created in the following locations: {string.Join(", ", shortCutLocations)}");
                 try
                 {

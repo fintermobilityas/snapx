@@ -17,17 +17,17 @@ namespace Snap.Core.Models
         public SnapTarget Target { get; set; }
         public List<SnapChannel> Channels { get; set; }
         [YamlIgnore]
-        public bool Delta => DeltaReport != null;
-        public SnapAppDeltaReport DeltaReport { get; set; }
+        public bool Delta => DeltaSummary != null;
+        public SnapAppDeltaSummary DeltaSummary { get; set; }
         public List<string> PersistentAssets { get; set; }
-        public List<SnapShortcutLocation> ShortcutLocations { get; set; }
+        public List<SnapShortcutLocation> Shortcuts { get; set; }
 
         [UsedImplicitly]
         public SnapApp()
         {
             Channels = new List<SnapChannel>();
             PersistentAssets = new List<string>();
-            ShortcutLocations = new List<SnapShortcutLocation>();
+            Shortcuts = new List<SnapShortcutLocation>();
         }
 
         internal SnapApp([NotNull] SnapApp app)
@@ -35,14 +35,14 @@ namespace Snap.Core.Models
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
-            DeltaReport = app.Delta ? new SnapAppDeltaReport(app.DeltaReport) : null;
+            DeltaSummary = app.Delta ? new SnapAppDeltaSummary(app.DeltaSummary) : null;
             if (app.Target != null)
             {
                 Target = new SnapTarget(app.Target);
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
-            PersistentAssets = app.PersistentAssets;
-            ShortcutLocations = app.ShortcutLocations;
+            PersistentAssets = app.PersistentAssets.Select(x => x).ToList();
+            Shortcuts = app.Shortcuts.Select(x => x).ToList();
         }
     }
     

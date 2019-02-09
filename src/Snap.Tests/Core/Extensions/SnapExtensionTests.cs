@@ -116,7 +116,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                DeltaReport = isDelta ? new SnapAppDeltaReport() : null,
+                DeltaSummary = isDelta ? new SnapAppDeltaSummary() : null,
                 Channels = new List<SnapChannel>
                 {
                     currentChannel
@@ -213,7 +213,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                DeltaReport = isDelta ? new SnapAppDeltaReport() : null,
+                DeltaSummary = isDelta ? new SnapAppDeltaSummary() : null,
                 Channels = new List<SnapChannel>
                 {
                     currentChannel

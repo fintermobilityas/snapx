@@ -205,7 +205,7 @@ namespace Snap.Core
                 Logger.Info($"Reassembling delta update {index} of {total}. Full nupkg: {thisDeltaFullNupkg}. Delta nupkg: {deltaNupkg}");
 
                 var (nupkgStream, snapApp) =
-                    await _snapPack.ReassambleFullPackageAsync(deltaSnap.DeltaReport.FullNupkgFilename, thisDeltaFullNupkg, cancellationToken: cancellationToken);
+                    await _snapPack.ReassambleFullPackageAsync(deltaSnap.DeltaSummary.FullNupkgFilename, thisDeltaFullNupkg, cancellationToken: cancellationToken);
 
                 fullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapApp.BuildNugetLocalFilename());
                 updatedSnapApp = snapApp;

@@ -11,6 +11,9 @@ namespace Snap.Core.Models
     {
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsNugetFeed : SnapsFeed
     {
         public string Name { get; set; }
@@ -36,6 +39,9 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsHttpFeed : SnapsFeed
     {
         public Uri Source { get; set; }
@@ -61,6 +67,9 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsChannel
     {
         public string Name { get; set; }
@@ -101,6 +110,9 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsTarget
     {
         public OSPlatform Os { get; set; }
@@ -133,19 +145,23 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsApp
     {
         public string Id { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
         public List<string> PersistentAssets { get; set; }
+        public List<SnapShortcutLocation> Shortcuts { get; set; }
         
         [UsedImplicitly]
         public SnapsApp()
         {
             Channels = new List<string>();
             Targets = new List<SnapsTarget>();
-            PersistentAssets = new List<string>();
+            Shortcuts = new List<SnapShortcutLocation>();
         }
 
         internal SnapsApp([NotNull] SnapApp snapApp)
@@ -154,16 +170,18 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
-            PersistentAssets = snapApp.PersistentAssets;
+            PersistentAssets = snapApp.PersistentAssets.Select(x => x).ToList();
+            Shortcuts = snapApp.Shortcuts.Select(x => x).ToList();
         }
 
         public SnapsApp([NotNull] SnapsApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
-            Channels = snapApp.Channels;
+            Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
-            PersistentAssets = snapApp.PersistentAssets;
+            PersistentAssets = snapApp.PersistentAssets.Select(x => x).ToList();
+            Shortcuts = snapApp.Shortcuts.Select(x => x).ToList();
         }
     }
 
@@ -174,6 +192,8 @@ namespace Snap.Core.Models
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapAppsGeneric
     {
         public string Artifacts { get; set; }

@@ -33,7 +33,7 @@ namespace Snap.Core.Models
         }
     }
     
-    public sealed class SnapAppDeltaReport
+    public sealed class SnapAppDeltaSummary
     {
         public List<string> New { get; set; }
         public List<string> Modified { get; set; }
@@ -43,7 +43,7 @@ namespace Snap.Core.Models
         public string FullNupkgSha1Checksum { get; set; }
         public List<SnapAppFileDeltaChecksum> FullNupkgFileChecksums { get; set; } 
 
-        public SnapAppDeltaReport()
+        public SnapAppDeltaSummary()
         {
             New = new List<string>();
             Modified = new List<string>();
@@ -51,34 +51,34 @@ namespace Snap.Core.Models
             Deleted = new List<string>();
         }
 
-        public SnapAppDeltaReport([NotNull] SnapAppDeltaReport deltaReport) : this()
+        public SnapAppDeltaSummary([NotNull] SnapAppDeltaSummary deltaSummary) : this()
         {
-            if (deltaReport == null) throw new ArgumentNullException(nameof(deltaReport));
+            if (deltaSummary == null) throw new ArgumentNullException(nameof(deltaSummary));
                         
-            FullNupkgFilename = deltaReport.FullNupkgFilename;
-            FullNupkgSha1Checksum = deltaReport.FullNupkgSha1Checksum;
-            FullNupkgFileChecksums = deltaReport.FullNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
+            FullNupkgFilename = deltaSummary.FullNupkgFilename;
+            FullNupkgSha1Checksum = deltaSummary.FullNupkgSha1Checksum;
+            FullNupkgFileChecksums = deltaSummary.FullNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
 
-            New.AddRange(deltaReport.New);
-            Modified.AddRange(deltaReport.Modified);
-            Unmodified.AddRange(deltaReport.Unmodified);
-            Deleted.AddRange(deltaReport.Deleted);
+            New.AddRange(deltaSummary.New);
+            Modified.AddRange(deltaSummary.Modified);
+            Unmodified.AddRange(deltaSummary.Unmodified);
+            Deleted.AddRange(deltaSummary.Deleted);
             
             Sort();
         }
 
-        internal SnapAppDeltaReport([NotNull] SnapPackDeltaReport deltaReport) : this()
+        internal SnapAppDeltaSummary([NotNull] SnapPackDeltaSummary deltaSummary) : this()
         {
-            if (deltaReport == null) throw new ArgumentNullException(nameof(deltaReport));
+            if (deltaSummary == null) throw new ArgumentNullException(nameof(deltaSummary));
 
-            FullNupkgFilename = deltaReport.CurrentNupkgFilename;
-            FullNupkgSha1Checksum = deltaReport.CurrentNupkgSha1Checksum;
-            FullNupkgFileChecksums = deltaReport.CurrentNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
+            FullNupkgFilename = deltaSummary.CurrentNupkgFilename;
+            FullNupkgSha1Checksum = deltaSummary.CurrentNupkgSha1Checksum;
+            FullNupkgFileChecksums = deltaSummary.CurrentNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
 
-            New.AddRange(deltaReport.New.Select(x => x.TargetPath));
-            Modified.AddRange(deltaReport.Modified.Select(x => x.TargetPath));
-            Unmodified.AddRange(deltaReport.Unmodified.Select(x => x.TargetPath));
-            Deleted.AddRange(deltaReport.Deleted.Select(x => x.TargetPath));
+            New.AddRange(deltaSummary.New.Select(x => x.TargetPath));
+            Modified.AddRange(deltaSummary.Modified.Select(x => x.TargetPath));
+            Unmodified.AddRange(deltaSummary.Unmodified.Select(x => x.TargetPath));
+            Deleted.AddRange(deltaSummary.Deleted.Select(x => x.TargetPath));
             
             Sort();
         }

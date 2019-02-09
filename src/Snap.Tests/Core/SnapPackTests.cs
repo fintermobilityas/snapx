@@ -75,7 +75,7 @@ namespace Snap.Tests.Core
         }
         
         [Fact]
-        public async Task TestBuildDeltaReportAsync_Existing_File_Is_Not_Modified()
+        public async Task TestBuildDeltaSummaryAsync_Existing_File_Is_Not_Modified()
         {
             var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
@@ -116,36 +116,36 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);                
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                using (var deltaReport =
-                    await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
+                using (var deltaSummary =
+                    await _snapPack.BuildDeltaSummaryAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Single(deltaReport.New);
+                    Assert.Single(deltaSummary.New);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
+                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0].TargetPath);
                     
                     // Modified
-                    Assert.Empty(deltaReport.Modified);
+                    Assert.Empty(deltaSummary.Modified);
                     
                     // Unmodified
-                    Assert.Equal(4, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaSummary.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
+                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[2].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[3].TargetPath);
                     
                     // Deleted
-                    Assert.Empty(deltaReport.Deleted);
+                    Assert.Empty(deltaSummary.Deleted);
                 }
             }            
         }
         
         [Fact]
-        public async Task TestBuildDeltaReportAsync_Existing_File_Is_Updated()
+        public async Task TestBuildDeltaSummaryAsync_Existing_File_Is_Updated()
         {
             var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
@@ -186,36 +186,36 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);                
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                using (var deltaReport =
-                    await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
+                using (var deltaSummary =
+                    await _snapPack.BuildDeltaSummaryAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Single(deltaReport.New);
+                    Assert.Single(deltaSummary.New);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
+                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0].TargetPath);
                     
                     // Modified
-                    Assert.Single(deltaReport.Modified);
+                    Assert.Single(deltaSummary.Modified);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[0].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Modified[0].TargetPath);
                     
                     // Unmodified
-                    Assert.Equal(3, deltaReport.Unmodified.Count);
+                    Assert.Equal(3, deltaSummary.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
+                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[2].TargetPath);
                     
                     // Deleted
-                    Assert.Empty(deltaReport.Deleted);                    
+                    Assert.Empty(deltaSummary.Deleted);                    
                 }
             }            
         }
         
         [Fact]
-        public async Task TestBuildDeltaReportAsync_Existing_File_Is_Deleted_And_New_File_Is_Added()
+        public async Task TestBuildDeltaSummaryAsync_Existing_File_Is_Deleted_And_New_File_Is_Added()
         {
             var previousNupkgSnapApp = _baseFixture.BuildSnapApp();
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
@@ -258,40 +258,40 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);                
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                using (var deltaReport =
-                    await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
+                using (var deltaSummary =
+                    await _snapPack.BuildDeltaSummaryAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(3, deltaReport.New.Count);
+                    Assert.Equal(3, deltaSummary.New.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
+                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgAssemblyDefinition1.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                        currentNupkgAssemblyDefinition1.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[2].TargetPath);
+                        currentNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[2].TargetPath);
 
                     // Modified
-                    Assert.Empty(deltaReport.Modified);
+                    Assert.Empty(deltaSummary.Modified);
                     
                     // Unmodified
-                    Assert.Equal(3, deltaReport.Unmodified.Count);
+                    Assert.Equal(3, deltaSummary.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
+                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[2].TargetPath);
 
                     // Deleted
-                    Assert.Single(deltaReport.Deleted);                    
+                    Assert.Single(deltaSummary.Deleted);                    
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        previousNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Deleted[0].TargetPath);
+                        previousNupkgAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Deleted[0].TargetPath);
                 }
             }            
         }
         
         [Fact]
-        public async Task TestBuildDeltaReportAsync_New_File_Is_Added()
+        public async Task TestBuildDeltaSummaryAsync_New_File_Is_Added()
         {
             var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
@@ -333,38 +333,38 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);                
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                using (var deltaReport =
-                    await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
+                using (var deltaSummary =
+                    await _snapPack.BuildDeltaSummaryAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(2, deltaReport.New.Count);
+                    Assert.Equal(2, deltaSummary.New.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
+                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[1].TargetPath);
 
                     // Modified
-                    Assert.Empty(deltaReport.Modified);
+                    Assert.Empty(deltaSummary.Modified);
                     
                     // Unmodified
-                    Assert.Equal(4, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaSummary.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
+                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[2].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
+                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[3].TargetPath);
                     
                     // Deleted
-                    Assert.Empty(deltaReport.Deleted);    
+                    Assert.Empty(deltaSummary.Deleted);    
                 }
             }            
         }
         
         [Fact]
-        public async Task TestBuildDeltaReportAsync_New_File_Is_Added_With_Same_Name_As_Previous_But_Resides_In_Sub_Directory()
+        public async Task TestBuildDeltaSummaryAsync_New_File_Is_Added_With_Same_Name_As_Previous_But_Resides_In_Sub_Directory()
         {
              var previousNupkgSnapApp = _baseFixture.BuildSnapApp();                        
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
@@ -407,34 +407,34 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);                
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                using (var deltaReport =
-                    await _snapPack.BuildDeltaReportAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
+                using (var deltaSummary =
+                    await _snapPack.BuildDeltaSummaryAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename, CancellationToken.None))
                 {
                     // New
-                    Assert.Equal(3, deltaReport.New.Count);
+                    Assert.Equal(3, deltaSummary.New.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0].TargetPath);
+                        _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "zubdirectory",
-                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, "zubdirectory", "zubdirectory2",
-                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[2].TargetPath);
+                        currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[2].TargetPath);
 
                     // Modified
-                    Assert.Empty(deltaReport.Modified);
+                    Assert.Empty(deltaSummary.Modified);
                     
                     // Unmodified
-                    Assert.Equal(4, deltaReport.Unmodified.Count);
+                    Assert.Equal(4, deltaSummary.Unmodified.Count);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0].TargetPath);
+                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1].TargetPath);
+                        _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[2].TargetPath);
+                        currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[2].TargetPath);
                     Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Unmodified[3].TargetPath);
+                        previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Unmodified[3].TargetPath);
                     
                     // Deleted
-                    Assert.Empty(deltaReport.Deleted);    
+                    Assert.Empty(deltaSummary.Deleted);    
                 }
             }            
         }
@@ -516,7 +516,7 @@ namespace Snap.Tests.Core
                     .OrderBy(x => x)
                     .ToList();
                 
-                Assert.Equal(expectedLayout.Count, checksums.Count);
+                Assert.True(expectedLayout.Count == checksums.Count);
 
                 for (var i = 0; i < expectedLayout.Count; i++)
                 {
@@ -730,9 +730,9 @@ namespace Snap.Tests.Core
                 Assert.Contains("delta", snapAppDelta.BuildNugetLocalFilename());
 
                 Assert.True(snapAppDelta.Delta);
-                Assert.NotNull(snapAppDelta.DeltaReport);
-                Assert.Equal(snapAppDelta.DeltaReport.FullNupkgFilename, currentNupkgSnapApp.BuildNugetLocalFilename());
-                Assert.Equal(40, snapAppDelta.DeltaReport.FullNupkgSha1Checksum.Length);
+                Assert.NotNull(snapAppDelta.DeltaSummary);
+                Assert.Equal(snapAppDelta.DeltaSummary.FullNupkgFilename, currentNupkgSnapApp.BuildNugetLocalFilename());
+                Assert.Equal(40, snapAppDelta.DeltaSummary.FullNupkgSha1Checksum.Length);
 
                 var expectedLayout = new List<string>
                 {
@@ -756,36 +756,36 @@ namespace Snap.Tests.Core
                     Assert.Equal(expectedLayout[i], actualLayout[i]);
                 }
 
-                var deltaReport = snapAppDelta.DeltaReport;
-                Assert.NotNull(deltaReport);
+                var deltaSummary = snapAppDelta.DeltaSummary;
+                Assert.NotNull(deltaSummary);
                                 
                 // New
-                Assert.Equal(3, deltaReport.New.Count);
+                Assert.Equal(3, deltaSummary.New.Count);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath, 
-                    _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaReport.New[0]);
+                    _snapAppWriter.SnapAppDllFilename).ForwardSlashesSafe(), deltaSummary.New[0]);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                    currentNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[1]);
+                    currentNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[1]);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                    currentNupkgAssemblyDefinition3.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.New[2]);
+                    currentNupkgAssemblyDefinition3.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.New[2]);
 
                 // Modified
-                Assert.Equal(2, deltaReport.Modified.Count);
+                Assert.Equal(2, deltaSummary.Modified.Count);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                    currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[0]);
+                    currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Modified[0]);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath, 
-                    currentNupkgAssemblyDefinition1.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Modified[1]);
+                    currentNupkgAssemblyDefinition1.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Modified[1]);
                 
                 // Unmodified
-                Assert.Equal(2, deltaReport.Unmodified.Count);
+                Assert.Equal(2, deltaSummary.Unmodified.Count);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                    _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaReport.Unmodified[0]);
+                    _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(currentNupkgSnapApp)).ForwardSlashesSafe(), deltaSummary.Unmodified[0]);
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.SnapNuspecTargetPath,
-                    _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaReport.Unmodified[1]);
+                    _snapAppWriter.SnapDllFilename).ForwardSlashesSafe(), deltaSummary.Unmodified[1]);
 
                 // Deleted
-                Assert.Single(deltaReport.Deleted);                    
+                Assert.Single(deltaSummary.Deleted);                    
                 Assert.Equal(_snapFilesystem.PathCombine(_snapPack.NuspecRootTargetPath,
-                    previousNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaReport.Deleted[0]);
+                    previousNupkgAssemblyDefinition2.BuildRelativeFilename()).ForwardSlashesSafe(), deltaSummary.Deleted[0]);
             }
         }
 

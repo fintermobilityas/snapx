@@ -15,7 +15,9 @@ using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
+using YamlDotNet.Core;
 using LogLevel = Snap.Logging.LogLevel;
+using Parser = CommandLine.Parser;
 
 namespace snapx
 {
@@ -187,12 +189,17 @@ namespace snapx
                 if (snapApps == null)
                 {
                     goto error;
-                }            
+                }
+
                 return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources).ToList(), snapsFilename);
+            }
+            catch (YamlException yamlException)
+            {
+                SnapLogger.Error($"snapx.yaml file contains incorrect yaml syntax. Why: {yamlException.InnerException?.Message ?? yamlException.Message}.");                
             }
             catch (Exception e)
             {
-                SnapLogger.Error(e.Message);
+                SnapLogger.ErrorException("Unknown error deserializing snapx.yaml", e);
             }
 
             error:

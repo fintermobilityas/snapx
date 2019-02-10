@@ -39,6 +39,7 @@ namespace Snap.Core
         Task<string> FileReadAllTextAsync(string fileName);
         string FileReadAllText(string filename);
         void FileDelete(string fileName);
+        bool FileDeleteIfExists(string fileName, bool throwIfException = true);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
         FileStream FileRead(string fileName, int bufferSize = 8196, bool useAsync = true);
         FileStream FileReadWrite(string fileName, bool overwrite = true);
@@ -198,6 +199,27 @@ namespace Snap.Core
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             File.Delete(fileName);
+        }
+
+        public bool FileDeleteIfExists([NotNull] string fileName, bool throwIfException = true)
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            if (!FileExists(fileName))
+            {
+                return false;
+            }
+
+            try
+            {
+                FileDelete(fileName);
+                return true;
+            }
+            catch (Exception)
+            {
+                if (throwIfException) throw;
+            }
+            
+            return false;
         }
 
         public void FileDeleteWithRetries([NotNull] string path, bool ignoreIfFails = false)

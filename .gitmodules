@@ -4,6 +4,3 @@
 [submodule "src/Snap.DemoApp"]
 	path = src/Snap.DemoApp
 	url = git@github.com:peters/snap.demoapp.git
-[submodule "Snap.CoreRun/vendor/miniz"]
-	path = Snap.CoreRun/vendor/miniz
-	url = https://github.com/richgel999/miniz

@@ -5,7 +5,9 @@ nupkgs/
 .snap
 build/
 .idea/
-
 src/Snap\.sln\.DotSettings\.user
-
 \.vscode/
+src/Snap.CoreRun/cmake-build-debug
+src/Snap.CureRun/cmake-build-release
+src/Snap.CoreRun.Installer/cmake-build-debug
+src/Snap.CureRun.Installer/cmake-build-release

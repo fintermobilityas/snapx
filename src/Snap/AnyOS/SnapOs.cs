@@ -32,9 +32,8 @@ namespace Snap.AnyOS
         ISnapOsProcessManager OsProcess { get; }
         SnapOsDistroType DistroType { get; }
         ISnapOsSpecialFolders SpecialFolders { get; }
-        void CreateShortcutsForExecutable(SnapApp snapApp, NuspecReader nuspecReader, string baseDirectory,
-            string appDirectory, string exeName, string icon, SnapShortcutLocation locations, string programArguments, bool updateOnly,
-            ILog logger = null, CancellationToken cancellationToken = default);
+        Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
+            CancellationToken cancellationToken = default);
         bool EnsureConsole();
         Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
         Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync(string workingDirectory, CancellationToken cancellationToken);
@@ -51,9 +50,8 @@ namespace Snap.AnyOS
         ISnapOsProcessManager OsProcessManager { get; }
         SnapOsDistroType DistroType { get; }
         ISnapOsSpecialFolders SpecialFolders { get; }
-        Task CreateShortcutsForExecutableAsync(SnapApp snapApp, NuspecReader nuspecReader, string baseDirectory,
-            string appDirectory, string exeName, string icon, SnapShortcutLocation locations,
-            string programArguments, bool updateOnly, ILog logger = null, CancellationToken cancellationToken = default);
+        Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
+            CancellationToken cancellationToken = default);
         bool EnsureConsole();
         Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
     }
@@ -96,12 +94,10 @@ namespace Snap.AnyOS
             OsImpl = snapOsImpl ?? throw new ArgumentNullException(nameof(snapOsImpl));
         }
 
-        public void CreateShortcutsForExecutable(SnapApp snapApp, NuspecReader nuspecReader, string baseDirectory, 
-            string appDirectory, string exeName, string icon, SnapShortcutLocation locations,
-            string programArguments, bool updateOnly, ILog logger = null, CancellationToken cancellationToken = default)
+        public Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
+            CancellationToken cancellationToken = default)
         {
-            OsImpl.CreateShortcutsForExecutableAsync(snapApp, nuspecReader, baseDirectory, appDirectory,
-                exeName, icon, locations, programArguments, updateOnly, logger, cancellationToken);
+            return OsImpl.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);
         }
 
         public bool EnsureConsole()

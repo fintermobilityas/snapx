@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
+using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.Models;
 using Snap.Logging;
@@ -77,49 +78,51 @@ namespace Snap.AnyOS.Unix
             throw new PlatformNotSupportedException();
         }
 
-        public async Task CreateShortcutsForExecutableAsync(SnapApp snapApp,
-            NuspecReader nuspecReader,
-            string baseDirectory,
-            string appDirectory,
-            string exeName,
-            string icon,
-            SnapShortcutLocation locations,
-            string programArguments,
-            bool updateOnly,
-            ILog logger = null,
-            CancellationToken cancellationToken = default)
+        public async Task CreateShortcutsForExecutableAsync(SnapOsShortcutDescription shortcutDescription, ILog logger = null, CancellationToken cancellationToken = default)
         {
-            var exeAbsolutePath = Filesystem.PathCombine(appDirectory, exeName);
+            if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
+            var exeName = Filesystem.PathGetFileName(shortcutDescription.ExeAbsolutePath);
             if (Username == null)
             {
                 _logger?.Error($"Unable to create shortcut because username is null. Executable: {exeName}");
                 return;
             }
             
-            logger?.Info($"Creating shortcuts for executable: {exeAbsolutePath}");
+            logger?.Info($"Creating shortcuts for executable: {shortcutDescription.ExeAbsolutePath}");
 
-            var autoStartup = locations.HasFlag(SnapShortcutLocation.Startup);
-            if (locations.HasFlag(SnapShortcutLocation.Desktop))
+            var autoStartup = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Startup);
+            if (!shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Desktop))
             {
-                var desktopShortcutUtf8Content = BuildDesktopShortcut(snapApp, exeAbsolutePath,
-                    nuspecReader.GetDescription(), autoStartup);
-                if (desktopShortcutUtf8Content == null)
-                {
-                    _logger?.Warn(
-                        $"Unknown error while building desktop shortcut for exe: {exeName}. Distro: {DistroType}. Maybe unsupported distro?");
-                    return;
-                }
-
-                var desktopDirectory = Filesystem.PathCombine("/home", Username, "desktop");                                
-                var absoluteDesktopShortcutPath = Filesystem.PathCombine(desktopDirectory, $"{exeName}.deskop");
-
-                _logger?.Info($"Creating desktop shortcut {absoluteDesktopShortcutPath} that is linked to {exeName}. Auto startup during OS boot: {autoStartup}");
-                
-                await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
-                    absoluteDesktopShortcutPath, cancellationToken);
-
-                _logger?.Debug($"Successfully created desktop shortcut for exe: {exeName}.");
+                return;
             }
+
+            var desktopShortcutUtf8Content = BuildDesktopShortcut(shortcutDescription, shortcutDescription.NuspecReader.GetDescription(), autoStartup);
+            if (desktopShortcutUtf8Content == null)
+            {
+                _logger?.Warn(
+                    $"Unknown error while building desktop shortcut for exe: {exeName}. Distro: {DistroType}. Maybe unsupported distro?");
+                return;
+            }
+
+            var dashLauncherAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
+            var absoluteDesktopShortcutPath = Filesystem.PathCombine(dashLauncherAbsolutePath, $"{exeName}.desktop");
+
+            if (Filesystem.FileDeleteIfExists(absoluteDesktopShortcutPath))
+            {
+                _logger?.Info($"Deleted existing shortcut: {absoluteDesktopShortcutPath}");
+            }
+
+            _logger?.Info(
+                $"Creating desktop shortcut {absoluteDesktopShortcutPath}. " +
+                         $"Auto startup: {autoStartup}. " +
+                         $"Realpath: {shortcutDescription.ExeAbsolutePath}.");
+
+            await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
+                absoluteDesktopShortcutPath, cancellationToken);
+            
+            _logger?.Info("Attempting to mark shortcut as trusted");
+            var trustedSuccess = 0 == NativeMethodsUnix.chmod(absoluteDesktopShortcutPath, 777);
+            _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
         }
         
         public bool EnsureConsole()
@@ -186,14 +189,12 @@ namespace Snap.AnyOS.Unix
             return (distributorId, description, release, codeName);
         }
 
-        string BuildDesktopShortcut([NotNull] SnapApp snapApp, [NotNull] string absoluteExePath, [NotNull] string description,
-            bool addToMachineStartup)
+        string BuildDesktopShortcut([NotNull] SnapOsShortcutDescription shortcutDescription, string description, bool addToMachineStartup)
         {
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (absoluteExePath == null) throw new ArgumentNullException(nameof(absoluteExePath));
-            if (description == null) throw new ArgumentNullException(nameof(description));
-
+            if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
+            
             var gnomeAutoStartEnabled = addToMachineStartup ? "true" : "false";
+            var workingDirectory = Filesystem.PathGetDirectoryName(shortcutDescription.ExeAbsolutePath);
 
             switch (DistroType)
             {
@@ -201,11 +202,12 @@ namespace Snap.AnyOS.Unix
                     return $@"
 #!/usr/bin/env xdg-open
 [Desktop Entry]
-Version={snapApp.Id}
+Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
-Exec={absoluteExePath}
-Name={snapApp}
+Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
+Icon=""{shortcutDescription.ExeAbsolutePath}""
+Name={shortcutDescription.SnapApp.Id}
 Comment={description}
 X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}
 ";

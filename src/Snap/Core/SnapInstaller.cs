@@ -11,6 +11,7 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.AnyOS.Unix;
+using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -245,26 +246,26 @@ namespace Snap.Core
             bool isInitialInstall, ILog logger = null, CancellationToken cancellationToken = default)
         {
             var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-            var coreRunExePath = _snapFilesystem
+            var coreRunExeAbsolutePath = _snapFilesystem
                 .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
-            var mainExePath = _snapFilesystem
+            var mainExeAbsolutePath = _snapFilesystem
                 .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
 
             void Chmod(string exePath)
             {
                 if (exePath == null) throw new ArgumentNullException(nameof(exePath));
                 logger?.Info($"Attempting to change file permission for executable: {exePath}.");                
-                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 755) == 0;                
+                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 777) == 0;                
                 logger?.Info($"Permissions changed successfully: {(chmodSuccess ? "true" : "false")}.");
             }
             
             if (!isWindows)
             {
-                Chmod(coreRunExePath);
-                Chmod(mainExePath);
+//                Chmod(coreRunExeAbsolutePath);
+//                Chmod(mainExeAbsolutePath);
             }
 
-            var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExePath);
+            var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExeAbsolutePath);
 
             if (!snapApp.Shortcuts.Any())
             {
@@ -272,21 +273,21 @@ namespace Snap.Core
             }
             else
             {
-                var shortCutLocations = snapApp.Shortcuts.Select(x => x | x).Last();
-                logger?.Info($"Shortcuts will be created in the following locations: {string.Join(", ", shortCutLocations)}");
+                var shortcutLocations = snapApp.Shortcuts.First();
+                snapApp.Shortcuts.Skip(1).ForEach(x => shortcutLocations |= x);
+                logger?.Info($"Shortcuts will be created in the following locations: {string.Join(", ", shortcutLocations)}");
                 try
                 {
-                    _snapOs.CreateShortcutsForExecutable(snapApp, 
-                        nuspecReader,
-                        baseDirectory,
-                        appDirectory,
-                        coreRunExeFilename,
-                        null,
-                        shortCutLocations,
-                        null,
-                        isInitialInstall == false,
-                        logger,
-                        cancellationToken);
+                    var shortcutDescription = new SnapOsShortcutDescription
+                    {
+                        SnapApp = snapApp,
+                        UpdateOnly = isInitialInstall == false,
+                        NuspecReader = nuspecReader,
+                        ShortcutLocations = shortcutLocations,
+                        ExeAbsolutePath = coreRunExeAbsolutePath,
+                    };
+                    
+                    await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription,logger, cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -295,7 +296,7 @@ namespace Snap.Core
             }
           
            
-            var allSnapAwareApps = new List<string> {coreRunExePath};
+            var allSnapAwareApps = new List<string> {coreRunExeAbsolutePath};
             
             await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
                 $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");

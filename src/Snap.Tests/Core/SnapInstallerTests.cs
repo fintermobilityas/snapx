@@ -9,6 +9,7 @@ using Mono.Cecil;
 using Moq;
 using NuGet.Packaging;
 using Snap.AnyOS;
+using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
@@ -70,16 +71,8 @@ namespace Snap.Tests.Core
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutable(
-                    It.IsAny<SnapApp>(), 
-                    It.IsAny<NuspecReader>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(),
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<SnapShortcutLocation>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<bool>(),
+                .Setup(x => x.CreateShortcutsForExecutableAsync(
+                    It.IsAny<SnapOsShortcutDescription>(),
                     It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 
@@ -201,16 +194,8 @@ namespace Snap.Tests.Core
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutable(
-                    It.IsAny<SnapApp>(), 
-                    It.IsAny<NuspecReader>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(),
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<SnapShortcutLocation>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<bool>(),
+                .Setup(x => x.CreateShortcutsForExecutableAsync(
+                    It.IsAny<SnapOsShortcutDescription>(),
                     It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 
@@ -297,16 +282,8 @@ namespace Snap.Tests.Core
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutable(
-                    It.IsAny<SnapApp>(), 
-                    It.IsAny<NuspecReader>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(),
-                    It.IsAny<string>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<SnapShortcutLocation>(), 
-                    It.IsAny<string>(), 
-                    It.IsAny<bool>(),
+                .Setup(x => x.CreateShortcutsForExecutableAsync(
+                    It.IsAny<SnapOsShortcutDescription>(),
                     It.IsAny<ILog>(),
                     It.IsAny<CancellationToken>()));
 

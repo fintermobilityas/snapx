@@ -14,14 +14,12 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     auto app_name(find_own_executable_name());
     if (app_name.empty())
     {
-        LOG(ERROR) << "Stubexecutable: Unable to determine own executable name." << std::endl;
         return -1;
     }
 
     auto working_dir(find_latest_app_dir());
     if (working_dir.empty())
     {
-        LOG(ERROR) << "Stubexecutable: Unable to determine application working directory." << std::endl;
         return -1;
     }
 
@@ -51,94 +49,80 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         nullptr, nullptr, true,
         0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
 
-    if (!create_process_result) {
-
-        LOG(ERROR) << "Stubexecutable: Unable to create process. " << 
-            "Error code: " << create_process_result << ". " <<
-            "Executable: " << executable_full_path << ". " <<
-            "Cmdline: " << working_dir << ". " <<
-            "Current directory: " << lp_current_directory_utf16_string << ". " <<
-            "Cmdshow: " << cmd_show << ". " <<
-            std::endl;
-
+    if (!create_process_result)
+    {
         return -1;
     }
-
-    LOG(INFO) << "Stubexecutable: Successfully created process. " << 
-            "Executable: " << executable_full_path << ". " <<
-            "Cmdline: " << cmd_line << ". " <<
-            "Current directory: " << working_dir << ". " <<
-            "Cmdshow: " << cmd_show << ". " <<
-            std::endl;
 
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);
 #elif PLATFORM_LINUX
     const auto argv = new char*[arguments.size() + 1];
     argv[0] = strdup(executable_full_path.c_str());
-    for(auto i = 1; i < arguments.size(); i++) {
+    for (auto i = 1; i < arguments.size(); i++) {
         argv[i] = strdup(arguments[i].c_str());
     }
 
     const auto pid = fork();
     auto exitCode = -1;
-    if(pid < 0) {
-        LOG(ERROR) << "Unknown error forking: " << pid;
-    } else {
-        if(0 != chdir(working_dir.c_str())) {
-            LOG(ERROR) << "Failed to change working directory to: " << working_dir;
-        } else {
-            if(execvp(executable_full_path.c_str(), argv) < 0)  {
-                LOG(ERROR) << "Unknown error executing executable: " << executable_full_path << ". "
-                           << "Working directory: " << working_dir << ".";
-            } else {
-                exitCode = 0;
-            }
-        }
+
+    if (pid < 0)
+    {
+        goto done;
     }
 
-    delete[] argv;
+    if (0 != chdir(working_dir.c_str()))
+    {
+        goto done;
+    }
 
+    if (execvp(executable_full_path.c_str(), argv) < 0)
+    {
+        goto done;
+    }
+
+    exitCode = 0;
+
+done:
+    delete[] argv;
     return exitCode;
 #endif
-
     return -1;
 }
 
-std::string snap::stubexecutable::find_root_app_dir()
+std::string snap::stubexecutable::find_app_dir()
 {
-    char* current_directory_out = nullptr;
-    if (!pal_fs_get_cwd(&current_directory_out))
+    char* current_directory = nullptr;
+    if (!pal_fs_get_cwd(&current_directory))
     {
         return std::string();
     }
 
-    return std::string(current_directory_out);
+    return std::string(current_directory);
 }
 
 std::string snap::stubexecutable::find_own_executable_name()
 {
-    char* own_executable_name_out = nullptr;
-    if (!pal_fs_get_own_executable_name(&own_executable_name_out))
+    char* own_executable_name = nullptr;
+    if (!pal_fs_get_own_executable_name(&own_executable_name))
     {
         return std::string();
     }
 
-    return std::string(own_executable_name_out);
+    return std::string(own_executable_name);
 }
 
 std::string snap::stubexecutable::find_latest_app_dir()
 {
-    auto root_app_directory(find_root_app_dir());
-    if (root_app_directory.empty())
+    auto app_dir(find_app_dir());
+    if (app_dir.empty())
     {
         return std::string();
     }
 
     char** paths_out = nullptr;
     size_t paths_out_len = 0;
-    if (!pal_fs_list_directories(root_app_directory.c_str(), nullptr, 
-        nullptr, &paths_out, &paths_out_len))
+    if (!pal_fs_list_directories(app_dir.c_str(), nullptr, nullptr, &paths_out, &paths_out_len))
     {
         return std::string();
     }
@@ -175,22 +159,22 @@ std::string snap::stubexecutable::find_latest_app_dir()
         {
             current_app_semver = version::Semver200_version(current_app_ver_s);
         }
-        catch (const version::Parse_error& e)
+        catch (const version::Parse_error)
         {
-            LOG(WARNING) << "Stubexecutable: Unable to parse app version. Why: " << e.what() << ". Path: " << directory << std::endl;
             continue;
         }
 
-        if (current_app_semver <= most_recent_semver) {
+        if (current_app_semver <= most_recent_semver)
+        {
             continue;
         }
 
         most_recent_semver = current_app_semver;
     }
 
-    root_app_directory.assign(find_root_app_dir());
+    app_dir.assign(find_app_dir());
     std::stringstream ret;
-    ret << root_app_directory << PAL_DIRECTORY_SEPARATOR_STR << "app-" << most_recent_semver;
+    ret << app_dir << PAL_DIRECTORY_SEPARATOR_STR << "app-" << most_recent_semver;
 
     return ret.str();
 }

@@ -33,6 +33,7 @@ class pal_unicode_string
     virtual TStdString& append(const TStdString& string) = 0;
     virtual bool ends_with(const TStdString& string) = 0;
     virtual bool equals(const TStdString& string) = 0;
+    virtual bool empty() = 0;
 };
 
 class pal_utf8_string : public pal_unicode_string<pal_utf8_string, char*, std::string>
@@ -132,6 +133,11 @@ public:
         return m_value.size() == string.size() && std::equal(m_value.begin(), m_value.end(), string.begin());
     }
 
+    virtual bool empty() override
+    {
+        return m_value.empty();
+    }
+
 };
 
 #if PLATFORM_WINDOWS
@@ -219,6 +225,11 @@ public:
     virtual std::wstring& append(const std::wstring& string) override
     {
         return m_value.append(string);
+    }
+
+    virtual bool empty() override
+    {
+        return m_value.empty();
     }
 
     static wchar_t* from_utf8(char* string)

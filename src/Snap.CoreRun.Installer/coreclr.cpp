@@ -1,5 +1,6 @@
+#include "semver200.h"
+#include "easylogging++.h"
 #include "coreclr.hpp"
-#include "vendor/semver/semver200.h"
 
 #include <algorithm>
 #include <cassert>
@@ -17,9 +18,7 @@ static const char* core_clr_dll = "libcoreclr.so";
 int snap::coreclr::run(const std::string& this_executable_path, const std::string & dotnet_executable_path, const std::vector<std::string>& arguments,
     const version::Semver200_version & clr_minimum_version)
 {
-    auto dotnet_executable_file_exists = FALSE;
-    if (!pal_fs_file_exists(dotnet_executable_path.c_str(), &dotnet_executable_file_exists)
-        || !dotnet_executable_file_exists)
+    if (!pal_fs_file_exists(dotnet_executable_path.c_str()))
     {
         LOG(ERROR) << "Coreclr: Executable does not exist. Path: " << dotnet_executable_path << std::endl;
         return -1;
@@ -131,9 +130,7 @@ std::vector<core_clr_directory> snap::coreclr::get_core_directories_from_path(co
                 continue;
             }
 
-            auto core_clr_dll_exists = FALSE;
-            if (!pal_fs_file_exists(core_clr_dll_path, &core_clr_dll_exists)
-                || !core_clr_dll_exists)
+            if (!pal_fs_file_exists(core_clr_dll_path))
             {
                 continue;
             }
@@ -167,9 +164,7 @@ core_clr_instance* snap::coreclr::try_load_core_clr(const char* directory_path, 
         return nullptr;
     }
 
-    auto core_clr_dll_exists = FALSE;
-    if (!pal_fs_file_exists(core_clr_dll_path, &core_clr_dll_exists)
-        || !core_clr_dll_exists)
+    if (!pal_fs_file_exists(core_clr_dll_path))
     {
         return nullptr;
     }

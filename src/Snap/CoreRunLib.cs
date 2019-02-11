@@ -26,20 +26,20 @@ namespace Snap
 
         // generic
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_is_elevated_delegate(ref bool isElevated);
+        delegate bool pal_is_elevated_delegate();
         readonly Delegate<pal_is_elevated_delegate> pal_is_elevated;
 
         // rcedit
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_rc_is_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
+        delegate bool pal_rc_is_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
         readonly Delegate<pal_rc_is_snap_aware_delegate> pal_rc_is_snap_aware;
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet =  CharSet.Unicode)]
-        delegate int pal_rc_set_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
+        delegate bool pal_rc_set_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
         readonly Delegate<pal_rc_set_snap_aware_delegate> pal_rc_set_snap_aware;
 
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_fs_chmod_delegate(string filename, int mode);
+        delegate bool pal_fs_chmod_delegate(string filename, int mode);
         readonly Delegate<pal_fs_chmod_delegate> pal_fs_chmod;
 
         public CoreRunLib([NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [NotNull] string workingDirectory)
@@ -88,29 +88,27 @@ namespace Snap
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
-            return pal_fs_chmod.Invoke(filename, mode) == 1;
+            return pal_fs_chmod.Invoke(filename, mode);
         }
 
         public bool IsElevated()
         {
             pal_is_elevated.ThrowIfDangling();
-            var isElevated = false;
-            var success = pal_is_elevated.Invoke(ref isElevated) == 1;
-            return success && isElevated;
+            return pal_is_elevated.Invoke();
         }
 
         public bool SetSnapAware([NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_rc_is_snap_aware.ThrowIfDangling();
-            return pal_rc_is_snap_aware.Invoke(filename) == 1;
+            return pal_rc_is_snap_aware.Invoke(filename);
         }
 
         public bool IsSnapAware([NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_rc_set_snap_aware.ThrowIfDangling();
-            return pal_rc_set_snap_aware.Invoke(filename) == 1;
+            return pal_rc_set_snap_aware.Invoke(filename);
         }
         
         public void Dispose()

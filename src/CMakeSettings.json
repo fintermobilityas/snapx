@@ -24,7 +24,10 @@
             "ctestCommandArgs": "",
             "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": [
-                { "name": "ENABLE_LTO", "value": "1"}
+                {
+                    "name": "ENABLE_LTO",
+                    "value": "1"
+                }
             ],
             "intelliSenseMode": "windows-msvc-x64"
         }

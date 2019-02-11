@@ -46,6 +46,7 @@ extern "C" {
 
 // - Primitives
 typedef int BOOL;
+typedef FILE pal_file_handle_t;
 
 // - Callbacks
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
@@ -55,11 +56,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated(BOOL* is_elevated_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated();
 
 // - Environment
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char* environment_variable_in, char** environment_variable_value_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char* environment_variable_in, BOOL* env_value_bool_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char* environment_variable_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_in, char** environment_out);
 
 // - Filesystem
@@ -71,11 +72,18 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_directories(const char* path_in,
         const char* filter_extension_in, char*** directories_out, size_t* directories_out_len);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char* path_in, pal_fs_list_filter_callback_t filter_callback_in,
         const char* filter_extension_in, char*** files_out, size_t* files_out_len);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in, BOOL* file_exists_bool_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_executable_name_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in, BOOL* directory_exists_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, int* file_size_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, char** bytes_out, int* bytes_read_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, char* mode_in, pal_file_handle_t** file_handle_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, void* data_in, size_t data_len_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, char* mode_in, void* data_in, size_t data_len_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);
 
 // - String
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char* src, const char* str);

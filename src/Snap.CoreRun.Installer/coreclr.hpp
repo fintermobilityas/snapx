@@ -1,8 +1,8 @@
 #pragma once
 
-#include "corerun.hpp"
-#include "vendor/semver/semver200.h"
-#include "vendor/coreclr/coreclrhost.hpp"
+#include "pal.hpp"
+#include "semver200.h"
+#include "coreclrhost.hpp"
 
 #include <vector>
 #include <iostream>

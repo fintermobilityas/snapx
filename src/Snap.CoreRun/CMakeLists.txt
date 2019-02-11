@@ -4,15 +4,12 @@ project(corerun CXX)
 
 list(APPEND corerun_INCLUDE_DIRS
    vendor
-   vendor/easyloggingpp/src
    ../Snap.CoreRun.Pal
 )
 
 set(corerun_SOURCES
-   coreclr.cpp
-   corerun.cpp
+   corerun.hpp
    stubexecutable.cpp
-   vendor/easyloggingpp/src/easylogging++.cc
    vendor/semver/semver200_comparator.cpp 
    vendor/semver/semver200_parser.cpp
 )
@@ -64,6 +61,10 @@ elseif(UNIX)
 	target_compile_definitions(corerun PRIVATE 
 		PLATFORM_LINUX
 	)	
+
+    target_link_libraries(corerun PRIVATE
+        libstdc++.a
+    )
 	
 endif()
 

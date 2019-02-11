@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Snap.Core": {
-      "commandName": "Project",
-      "commandLineArgs": "--instal-local=Youpark-428.0.0-full.nupkg"
-    }
-  }
-}

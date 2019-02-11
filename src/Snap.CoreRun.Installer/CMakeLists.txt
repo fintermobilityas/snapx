@@ -3,13 +3,22 @@
 project(installer CXX)
 
 list(APPEND installer_INCLUDE_DIRS
-   ../Snap.CoreRun/vendor/easyloggingpp/src
+   ../Snap.CoreRun/vendor/semver
    ../Snap.CoreRun.Pal
+   vendor/miniz
+   vendor/guid
+   vendor/coreclr
+   vendor/easylogging
 )
 
 set(installer_SOURCES
-   installer.cpp
-   ../Snap.CoreRun/vendor/easyloggingpp/src/easylogging++.cc
+   ../Snap.CoreRun/vendor/semver/semver200_comparator.cpp 
+   ../Snap.CoreRun/vendor/semver/semver200_parser.cpp
+   vendor/easylogging/easylogging++.cc
+   vendor/miniz/miniz.c
+   vendor/guid/guid.cpp
+   extractor.cpp
+   coreclr.cpp
 )
 
 include_directories(
@@ -21,8 +30,13 @@ add_executable(installer
 	main.cpp
 )
 
+target_compile_definitions(installer PRIVATE 
+    MINIZ_NO_STDIO
+    ELPP_NO_DEFAULT_LOG_FILE
+)	
+
 if(WIN32)
-	
+
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /subsystem:windows")		
 		set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
@@ -48,13 +62,20 @@ if(WIN32)
 		_CRT_NONSTDC_NO_WARNINGS
 		_UNICODE
 		UNICODE
-	)	
+        GUID_WINDOWS
+    )	
 
 elseif(UNIX)
 
 	target_compile_definitions(installer PRIVATE 
 		PLATFORM_LINUX
+        GUID_LIBUUID
 	)	
+
+    target_link_libraries(installer PRIVATE
+        libstdc++.a
+        uuid.a
+    )
 	
 endif()
 

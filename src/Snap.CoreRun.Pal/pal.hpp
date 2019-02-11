@@ -50,9 +50,6 @@ typedef int BOOL;
 // - Callbacks
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // Suppress unused methods
-
 // - Generic
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
@@ -87,8 +84,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char* filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in);
-
-#pragma clang diagnostic pop
 
 #ifdef __cplusplus
 }

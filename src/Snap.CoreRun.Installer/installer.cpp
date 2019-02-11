@@ -1,5 +1,6 @@
 #include "installer.hpp"
-#include "corerun.hpp"
+#include "easylogging++.h"
+#include "vendor/miniz.h"
 
 int snap::installer::run(std::vector<std::string> arguments, size_t nupkg_size, uint8_t *nupkg_start_ptr, uint8_t *nupkg_end_ptr)
 {

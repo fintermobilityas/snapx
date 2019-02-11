@@ -1,34 +1,25 @@
 ﻿cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
-project(corerun CXX)
+project(installer CXX)
 
-list(APPEND corerun_INCLUDE_DIRS
-   vendor
-   vendor/easyloggingpp/src
+list(APPEND installer_INCLUDE_DIRS
+   ../Snap.CoreRun/vendor/easyloggingpp/src
    ../Snap.CoreRun.Pal
 )
 
-set(corerun_SOURCES
-   coreclr.cpp
-   corerun.cpp
-   stubexecutable.cpp
-   vendor/easyloggingpp/src/easylogging++.cc
-   vendor/semver/semver200_comparator.cpp 
-   vendor/semver/semver200_parser.cpp
+set(installer_SOURCES
+   installer.cpp
+   ../Snap.CoreRun/vendor/easyloggingpp/src/easylogging++.cc
 )
 
 include_directories(
-   ${corerun_INCLUDE_DIRS}
+   ${installer_INCLUDE_DIRS}
 )
 
-add_executable(corerun 
-	${corerun_SOURCES}
+add_executable(installer 
+	${installer_SOURCES}
 	main.cpp
 )
-
-target_compile_definitions(corerun PRIVATE 
-	ELPP_NO_DEFAULT_LOG_FILE
-)	
 
 if(WIN32)
 	
@@ -37,7 +28,7 @@ if(WIN32)
 		set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")	
-        target_compile_definitions(corerun PRIVATE 
+        target_compile_definitions(installer PRIVATE 
 		    PLATFORM_MINGW
 	    )	
 	endif()
@@ -52,7 +43,7 @@ if(WIN32)
 	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
 	
-	target_compile_definitions(corerun PRIVATE 
+	target_compile_definitions(installer PRIVATE 
 		PLATFORM_WINDOWS
 		_CRT_NONSTDC_NO_WARNINGS
 		_UNICODE
@@ -61,13 +52,13 @@ if(WIN32)
 
 elseif(UNIX)
 
-	target_compile_definitions(corerun PRIVATE 
+	target_compile_definitions(installer PRIVATE 
 		PLATFORM_LINUX
 	)	
 	
 endif()
 
-target_link_libraries(corerun PUBLIC pal_static)
+target_link_libraries(installer PUBLIC pal_static)
 
-set_property(TARGET corerun PROPERTY CXX_STANDARD 17)
-set_property(TARGET corerun PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET installer PROPERTY CXX_STANDARD 17)
+set_property(TARGET installer PROPERTY CXX_STANDARD_REQUIRED ON)

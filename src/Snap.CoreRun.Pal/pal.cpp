@@ -1,8 +1,5 @@
 #include "pal.hpp"
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection" // Suppress unused methods
-
 #if PLATFORM_WINDOWS
 #include <shlwapi.h> // PathIsDirectory, PathFileExists
 #include <strsafe.h> // StringCchLengthA
@@ -202,7 +199,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environmen
 #if PLATFORM_WINDOWS
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
 
+#if PLATFORM_WINDOWS && !PLATFORM_MINGW
+    wchar_t* w_env = nullptr;
+    _wdupenv_s(&w_env, 0, environment_variable_in_utf16_string.data());
+    if(w_env == nullptr) 
+    {
+       return FALSE;
+    }
+#else
     auto w_env = _wgetenv(environment_variable_in_utf16_string.data());
+#endif
     if (w_env == nullptr)
     {
         return FALSE;
@@ -868,9 +874,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     }
     *directory_exists_out = FALSE;
     return FALSE;
-#else
-    return FALSE;
 #endif
+    return FALSE;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char * src, const char * str)
@@ -961,4 +966,3 @@ PAL_API int PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in
 #endif
     return FALSE;
 }
-#pragma clang diagnostic pop

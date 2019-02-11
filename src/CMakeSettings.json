@@ -1,0 +1,32 @@
+﻿{
+    "configurations": [
+        {
+            "name": "msvs-x64-Debug",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [],
+            "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "msvs-x64-Release",
+            "generator": "Ninja",
+            "configurationType": "Release",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                { "name": "ENABLE_LTO", "value": "1"}
+            ],
+            "intelliSenseMode": "windows-msvc-x64"
+        }
+    ]
+}

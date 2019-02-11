@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pal/pal.hpp"
+#include "pal.hpp"
 #include "easylogging++.h"
 
 #ifdef PLATFORM_WINDOWS

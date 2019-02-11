@@ -297,7 +297,7 @@ function Configure-Msvs-Toolchain {
 }
 
 function Build-SnapCoreRun {	
-    Write-Output-Header "Building snap.corerun"
+    Write-Output-Header "Building Snap.CoreRun"
 
     $CmakeArguments = @(
         "-G`"$CmakeGenerator`"",

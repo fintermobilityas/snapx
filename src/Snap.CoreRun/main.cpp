@@ -1,4 +1,12 @@
-#include "main.hpp"
+#include "corerun.hpp"
+#include "stubexecutable.hpp"
+#include "coreclr.hpp"
+#include "vendor/cxxopts/cxxopts.hpp"
+
+#if PLATFORM_WINDOWS
+#include "vendor/rcedit/rcedit.hpp"
+#endif
+
 #include <vector>
 #include <climits>
 
@@ -165,24 +173,10 @@ int APIENTRY wWinMain(
     return -1;
 }
 #else
-
-uint8_t _installer_nupkg_start;
-uint8_t _installer_nupkg_size;
-uint8_t _installer_nupkg_end;
-
 int main(const int argc, char *argv[])
 {
     try
     {
-        const auto nupkg_size = reinterpret_cast<size_t>(reinterpret_cast<void*>(&_installer_nupkg_size));
-        const auto nupkg_start = &_installer_nupkg_start;
-        const auto nupkg_end = &_installer_nupkg_end;
-        if(snap::installer::is_valid_payload(nupkg_size, nupkg_start, nupkg_end))
-        {
-            LOG(INFO) << "Valid nupkg payload detected, proceeding with installation...";
-            std::vector<std::string> arguments(argv, argv + argc);
-            return snap::installer::run(arguments, nupkg_size, nupkg_start, nupkg_end);
-        }
         return main_impl(argc, argv, -1);
     }
     catch (std::exception& ex)

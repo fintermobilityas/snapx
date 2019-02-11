@@ -1,9 +1,6 @@
-#include "corerun.hpp"
-#include "stubexecutable.hpp"
-#include "coreclr.hpp"
-#include "vendor/cxxopts/cxxopts.hpp"
-
+#include "main.hpp"
 #include <vector>
+#include <climits>
 
 INITIALIZE_EASYLOGGINGPP
 
@@ -23,7 +20,7 @@ std::vector<std::string> get_core_clr_arguments(int argc, char* argv[])
     return args;
 }
 
-int corerun_main(int argc, char *argv[], const int cmd_show_windows)
+int main_impl(int argc, char **argv, const int cmd_show_windows)
 {
     START_EASYLOGGINGPP(argc, argv);
 
@@ -158,7 +155,7 @@ int APIENTRY wWinMain(
 
     try
     {
-        return corerun_main(argc, argv, n_cmd_show);
+        return main_impl(argc, argv, n_cmd_show);
     }
     catch (std::exception& ex)
     {
@@ -168,11 +165,25 @@ int APIENTRY wWinMain(
     return -1;
 }
 #else
+
+uint8_t _installer_nupkg_start;
+uint8_t _installer_nupkg_size;
+uint8_t _installer_nupkg_end;
+
 int main(const int argc, char *argv[])
 {
     try
     {
-        return corerun_main(argc, argv, -1);
+        const auto nupkg_size = reinterpret_cast<size_t>(reinterpret_cast<void*>(&_installer_nupkg_size));
+        const auto nupkg_start = &_installer_nupkg_start;
+        const auto nupkg_end = &_installer_nupkg_end;
+        if(snap::installer::is_valid_payload(nupkg_size, nupkg_start, nupkg_end))
+        {
+            LOG(INFO) << "Valid nupkg payload detected, proceeding with installation...";
+            std::vector<std::string> arguments(argv, argv + argc);
+            return snap::installer::run(arguments, nupkg_size, nupkg_start, nupkg_end);
+        }
+        return main_impl(argc, argv, -1);
     }
     catch (std::exception& ex)
     {

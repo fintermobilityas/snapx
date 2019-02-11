@@ -78,12 +78,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_ex
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, int* file_size_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, char** bytes_out, int* bytes_read_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, char* mode_in, pal_file_handle_t** file_handle_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, void* data_in, size_t data_len_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, char* mode_in, void* data_in, size_t data_len_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, void* data_in, size_t data_len_in);
 
 // - String
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char* src, const char* str);

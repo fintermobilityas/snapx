@@ -63,9 +63,8 @@ int main(const int argc, char *argv[])
     {
         return main_impl(argc, argv, -1);
     }
-    catch (std::exception& ex)
+    catch (std::exception)
     {
-        LOG(ERROR) << "Unknown error: " << ex.what() << std::endl;
     }
     return -1;
 }

@@ -70,10 +70,10 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
     nupkg_filename = R"(C:\Users\peters\Documents\GitHub\snap\src\Snap.DemoApp\snapx\packages\demoapp_full_1.0.0_win7-x64_test.nupkg)";
     install_dir = R"(C:\Users\peters\Documents\GitHub\snap\src\Snap.DemoApp\snapx\packages\test)";
 #elif !defined(NDEBUG) && defined(PLATFORM_LINUX)
-    filename = R"(~/Documents/GitHub/snapx/src/Snap.DemoApp/snapx/packages/demoapp_full_1.0.0_win7-x64_test.nupkg)";
+    nupkg_filename = R"(/home/peters/Documents/GitHub/snap/src/Snap.DemoApp/snapx/packages/demoapp_full_1.0.0_linux-x64_test.nupkg)";
 #else
     if (argc == 2) {
-        filename = argv[1];
+        nupkg_filename = argv[1];
     }
 #endif
 
@@ -82,7 +82,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
     {
         int nupkg_size_tmp = 0;
         if (!pal_str_endswith(nupkg_filename.c_str(), ".nupkg")
-            || !pal_fs_read_file(nupkg_filename.c_str(), &nupkg_data, &nupkg_size_tmp))
+            || !pal_fs_read_file(nupkg_filename.c_str(), "rb", &nupkg_data, &nupkg_size_tmp))
         {
             LOG(ERROR) << "Failed to read nupkg from: " << nupkg_filename;
             return -1;

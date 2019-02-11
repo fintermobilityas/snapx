@@ -13,7 +13,7 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
         return false;
     }
 
-    const int posix_io_mode = 666;
+    const int posix_io_mode = 0777;
 
     if (!pal_fs_directory_exists(install_dir.c_str())
         && !pal_fs_mkdir(install_dir.c_str(), posix_io_mode))
@@ -85,11 +85,21 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
             const auto snap_base_dir_last_slash = filename_relative_path.find_last_of("/");
             filename_relative_path = filename_relative_path.substr(snap_base_dir_last_slash + 1);
 
-            // Skip corerun exe wrapper, it will be installed when the .net installer runs.
-            if (pal_str_endswith(filename_relative_path.c_str(), ".exe")) 
+            auto extract = false;
+            for(auto runtime_file : snap_runtime_files)
+            {
+                if(pal_str_iequals(runtime_file.c_str(), filename_relative_path.c_str()))
+                {
+                    extract = true;
+                    break;
+                }
+            }
+
+            if(!extract)
             {
                 continue;
             }
+
         }
 
         char* filename_absolute_path = nullptr;
@@ -133,7 +143,7 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
             return false;
         }
 
-        if (!pal_fs_write(filename_absolute_path, "wb", file_ptr, uncompressed_size))
+        if (!pal_fs_write(filename_absolute_path, "wbx", file_ptr, uncompressed_size))
         {
             LOG(ERROR) << "Failed to write uncompressed file to disk: " << filename_absolute_path << ". Index: " << i;
             mz_zip_reader_end(&zip_archive);
@@ -192,7 +202,7 @@ bool snap::extractor::write_nupkg_to_disk(const std::string install_dir, const s
         return false;
     }
 
-    if (!pal_fs_write(nupkg_filename_absolute_path, "wb", &nupkg_start_ptr[0], nupkg_size))
+    if (!pal_fs_write(nupkg_filename_absolute_path, "wbx", &nupkg_start_ptr[0], nupkg_size))
     {
         LOG(ERROR) << "Failed to write nupkg to disk: " << nupkg_filename_absolute_path;
         return FALSE;

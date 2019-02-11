@@ -227,10 +227,8 @@ namespace snap {
             platform_resource_roots.assign(app_paths);
 #elif PLATFORM_LINUX
 
-            BOOL use_server_gc_bool = FALSE;
-            pal_env_get_variable_bool("COMPlus_gcServer", &use_server_gc_bool);
-            BOOL use_globalization_invariant_bool = FALSE;
-            pal_env_get_variable_bool("CORECLR_GLOBAL_INVARIANT", &use_globalization_invariant_bool);
+            auto use_server_gc_bool = pal_env_get_variable_bool("COMPlus_gcServer");
+            auto use_globalization_invariant_bool = pal_env_get_variable_bool("CORECLR_GLOBAL_INVARIANT");
 
             const char* use_server_gc_value = use_server_gc_bool ? "true" : "false";
             const char* use_globalization_invariant_value = use_globalization_invariant_bool ? "true" : "false";

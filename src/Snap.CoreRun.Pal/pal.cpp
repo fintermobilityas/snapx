@@ -60,8 +60,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
     close(status_fd);
 
     return debugger_present;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL pinning_required, void** instance_out)
@@ -918,9 +919,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
     return FALSE;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, char** bytes_out, int* bytes_read_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out)
 {
-    if (filename_in == nullptr)
+    if (filename_in == nullptr
+        || mode_in == nullptr)
     {
         return FALSE;
     }
@@ -978,14 +980,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, ch
 
     return TRUE;
 #elif PLATFORM_LINUX
-    auto h_file = fopen(filename_in, "rb");
+    auto h_file = fopen(filename_in, mode_in);
     if (h_file == nullptr)
     {
         return FALSE;
     }
-    *bytes_out = new char[total_bytes_to_read];
-    fread(bytes_out, total_bytes_to_read, 1, h_file);
+    auto buffer = new char[total_bytes_to_read];
+    auto total_bytes_read = fread(buffer, 1, total_bytes_to_read, h_file);
     assert(0 == fclose(h_file));
+    if(total_bytes_read != total_bytes_to_read)
+    {
+        delete[] buffer;
+        return FALSE;
+    }
+    *bytes_out = buffer;
+    *bytes_read_out = total_bytes_read;
     return TRUE;
 #endif
     return FALSE;
@@ -1009,7 +1018,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int m
     return FALSE;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, char* mode_in, pal_file_handle_t** file_handle_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out)
 {
     if(filename_in == nullptr
         || mode_in == nullptr)
@@ -1029,7 +1038,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, char* 
         fopen_success = TRUE;
     }
 #elif PLATFORM_LINUX
-    auto h_file = fopen(filename_in, "rb");
+    FILE* h_file = fopen(filename_in, mode_in);
     if (h_file != nullptr)
     {
         *file_handle_out = h_file;
@@ -1060,7 +1069,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
     return fwrite_success;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, char* mode_in, void* data_in, size_t data_len_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, void* data_in, size_t data_len_in)
 {
     pal_file_handle_t* file_handle = nullptr;
     if (!pal_fs_fopen(filename, mode_in, &file_handle))
@@ -1089,7 +1098,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_h
     }
 
     BOOL fclose_success = FALSE;
-#if PLATFORM_WINDOWS || PLATFORM_UNIX
+#if PLATFORM_WINDOWS || PLATFORM_LINUX
     fclose_success = fclose(pal_file_handle_in) == 0 ? TRUE : FALSE;
     if(fclose_success)
     {

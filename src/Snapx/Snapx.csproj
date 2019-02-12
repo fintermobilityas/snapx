@@ -29,6 +29,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Content Include="../../runtimes/dotnet-runtime-2.2.1-linux-x64.zip" Pack="true" Link="Assets/Runtimes/%(Filename)%(Extension)" />
+        <Content Include="../../runtimes/dotnet-runtime-2.2.1-win-x64.zip" Pack="true" Link="Assets/Runtimes/%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.4.3" /> 
     </ItemGroup>
 

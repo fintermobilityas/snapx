@@ -343,7 +343,7 @@ function Build-SnapCoreRun {
                 if ($Cross -eq $TRUE) {
                     $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun.exe
                 }
-                # Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+                Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
             }
 
         }
@@ -354,7 +354,7 @@ function Build-SnapCoreRun {
         
             if ($Configuration -eq "Release") {
                 $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration\corerun.exe
-                # Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+                Start-Process $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
             }
         }
         default {

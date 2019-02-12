@@ -8,6 +8,8 @@
         <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
+        <IsPackable>true</IsPackable>
+        <IsTestProject>false</IsTestProject>
     </PropertyGroup>
 
     <ItemGroup>

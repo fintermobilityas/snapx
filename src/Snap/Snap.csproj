@@ -16,7 +16,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.12">
+        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.13">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="LibLog" Version="5.0.5">
@@ -40,7 +40,13 @@
     </ItemGroup>
     
     <Target Name="SnapCoreILRepackPackageRelease" AfterTargets="Build" Condition="'$(SnapNupkg)' == 'true' AND '$(TargetFramework)' != ''">
-        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="@(SnapCoreILRepackInputAssemblies)" InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)" WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
+        <ILRepack OutputType="$(OutputType)"
+                  MainAssembly="$(AssemblyName).dll"
+                  OutputAssembly="$(AssemblyName).dll" 
+                  InputAssemblies="$(SnapCoreILRepackWorkingDirectory)\*.dll"
+                  WilcardInputAssemblies="true"
+                  InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)"
+                  WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
     </Target>
     
 </Project>

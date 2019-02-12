@@ -8,41 +8,6 @@
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapCoreILRepackWorkingDirectory>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IsNetCoreApp)' == 'true'">
-        <SnapCoreILRepackInputAssemblies Include="Microsoft.Win32.SystemEvents.dll" />
-        <SnapCoreILRepackInputAssemblies Include="System.Drawing.Common.dll" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IsNetStandard)' == 'true'">
-        <SnapCoreILRepackInputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
-        <SnapCoreILRepackInputAssemblies Include="System.Drawing.Common.dll" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
-        <SnapCoreILRepackInputAssemblies Include="System.Runtime.InteropServices.RuntimeInformation.dll" />
-        <SnapCoreILRepackInputAssemblies Include="System.ValueTuple.dll" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <SnapCoreILRepackInputAssemblies Include="FasterFlect.NETStandard.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Jetbrains.Annotations.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Mdb.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Pdb.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Mono.Cecil.Rocks.dll" />
-        <SnapCoreILRepackInputAssemblies Include="Newtonsoft.Json.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Common.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Configuration.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Frameworks.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Packaging.Core.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Packaging.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Protocol.dll" />
-        <SnapCoreILRepackInputAssemblies Include="NuGet.Versioning.dll" />
-        <SnapCoreILRepackInputAssemblies Include="SharpCompress.dll" />
-        <SnapCoreILRepackInputAssemblies Include="YamlDotNet.NetCore.dll" />
-        <SnapCoreILRepackInputAssemblies Include="DotNet.Glob.dll" />
-    </ItemGroup>
-
     <ItemGroup>
         <SnapCoreILRepackInternalizeExcludeAssemblies Include="NuGet.Versioning.SemanticVersion" />
     </ItemGroup>

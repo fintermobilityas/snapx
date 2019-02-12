@@ -86,6 +86,7 @@ elseif(UNIX)
 	
 	target_link_libraries(pal_static PUBLIC
 		${pal_LIBS}
+        libstdc++.a
 	)
 
 	target_compile_definitions(pal_static PRIVATE 

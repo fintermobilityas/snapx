@@ -1,7 +1,8 @@
 #include "pal.hpp"
 #include "extractor.hpp"
 #include "easylogging++.h"
-#include "miniz.h"
+
+#include <regex>
 
 bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_size, uint8_t* nupkg_start_ptr, uint8_t* nupkg_end_ptr)
 {
@@ -52,6 +53,8 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
         return false;
     }
 
+    auto netcore_extraction_list = build_extraction_list(zip_archive, file_count);
+
     if (!pal_fs_directory_exists(install_dir.c_str())
         && !pal_fs_mkdir(install_dir.c_str(), posix_io_mode)) {
         LOG(ERROR) << "Failed to create install directory: " << install_dir;
@@ -64,6 +67,8 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
     std::vector<std::string> snap_runtime_files;
     snap_runtime_files.emplace_back("Snap.dll");
     snap_runtime_files.emplace_back("Snap.App.dll");
+
+    std::vector<std::string> net_dlls;
 
     for (auto i = 0u; i < file_count; i++)
     {
@@ -99,7 +104,6 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
             {
                 continue;
             }
-
         }
 
         char* filename_absolute_path = nullptr;
@@ -163,6 +167,59 @@ bool snap::extractor::extract(const std::string install_dir, const size_t nupkg_
     mz_zip_reader_end(&zip_archive);
 
     return true;
+}
+
+std::vector<snap::netcoreapp_runtime_dependency> snap::extractor::build_extraction_list(mz_zip_archive &zip_archive, const size_t file_count)
+{
+    std::vector<snap::netcoreapp_runtime_dependency> dependencies;
+    mz_zip_archive_file_stat file_stat;
+    void* deps_json_file_ptr = nullptr;
+    size_t deps_json_file_len = 0;
+
+    for (auto i = 0u; i < file_count; i++) {
+        if (!mz_zip_reader_file_stat(&zip_archive, i, &file_stat)) {
+            break;
+        }
+
+        if (!pal_str_endswith(file_stat.m_filename, ".deps.json")) {
+            continue;
+        }
+
+        deps_json_file_len = file_stat.m_uncomp_size;
+        deps_json_file_ptr = mz_zip_reader_extract_file_to_heap(&zip_archive,
+                file_stat.m_filename, &deps_json_file_len, 0);
+        if (deps_json_file_ptr) {
+            break;
+        }
+    }
+
+    if(deps_json_file_ptr == nullptr)
+    {
+        return dependencies;
+    }
+
+    std::string json((char*) deps_json_file_ptr, (char*) deps_json_file_ptr + deps_json_file_len);
+
+    static std::regex dll_regex(R"(.*\.(dll|json))", std::regex::icase);
+    std::string::const_iterator start( json.cbegin() );
+    std::smatch match;
+    while (std::regex_search(start, json.cend(), match, dll_regex))
+    {
+        const auto filename = match[0].str();
+        const auto filename_last_slash = filename.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+        netcoreapp_runtime_dependency runtime_dependency;
+        if(filename_last_slash == std::string::npos)
+        {
+            runtime_dependency.filename = filename;
+        } else{
+            runtime_dependency.filename = filename.substr(filename_last_slash + 1);
+        }
+
+        dependencies.emplace_back(runtime_dependency);
+    }
+
+
+    return dependencies;
 }
 
 bool snap::extractor::is_valid_payload(const size_t nupkg_size, uint8_t *nupkg_start_ptr, uint8_t *nupkg_end_ptr)

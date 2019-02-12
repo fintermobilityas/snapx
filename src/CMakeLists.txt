@@ -24,7 +24,6 @@ option(ENABLE_LTO OFF)
 
 add_subdirectory(Snap.CoreRun.Pal)
 add_subdirectory(Snap.CoreRun)
-add_subdirectory(Snap.CoreRun.Installer)
 
 if(WIN32)
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

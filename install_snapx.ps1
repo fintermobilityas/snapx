@@ -40,7 +40,7 @@ function Exec
 
 Exec "& dotnet tool uninstall -g snapx"
 Exec "& dotnet clean src/Snapx"
-Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.1"
+Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.2"
 Exec "& dotnet pack -c Release src/Snapx --no-build"
 Exec "& dotnet tool install --global --add-source ./nupkgs snapx"
 

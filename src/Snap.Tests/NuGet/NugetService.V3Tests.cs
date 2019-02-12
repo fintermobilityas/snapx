@@ -95,7 +95,7 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestDownloadByPackageIdentityAsync()
+        public async Task TestDownloadByPackageIdAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();

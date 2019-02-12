@@ -15,6 +15,8 @@ namespace Snap.Installer.ViewModels
 {
     internal sealed class MainWindowViewModel : ViewModelBase
     {
+        [NotNull] readonly ISnapInstallerEmbeddedResources _snapInstallerEmbeddedResources;
+        readonly Action _onFirstFrameAnimatedCallback;
         readonly CancellationToken _cancellationToken;
         readonly List<Bitmap> _bitmaps;
 
@@ -43,12 +45,14 @@ namespace Snap.Installer.ViewModels
             set => this.RaiseAndSetIfChanged(ref _bitmap, value);
         }
 
-        public MainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapProgressSource progressSource, CancellationToken cancellationToken)
+        public MainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, 
+            [NotNull] ISnapProgressSource progressSource, [NotNull] Action onFirstFrameAnimatedCallback, CancellationToken cancellationToken)
         {
-            if (snapInstallerEmbeddedResources == null) throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
             if (progressSource == null) throw new ArgumentNullException(nameof(progressSource));
 
-            _bitmaps = snapInstallerEmbeddedResources.GifAnimation.Select(x => new Bitmap(new MemoryStream(x))).ToList();
+            _bitmaps = new List<Bitmap>();
+            _snapInstallerEmbeddedResources = snapInstallerEmbeddedResources ?? throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
+            _onFirstFrameAnimatedCallback = onFirstFrameAnimatedCallback ?? throw new ArgumentNullException(nameof(onFirstFrameAnimatedCallback));
             _cancellationToken = cancellationToken;
 
             StatusText = string.Empty;
@@ -84,7 +88,9 @@ namespace Snap.Installer.ViewModels
                 }
             }
 
-            var bitmapCount = _bitmaps.Count; 
+            var streams = _snapInstallerEmbeddedResources.GifAnimation.ToList();
+
+            var bitmapCount = streams.Count;
             if (bitmapCount <= 0)
             {
                 throw new Exception("Unable to start animation, application does not contain any bitmaps.");
@@ -93,6 +99,14 @@ namespace Snap.Installer.ViewModels
             var bitmapIndex = 0;
             while (await AnimateAsync())
             {
+                if (_bitmaps.Count < bitmapCount)
+                {
+                    _bitmaps[bitmapIndex] = new Bitmap(new MemoryStream(streams[bitmapIndex]));
+                    if (bitmapIndex == 0)
+                    {
+                        _onFirstFrameAnimatedCallback();
+                    }
+                }
                 Bitmap = _bitmaps[bitmapIndex++];
                 
                 if (bitmapIndex < bitmapCount)

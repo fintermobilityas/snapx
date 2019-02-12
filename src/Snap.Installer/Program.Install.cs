@@ -52,7 +52,7 @@ namespace Snap.Installer
             logger.Info($"Preparing to unpack nupkg: {nupkgRelativeFilename}.");
 
             var installerProgressSource = new SnapProgressSource();
-            var onMainWindowVisibleEvent = new ManualResetEventSlim(false);
+            var onFirstAnimationRenderedEvent = new ManualResetEventSlim(false);
             var exitCode = -1;
 
             void InstallInBackground(IAsyncPackageCoreReader asyncPackageCoreReader, SnapApp snapApp, 
@@ -65,8 +65,8 @@ namespace Snap.Installer
                 var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
 
                 logger.Info("Waiting for main window to become visible.");
-                onMainWindowVisibleEvent.Wait(cancellationToken);
-                onMainWindowVisibleEvent.Dispose();
+                onFirstAnimationRenderedEvent.Wait(cancellationToken);
+                onFirstAnimationRenderedEvent.Dispose();
                 logger.Info("Main window should now be visible.");
 
                 var mainWindowLogger = new LogForwarder(environment.LogLevel, logger, (level, func, exception, parameters) =>
@@ -153,10 +153,9 @@ namespace Snap.Installer
                     .BeforeStarting(builder =>
                     {
 
-                        MainWindow.OnStartEvent = onMainWindowVisibleEvent;
                         MainWindow.Environment = environment;
                         MainWindow.ViewModel = new MainWindowViewModel(snapInstallerEmbeddedResources,
-                            installerProgressSource, cancellationToken);
+                            installerProgressSource, () => onFirstAnimationRenderedEvent.Set(),  cancellationToken);
 
                         Task.Factory.StartNew(() =>
                             // ReSharper disable once AccessToDisposedClosure

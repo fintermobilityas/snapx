@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Avalonia;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -18,7 +17,6 @@ namespace Snap.Installer
 
         public static ISnapInstallerEnvironment Environment { get; set; }
         public static MainWindowViewModel ViewModel { get; set; }
-        public static ManualResetEventSlim OnStartEvent { get; set; }
 
         public MainWindow()
         {
@@ -48,8 +46,6 @@ namespace Snap.Installer
             {
                 NativeMethodsWindows.FocusThisWindow(thisHandle);
             }
-
-            OnStartEvent.Set();
 
             base.OnOpened(eventArgs);
         }

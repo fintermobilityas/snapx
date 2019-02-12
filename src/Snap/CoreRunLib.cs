@@ -14,8 +14,6 @@ namespace Snap
     {
         bool Chmod(string filename, int mode);
         bool IsElevated();
-        bool SetSnapAware(string filename);
-        bool IsSnapAware(string filename);
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -28,15 +26,7 @@ namespace Snap
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate bool pal_is_elevated_delegate();
         readonly Delegate<pal_is_elevated_delegate> pal_is_elevated;
-
-        // rcedit
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate bool pal_rc_is_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
-        readonly Delegate<pal_rc_is_snap_aware_delegate> pal_rc_is_snap_aware;
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet =  CharSet.Unicode)]
-        delegate bool pal_rc_set_snap_aware_delegate([MarshalAs(UnmanagedType.LPStr)] string filename);
-        readonly Delegate<pal_rc_set_snap_aware_delegate> pal_rc_set_snap_aware;
-
+        
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate bool pal_fs_chmod_delegate(string filename, int mode);
@@ -76,10 +66,6 @@ namespace Snap
             // generic
             pal_is_elevated = new Delegate<pal_is_elevated_delegate>(_libPtr, osPlatform);
             
-            // rcedit
-            pal_rc_is_snap_aware = new Delegate<pal_rc_is_snap_aware_delegate>(_libPtr, osPlatform);
-            pal_rc_set_snap_aware = new Delegate<pal_rc_set_snap_aware_delegate>(_libPtr, osPlatform);
-            
             // filesystem
             pal_fs_chmod = new Delegate<pal_fs_chmod_delegate>(_libPtr, osPlatform);
         }
@@ -97,20 +83,6 @@ namespace Snap
             return pal_is_elevated.Invoke();
         }
 
-        public bool SetSnapAware([NotNull] string filename)
-        {
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-            pal_rc_is_snap_aware.ThrowIfDangling();
-            return pal_rc_is_snap_aware.Invoke(filename);
-        }
-
-        public bool IsSnapAware([NotNull] string filename)
-        {
-            if (filename == null) throw new ArgumentNullException(nameof(filename));
-            pal_rc_set_snap_aware.ThrowIfDangling();
-            return pal_rc_set_snap_aware.Invoke(filename);
-        }
-        
         public void Dispose()
         {
             if (_libPtr == IntPtr.Zero)
@@ -122,10 +94,6 @@ namespace Snap
             {
                 // generic
                 pal_is_elevated.Unref();
-                
-                // rcedit
-                pal_rc_is_snap_aware.Unref();
-                pal_rc_set_snap_aware.Unref();
                 
                 // filesystem
                 pal_fs_chmod.Unref();

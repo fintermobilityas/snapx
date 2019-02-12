@@ -6,9 +6,6 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
-#if !defined(PLATFORM_MINGW)
-#include "rcedit/rcedit.hpp"
-#endif
 #endif
 
 #if PLATFORM_LINUX
@@ -1150,50 +1147,4 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
             });
 
     return iequals ? TRUE : FALSE;
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char * filename_in)
-{
-    if (!pal_fs_file_exists(filename_in)) 
-    {
-        return FALSE;
-    }
-
-#if defined(PLATFORM_WINDOWS) && !defined(PLATFORM_MINGW)
-    pal_utf16_string filename_in_utf16_string(filename_in);
-
-    rescle::ResourceUpdater updater;
-    if (!updater.Load(filename_in_utf16_string.data()))
-    {
-        return FALSE;
-    }
-
-    const auto value = updater.GetVersionString(L"SnapAwareVersion");
-    if (value) {
-        return TRUE;
-    }
-#endif
-    return FALSE;
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in)
-{
-    if (!pal_fs_file_exists(filename_in)) 
-    {
-        return FALSE;
-    }
-#if defined(PLATFORM_WINDOWS) && !defined(PLATFORM_MINGW)
-    pal_utf16_string filename_in_utf16_string(filename_in);
-
-    rescle::ResourceUpdater updater;
-    if (!updater.Load(filename_in_utf16_string.data()))
-    {
-        return FALSE;
-    }
-
-    if (updater.SetVersionString(L"SnapAwareVersion", L"1") && updater.Commit()) {
-        return TRUE;
-    }
-#endif
-    return FALSE;
 }

@@ -90,9 +90,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char* src, const char
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_startswith(const char* src, const char* str);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char* rhs);
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_is_snap_aware(const char* filename_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_rc_set_snap_aware(const char* filename_in);
-
 #ifdef __cplusplus
 }
 #endif

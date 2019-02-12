@@ -11,17 +11,6 @@ list(APPEND pal_SOURCES
    pal.cpp
 )
 
-if(WIN32)
-	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	    list(APPEND pal_INCLUDE_DIRS
-		    vendor
-	    )
-	    list(APPEND pal_SOURCES
-		    vendor/rcedit/rcedit.cpp 
-	    )
-	endif()
-endif()
-
 include_directories(
    ${pal_INCLUDE_DIRS}
 )

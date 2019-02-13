@@ -97,23 +97,27 @@ namespace Snap.Installer.ViewModels
             }
 
             var bitmapIndex = 0;
+            var addBitmap = true;
             while (await AnimateAsync())
             {
-                if (_bitmaps.Count < bitmapCount)
+                if (addBitmap)
                 {
-                    _bitmaps[bitmapIndex] = new Bitmap(new MemoryStream(streams[bitmapIndex]));
-                    if (bitmapIndex == 0)
-                    {
-                        _onFirstFrameAnimatedCallback();
-                    }
+                    _bitmaps.Add(new Bitmap(new MemoryStream(streams[bitmapIndex])));
                 }
+                
                 Bitmap = _bitmaps[bitmapIndex++];
                 
+                if (addBitmap && bitmapIndex == 1)
+                {
+                    _onFirstFrameAnimatedCallback();
+                }
+
                 if (bitmapIndex < bitmapCount)
                 {
                     continue;
                 }
 
+                addBitmap = false;
                 bitmapIndex = 0;
             }
         }

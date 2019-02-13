@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Versioning;
 using snapx.Options;
+using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Models;
 using Snap.Extensions;
@@ -18,8 +20,9 @@ namespace snapx
     internal partial class Program
     {
         static int CommandPack([NotNull] PackOptions packOptions, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] ISnapAppReader appReader, ISnapAppWriter appWriter, [NotNull] INuGetPackageSources nuGetPackageSources, 
-            [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ILog logger, [NotNull] string workingDirectory)
+            [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs, [NotNull] ILog logger, [NotNull] string toolWorkingDirectory,
+            [NotNull] string workingDirectory)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -27,7 +30,9 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var stopwatch = new Stopwatch();

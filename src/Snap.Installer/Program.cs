@@ -89,9 +89,9 @@ namespace Snap.Installer
             var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
             var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
 
-            var thisToolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
-            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisToolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisToolWorkingDirectory);
+            var toolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
+            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, toolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();
             var snapPack = snapInstallerEnvironment.Container.GetInstance<ISnapPack>();

@@ -1,8 +1,7 @@
-function Write-Output-Colored
-{
-	param(
-		$ForegroundColor
-	)
+function Write-Output-Colored {
+    param(
+        $ForegroundColor
+    )
 	
     $fc = $host.UI.RawUI.ForegroundColor
 
@@ -18,24 +17,22 @@ function Write-Output-Colored
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-function Exec
-{
-	param(
-		[string] $Command
-	)
+function Exec {
+    param(
+        [string] $Command
+    )
 
-	$Dashses = "-" * $Command.Length
+    $Dashses = "-" * $Command.Length
 	
-	Write-Output $Dashses
-	Write-Output-Colored Green $Command
-	Write-Output $Dashses
+    Write-Output $Dashses
+    Write-Output-Colored Green $Command
+    Write-Output $Dashses
 		
-	Invoke-Expression $Command
+    Invoke-Expression $Command
 	
-	if($LASTEXITCODE -ne 0)
-	{
-		Write-Error "Command failed: $Command"
-	}
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Command failed: $Command"
+    }
 }
 
 Exec "& dotnet tool uninstall -g snapx"

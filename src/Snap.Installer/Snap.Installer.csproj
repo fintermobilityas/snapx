@@ -8,7 +8,7 @@
         <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
-        <IsPackable>true</IsPackable>
+        <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>
 
@@ -24,8 +24,8 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
+    <!-- <ItemGroup>
       <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1841731" />
-    </ItemGroup>
+    </ItemGroup> -->
 
 </Project>

@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Mono.Cecil;
+using Snap.Core.IO;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -28,6 +29,7 @@ namespace Snap.Core
         string DirectoryWorkingDirectory();
         Task DirectoryDeleteOrJustGiveUpAsync(string directory, List<string> excludePaths = null);
         string DirectoryGetParent(string path);
+        DisposableTempDirectory WithDisposableTempDirectory(string workingDirectory);
         IEnumerable<string> EnumerateDirectories(string path);
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
@@ -255,6 +257,12 @@ namespace Snap.Core
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             return Directory.Exists(directory);
+        }
+
+        public DisposableTempDirectory WithDisposableTempDirectory([NotNull] string workingDirectory)
+        {
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            return new DisposableTempDirectory(workingDirectory, this);
         }
 
         public IEnumerable<string> EnumerateDirectories([NotNull] string path)

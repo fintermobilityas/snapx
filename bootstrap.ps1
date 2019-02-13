@@ -111,7 +111,7 @@ switch -regex ($OSVersion) {
         $CommandMake = "make"
         $CommandUpx = "upx"
         $CommandPacker = Join-Path $ToolsDir warp-packer-linux-x64.exe
-        $CommandSnapx = "snapx.exe"
+        $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
     }	
@@ -349,6 +349,7 @@ function Build-Snap-Installer
     $Rid = $null
     $PackerArch = $null
     $SnapInstallerExeName = $null
+    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup.exe
     $MonoLinkerCrossGenEnabled = $true
 
     switch($OSPlatform)
@@ -377,6 +378,11 @@ function Build-Snap-Installer
     Write-Output "Rid: $Rid"
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
+
+    if(Test-Path $SetupExeAbsolutePath)
+    {
+        Remove-Item $SetupExeAbsolutePath | Out-Null
+    }
 
     Command-Exec $CommandDotnet @(
         "clean $SnapInstallerNetSrcDir"
@@ -407,12 +413,12 @@ function Build-Snap-Installer
     Command-Exec $CommandPacker @(
         "--arch $PackerArch"
         "--exec $SnapInstallerExeName"
-        ("--output {0} " -f (Join-Path $SnapInstallerNetBuildPublishDir Setup.exe))
+        "--output $SetupExeAbsolutePath"
         "--input_dir $SnapInstallerNetBuildPublishDir"
     )
 
     Command-Exec $CommandUpx @(
-        ("--ultra-brute {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir Setup.exe))
+        "--ultra-brute $SetupExeAbsolutePath"
     )
 }
 

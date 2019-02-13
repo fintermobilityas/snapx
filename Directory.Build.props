@@ -16,7 +16,7 @@
         <IsPackable>false</IsPackable>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
-        <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+        <GeneratePackageOnBuild Condition="'$(SnapNupkg)' == 'Release'">true</GeneratePackageOnBuild>
     </PropertyGroup>
 	
 	<PropertyGroup>
@@ -32,7 +32,7 @@
         <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
-	    <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
+        <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
     </PropertyGroup>
 	
 	<PropertyGroup>

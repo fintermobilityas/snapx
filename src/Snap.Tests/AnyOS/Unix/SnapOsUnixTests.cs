@@ -68,7 +68,7 @@ Codename:	cosmic";
                 var testFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
                 await _snapFilesystem.FileWriteUtf8StringAsync("yolo", testFilename, CancellationToken.None);
 
-                Assert.Equal(0,NativeMethodsUnix.chmod(testFilename, 755));                            
+                Assert.Equal(0,NativeMethodsUnix.chmod(testFilename, 0775));                            
             }
         }
 

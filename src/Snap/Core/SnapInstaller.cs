@@ -255,14 +255,14 @@ namespace Snap.Core
             {
                 if (exePath == null) throw new ArgumentNullException(nameof(exePath));
                 logger?.Info($"Attempting to change file permission for executable: {exePath}.");                
-                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 777) == 0;                
+                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 0775) == 0;                
                 logger?.Info($"Permissions changed successfully: {(chmodSuccess ? "true" : "false")}.");
             }
             
             if (!isWindows)
             {
-//                Chmod(coreRunExeAbsolutePath);
-//                Chmod(mainExeAbsolutePath);
+                Chmod(coreRunExeAbsolutePath);
+                Chmod(mainExeAbsolutePath);
             }
 
             var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExeAbsolutePath);

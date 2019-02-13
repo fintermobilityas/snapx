@@ -4,7 +4,17 @@ param(
     [string] $Target = "Bootstrap"
 )
 
+# Configuration
+$ErrorActionPreference = "Stop"; 
+$ConfirmPreference = "None"; 
+$WorkingDir = Split-Path $MyInvocation.MyCommand.Path -Parent
+
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
+$env:NUGET_XMLDOC_MODE = "skip"
+
 # Global variables
+
 $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
 
@@ -71,6 +81,7 @@ function Build-Summary
 switch ($Target) {
     "Bootstrap" {
         Build-Native
+        .\install_snapx.ps1
         Build-Snap-Installer
         Build-Summary
     }

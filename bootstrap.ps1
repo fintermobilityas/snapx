@@ -417,9 +417,10 @@ function Build-Snap-Installer
         "--input_dir $SnapInstallerNetBuildPublishDir"
     )
 
-    Command-Exec $CommandUpx @(
-        "--ultra-brute $SetupExeAbsolutePath"
-    )
+    if($OSPlatform -ne "Windows")
+    {
+        Command-Exec chmod @("+x $SetupExeAbsolutePath")
+    }
 }
 
 Write-Output-Header "----------------------- CONFIGURATION DETAILS ------------------------" 

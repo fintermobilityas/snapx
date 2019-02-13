@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Avalonia;
 using CommandLine;
@@ -26,6 +27,7 @@ namespace Snap.Installer
     {
         const string ApplicationName = "Snapx.Installer";
         internal const int UnitTestExitCode = 272151230; // Random value 
+        static Mutex _mutexSingleInstanceWorkingDirectory;
         
         public static int Main(string[] args)
         {
@@ -52,10 +54,11 @@ namespace Snap.Installer
         public static int MainImpl([NotNull] string[] args, LogLevel logLevel)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
+                    
             var environmentCts = new CancellationTokenSource();
             
-           var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
-           int exitCode;
+            var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
+            int exitCode;
            
             try
             {
@@ -69,6 +72,15 @@ namespace Snap.Installer
             {
                 Console.Error.WriteLine($"Exception thrown during installation: {e.Message}");
                 exitCode = -1;
+            }
+
+            try
+            {
+                _mutexSingleInstanceWorkingDirectory.Dispose();
+            }
+            catch (Exception)
+            {
+                // ignore
             }
 
             return exitCode;
@@ -106,6 +118,23 @@ namespace Snap.Installer
                 if (opts == null) throw new ArgumentNullException(nameof(opts));
                 return Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter,  snapInstallerLogger, workingDirectory);
+            }
+
+            try
+            {
+                var mutexName = snapCryptoProvider.Sha1(Encoding.UTF8.GetBytes(workingDirectory));
+                _mutexSingleInstanceWorkingDirectory = new Mutex(true, $"Global\\{mutexName}", out var createdNew);
+                if (!createdNew)
+                {
+                    snapInstallerLogger.Error("Setup is already running, exiting...");
+                    return -1;
+                }
+            }
+            catch (Exception e)
+            {
+                snapInstallerLogger.Error("Error creating installer mutex, exiting...", e);
+                _mutexSingleInstanceWorkingDirectory.Dispose();
+                return -1;
             }
             
             return Parser

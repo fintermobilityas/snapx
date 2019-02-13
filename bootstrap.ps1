@@ -344,6 +344,8 @@ function Build-Snap-Installer
 {
     Write-Output-Header "Building Snap.Installer"
 
+    Requires-Snapx 
+
     $Rid = $null
     $PackerArch = $null
     $SnapInstallerExeName = $null
@@ -447,7 +449,6 @@ Requires-Cmake
 Requires-Upx
 Requires-Packer
 Requires-Dotnet
-Requires-Snapx 
 
 switch ($Target) {
     "Native" {

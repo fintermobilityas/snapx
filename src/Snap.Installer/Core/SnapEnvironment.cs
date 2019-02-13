@@ -12,6 +12,7 @@ namespace Snap.Installer.Core
     {
         ISnapOsSpecialFolders SpecialFolders { get; }
         string WorkingDirectory { get; set; }
+        string ThisExeWorkingDirectory { get; set; }
     }
 
     internal interface ISnapInstallerEnvironment
@@ -55,5 +56,6 @@ namespace Snap.Installer.Core
     {
         public ISnapOsSpecialFolders SpecialFolders { get; set; }
         public string WorkingDirectory { get; set; }
+        public string ThisExeWorkingDirectory { get; set; }
     }
 }

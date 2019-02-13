@@ -101,10 +101,10 @@ namespace Snap.Installer
             var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
             var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
 
-            var toolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
-            var workingDirectory = Environment.CurrentDirectory;
-            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, toolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
+            var thisExeWorkingDirectory = snapInstallerEnvironment.Io.ThisExeWorkingDirectory;
+            var workingDirectory = snapInstallerEnvironment.Io.WorkingDirectory;
+            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisExeWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisExeWorkingDirectory);
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();
             var snapPack = snapInstallerEnvironment.Container.GetInstance<ISnapPack>();
@@ -117,7 +117,7 @@ namespace Snap.Installer
             {
                 if (opts == null) throw new ArgumentNullException(nameof(opts));
                 return Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter,  snapInstallerLogger, workingDirectory);
+                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter,  snapInstallerLogger);
             }
 
             try
@@ -148,11 +148,9 @@ namespace Snap.Installer
         static SnapInstallerEnvironment BuildEnvironment(ISnapOs snapOs, CancellationTokenSource globalCts, LogLevel logLevel)
         {
             var container = new ServiceContainer();
+            
+            var thisExeWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var workingDirectory = Environment.CurrentDirectory;
-            if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparatorChar))
-            {
-                workingDirectory += snapOs.Filesystem.DirectorySeparatorChar;
-            }
 
             container.Register(c => snapOs);
             container.Register(c => snapOs.SpecialFolders);
@@ -190,6 +188,7 @@ namespace Snap.Installer
             var ioEnvironment = new SnapInstallerIoEnvironment
             {
                 WorkingDirectory = workingDirectory,
+                ThisExeWorkingDirectory = thisExeWorkingDirectory,
                 SpecialFolders = container.GetInstance<ISnapOsSpecialFolders>()
             };
 

@@ -25,7 +25,7 @@ namespace Snap.Installer
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
             [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, 
-            [NotNull] ILog loggerUntilMainWindowVisible, [NotNull] string workingDirectory)
+            [NotNull] ILog loggerUntilMainWindowVisible)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (environment == null) throw new ArgumentNullException(nameof(environment));
@@ -38,7 +38,6 @@ namespace Snap.Installer
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (loggerUntilMainWindowVisible == null) throw new ArgumentNullException(nameof(loggerUntilMainWindowVisible));
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             // NB! All filesystem operations has to be readonly until check that verifies
             // current user is not elevated to root has run.
@@ -69,7 +68,9 @@ namespace Snap.Installer
                     SetStatusText(mainWindowViewModel, message);
                 });
 
-                var nupkgAbsolutePath = options.Filename == null ? snapFilesystem.PathCombine(workingDirectory, "Setup.nupkg") : snapFilesystem.PathGetFullPath(options.Filename);
+                var nupkgAbsolutePath = options.Filename == null ? 
+                    snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg") : 
+                    snapFilesystem.PathGetFullPath(options.Filename);
                 if (!snapFilesystem.FileExists(nupkgAbsolutePath))
                 {
                     mainWindowLogger.Error($"Unable to find nupkg installer payload: {snapFilesystem.PathGetFileName(nupkgAbsolutePath)}");

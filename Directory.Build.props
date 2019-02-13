@@ -3,6 +3,11 @@
     <Import Project="Version.props" />
 
     <PropertyGroup>
+        <SnapNupkg Condition="$(SnapNupkg) == ''">false</SnapNupkg>
+        <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <Authors>Peter Rekdal Sunde</Authors>
         <Product>Snap</Product>
         <Copyright>Copyright © Peter Rekdal Sunde</Copyright>
@@ -18,13 +23,13 @@
         <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
         <GeneratePackageOnBuild Condition="'$(SnapNupkg)' == 'Release'">true</GeneratePackageOnBuild>
     </PropertyGroup>
-	
-	<PropertyGroup>
-        <LangVersion>7.3</LangVersion>	
-	</PropertyGroup>
 
     <PropertyGroup>
-    	<OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
+        <LangVersion>7.3</LangVersion>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
         <OsPlatform Condition="'$(OsPlatform)' == '' AND !$([MSBuild]::IsOsPlatform('Windows'))">Unix</OsPlatform>
         <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
         <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
@@ -34,32 +39,32 @@
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
         <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
     </PropertyGroup>
-	
-	<PropertyGroup>
+
+    <PropertyGroup>
         <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
         <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
     </PropertyGroup>
-	
-	<PropertyGroup Condition="$(OsPlatform) == 'Windows'">
+
+    <PropertyGroup Condition="$(OsPlatform) == 'Windows'">
         <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS;</DefineConstants>
     </PropertyGroup>
 
-	<PropertyGroup Condition="$(OsPlatform) == 'Unix'">
+    <PropertyGroup Condition="$(OsPlatform) == 'Unix'">
         <DefineConstants>$(DefineConstants);PLATFORM_UNIX;</DefineConstants>
     </PropertyGroup>
-	
+
     <PropertyGroup Condition="$(IsNetStandard)">
         <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
     </PropertyGroup>
-	
+
     <PropertyGroup Condition="$(IsNetCoreApp)">
         <DefineConstants>$(DefineConstants);NETCOREAPP;</DefineConstants>
     </PropertyGroup>
-	
+
     <PropertyGroup Condition="$(IsNetFullFramework)">
         <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
     </PropertyGroup>
-	
+
     <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net461'">
         <DefineConstants>$(DefineConstants);NET461;</DefineConstants>
     </PropertyGroup>

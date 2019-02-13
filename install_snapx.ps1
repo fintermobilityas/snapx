@@ -1,3 +1,8 @@
+param(
+    [Parameter(Position = 0, ValueFromPipeline = $true)]
+    $Bootstrap = $false
+)
+
 function Write-Output-Colored {
     param(
         $ForegroundColor
@@ -19,7 +24,8 @@ function Write-Output-Colored {
 
 function Exec {
     param(
-        [string] $Command
+        [string] $Command,
+        [boolean] $AllowFail = $false
     )
 
     $Dashses = "-" * $Command.Length
@@ -30,14 +36,30 @@ function Exec {
 		
     Invoke-Expression $Command
 	
-    if ($LASTEXITCODE -ne 0) {
+    if ($false -eq $AllowFail -and $LASTEXITCODE -ne 0) {
         Write-Error "Command failed: $Command"
     }
 }
 
-Exec "& dotnet tool uninstall -g snapx"
+function Convert-Boolean-MSBuild {
+    param(
+        [boolean] $Value
+    )
+    
+    if ($true -eq $Value) {
+        return "true"
+    }
+    
+    return "false"
+}
+
+$Properties = @(
+    ("/p:SnapBootstrap={0}" -f (Convert-Boolean-MSBuild $Bootstrap)) 
+) -join " "
+
+Exec "& dotnet tool uninstall -g snapx" -AllowFail $true
 Exec "& dotnet clean src/Snapx"
-Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.2"
+Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.2 $Properties"
 Exec "& dotnet pack -c Release src/Snapx --no-build"
 Exec "& dotnet tool install --global --add-source ./nupkgs snapx"
 

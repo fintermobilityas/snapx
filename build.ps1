@@ -34,14 +34,12 @@ function Write-Output-Header {
 
 $BuildTime = $StopWatch::StartNew()
 
-function Build-Native
-{
+function Build-Native {
     if ($OSVersion -match "^Microsoft Windows") {
         # NB! Install from Microsoft Store. Afterwards run install.sh
         Ubuntu1804 run pwsh -f build.ps1 -Target Native
 
-        if($LASTEXITCODE -ne 0)
-        {
+        if ($LASTEXITCODE -ne 0) {
             exit 0
         }
 
@@ -57,14 +55,12 @@ function Build-Native
     }	
 }
 
-function Build-Snap-Installer 
-{
-   .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
-   .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64
+function Build-Snap-Installer {
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64
 }
 
-function Build-Summary 
-{
+function Build-Summary {
     $BuildTime.Stop()		
     $Elapsed = $BuildTime.Elapsed
     Write-Output-Header "Build elapsed: $Elapsed ($OSVersion)"
@@ -73,16 +69,17 @@ function Build-Summary
 switch ($Target) {
     "Bootstrap" {
         Build-Native
-        .\install_snapx.ps1
+        .\install_snapx.ps1 -Bootstrap $true
         Build-Snap-Installer
+        .\install_snapx.ps1 -Bootstrap $false
         Build-Summary
     }
     "Native" {
         Build-Native				
         Build-Summary
     }
-	"Snap-Installer" {        
+    "Snap-Installer" {        
         Build-Snap-Installer
         Build-Summary
-	}
+    }
 }

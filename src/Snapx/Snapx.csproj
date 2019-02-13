@@ -37,4 +37,9 @@
         <ProjectReference Include="..\Snap.Installer\Snap.Installer.csproj" />
     </ItemGroup>
 
+    <ItemGroup Condition="!$(SnapBootstrap)">
+        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/netcoreapp2.2/Release/publish/Setup-win-x64.exe" Link="Resources/Setup/Setup-win-x64.exe" />
+        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/netcoreapp2.2/Release/publish/Setup-linux-x64.exe" Link="Resources/Setup/Setup-linux-x64.exe" />
+    </ItemGroup>
+    
 </Project>

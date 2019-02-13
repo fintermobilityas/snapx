@@ -117,8 +117,7 @@ function Write-Output-Header {
     Write-Output-Colored $Message -ForegroundColor Green
     Write-Host
 }
-function Write-Output-Header-Warn 
-{
+function Write-Output-Header-Warn {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $Message
@@ -258,8 +257,7 @@ function Configure-Msvs-Toolchain {
 
 # Build targets
 
-function Build-Native 
-{	
+function Build-Native {	
     $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
 
     Write-Output-Header "Building native dependencies"
@@ -325,8 +323,7 @@ function Build-Native
     }
 			
 }
-function Build-Snap-Installer 
-{
+function Build-Snap-Installer {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [ValidateSet("win-x64", "linux-x64")]
@@ -340,20 +337,16 @@ function Build-Snap-Installer
     $SnapInstallerExeName = $null
     $MonoLinkerCrossGenEnabled = $true
 
-    if($OSPlatform -ne "Windows")
-    {
-        $MonoLinkerCrossGenEnabled = $false
-    }
-
-    switch($Rid)
-    {
-        "win-x64"
-        {
+    switch ($Rid) {
+        "win-x64" {
             $PackerArch = "windows-x64"
             $SnapInstallerExeName = "Snap.Installer.exe"
+
+            if ($OSPlatform -ne "Windows") {
+                $MonoLinkerCrossGenEnabled = $false
+            }
         }
-        "linux-x64"
-        {
+        "linux-x64" {
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
         }
@@ -363,7 +356,7 @@ function Build-Snap-Installer
     }
 
     $SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
-    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup.exe
+    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup-$Rid.exe
 
     Write-Output "Build src directory: $SnapInstallerNetSrcDir"
     Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
@@ -372,8 +365,7 @@ function Build-Snap-Installer
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
-    if(Test-Path $SetupExeAbsolutePath)
-    {
+    if (Test-Path $SetupExeAbsolutePath) {
         Remove-Item $SetupExeAbsolutePath | Out-Null
     }
 
@@ -394,8 +386,7 @@ function Build-Snap-Installer
         "--output $SnapInstallerNetBuildPublishDir"
     )
 
-    if($OSPlatform -eq "Windows")
-    {
+    if ($OSPlatform -eq "Windows") {
         Command-Exec $CommandSnapx @(
             "rcedit"
             "--gui-app" 
@@ -410,8 +401,7 @@ function Build-Snap-Installer
         "--input_dir $SnapInstallerNetBuildPublishDir"
     )
 
-    if($OSPlatform -ne "Windows")
-    {
+    if ($OSPlatform -ne "Windows") {
         Command-Exec chmod @("+x $SetupExeAbsolutePath")
     }
 }

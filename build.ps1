@@ -58,8 +58,7 @@ function Build-Snap-Installer
         }
    }
            
-    .\bootstrap.ps1 -Target Snap-Installer -Configuration Debug
-    .\bootstrap.ps1 -Target Snap-Installer -Configuration Release 
+    .\bootstrap.ps1 -Target Snap-Installer
 }
 
 function Build-Summary 

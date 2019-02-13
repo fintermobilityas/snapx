@@ -131,57 +131,54 @@ if ($Cross) {
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
 $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
 
-$SnapNetSrcDir = Join-Path $WorkingDir src\Snap
-$SnapNetBuildOutputDir = Join-Path $SnapNetSrcDir bin\$TargetArchDotNet\$Configuration\publish
-
 $SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
-$SnapInstallerNetBuildOutputDir = Join-Path $SnapInstallerNetSrcDir bin\$TargetArchDotNet\$Configuration\publish
+$SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$OSPlatform\Snap.Installer\$TargetArchDotNet\$Configuration\publish
 
 # Miscellaneous functions that require bootstrapped variable state
 
 function Requires-Cmake {
-    if ((Get-Command $CommandCmake -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandCmake -ErrorAction SilentlyContinue)) {
         Die "Unable to find cmake executable in environment path: $CommandCmake"
     }
 }
 
 function Requires-Git {
-    if ((Get-Command $CommandGit -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandGit -ErrorAction SilentlyContinue)) {
         Die "Unable to find git executable in environment path: $CommandGit"
     }
 }
 
 function Requires-Dotnet {
-    if ((Get-Command $CommandDotnet -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandDotnet -ErrorAction SilentlyContinue)) {
         Die "Unable to find dotnet executable in environment path: $CommandDotnet"
     }
 }
 
 function Requires-Msbuild {
-    if ((Get-Command $CommandMsBuild -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandMsBuild -ErrorAction SilentlyContinue)) {
         Die "Unable to find msbuild executable in environment path: $CommandMsBuild"
     }
 }
 
 function Requires-Make {
-    if ((Get-Command $CommandMake -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandMake -ErrorAction SilentlyContinue)) {
         Die "Unable to find make executable in environment path: $CommandMake"
     }
 }
 
 function Requires-Upx {
-    if ((Get-Command $CommandUpx -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandUpx -ErrorAction SilentlyContinue)) {
         Die "Unable to find upx executable in environment path: $CommandUpx"
     }
 }
 
 function Requires-Packer {
-    if ((Get-Command $CommandPacker -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandPacker -ErrorAction SilentlyContinue)) {
         Die "Unable to find packer executable in environment path: $CommandPacker"
     }
 }
 function Requires-Snapx {
-    if ((Get-Command $CommandSnapx -ErrorAction SilentlyContinue) -eq $null) {
+    if ($null -eq (Get-Command $CommandSnapx -ErrorAction SilentlyContinue)) {
         Die "Unable to find snapx executable in environment path: $CommandSnapx"
     }
 }
@@ -257,14 +254,14 @@ function Configure-Msvs-Toolchain {
         | convertfrom-json `
         | select-object -first 1
 						
-    if ($Instance -eq $null) {
+    if ($null -eq $Instance) {
         Die "Visual Studio 2017 was not found"
     }
 		
     $VXXCommonTools = Join-Path $Instance.installationPath VC\Auxiliary\Build
     $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
 
-    if ($VXXCommonTools -eq $null -or (-not (Test-Path($VXXCommonTools)))) {
+    if ($null -eq $VXXCommonTools -or (-not (Test-Path($VXXCommonTools)))) {
         Die "PlatformToolset $PlatformToolset is not installed."
     }
     
@@ -350,6 +347,7 @@ function Build-Snap-Installer
     $Rid = $null
     $PackerArch = $null
     $SnapInstallerExeName = $null
+    $MonoLinkerCrossGenEnabled = $true
 
     switch($OSPlatform)
     {
@@ -364,6 +362,7 @@ function Build-Snap-Installer
             $Rid = "linux-x64"
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
+            $MonoLinkerCrossGenEnabled = $false
         }
         default {
             Die "Platform not supported: $OSPlatform"
@@ -371,24 +370,27 @@ function Build-Snap-Installer
     }
 
     Write-Output "Build src directory: $SnapInstallerNetSrcDir"
-    Write-Output "Build output directory: $SnapInstallerNetBuildOutputDir"
+    Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
     Write-Output "Arch: $TargetArchDotNet"
     Write-Output "Rid: $Rid"
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
     Command-Exec $CommandDotnet @(
-        "clean $SnapInstallerNetSrcDir",
-        "--configuration $Configuration"
+        "clean $SnapInstallerNetSrcDir"
     )
+
+    Write-Output-Header-Warn "Snap.Installer is published in debug mode. Does anyone know why the dotnet toolset is unable to publish this particular project in Release mode? :("
 
     Command-Exec $CommandDotnet @(
         ("publish {0}" -f (Join-Path $SnapInstallerNetSrcDir Snap.Installer.csproj)),
         "/p:ShowLinkerSizeComparison=true",
-        "--configuration $Configuration",
+        "/p:CrossGenDuringPublish=$MonoLinkerCrossGenEnabled",
+        # "--configuration $Configuration",
         "--runtime $Rid",
         "--framework $TargetArchDotNet",
-        "--self-contained"
+        "--self-contained true",
+        "--output $SnapInstallerNetBuildPublishDir"
     )
 
     if($OSPlatform -eq "Windows")
@@ -396,19 +398,19 @@ function Build-Snap-Installer
         Command-Exec $CommandSnapx @(
             "rcedit"
             "--gui-app" 
-            ("--filename {0}" -f (Join-Path $SnapInstallerNetBuildOutputDir Snap.Installer.exe))
+            ("--filename {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir Snap.Installer.exe))
         )
     }
 
     Command-Exec $CommandPacker @(
         "--arch $PackerArch"
         "--exec $SnapInstallerExeName"
-        ("--output {0} " -f (Join-Path $SnapInstallerNetBuildOutputDir Setup.exe))
-        "--input_dir $SnapInstallerNetBuildOutputDir"
+        ("--output {0} " -f (Join-Path $SnapInstallerNetBuildPublishDir Setup.exe))
+        "--input_dir $SnapInstallerNetBuildPublishDir"
     )
 
     Command-Exec $CommandUpx @(
-        ("--ultra-brute {0}" -f (Join-Path $SnapInstallerNetBuildOutputDir Setup.exe))
+        ("--ultra-brute {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir Setup.exe))
     )
 }
 

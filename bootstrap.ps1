@@ -8,69 +8,15 @@ param(
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [boolean] $Cross = $FALSE,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [boolean] $Lto = $FALSE
+    [boolean] $Lto = $FALSE,
+    [Parameter(Position = 4, ValueFromPipeline = $true)]
+    [string] $DotNetRid = $null
 )
 
-# Global functions
-
-function Die {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Message
-    )
-
-    Write-Host
-    Write-Host $Message -ForegroundColor Red
-    Write-Host
-
-    exit $LASTEXITCODE
-}
-
-function Write-Output-Colored {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Message,
-        [Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $true)]
-        [string] $ForegroundColor = "Green"
-    )
-	
-    $fc = $host.UI.RawUI.ForegroundColor
-
-    $host.UI.RawUI.ForegroundColor = $ForegroundColor
-
-    Write-Output $Message
-
-    $host.UI.RawUI.ForegroundColor = $fc
-}
-
-function Write-Output-Header {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Message
-    )
-
-    Write-Host
-    Write-Output-Colored $Message -ForegroundColor Green
-    Write-Host
-}
-
-function Write-Output-Header-Warn {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $Message
-    )
-
-    Write-Host
-    Write-Output-Colored $Message -ForegroundColor Yellow
-    Write-Host
-}
-
-# IO Variables
+# Global Variables
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 $ToolsDir = Join-Path $WorkingDir tools
-
-# Global variables
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
@@ -129,49 +75,89 @@ if ($Cross) {
 # Projects
 
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
-$SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
-
 $SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
-$SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$OSPlatform\Snap.Installer\$TargetArchDotNet\$Configuration\publish
 
-# Miscellaneous functions that require bootstrapped variable state
+# Functions
 
+function Die {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message
+    )
+
+    Write-Host
+    Write-Host $Message -ForegroundColor Red
+    Write-Host
+
+    exit $LASTEXITCODE
+}
+function Write-Output-Colored {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message,
+        [Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $true)]
+        [string] $ForegroundColor = "Green"
+    )
+	
+    $fc = $host.UI.RawUI.ForegroundColor
+
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+
+    Write-Output $Message
+
+    $host.UI.RawUI.ForegroundColor = $fc
+}
+function Write-Output-Header {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message
+    )
+
+    Write-Host
+    Write-Output-Colored $Message -ForegroundColor Green
+    Write-Host
+}
+function Write-Output-Header-Warn 
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message
+    )
+
+    Write-Host
+    Write-Output-Colored $Message -ForegroundColor Yellow
+    Write-Host
+}
 function Requires-Cmake {
     if ($null -eq (Get-Command $CommandCmake -ErrorAction SilentlyContinue)) {
         Die "Unable to find cmake executable in environment path: $CommandCmake"
     }
 }
-
 function Requires-Git {
     if ($null -eq (Get-Command $CommandGit -ErrorAction SilentlyContinue)) {
         Die "Unable to find git executable in environment path: $CommandGit"
     }
 }
-
 function Requires-Dotnet {
     if ($null -eq (Get-Command $CommandDotnet -ErrorAction SilentlyContinue)) {
         Die "Unable to find dotnet executable in environment path: $CommandDotnet"
     }
 }
-
 function Requires-Msbuild {
     if ($null -eq (Get-Command $CommandMsBuild -ErrorAction SilentlyContinue)) {
         Die "Unable to find msbuild executable in environment path: $CommandMsBuild"
     }
 }
-
 function Requires-Make {
     if ($null -eq (Get-Command $CommandMake -ErrorAction SilentlyContinue)) {
         Die "Unable to find make executable in environment path: $CommandMake"
     }
 }
-
 function Requires-Upx {
     if ($null -eq (Get-Command $CommandUpx -ErrorAction SilentlyContinue)) {
         Die "Unable to find upx executable in environment path: $CommandUpx"
     }
 }
-
 function Requires-Packer {
     if ($null -eq (Get-Command $CommandPacker -ErrorAction SilentlyContinue)) {
         Die "Unable to find packer executable in environment path: $CommandPacker"
@@ -182,19 +168,16 @@ function Requires-Snapx {
         Die "Unable to find snapx executable in environment path: $CommandSnapx"
     }
 }
-
 function Requires-Unix {
     if ($OSPlatform -ne "Unix") {
         Die "Unable to continue because OS version is not Unix but $OSVersion"
     }	
 }
-
 function Requires-Windows {
     if ($OSPlatform -ne "Windows") {
         Die "Unable to continue because OS version is not Windows but $OSVersion"
     }	
 }
-
 function Command-Exec {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -216,7 +199,6 @@ function Command-Exec {
         Die "Command failed: $CommandStr"
     }
 }
-
 function Invoke-BatchFile {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -240,7 +222,6 @@ function Invoke-BatchFile {
    
     Remove-Item $tempFile | Out-Null
 }
-
 function Configure-Msvs-Toolchain {
     Write-Output-Header "Configuring msvs toolchain"
 
@@ -275,7 +256,12 @@ function Configure-Msvs-Toolchain {
     Write-Output "Successfully configured msvs"
 }
 
-function Build-Native {	
+# Build targets
+
+function Build-Native 
+{	
+    $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
+
     Write-Output-Header "Building native dependencies"
 
     $CmakeArguments = @(
@@ -339,38 +325,45 @@ function Build-Native {
     }
 			
 }
-
 function Build-Snap-Installer 
 {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [ValidateSet("win-x64", "linux-x64")]
+        [string] $Rid 
+    )
     Write-Output-Header "Building Snap.Installer"
 
     Requires-Snapx 
 
-    $Rid = $null
     $PackerArch = $null
     $SnapInstallerExeName = $null
-    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup.exe
     $MonoLinkerCrossGenEnabled = $true
 
-    switch($OSPlatform)
+    if($OSPlatform -ne "Windows")
     {
-        "Windows"
+        $MonoLinkerCrossGenEnabled = $false
+    }
+
+    switch($Rid)
+    {
+        "win-x64"
         {
-            $Rid = "win-x64"
             $PackerArch = "windows-x64"
             $SnapInstallerExeName = "Snap.Installer.exe"
         }
-        "Unix"
+        "linux-x64"
         {
-            $Rid = "linux-x64"
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
-            $MonoLinkerCrossGenEnabled = $false
         }
         default {
-            Die "Platform not supported: $OSPlatform"
+            Die "Rid not supported: $Rid"
         }
     }
+
+    $SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
+    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup.exe
 
     Write-Output "Build src directory: $SnapInstallerNetSrcDir"
     Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
@@ -427,14 +420,13 @@ Write-Output-Header "----------------------- CONFIGURATION DETAILS -------------
 Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
-Write-Output "Build output directory: $BuildOutputDir"
 Write-Output "Configuration: $Configuration"
 
 if ($Cross) {
-    Write-Output "Target arch: $ArchCross"		
+    Write-Output "Native target arch: $ArchCross"		
 }
 else {
-    Write-Output "Target arch: $Arch"				
+    Write-Output "Native target arch: $Arch"				
 }
 
 switch ($OSPlatform) {
@@ -477,16 +469,6 @@ switch ($Target) {
         }
     }
     "Snap-Installer" {
-        switch ($OSPlatform) {
-            "Windows" {		
-                Build-Snap-Installer
-            }
-            "Unix" {
-                Build-Snap-Installer
-            }
-            default {
-                Die "Unsupported os platform: $OSPlatform"
-            }
-        }
+        Build-Snap-Installer -Rid $DotNetRid
     }
 }

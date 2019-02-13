@@ -1,7 +1,7 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
     [ValidateSet("Bootstrap", "Native", "Snap-Installer")]
-    [string] $Target = "Native"
+    [string] $Target = "Bootstrap"
 )
 
 # Global variables

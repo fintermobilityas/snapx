@@ -143,11 +143,11 @@ namespace snapx
             logger.Info($"Installers directory: {snapApps.Generic.Installers}");
             logger.Info($"Nuspecs directory: {snapApps.Generic.Nuspecs}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
-            logger.Info('-'.Repeat(TerminalWidth));
+            logger.Info('-'.Repeat(TerminalDashesWidth));
             if (previousSnapApp != null)
             {
                 logger.Info($"Previous release detected: {previousSnapApp.Version}.");
-                logger.Info('-'.Repeat(TerminalWidth));
+                logger.Info('-'.Repeat(TerminalDashesWidth));
             }
             logger.Info($"Id: {snapApp.Id}");
             logger.Info($"Version: {snapApp.Version}");
@@ -156,7 +156,7 @@ namespace snapx
             logger.Info($"OS: {snapApp.Target.Os.ToString().ToLowerInvariant()}");
             logger.Info($"Nuspec: {nuspecFilename}");
                         
-            logger.Info('-'.Repeat(TerminalWidth));
+            logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var snapPackageDetails = new SnapPackageDetails
             {
@@ -189,7 +189,7 @@ namespace snapx
                 }
             }
 
-            logger.Info('-'.Repeat(TerminalWidth));        
+            logger.Info('-'.Repeat(TerminalDashesWidth));        
             logger.Info($"Building delta package from previous release: {previousSnapApp.Version}.");
 
             var deltaProgressSource = new SnapProgressSource();
@@ -211,7 +211,7 @@ namespace snapx
             }
 
             success:
-            logger.Info('-'.Repeat(TerminalWidth));
+            logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Releasify completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
             return 0;
         }
@@ -227,7 +227,7 @@ namespace snapx
             if (packages == null) throw new ArgumentNullException(nameof(packages));
             if (packages.Length == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(packages));
             
-            logger.Info('-'.Repeat(TerminalWidth));
+            logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Length);
 

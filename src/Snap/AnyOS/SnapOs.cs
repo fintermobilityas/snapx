@@ -29,7 +29,7 @@ namespace Snap.AnyOS
         ISnapOsTaskbar Taskbar { get; }
         OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
-        ISnapOsProcessManager OsProcess { get; }
+        ISnapOsProcessManager ProcessManager { get; }
         SnapOsDistroType DistroType { get; }
         ISnapOsSpecialFolders SpecialFolders { get; }
         Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
@@ -83,7 +83,7 @@ namespace Snap.AnyOS
         public ISnapOsTaskbar Taskbar => OsImpl.Taskbar;
         public OSPlatform OsPlatform => OsImpl.OsPlatform;
         public ISnapFilesystem Filesystem => OsImpl.Filesystem;
-        public ISnapOsProcessManager OsProcess => OsImpl.OsProcessManager;
+        public ISnapOsProcessManager ProcessManager => OsImpl.OsProcessManager;
         public SnapOsDistroType DistroType => OsImpl.DistroType;
         public ISnapOsSpecialFolders SpecialFolders => OsImpl.SpecialFolders;
 

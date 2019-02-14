@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using snapx.Resources;
 using Snap.Core.Resources;
-using Snap.Extensions;
-using Snap.Installer.Assets;
-using Snap.Installer.Core;
 
 namespace snapx.Core
 {
@@ -14,15 +10,21 @@ namespace snapx.Core
     {
         MemoryStream SetupWindows { get; }
         MemoryStream SetupLinux { get; }
+        MemoryStream WarpPackerWindows { get; }
+        MemoryStream WarpPackerLinux { get; }
     }
 
     internal sealed class SnapxEmbeddedResources : EmbeddedResources, ISnapxEmbeddedResources
     {
         readonly EmbeddedResource _setupWindows;
         readonly EmbeddedResource _setupLinux;
+        readonly EmbeddedResource _warpPackerWindows;
+        readonly EmbeddedResource _warpPackerLinux;
 
         public MemoryStream SetupWindows => new MemoryStream(_setupWindows.Stream.ToArray());
         public MemoryStream SetupLinux => new MemoryStream(_setupLinux.Stream.ToArray());
+        public MemoryStream WarpPackerWindows => new MemoryStream(_warpPackerWindows.Stream.ToArray());
+        public MemoryStream WarpPackerLinux => new MemoryStream(_warpPackerLinux.Stream.ToArray());
 
         public SnapxEmbeddedResources()
         {
@@ -30,6 +32,8 @@ namespace snapx.Core
 
             _setupWindows = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-win-x64.exe");
             _setupLinux = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-linux-x64.exe");
+            _warpPackerWindows = Resources.SingleOrDefault(x => x.Filename == "Tools.warp-packer-win-x64.exe");
+            _warpPackerLinux = Resources.SingleOrDefault(x => x.Filename == "Tools.warp-packer-linux-x64.exe");
             
             if (_setupWindows == null)
             {
@@ -39,6 +43,16 @@ namespace snapx.Core
             if (_setupLinux == null)
             {
                 throw new Exception("Setup-linux-x64.exe was not found in current assembly resources manifest");
+            }
+
+            if (_warpPackerWindows == null)
+            {
+                throw new Exception("warp-packer-win-x64.exe was not found in current assembly resources manifest");
+            }
+            
+            if (_warpPackerLinux == null)
+            {
+                throw new Exception("warp-packer-linux-x64.exe was not found in current assembly resources manifest");
             }
         }
     }

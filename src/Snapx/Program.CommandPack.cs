@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Versioning;
+using snapx.Core;
 using snapx.Options;
 using Snap.AnyOS;
 using Snap.Core;
@@ -21,8 +24,9 @@ namespace snapx
     {
         static int CommandPack([NotNull] PackOptions packOptions, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs, [NotNull] ILog logger, [NotNull] string toolWorkingDirectory,
-            [NotNull] string workingDirectory)
+            [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
+            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ILog logger,
+            [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -31,14 +35,17 @@ namespace snapx
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
+            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
+            var cancellationToken = CancellationToken.None;
+
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
-            
-            var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader, 
+
+            var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader,
                 nuGetPackageSources, packOptions.AppId, packOptions.Rid, workingDirectory);
             if (snapApp == null)
             {
@@ -55,9 +62,9 @@ namespace snapx
                 logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
                 return -1;
             }
-            
+
             snapApp.Version = semanticVersion;
-            
+
             var expandableProperties = new Dictionary<string, string>
             {
                 { "id", snapApp.Id },
@@ -68,7 +75,7 @@ namespace snapx
             snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
                 filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(expandableProperties) :
                 filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
- 
+
             snapApps.Generic.Installers = snapApps.Generic.Installers == null ?
                 filesystem.PathCombine(workingDirectory, "snapx", "installers", "$id$/$rid$").ExpandProperties(expandableProperties) :
                 filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
@@ -94,11 +101,11 @@ namespace snapx
                             && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCulture)
                             && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCulture)
                             && string.Equals(x.nupkg.channelName, snapAppChannel.Name, StringComparison.InvariantCulture))
-                .OrderByDescending(x  => x.nupkg.semanticVersion)
+                .OrderByDescending(x => x.nupkg.semanticVersion)
                 .ToList();
 
             var currentNupkg = nupkgs.FirstOrDefault();
-            if (currentNupkg != default 
+            if (currentNupkg != default
                 && currentNupkg.nupkg.semanticVersion > snapApp.Version)
             {
                 logger.Error($"Unable to overwrite current version {currentNupkg.nupkg.semanticVersion} with {snapApp.Version}. " +
@@ -115,16 +122,16 @@ namespace snapx
                     return -1;
                 }
             }
-            
+
             string previousNupkgAbsolutePath = null;
-            SnapApp previousSnapApp = null;        
+            SnapApp previousSnapApp = null;
             var previousFullNupkg = nupkgs.FirstOrDefault(x => x.nupkg.fullOrDelta == "full" && x.nupkg.semanticVersion < snapApp.Version);
             if (previousFullNupkg != default)
             {
                 using (var coreReader = new PackageArchiveReader(previousFullNupkg.fullName))
                 {
                     previousNupkgAbsolutePath = previousFullNupkg.fullName;
-                    previousSnapApp = snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult();
+                    previousSnapApp = snapPack.GetSnapAppAsync(coreReader, cancellationToken).GetAwaiter().GetResult();
                 }
             }
 
@@ -155,7 +162,7 @@ namespace snapx
             logger.Info($"Rid: {snapApp.Target.Rid}");
             logger.Info($"OS: {snapApp.Target.Os.ToString().ToLowerInvariant()}");
             logger.Info($"Nuspec: {nuspecFilename}");
-                        
+
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var snapPackageDetails = new SnapPackageDetails
@@ -173,30 +180,49 @@ namespace snapx
 
             logger.Info($"Building full package: {snapApp.Version}.");
             var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());
-            using (var currentNupkgStream = snapPack.BuildFullPackageAsync(snapPackageDetails, logger).GetAwaiter().GetResult())
+            using (var currentNupkgStream = snapPack.BuildFullPackageAsync(snapPackageDetails, logger, cancellationToken).GetAwaiter().GetResult())
             {
                 logger.Info($"Writing nupkg: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {currentNupkgStream.Length.BytesAsHumanReadable()}.");
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
-                if (previousSnapApp == null)
-                {                    
-                    if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
-                    {
-                        PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
-                            currentNupkgAbsolutePath);
-                    }
-
-                    goto success;
-                }
             }
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));        
+            logger.Info('-'.Repeat(TerminalDashesWidth));
+
+            var (installerBuiltSuccessfully, installerExeAbsolutePath) = BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                snapApp, snapAppChannel, snapApps.Generic.Installers, currentNupkgAbsolutePath,
+                cancellationToken).GetAwaiter().GetResult();
+
+            if (!installerBuiltSuccessfully)
+            {
+                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Error("Unknown error building installer.");
+                return -1;
+            }
+
+            var installerExeStat = snapOs.Filesystem.FileStat(installerExeAbsolutePath);
+            logger.Info($"Successfully built installer. File size: {installerExeStat.Length.BytesAsHumanReadable()}.");
+
+            if (previousSnapApp == null)
+            {
+                stopwatch.Stop();
+
+                if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
+                {
+                    PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
+                        currentNupkgAbsolutePath);
+                }
+
+                goto success;
+            }
+
+            logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Building delta package from previous release: {previousSnapApp.Version}.");
 
             var deltaProgressSource = new SnapProgressSource();
             deltaProgressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
 
-            var (deltaNupkgStream, deltaSnapApp) = snapPack.BuildDeltaPackageAsync(previousNupkgAbsolutePath, 
-                currentNupkgAbsolutePath, deltaProgressSource).GetAwaiter().GetResult();
+            var (deltaNupkgStream, deltaSnapApp) = snapPack.BuildDeltaPackageAsync(previousNupkgAbsolutePath,
+                currentNupkgAbsolutePath, deltaProgressSource, cancellationToken: cancellationToken).GetAwaiter().GetResult();
             var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, deltaSnapApp.BuildNugetLocalFilename());
             using (deltaNupkgStream)
             {
@@ -204,19 +230,126 @@ namespace snapx
                 filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default).GetAwaiter().GetResult();
             }
 
+            stopwatch.Stop();
+
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
                 PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
                     currentNupkgAbsolutePath, deltaNupkgAbsolutePath);
             }
 
-            success:
+        success:
             logger.Info('-'.Repeat(TerminalDashesWidth));
-            logger.Info($"Releasify completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
+            logger.Info($"Pack completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
             return 0;
         }
 
-        static void PushPackages([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem, 
+        static async Task<(bool success, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
+            [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, [NotNull] string installersWorkingDirectory, [NotNull] string fullNupkgAbsolutePath, CancellationToken cancellationToken)
+        {
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
+            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
+            if (installersWorkingDirectory == null) throw new ArgumentNullException(nameof(installersWorkingDirectory));
+            if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
+
+            logger.Info($"Building installer for rid: {snapApp.Target.Rid}.");
+
+            var progressSource = new SnapProgressSource();
+            progressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
+
+            using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
+                installersWorkingDirectory))
+            using (var repackageTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
+                snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage")))
+            {
+                MemoryStream installerMemoryStream;
+                MemoryStream warpPackerMemoryStream;
+
+                string snapAppTargetRid;
+                string warpPackerRid;
+                string warpPackerArch;
+
+                if (snapOs.OsPlatform == OSPlatform.Windows)
+                {
+                    warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindows;
+                    warpPackerRid = "win-x64";
+                } else if (snapOs.OsPlatform == OSPlatform.Linux)
+                {
+                    warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinux;
+                    warpPackerRid = "linux-x64";
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
+
+                switch (snapApp.Target.Rid)
+                {
+                    case "win-x64":
+                        installerMemoryStream = snapxEmbeddedResources.SetupWindows;
+                        warpPackerArch = "windows-x64";
+                        snapAppTargetRid = "win-x64";
+                        break;
+                    case "linux-x64":
+                        installerMemoryStream = snapxEmbeddedResources.SetupLinux;
+                        warpPackerArch = "linux-x64";
+                        snapAppTargetRid = "linux-x64";
+                        break;
+                    default:
+                        throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
+                }
+
+                var repackageDirInstallerAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir.WorkingDirectory, $"Setup-{snapAppTargetRid}.exe");
+                var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir.WorkingDirectory, "Setup.nupkg");
+                var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{warpPackerRid}.exe");
+                var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory, snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath));
+
+                using (installerMemoryStream)
+                using (warpPackerMemoryStream)
+                using (var installerDstStream = snapOs.Filesystem.FileWrite(repackageDirInstallerAbsolutePath))
+                using (var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath))
+                {
+                    logger.Info("Copying assets to temp directory.");
+
+                    progressSource.Raise(10);
+
+                    await Task.WhenAll(
+                        installerMemoryStream.CopyToAsync(installerDstStream, cancellationToken),
+                        warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
+                        snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken));
+                }
+
+                progressSource.Raise(50);
+
+                var arguments = new List<string>
+                {
+                    $"--arch {warpPackerArch}",
+                    $"--exec {snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath)}",
+                    $"--output {installerFinalAbsolutePath.ForwardSlashesSafe()}",
+                    $"--input_dir {repackageTempDir.WorkingDirectory.ForwardSlashesSafe()}"
+                };
+
+                var argumentsStr = string.Join(" ", arguments);
+
+                logger.Info($"{rootTempDirWarpPackerAbsolutePath} {argumentsStr}");
+
+                var (exitCode, stdout) = await snapOs.ProcessManager.RunAsync(rootTempDirWarpPackerAbsolutePath, argumentsStr, cancellationToken);
+                if (exitCode != 0)
+                {
+                    return (false, null);
+                }
+
+                progressSource.Raise(100);
+
+                return (true, installerFinalAbsolutePath);
+
+            }
+        }
+
+        static void PushPackages([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
             [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, [NotNull] params string[] packages)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
@@ -226,7 +359,7 @@ namespace snapx
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             if (packages == null) throw new ArgumentNullException(nameof(packages));
             if (packages.Length == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(packages));
-            
+
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Length);

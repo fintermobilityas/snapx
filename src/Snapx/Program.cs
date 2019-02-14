@@ -9,6 +9,7 @@ using System.Threading;
 using CommandLine;
 using JetBrains.Annotations;
 using NuGet.Versioning;
+using snapx.Core;
 using snapx.Options;
 using Snap;
 using Snap.AnyOS;
@@ -109,6 +110,7 @@ namespace snapx
             var snapEmbeddedResources = new SnapEmbeddedResources();            
             snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider,
                 toolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            var snapXEmbeddedResources = new SnapxEmbeddedResources();
             
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
             var snapAppReader = new SnapAppReader();
@@ -121,7 +123,9 @@ namespace snapx
             var nugetService = new NugetService(nugetLogger);
 
             return MainAsync(args, coreRunLib, snapOs, nugetService, snapExtractor, snapOs.Filesystem, 
-                snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, snapPack, snapAppWriter, toolWorkingDirectory, workingDirectory);
+                snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
+                snapPack, snapAppWriter, snapXEmbeddedResources, 
+                toolWorkingDirectory, workingDirectory);
         }
 
         static int MainAsync([NotNull] string[] args,
@@ -129,7 +133,8 @@ namespace snapx
             [NotNull] ISnapOs snapOs, [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
+            [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
@@ -143,6 +148,7 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
+            if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
@@ -156,7 +162,7 @@ namespace snapx
                         nuGetPackageSources, nugetService, SnapPromoteLogger, workingDirectory),
                     (PushNupkgOptions options) => CommandPushNupkg(options, nugetService),
                     (PackOptions opts) => CommandPack(opts, snapFilesystem, snapAppReader,
-                        nuGetPackageSources, snapPack, nugetService, snapOs, SnapPackLogger, toolWorkingDirectory, workingDirectory),
+                        nuGetPackageSources, snapPack, nugetService, snapOs, snapXEmbeddedResources, SnapPackLogger, toolWorkingDirectory, workingDirectory),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (Sha1Options opts) => CommandSha1(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),

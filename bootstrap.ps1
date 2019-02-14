@@ -42,8 +42,8 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake.exe"
         $CommandGit = "git.exe"
         $CommandDotnet = "dotnet.exe"
-        $CommandUpx = Join-Path $ToolsDir upx.exe
-        $CommandPacker = Join-Path $ToolsDir warp-packer.exe
+        $CommandUpx = Join-Path $ToolsDir upx-win-x64.exe
+        $CommandPacker = Join-Path $ToolsDir warp-packer-win-x64.exe
         $CommandSnapx = "snapx.exe"
         $Arch = "win-x64"
         $ArchCross = "x86_64-win64-gcc"

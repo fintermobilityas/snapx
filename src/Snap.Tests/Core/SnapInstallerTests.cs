@@ -67,7 +67,7 @@ namespace Snap.Tests.Core
                 .Returns(_snapFilesystem);
 
             _snapOsMock
-                .Setup(x => x.OsProcess)
+                .Setup(x => x.ProcessManager)
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock
@@ -190,7 +190,7 @@ namespace Snap.Tests.Core
                 .Returns(_snapFilesystem);
 
             _snapOsMock
-                .Setup(x => x.OsProcess)
+                .Setup(x => x.ProcessManager)
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock
@@ -278,7 +278,7 @@ namespace Snap.Tests.Core
                 .Returns(_snapFilesystem);
 
             _snapOsMock
-                .Setup(x => x.OsProcess)
+                .Setup(x => x.ProcessManager)
                 .Returns(_snapOsProcessManager);
 
             _snapOsMock

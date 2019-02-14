@@ -45,19 +45,17 @@ namespace Snap.AnyOS
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
 
-            var processStartInfo = new ProcessStartInfo(fileName, arguments);
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT && fileName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                processStartInfo = new ProcessStartInfo("wine", fileName + " " + arguments);
-            }
-
-            processStartInfo.UseShellExecute = false;
-            processStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            processStartInfo.ErrorDialog = false;
-            processStartInfo.CreateNoWindow = true;
-            processStartInfo.RedirectStandardOutput = true;
-            processStartInfo.RedirectStandardError = true;
-            processStartInfo.WorkingDirectory = workingDirectory;
+            var processStartInfo =
+                new ProcessStartInfo(fileName, arguments)
+                {
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    ErrorDialog = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = workingDirectory
+                };
 
             return RunAsync(processStartInfo, cancellationToken);
         }

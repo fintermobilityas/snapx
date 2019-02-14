@@ -21,6 +21,8 @@ namespace Snapx.Tests.Resources
         {
             Assert.NotNull(_snapxEmbeddedResources.SetupWindows);
             Assert.NotNull(_snapxEmbeddedResources.SetupLinux);
+            Assert.NotNull(_snapxEmbeddedResources.WarpPackerWindows);
+            Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinux);
         }
     }
 }

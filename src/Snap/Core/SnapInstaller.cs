@@ -317,7 +317,7 @@ namespace Snap.Core
 
                     try
                     {
-                        await _snapOs.OsProcess.RunAsync(exe, args, cts.Token);
+                        await _snapOs.ProcessManager.RunAsync(exe, args, cts.Token);
                     }
                     catch (Exception ex)
                     {

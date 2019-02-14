@@ -23,6 +23,7 @@ namespace Snap.AnyOS
         SnapOsProcess Build(int pid, string name, string workingDirectory = default, string exeAbsoluteLocation = default);
         Task<(int exitCode, string standardOutput)> RunAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<(int exitCode, string standardOutput)> RunAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
+        Task<bool> ChmodExecuteAsync(string filename, CancellationToken cancellationToken);
     }
     
     internal sealed class SnapOsProcessManager : ISnapOsProcessManager
@@ -101,5 +102,10 @@ namespace Snap.AnyOS
             return (pi.ExitCode, textResult.Trim());
         }
 
+        public async Task<bool> ChmodExecuteAsync(string filename, CancellationToken cancellationToken)
+        {
+            var (exitCode, _) = await RunAsync("chmod", $"+x {filename}", cancellationToken);
+            return exitCode == 0;
+        }
     }
 }

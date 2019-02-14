@@ -262,8 +262,6 @@ namespace snapx
 
             using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
                 installersWorkingDirectory))
-            using (var repackageTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
-                snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage")))
             {
                 MemoryStream installerMemoryStream;
                 MemoryStream warpPackerMemoryStream;
@@ -302,8 +300,11 @@ namespace snapx
                         throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
                 }
 
-                var repackageDirInstallerAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir.WorkingDirectory, $"Setup-{snapAppTargetRid}.exe");
-                var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir.WorkingDirectory, "Setup.nupkg");
+                var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
+                snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
+                
+                var repackageDirInstallerAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, $"Setup-{snapAppTargetRid}.exe");
+                var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, "Setup.nupkg");
                 var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{warpPackerRid}.exe");
                 var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory, snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath));
 
@@ -329,13 +330,15 @@ namespace snapx
                     $"--arch {warpPackerArch}",
                     $"--exec {snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath)}",
                     $"--output {installerFinalAbsolutePath.ForwardSlashesSafe()}",
-                    $"--input_dir {repackageTempDir.WorkingDirectory.ForwardSlashesSafe()}"
+                    $"--input_dir {repackageTempDir.ForwardSlashesSafe()}"
                 };
 
                 var argumentsStr = string.Join(" ", arguments);
 
                 logger.Info($"{rootTempDirWarpPackerAbsolutePath} {argumentsStr}");
 
+                await snapOs.ProcessManager.ChmodExecuteAsync(rootTempDirWarpPackerAbsolutePath, cancellationToken);
+                
                 var (exitCode, stdout) = await snapOs.ProcessManager.RunAsync(rootTempDirWarpPackerAbsolutePath, argumentsStr, cancellationToken);
                 if (exitCode != 0)
                 {
@@ -344,6 +347,8 @@ namespace snapx
 
                 progressSource.Raise(100);
 
+                await snapOs.ProcessManager.RunAsync("chmod", $"+x {installerFinalAbsolutePath}", cancellationToken);
+                
                 return (true, installerFinalAbsolutePath);
 
             }

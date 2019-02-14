@@ -121,7 +121,7 @@ namespace Snap.AnyOS.Unix
                 absoluteDesktopShortcutPath, cancellationToken);
             
             _logger?.Info("Attempting to mark shortcut as trusted");
-            var trustedSuccess = 0 == NativeMethodsUnix.chmod(absoluteDesktopShortcutPath, 777);
+            var trustedSuccess = await OsProcessManager.ChmodExecuteAsync(absoluteDesktopShortcutPath, cancellationToken);
             _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
         }
         

@@ -251,18 +251,18 @@ namespace Snap.Core
             var mainExeAbsolutePath = _snapFilesystem
                 .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
 
-            void Chmod(string exePath)
+            async Task ChmodAsync(string exePath)
             {
                 if (exePath == null) throw new ArgumentNullException(nameof(exePath));
                 logger?.Info($"Attempting to change file permission for executable: {exePath}.");                
-                var chmodSuccess = NativeMethodsUnix.chmod(exePath, 0775) == 0;                
+                var chmodSuccess = await _snapOs.ProcessManager.ChmodExecuteAsync(exePath, cancellationToken);                
                 logger?.Info($"Permissions changed successfully: {(chmodSuccess ? "true" : "false")}.");
             }
             
             if (!isWindows)
             {
-                Chmod(coreRunExeAbsolutePath);
-                Chmod(mainExeAbsolutePath);
+                await ChmodAsync(coreRunExeAbsolutePath);
+                await ChmodAsync(mainExeAbsolutePath);
             }
 
             var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExeAbsolutePath);

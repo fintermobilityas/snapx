@@ -32,7 +32,7 @@ namespace snapx
         static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snapx.Pack");
         static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
 
-        const int TerminalWidth = 80;
+        static int TerminalWidth => Console.BufferWidth > 0 ? Console.BufferWidth : 80;
 
         internal static int Main(string[] args)
         {

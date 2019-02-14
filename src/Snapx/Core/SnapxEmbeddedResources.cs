@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using snapx.Resources;
 using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Installer.Assets;
@@ -25,6 +26,8 @@ namespace snapx.Core
 
         public SnapxEmbeddedResources()
         {
+            AddFromTypeRoot(typeof(ResourcesTypeRoot));
+
             _setupWindows = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-win-x64.exe");
             _setupLinux = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-linux-x64.exe");
             

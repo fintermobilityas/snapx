@@ -185,10 +185,10 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum SnapAppsPackStrategy
     {
-        [UsedImplicitly] Default,
-        Push
+        push
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -199,7 +199,8 @@ namespace Snap.Core.Models
         public string Artifacts { get; set; }
         public string Packages { get; set; }
         public string Nuspecs { get; set; }
-        public SnapAppsPackStrategy PackStrategy { get; set; }
+        public string Installers { get; set; }
+        public SnapAppsPackStrategy PackStrategy { get; set; } = SnapAppsPackStrategy.push;
 
         [UsedImplicitly]
         public SnapAppsGeneric()
@@ -213,6 +214,7 @@ namespace Snap.Core.Models
             Artifacts = snapAppsGeneric.Artifacts;
             Packages = snapAppsGeneric.Packages;
             Nuspecs = snapAppsGeneric.Nuspecs;
+            Installers = snapAppsGeneric.Installers;
             PackStrategy = snapAppsGeneric.PackStrategy;
         }
     }

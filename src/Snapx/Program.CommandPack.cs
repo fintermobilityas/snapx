@@ -50,38 +50,84 @@ namespace snapx
                 return -1;
             }
 
-            var snapAppChannel = snapApp.Channels.First();
-                        
+            if (!SemanticVersion.TryParse(packOptions.Version, out var semanticVersion))
+            {
+                logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
+                return -1;
+            }
+            
+            snapApp.Version = semanticVersion;
+            
+            var expandableProperties = new Dictionary<string, string>
+            {
+                { "id", snapApp.Id },
+                { "rid", snapApp.Target.Rid },
+                { "version", snapApp.Version.ToNormalizedString() }
+            };
+
+            snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(expandableProperties) :
+                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
+ 
+            snapApps.Generic.Installers = snapApps.Generic.Installers == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "installers", "$id$/$rid$").ExpandProperties(expandableProperties) :
+                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
+
             snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
-                filesystem.PathCombine(workingDirectory, "packages") :
-                filesystem.PathGetFullPath(snapApps.Generic.Packages);
+                filesystem.PathCombine(workingDirectory, "snapx", "packages", "$id$/$rid$").ExpandProperties(expandableProperties) :
+                filesystem.PathGetFullPath(snapApps.Generic.Packages).ExpandProperties(expandableProperties);
 
-            packOptions.ArtifactsDirectory =
-                packOptions.ArtifactsDirectory == null ? string.Empty : 
-                    filesystem.PathCombine(workingDirectory, packOptions.ArtifactsDirectory);
+            snapApps.Generic.Nuspecs = snapApps.Generic.Nuspecs == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
+                filesystem.PathGetFullPath(snapApps.Generic.Nuspecs);
 
+            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Artifacts);
+            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Installers);
             filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
 
-            var (previousNupkgAbsolutePath, previousSnapApp) = filesystem
+            var snapAppChannel = snapApp.Channels.First();
+
+            var nupkgs = filesystem
                 .EnumerateFiles(snapApps.Generic.Packages)
                 .Select(x => (nupkg: x.Name.ParseNugetLocalFilename(), fullName: x.FullName))
                 .Where(x => x.nupkg.valid
                             && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCulture)
                             && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCulture)
                             && string.Equals(x.nupkg.channelName, snapAppChannel.Name, StringComparison.InvariantCulture))
-                .OrderByDescending(x => x.nupkg.semanticVersion)
-                .Where(x => x.nupkg.fullOrDelta == "full")
-                .Take(1)
-                .Select(x =>
+                .OrderByDescending(x  => x.nupkg.semanticVersion)
+                .ToList();
+
+            var currentNupkg = nupkgs.FirstOrDefault();
+            if (currentNupkg != default 
+                && currentNupkg.nupkg.semanticVersion > snapApp.Version)
+            {
+                logger.Error($"Unable to overwrite current version {currentNupkg.nupkg.semanticVersion} with {snapApp.Version}. " +
+                                    $"Current version {currentNupkg.nupkg.semanticVersion} may be overwritten if you have not pushed the nupkg to a upstream source. " +
+                                    $"Snap id: {currentNupkg.nupkg.id}.");
+                return -1;
+            }
+
+            if (currentNupkg.nupkg.semanticVersion == snapApp.Version)
+            {
+                if (!"y|yes".Prompt($"You are about to overwrite current version: {currentNupkg.nupkg.semanticVersion}. " +
+                                            "This is OK if you have not pushed this nupkg to a upstream source. Continue? [y|n]", warn: true))
                 {
-                    var (_, absolutePath) = x;
-                    using (var coreReader = new PackageArchiveReader(absolutePath))
-                    {
-                        return (absolutePath, snapApp: snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult());
-                    }
-                })
-                .FirstOrDefault();
+                    return -1;
+                }
+            }
             
+            string previousNupkgAbsolutePath = null;
+            SnapApp previousSnapApp = null;        
+            var previousFullNupkg = nupkgs.FirstOrDefault(x => x.nupkg.fullOrDelta == "full" && x.nupkg.semanticVersion < snapApp.Version);
+            if (previousFullNupkg != default)
+            {
+                using (var coreReader = new PackageArchiveReader(previousFullNupkg.fullName))
+                {
+                    previousNupkgAbsolutePath = previousFullNupkg.fullName;
+                    previousSnapApp = snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult();
+                }
+            }
+
             var nuspecFilename = snapApp.Target.Nuspec == null
                 ? string.Empty
                 : filesystem.PathCombine(workingDirectory, snapApps.Generic.Nuspecs, snapApp.Target.Nuspec);
@@ -92,46 +138,10 @@ namespace snapx
                 return -1;
             }
 
-            if (!SemanticVersion.TryParse(packOptions.Version, out var semanticVersion))
-            {
-                logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
-                return -1;
-            }
-
-            if (packOptions.Force)
-            {
-                previousSnapApp = null;
-                previousNupkgAbsolutePath = null;
-
-                logger.Warn("Force enabled! Previous release will be overwritten.");
-            }
-
-            snapApp.Version = semanticVersion;
-
-            var artifactsProperties = new Dictionary<string, string>
-            {
-                { "id", snapApp.Id },
-                { "rid", snapApp.Target.Rid },
-                { "version", snapApp.Version.ToNormalizedString() }
-            };
-
-            snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
-                null : filesystem.PathCombine(workingDirectory, 
-                    snapApps.Generic.Artifacts.ExpandProperties(artifactsProperties));
-
-            if (snapApps.Generic.Artifacts != null)
-            {
-                packOptions.ArtifactsDirectory = filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts);
-            }
-
-            if (!filesystem.DirectoryExists(packOptions.ArtifactsDirectory))
-            {
-                logger.Error($"Artifacts directory does not exist: {packOptions.ArtifactsDirectory}");
-                return -1;
-            }
-
             logger.Info($"Packages directory: {snapApps.Generic.Packages}");
-            logger.Info($"Artifacts directory {packOptions.ArtifactsDirectory}");
+            logger.Info($"Artifacts directory: {snapApps.Generic.Artifacts}");
+            logger.Info($"Installers directory: {snapApps.Generic.Installers}");
+            logger.Info($"Nuspecs directory: {snapApps.Generic.Nuspecs}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
             logger.Info('-'.Repeat(TerminalWidth));
             if (previousSnapApp != null)
@@ -151,7 +161,7 @@ namespace snapx
             var snapPackageDetails = new SnapPackageDetails
             {
                 App = snapApp,
-                NuspecBaseDirectory = packOptions.ArtifactsDirectory,
+                NuspecBaseDirectory = snapApps.Generic.Artifacts,
                 NuspecFilename = nuspecFilename,
                 SnapProgressSource = new SnapProgressSource()
             };
@@ -169,7 +179,7 @@ namespace snapx
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
                 if (previousSnapApp == null)
                 {                    
-                    if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
+                    if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
                     {
                         PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
                             currentNupkgAbsolutePath);
@@ -194,7 +204,7 @@ namespace snapx
                 filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default).GetAwaiter().GetResult();
             }
 
-            if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
+            if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
                 PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
                     currentNupkgAbsolutePath, deltaNupkgAbsolutePath);

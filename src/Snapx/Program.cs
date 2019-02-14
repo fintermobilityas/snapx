@@ -38,9 +38,11 @@ namespace snapx
         {
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
+                var process = Process.GetCurrentProcess();
+
                 while (!Debugger.IsAttached)
                 {
-                    Console.WriteLine("Waiting for debugger to attach...");
+                    Console.WriteLine($"Waiting for debugger to attach... Process id: {process.Id}");
                     Thread.Sleep(1000);
                 }
 

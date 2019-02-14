@@ -335,20 +335,24 @@ function Build-Snap-Installer {
 
     $PackerArch = $null
     $SnapInstallerExeName = $null
-    $MonoLinkerCrossGenEnabled = $true
+    $MonoLinkerCrossGenEnabled = $false
 
     switch ($Rid) {
         "win-x64" {
             $PackerArch = "windows-x64"
             $SnapInstallerExeName = "Snap.Installer.exe"
 
-            if ($OSPlatform -ne "Windows") {
-                $MonoLinkerCrossGenEnabled = $false
+            if ($OSPlatform -eq "Windows") {
+                $MonoLinkerCrossGenEnabled = $true
             }
         }
         "linux-x64" {
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
+			
+			 if ($OSPlatform -eq "Unix") {
+                $MonoLinkerCrossGenEnabled = $true
+            }
         }
         default {
             Die "Rid not supported: $Rid"
@@ -386,11 +390,11 @@ function Build-Snap-Installer {
         "--output $SnapInstallerNetBuildPublishDir"
     )
 
-    if ($OSPlatform -eq "Windows") {
+    if ($Rid -eq "win-x64") {
         Command-Exec $CommandSnapx @(
             "rcedit"
             "--gui-app" 
-            ("--filename {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir Snap.Installer.exe))
+            ("--filename {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir $SnapInstallerExeName))
         )
     }
 

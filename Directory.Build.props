@@ -45,6 +45,10 @@
         <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(SnapBootstrap) == 'true'">
+        <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
+    </PropertyGroup>
+
     <PropertyGroup Condition="$(OsPlatform) == 'Windows'">
         <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS;</DefineConstants>
     </PropertyGroup>

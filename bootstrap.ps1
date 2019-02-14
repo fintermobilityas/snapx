@@ -350,7 +350,7 @@ function Build-Snap-Installer {
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
 			
-			 if ($OSPlatform -eq "Unix") {
+			if ($OSPlatform -eq "Unix") {
                 $MonoLinkerCrossGenEnabled = $true
             }
         }
@@ -360,7 +360,9 @@ function Build-Snap-Installer {
     }
 
     $SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
-    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir Setup-$Rid.exe
+    $SetupExeAssemblyName = "Setup-$Rid.exe"
+    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir $SetupExeAssemblyName
+    $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir $SnapInstallerExeName
 
     Write-Output "Build src directory: $SnapInstallerNetSrcDir"
     Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
@@ -390,20 +392,20 @@ function Build-Snap-Installer {
         "--output $SnapInstallerNetBuildPublishDir"
     )
 
-    if ($Rid -eq "win-x64") {
-        Command-Exec $CommandSnapx @(
-            "rcedit"
-            "--gui-app" 
-            ("--filename {0}" -f (Join-Path $SnapInstallerNetBuildPublishDir $SnapInstallerExeName))
-        )
-    }
-
     Command-Exec $CommandPacker @(
         "--arch $PackerArch"
         "--exec $SnapInstallerExeName"
         "--output $SetupExeAbsolutePath"
         "--input_dir $SnapInstallerNetBuildPublishDir"
     )
+
+    if ($Rid -eq "win-x64") {
+        Command-Exec $CommandSnapx @(
+            "rcedit"
+            "--gui-app" 
+            "--filename $SetupExeAbsolutePath"
+        )
+    }
 
     if ($OSPlatform -ne "Windows") {
         Command-Exec chmod @("+x $SetupExeAbsolutePath")

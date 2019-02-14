@@ -53,9 +53,14 @@ function Convert-Boolean-MSBuild {
     return "false"
 }
 
-$Properties = @(
-    ("/p:SnapBootstrap={0}" -f (Convert-Boolean-MSBuild $Bootstrap)) 
-) -join " "
+$Properties = @()
+
+if($Bootstrap)
+{
+    $Properties += "/p:SnapBootstrap=true"
+}
+
+$Properties = $Properties -join " "
 
 Exec "& dotnet tool uninstall -g snapx" -AllowFail $true
 Exec "& dotnet clean src/Snapx"

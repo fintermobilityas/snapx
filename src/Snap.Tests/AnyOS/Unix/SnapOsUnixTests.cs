@@ -45,7 +45,7 @@ Codename:	cosmic";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var (exitCode, maybeLsbRelease) = await _snapOs.OsProcess.RunAsync("lsb_release", "-a", CancellationToken.None);
+                var (exitCode, maybeLsbRelease) = await _snapOs.ProcessManager.RunAsync("lsb_release", "-a", CancellationToken.None);
                 if (exitCode == 0 && !string.IsNullOrWhiteSpace(maybeLsbRelease))
                 {
                     lsbRelease = maybeLsbRelease;

@@ -56,8 +56,8 @@ function Build-Native {
 }
 
 function Build-Snap-Installer {
-    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
 }
 
 function Build-Summary {

@@ -28,8 +28,12 @@ namespace snapx.Core
 
         public SnapxEmbeddedResources()
         {
+            #if SNAP_BOOTSTRAP
+            return;
+            #endif
+            
             AddFromTypeRoot(typeof(ResourcesTypeRoot));
-
+            
             _setupWindows = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-win-x64.exe");
             _setupLinux = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-linux-x64.exe");
             _warpPackerWindows = Resources.SingleOrDefault(x => x.Filename == "Tools.warp-packer-win-x64.exe");

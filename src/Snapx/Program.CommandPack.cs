@@ -49,6 +49,8 @@ namespace snapx
 
                 return -1;
             }
+
+            var snapAppChannel = snapApp.Channels.First();
                         
             snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
                 filesystem.PathCombine(workingDirectory, "packages") :
@@ -59,22 +61,27 @@ namespace snapx
                     filesystem.PathCombine(workingDirectory, packOptions.ArtifactsDirectory);
 
             filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
-            
+
             var (previousNupkgAbsolutePath, previousSnapApp) = filesystem
                 .EnumerateFiles(snapApps.Generic.Packages)
-                .Where(x => x.Name.EndsWith(".nupkg", StringComparison.Ordinal))
-                .OrderByDescending(x => x.Name)
+                .Select(x => (nupkg: x.Name.ParseNugetLocalFilename(), fullName: x.FullName))
+                .Where(x => x.nupkg.valid
+                            && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCulture)
+                            && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCulture)
+                            && string.Equals(x.nupkg.channelName, snapAppChannel.Name, StringComparison.InvariantCulture))
+                .OrderByDescending(x => x.nupkg.semanticVersion)
+                .Where(x => x.nupkg.fullOrDelta == "full")
+                .Take(1)
                 .Select(x =>
                 {
-                    using (var coreReader = new PackageArchiveReader(x.FullName))
+                    var (_, absolutePath) = x;
+                    using (var coreReader = new PackageArchiveReader(absolutePath))
                     {
-                        return (absolutePath: x.FullName, snapApp: snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult());
+                        return (absolutePath, snapApp: snapPack.GetSnapAppAsync(coreReader).GetAwaiter().GetResult());
                     }
                 })
-                .Where(x => !x.snapApp.Delta && string.Equals(x.snapApp.Target.Rid, snapApp.Target.Rid))
-                .OrderByDescending(x => x.snapApp.Version)
                 .FirstOrDefault();
-
+            
             var nuspecFilename = snapApp.Target.Nuspec == null
                 ? string.Empty
                 : filesystem.PathCombine(workingDirectory, snapApps.Generic.Nuspecs, snapApp.Target.Nuspec);
@@ -164,7 +171,7 @@ namespace snapx
                 {                    
                     if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
                     {
-                        PushPackages(logger, filesystem, nugetService, snapApp, 
+                        PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
                             currentNupkgAbsolutePath);
                     }
 
@@ -189,7 +196,7 @@ namespace snapx
 
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.Push)
             {
-                PushPackages(logger, filesystem, nugetService, snapApp, 
+                PushPackages(logger, filesystem, nugetService, snapApp, snapAppChannel,
                     currentNupkgAbsolutePath, deltaNupkgAbsolutePath);
             }
 
@@ -200,12 +207,13 @@ namespace snapx
         }
 
         static void PushPackages([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem, 
-            [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] params string[] packages)
+            [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, [NotNull] params string[] packages)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             if (packages == null) throw new ArgumentNullException(nameof(packages));
             if (packages.Length == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(packages));
             
@@ -213,11 +221,10 @@ namespace snapx
 
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Length);
 
-            var channel = snapApp.Channels.First();
             var nugetSources = snapApp.BuildNugetSources(filesystem.PathGetTempPath());
-            var packageSource = nugetSources.Items.Single(x => x.Name == channel.PushFeed.Name);
+            var packageSource = nugetSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
 
-            if (channel.UpdateFeed.HasCredentials())
+            if (snapChannel.UpdateFeed.HasCredentials())
             {
                 if (!"y|yes".Prompt("Update feed contains credentials, do you still want to publish application? [y|n]"))
                 {
@@ -247,7 +254,7 @@ namespace snapx
                 });
             }
 
-            logger.Info($"Pushing packages to default channel: {channel.Name}. Feed: {channel.PushFeed.Name}.");
+            logger.Info($"Pushing packages to default channel: {snapChannel.Name}. Feed: {snapChannel.PushFeed.Name}.");
 
             packages.ForEachAsync(x => PushPackageAsync(x, filesystem.FileStat(x).Length), pushDegreeOfParallelism).GetAwaiter().GetResult();
 

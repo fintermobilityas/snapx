@@ -104,7 +104,7 @@ namespace Snap.Shared.Tests
                 {
                     Os = osPlatform,
                     Framework = "netcoreapp2.1",
-                    Rid = "unknown-x64",
+                    Rid = "win-x64",
                     Nuspec = "test.nuspec"
                 },
                 PersistentAssets = new List<string>

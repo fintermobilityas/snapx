@@ -75,6 +75,16 @@ namespace Snap.Tests.Core.Extensions
         }
         
         [Theory]
+        [InlineData("win-x64", true)]
+        [InlineData("linux-x64", true)]
+        [InlineData("unknown-x64", false)]
+        [InlineData(null, false)]
+        public void TestIsRuntimeIdentifierValidSafe(string runtimeIdentifier, bool valid)
+        {
+            Assert.Equal(runtimeIdentifier.IsRuntimeIdentifierValidSafe(), valid);
+        }
+        
+        [Theory]
         [InlineData("testchannel123", true)]
         [InlineData("testchannel", true)]
         [InlineData("testChannel", true)]
@@ -546,7 +556,7 @@ namespace Snap.Tests.Core.Extensions
                 {
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
-                    Rid = "win7-x64",
+                    Rid = "win-x64",
                     Nuspec = "test.nuspec"
                 },
                 PersistentAssets = new List<string>

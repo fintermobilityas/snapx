@@ -64,6 +64,11 @@ namespace Snap.Extensions
             return framework.IsNetCoreAppSafe() || framework.IsNetFullFrameworkAppSafe();
         }
 
+        internal static bool IsRuntimeIdentifierValidSafe(this string runtimeIdentifier)
+        {
+            return runtimeIdentifier != null && (runtimeIdentifier == "win-x64" || runtimeIdentifier == "linux-x64");
+        }
+
         internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -286,6 +291,11 @@ namespace Snap.Extensions
             if (snapAppTarget == null)
             {
                 throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
+            }
+
+            if (!snapAppTarget.Rid.IsRuntimeIdentifierValidSafe())
+            {
+                throw new Exception($"Unsupported rid: {rid}. Snap id: {snapApp.Id}");
             }
 
             if (!snapAppTarget.Framework.IsNetFrameworkValidSafe())

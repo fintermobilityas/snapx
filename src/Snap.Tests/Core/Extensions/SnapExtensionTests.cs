@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -232,6 +233,68 @@ namespace Snap.Tests.Core.Extensions
             
             var actualPackageId = snapApp.BuildNugetLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
+        }
+
+        [Fact]
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        public void ParseNugetLocalFilename_When_Null()
+        {
+            string value = null;
+            var (valid, _, _, _, _, _) = value.ParseNugetLocalFilename();
+            Assert.False(valid);
+        }
+
+        [Fact]
+        public void ParseNugetLocalFilename_When_Incurrent_Delimiter_Count()
+        {
+            const string value = "demoapp_full_1.0.0_linux-x64";
+            var (valid, _, _, _, _, channelName) = value.ParseNugetLocalFilename();
+            Assert.False(valid);
+            Assert.Null(channelName);
+        }
+
+        [Fact]
+        public void ParseNugetLocalFilename_When_Empty_Id()
+        {
+            const string value = "_full_1.0.0_linux-x64_";
+            var (valid, id, _, _, _, _) = value.ParseNugetLocalFilename();
+            Assert.False(valid);
+            Assert.Null(id);
+        }
+
+        [Fact]
+        public void ParseNugetLocalFilename_When_Empty_Channel_Name()
+        {
+            const string value = "demoapp_full_1.0.0_linux-x64_";
+            var (valid, _, _, _, _, channelName) = value.ParseNugetLocalFilename();
+            Assert.False(valid);
+            Assert.Null(channelName);
+        }
+
+        [Fact]
+        public void ParseNugetLocalFilename_When_Not_FullOrDelta()
+        {
+            const string value = "demoapp_yolo_1.0.0_linux-x64_test";
+            var (valid, _, fullOrDelta, _, _, _) = value.ParseNugetLocalFilename();
+            Assert.False(valid);
+            Assert.Null(fullOrDelta);
+        }
+      
+        [Theory]
+        [InlineData("demoapp_full_1.0.0_linux-x64_test.nupkg", "demoapp", "full", "1.0.0", "linux-x64", "test")]
+        [InlineData("demoapp_delta_1.0.0_linux-x64_test.nupkg", "demoapp", "delta", "1.0.0", "linux-x64", "test")]
+        [InlineData("demoapp_full_1.0.0_win-x64_test.nupkg", "demoapp", "full", "1.0.0", "win-x64", "test")]
+        [InlineData("demoapp_delta_1.0.0_win-x64_test.nupkg", "demoapp", "delta", "1.0.0", "win-x64", "test")]
+        public void ParseNugetLocalFilename(string localFilename, string expectedId, string expectedFullOrDelta,
+            string expectedSemanticVersionStr, string expectedRid, string expectedChannelName)
+        {
+            var (valid, id, fullOrDelta, semanticVersion, rid, channelName) = localFilename.ParseNugetLocalFilename();
+            Assert.True(valid);
+            Assert.Equal(id, expectedId);
+            Assert.Equal(fullOrDelta, expectedFullOrDelta);
+            Assert.Equal(semanticVersion, SemanticVersion.Parse(expectedSemanticVersionStr));
+            Assert.Equal(rid, expectedRid);
+            Assert.Equal(channelName, expectedChannelName);
         }
 
         [Theory]

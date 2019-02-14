@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
+using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -130,6 +131,49 @@ namespace Snap.Extensions
             var channel = snapApp.GetCurrentChannelOrThrow();
             var fullOrDelta = snapApp.Delta ? "delta" : "full";
             return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
+        }
+
+        internal static (bool valid, string id, string fullOrDelta, SemanticVersion semanticVersion, string rid, string channelName) ParseNugetLocalFilename([NotNull] this string filename)
+        {
+            string id = default;
+            string fullOrDelta = default;
+            SemanticVersion semanticVersion = default;
+            string rid = default;
+            string channelName = default;
+            int nupkgExtensionPos = -1;
+
+            if (string.IsNullOrWhiteSpace(filename))
+            {
+                goto done;
+            }
+
+            var values = filename.Split('_').ToList();
+            if (values.Count != 5)
+            {
+                goto done;
+            }
+
+            nupkgExtensionPos = filename.LastIndexOf(".nupkg", StringComparison.InvariantCulture);
+            if (nupkgExtensionPos == -1)
+            {
+                goto done;
+            }
+
+            id = string.IsNullOrWhiteSpace(values[0]) ? null : values[0];
+            fullOrDelta = values[1] == "delta" ? "delta" : values[1] == "full" ? "full" : null;
+
+            if (!SemanticVersion.TryParse(values[2], out semanticVersion))
+            {
+                goto done;
+            }
+
+            rid = string.IsNullOrWhiteSpace(values[3]) ? null : values[3];
+            channelName = nupkgExtensionPos == -1 || string.IsNullOrWhiteSpace(values[4]) ? 
+                null : values[4].Replace(".nupkg", string.Empty);
+
+            done:
+            var valid = id != null && fullOrDelta != null && semanticVersion != null && rid != null && channelName != null && nupkgExtensionPos != -1;
+            return (valid, id, fullOrDelta, semanticVersion, rid, channelName);
         }
 
         internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] NugetTempSettings nugetTempSettings)

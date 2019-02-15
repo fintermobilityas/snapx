@@ -34,6 +34,7 @@ $CommandMake = $null
 $CommandUpx = $null
 $CommandPacker = $null
 $CommandSnapx = $null
+$CommandVsWhere = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
@@ -45,6 +46,7 @@ switch -regex ($OSVersion) {
         $CommandUpx = Join-Path $ToolsDir upx-win-x64.exe
         $CommandPacker = Join-Path $ToolsDir warp-packer-win-x64.exe
         $CommandSnapx = "snapx.exe"
+        $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
         $Arch = "win-x64"
         $ArchCross = "x86_64-win64-gcc"
     }
@@ -167,6 +169,11 @@ function Requires-Snapx {
         Die "Unable to find snapx executable in environment path: $CommandSnapx"
     }
 }
+function Requires-VsWhere {
+    if ($null -eq (Get-Command $CommandVsWhere -ErrorAction SilentlyContinue)) {
+        Die "Unable to find vswhere executable in environment path: $CommandVsWhere"
+    }
+}
 function Requires-Unix {
     if ($OSPlatform -ne "Unix") {
         Die "Unable to continue because OS version is not Unix but $OSVersion"
@@ -226,7 +233,7 @@ function Configure-Msvs-Toolchain {
 
     # https://github.com/Microsoft/vswhere/commit/a8c90e3218d6c4774f196d0400a8805038aa13b1 (Release mode / VS 2015 Update 3)
     # SHA512: 06FAE35E3A5B74A5B0971FB19EE0987E15E413558C620AB66FB3188F6BF1C790919E8B163596744D126B3716D0E91C65F7C1325F5752614078E6B63E7C81D681
-    $wswhere = Join-Path $WorkingDir Tools\vswhere
+    $wswhere = $CommandVsWhere
     $VxxCommonTools = $null
 	
     $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | foreach { 'Microsoft.VisualStudio.Product.' + $_ }
@@ -303,7 +310,7 @@ function Build-Native {
                 if ($Cross -eq $TRUE) {
                     $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun.exe
                 }
-                Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+                #Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
             }
 
         }
@@ -314,7 +321,7 @@ function Build-Native {
         
             if ($Configuration -eq "Release") {
                 $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration\corerun.exe
-                Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
+                #Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
             }
         }
         default {
@@ -360,9 +367,8 @@ function Build-Snap-Installer {
     }
 
     $SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
-    $SetupExeAssemblyName = "Setup-$Rid.exe"
-    $SetupExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir $SetupExeAssemblyName
     $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir $SnapInstallerExeName
+    $SnapInstallerExeZipAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir "Setup-$Rid.zip"
 
     Write-Output "Build src directory: $SnapInstallerNetSrcDir"
     Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
@@ -370,10 +376,6 @@ function Build-Snap-Installer {
     Write-Output "Rid: $Rid"
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
-
-    if (Test-Path $SetupExeAbsolutePath) {
-        Remove-Item $SetupExeAbsolutePath | Out-Null
-    }
 
     Command-Exec $CommandDotnet @(
         "clean $SnapInstallerNetSrcDir"
@@ -392,24 +394,22 @@ function Build-Snap-Installer {
         "--output $SnapInstallerNetBuildPublishDir"
     )
 
-    Command-Exec $CommandPacker @(
-        "--arch $PackerArch"
-        "--exec $SnapInstallerExeName"
-        "--output $SetupExeAbsolutePath"
-        "--input_dir $SnapInstallerNetBuildPublishDir"
-    )
-
     if ($Rid -eq "win-x64") {
         Command-Exec $CommandSnapx @(
             "rcedit"
             "--gui-app" 
-            "--filename $SetupExeAbsolutePath"
+            "--filename $SnapInstallerExeAbsolutePath"
         )
     }
 
     if ($OSPlatform -ne "Windows") {
-        Command-Exec chmod @("+x $SetupExeAbsolutePath")
+        Command-Exec chmod @("+x $SnapInstallerExeAbsolutePath")
     }
+
+    Compress-Archive `
+        -Path $SnapInstallerNetBuildPublishDir\* `
+        -CompressionLevel Optimal `
+        -DestinationPath $SnapInstallerExeZipAbsolutePath
 }
 
 Write-Output-Header "----------------------- CONFIGURATION DETAILS ------------------------" 
@@ -427,7 +427,8 @@ else {
 
 switch ($OSPlatform) {
     "Windows" {
-        Requires-Windows 							
+        Requires-Windows 			
+        Requires-VsWhere 				
         Configure-Msvs-Toolchain
         Requires-Msbuild
     }

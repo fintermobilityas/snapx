@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -263,21 +265,25 @@ namespace snapx
             using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
                 installersWorkingDirectory))
             {
-                MemoryStream installerMemoryStream;
+                MemoryStream installerZipMemoryStream;
                 MemoryStream warpPackerMemoryStream;
 
                 string snapAppTargetRid;
                 string warpPackerRid;
                 string warpPackerArch;
+                string installerFilename;
+                var chmod = false;
 
                 if (snapOs.OsPlatform == OSPlatform.Windows)
                 {
                     warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindows;
                     warpPackerRid = "win-x64";
-                } else if (snapOs.OsPlatform == OSPlatform.Linux)
+                }
+                else if (snapOs.OsPlatform == OSPlatform.Linux)
                 {
                     warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinux;
                     warpPackerRid = "linux-x64";
+                    chmod = true;
                 }
                 else
                 {
@@ -287,14 +293,16 @@ namespace snapx
                 switch (snapApp.Target.Rid)
                 {
                     case "win-x64":
-                        installerMemoryStream = snapxEmbeddedResources.SetupWindows;
+                        installerZipMemoryStream = snapxEmbeddedResources.SetupWindows;
                         warpPackerArch = "windows-x64";
                         snapAppTargetRid = "win-x64";
+                        installerFilename = "Snap.Installer.exe";
                         break;
                     case "linux-x64":
-                        installerMemoryStream = snapxEmbeddedResources.SetupLinux;
+                        installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;
                         warpPackerArch = "linux-x64";
                         snapAppTargetRid = "linux-x64";
+                        installerFilename = "Snap.Installer";
                         break;
                     default:
                         throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
@@ -302,23 +310,26 @@ namespace snapx
 
                 var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
                 snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
-                
-                var repackageDirInstallerAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, $"Setup-{snapAppTargetRid}.exe");
+
                 var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, "Setup.nupkg");
                 var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{warpPackerRid}.exe");
-                var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory, snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath));
+                var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory, $"Setup-{snapAppTargetRid}.exe");
 
-                using (installerMemoryStream)
+                using (installerZipMemoryStream)
                 using (warpPackerMemoryStream)
-                using (var installerDstStream = snapOs.Filesystem.FileWrite(repackageDirInstallerAbsolutePath))
                 using (var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath))
+                using (var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read))
                 {
-                    logger.Info("Copying assets to temp directory.");
-
                     progressSource.Raise(10);
 
+                    logger.Info("Extracting installer to temp directory.");
+                    zipArchive.ExtractToDirectory(repackageTempDir);
+
+                    progressSource.Raise(20);
+
+                    logger.Info("Copying assets to temp directory.");
+
                     await Task.WhenAll(
-                        installerMemoryStream.CopyToAsync(installerDstStream, cancellationToken),
                         warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
                         snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken));
                 }
@@ -328,7 +339,7 @@ namespace snapx
                 var arguments = new List<string>
                 {
                     $"--arch {warpPackerArch}",
-                    $"--exec {snapOs.Filesystem.PathGetFileName(repackageDirInstallerAbsolutePath)}",
+                    $"--exec {installerFilename}",
                     $"--output {installerFinalAbsolutePath.ForwardSlashesSafe()}",
                     $"--input_dir {repackageTempDir.ForwardSlashesSafe()}"
                 };
@@ -337,9 +348,12 @@ namespace snapx
 
                 logger.Info($"{rootTempDirWarpPackerAbsolutePath} {argumentsStr}");
 
-                await snapOs.ProcessManager.ChmodExecuteAsync(rootTempDirWarpPackerAbsolutePath, cancellationToken);
-                
-                var (exitCode, stdout) = await snapOs.ProcessManager.RunAsync(rootTempDirWarpPackerAbsolutePath, argumentsStr, cancellationToken);
+                if (chmod)
+                {
+                    await snapOs.ProcessManager.ChmodExecuteAsync(rootTempDirWarpPackerAbsolutePath, cancellationToken);
+                }
+
+                var (exitCode, _) = await snapOs.ProcessManager.RunAsync(rootTempDirWarpPackerAbsolutePath, argumentsStr, cancellationToken);
                 if (exitCode != 0)
                 {
                     return (false, null);
@@ -347,8 +361,11 @@ namespace snapx
 
                 progressSource.Raise(100);
 
-                await snapOs.ProcessManager.RunAsync("chmod", $"+x {installerFinalAbsolutePath}", cancellationToken);
-                
+                if (chmod)
+                {
+                    await snapOs.ProcessManager.RunAsync("chmod", $"+x {installerFinalAbsolutePath}", cancellationToken);
+                }
+
                 return (true, installerFinalAbsolutePath);
 
             }

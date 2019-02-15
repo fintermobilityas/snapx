@@ -34,19 +34,19 @@ namespace snapx.Core
             
             AddFromTypeRoot(typeof(ResourcesTypeRoot));
             
-            _setupWindows = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-win-x64.exe");
-            _setupLinux = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-linux-x64.exe");
+            _setupWindows = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-win-x64.zip");
+            _setupLinux = Resources.SingleOrDefault(x => x.Filename == "Setup.Setup-linux-x64.zip");
             _warpPackerWindows = Resources.SingleOrDefault(x => x.Filename == "Tools.warp-packer-win-x64.exe");
             _warpPackerLinux = Resources.SingleOrDefault(x => x.Filename == "Tools.warp-packer-linux-x64.exe");
             
             if (_setupWindows == null)
             {
-                throw new Exception("Setup-win-x64.exe was not found in current assembly resources manifest");
+                throw new Exception("Setup-win-x64.zip was not found in current assembly resources manifest");
             }
             
             if (_setupLinux == null)
             {
-                throw new Exception("Setup-linux-x64.exe was not found in current assembly resources manifest");
+                throw new Exception("Setup-linux-x64.zip was not found in current assembly resources manifest");
             }
 
             if (_warpPackerWindows == null)

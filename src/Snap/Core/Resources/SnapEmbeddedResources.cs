@@ -17,7 +17,7 @@ namespace Snap.Core.Resources
         MemoryStream CoreRunLinux { get; }
         MemoryStream CoreRunLibWindows { get; }
         MemoryStream CoreRunLibLinux { get; }
-        (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp);
+        (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp, ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
         Task ExtractCoreRunLibAsync(ISnapFilesystem filesystem, ISnapCryptoProvider snapCryptoProvider, string workingDirectory, OSPlatform osPlatform);
@@ -73,21 +73,54 @@ namespace Snap.Core.Resources
             }
         }
 
-        public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp)
+        public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp, 
+            [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ICoreRunLib coreRunLib)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+
+            MemoryStream coreRunStream;
+            OSPlatform osPlatform;
             
             if (snapApp.Target.Os == OSPlatform.Windows)
             {
-                return (CoreRunWindows, GetCoreRunExeFilenameForSnapApp(snapApp), OSPlatform.Windows);
-            }
-
-            if (snapApp.Target.Os == OSPlatform.Linux)
+                coreRunStream = CoreRunWindows;
+                osPlatform = OSPlatform.Windows;
+            } else if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                return (CoreRunLinux, GetCoreRunExeFilenameForSnapApp(snapApp), OSPlatform.Linux);
+                coreRunStream = CoreRunLinux;
+                osPlatform = OSPlatform.Linux;
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
 
-            throw new PlatformNotSupportedException();
+            var coreRunFilename = GetCoreRunExeFilenameForSnapApp(snapApp);
+
+            // Update corerun icon
+            if (snapApp.Target.Icon != null 
+                && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                using (var tmpDir = snapFilesystem.WithDisposableTempDirectory())
+                {
+                    var coreRunTempFilename = snapFilesystem.PathCombine(tmpDir.WorkingDirectory, coreRunFilename);
+                    using (var coreRunTmpStream = snapFilesystem.FileWrite(coreRunTempFilename))
+                    {
+                        coreRunStream.CopyTo(coreRunTmpStream);                                        
+                    }
+
+                    if (!coreRunLib.SetIcon(coreRunTempFilename, snapApp.Target.Icon))
+                    {
+                        throw new Exception($"Failed to update icon for executable {coreRunTempFilename}. Icon: {snapApp.Target.Icon}.");
+                    }
+
+                    coreRunStream = new MemoryStream(snapFilesystem.FileReadAllBytes(coreRunTempFilename));
+                }
+            }
+
+            return (coreRunStream, coreRunFilename, osPlatform);
         }
 
         public string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp)

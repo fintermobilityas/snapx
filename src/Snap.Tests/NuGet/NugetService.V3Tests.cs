@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Mono.Cecil;
+using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
@@ -28,10 +29,12 @@ namespace Snap.Tests.NuGet
         readonly ISnapPack _snapPack;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly Mock<ICoreRunLib> _coreRunLibMock;
 
         public NugetServiceV3Tests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
+            _coreRunLibMock = new Mock<ICoreRunLib>();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapCryptoProvider = new SnapCryptoProvider();
             _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
@@ -129,7 +132,8 @@ namespace Snap.Tests.NuGet
 
             var snapApp = _baseFixture.BuildSnapApp();
             
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
+            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _coreRunLibMock.Object, 
+                _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (nupkgMemoryStream)
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))

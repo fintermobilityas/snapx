@@ -197,7 +197,7 @@ namespace Snap.Core
     {
         IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
         IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies { get; }
-        Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, ILog logger = null, CancellationToken cancellationToken = default);
+        Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, ICoreRunLib coreRunLib, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackDeltaSummary> BuildDeltaSummaryAsync(
             [NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath, CancellationToken cancellationToken = default);
         Task<(MemoryStream memoryStream, SnapApp snapApp)> BuildDeltaPackageAsync([NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath,
@@ -240,9 +240,11 @@ namespace Snap.Core
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
 
-        public async Task<MemoryStream> BuildFullPackageAsync(ISnapPackageDetails packageDetails, ILog logger = null, CancellationToken cancellationToken = default)
+        public async Task<MemoryStream> BuildFullPackageAsync(
+            ISnapPackageDetails packageDetails, [NotNull] ICoreRunLib coreRunLib, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
 
             var sw = new Stopwatch();
             sw.Restart();
@@ -301,7 +303,7 @@ namespace Snap.Core
                 
                 progressSource?.Raise(60);
                 logger?.Debug("Adding snap assemblies");
-                await AddSnapAssemblies(packageBuilder, packageDetails.App, cancellationToken);
+                await AddSnapAssemblies(coreRunLib, packageBuilder, packageDetails.App, cancellationToken);
  
                 progressSource?.Raise(70);
                 logger?.Debug("Adding checkingsum manifest");
@@ -883,8 +885,9 @@ namespace Snap.Core
             packageBuilder.Files.Add(BuildInMemoryPackageFile(checksumStream, SnapConstants.SnapNuspecTargetPath, SnapConstants.ChecksumManifestFilename));
         }
 
-        async Task AddSnapAssemblies([NotNull] PackageBuilder packageBuilder, [NotNull] SnapApp snapApp, CancellationToken cancellationToken)
+        async Task AddSnapAssemblies([NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder, [NotNull] SnapApp snapApp, CancellationToken cancellationToken)
         {
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
@@ -915,9 +918,9 @@ namespace Snap.Core
             }
             
             // Corerun
-            var (coreRunStream, coreRunFilename, _) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
-            packageBuilder.Files.Add(BuildInMemoryPackageFile(coreRunStream, SnapNuspecTargetPath, coreRunFilename));
-            
+            var (coreRunStream, coreRunFilename, _) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, coreRunLib);
+
+            packageBuilder.Files.Add(BuildInMemoryPackageFile(coreRunStream, SnapConstants.SnapNuspecTargetPath, coreRunFilename));            
         }
 
         InMemoryPackageFile BuildInMemoryPackageFile(MemoryStream memoryStream, string targetPath, string filename)

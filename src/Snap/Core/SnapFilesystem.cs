@@ -30,6 +30,7 @@ namespace Snap.Core
         Task DirectoryDeleteOrJustGiveUpAsync(string directory, List<string> excludePaths = null);
         string DirectoryGetParent(string path);
         DisposableTempDirectory WithDisposableTempDirectory(string workingDirectory);
+        DisposableTempDirectory WithDisposableTempDirectory();
         IEnumerable<string> EnumerateDirectories(string path);
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
@@ -40,6 +41,7 @@ namespace Snap.Core
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName);
         string FileReadAllText(string filename);
+        byte[] FileReadAllBytes(string filename);
         void FileDelete(string fileName);
         bool FileDeleteIfExists(string fileName, bool throwIfException = true);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
@@ -196,6 +198,12 @@ namespace Snap.Core
             }
         }
 
+        public byte[] FileReadAllBytes([NotNull] string filename)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            return File.ReadAllBytes(filename);
+        }
+
         public void FileDelete([NotNull] string fileName)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
@@ -263,6 +271,11 @@ namespace Snap.Core
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             return new DisposableTempDirectory(workingDirectory, this);
+        }
+
+        public DisposableTempDirectory WithDisposableTempDirectory()
+        {
+            return WithDisposableTempDirectory(Path.GetTempPath());
         }
 
         public IEnumerable<string> EnumerateDirectories([NotNull] string path)

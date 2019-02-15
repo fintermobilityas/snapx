@@ -269,16 +269,18 @@ namespace Snap.Shared.Tests
         }
 
         internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync(
-            [NotNull] SnapApp snapApp, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
+            [NotNull] SnapApp snapApp, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapFilesystem filesystem, 
+            [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapEmbeddedResources == null) throw new ArgumentNullException(nameof(snapEmbeddedResources));
             if (nuspecFilesLayout == null) throw new ArgumentNullException(nameof(nuspecFilesLayout));
 
-            var (coreRunMemoryStream, _, _) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (coreRunMemoryStream, _, _) = snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, filesystem, coreRunLib);
             coreRunMemoryStream.Dispose();
             
             const string nuspecContent = @"<?xml version=""1.0""?>
@@ -309,7 +311,7 @@ namespace Snap.Shared.Tests
 
                 await filesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, cancellationToken: cancellationToken);
+                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, coreRunLib, cancellationToken: cancellationToken);
                 return (nupkgMemoryStream, snapPackDetails);
             }
         }

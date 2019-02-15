@@ -31,7 +31,7 @@ namespace snapx
         static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snapx.Pack");
         static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
 
-        static int TerminalDashesWidth = 80;
+        const int TerminalDashesWidth = 80;
 
         internal static int Main(string[] args)
         {
@@ -234,6 +234,31 @@ namespace snapx
 
             error:
             return (null, null, snapsFilename);
+        }
+
+        static void SetupDirectories([NotNull] ISnapFilesystem filesystem, [NotNull] SnapApps snapApps, [NotNull] string workingDirectory, Dictionary<string, string> expandableProperties = null)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+            expandableProperties = expandableProperties ?? new Dictionary<string, string>();
+
+            snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(expandableProperties) :
+                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
+
+            snapApps.Generic.Installers = snapApps.Generic.Installers == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "installers", "$id$/$rid$").ExpandProperties(expandableProperties) :
+                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
+
+            snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "packages", "$id$/$rid$").ExpandProperties(expandableProperties) :
+                filesystem.PathGetFullPath(snapApps.Generic.Packages).ExpandProperties(expandableProperties);
+
+            snapApps.Generic.Nuspecs = snapApps.Generic.Nuspecs == null ?
+                filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
+                filesystem.PathGetFullPath(snapApps.Generic.Nuspecs);
         }
 
     }

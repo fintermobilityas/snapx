@@ -68,32 +68,12 @@ namespace snapx
 
             snapApp.Version = semanticVersion;
 
-            var expandableProperties = new Dictionary<string, string>
+            SetupDirectories(filesystem, snapApps, workingDirectory, new Dictionary<string, string>
             {
                 { "id", snapApp.Id },
                 { "rid", snapApp.Target.Rid },
                 { "version", snapApp.Version.ToNormalizedString() }
-            };
-
-            snapApps.Generic.Artifacts = snapApps.Generic.Artifacts == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(expandableProperties) :
-                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
-
-            snapApps.Generic.Installers = snapApps.Generic.Installers == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "installers", "$id$/$rid$").ExpandProperties(expandableProperties) :
-                filesystem.PathCombine(workingDirectory, snapApps.Generic.Artifacts.ExpandProperties(expandableProperties));
-
-            snapApps.Generic.Packages = snapApps.Generic.Packages == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "packages", "$id$/$rid$").ExpandProperties(expandableProperties) :
-                filesystem.PathGetFullPath(snapApps.Generic.Packages).ExpandProperties(expandableProperties);
-
-            snapApps.Generic.Nuspecs = snapApps.Generic.Nuspecs == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
-                filesystem.PathGetFullPath(snapApps.Generic.Nuspecs);
-
-            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Artifacts);
-            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Installers);
-            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
+            });
 
             var snapAppChannel = snapApp.Channels.First();
 
@@ -183,7 +163,7 @@ namespace snapx
 
             logger.Info($"Building full package: {snapApp.Version}.");
             var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());
-            using (var currentNupkgStream = snapPack.BuildFullPackageAsync(snapPackageDetails, logger, cancellationToken).GetAwaiter().GetResult())
+            using (var currentNupkgStream = snapPack.BuildFullPackageAsync(snapPackageDetails, coreRunLib, logger, cancellationToken).GetAwaiter().GetResult())
             {
                 logger.Info($"Writing nupkg: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {currentNupkgStream.Length.BytesAsHumanReadable()}.");
                 filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default).GetAwaiter().GetResult();
@@ -265,8 +245,7 @@ namespace snapx
             var progressSource = new SnapProgressSource();
             progressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
 
-            using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(
-                installersWorkingDirectory))
+            using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory))
             {
                 MemoryStream installerZipMemoryStream;
                 MemoryStream warpPackerMemoryStream;

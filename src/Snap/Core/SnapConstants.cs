@@ -7,6 +7,8 @@ namespace Snap.Core
 {
     internal static class SnapConstants
     {
+        public static OSPlatform OsPlatform => GetOsPlatform();
+
         public static readonly string SnapAppLibraryName = "Snap.App";
         public static readonly string SnapDllFilename = "Snap.dll";
         public static string SnapAppDllFilename => SnapAppLibraryName + ".dll";
@@ -16,7 +18,21 @@ namespace Snap.Core
         public static readonly string NuspecRootTargetPath = $"lib/{NuspecTargetFrameworkMoniker}";
         public static readonly string SnapNuspecTargetPath = $"{NuspecRootTargetPath}/{SnapUniqueTargetPathFolderName}";
         public static readonly string ChecksumManifestFilename = "Snap.Checksum.Manifest";
-        
+
+        static OSPlatform GetOsPlatform()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return OSPlatform.Windows;
+            }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return OSPlatform.Linux;
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
         static string BuildSnapNuspecUniqueFolderName()
         {
             var guidStr = typeof(SnapConstants).Assembly.GetCustomAttribute<GuidAttribute>()?.Value;

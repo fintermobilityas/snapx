@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Moq;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Resources;
@@ -15,9 +16,11 @@ namespace Snap.Tests.Core.Resources
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapCryptoProvider _snapCryptoProvider;
+        readonly Mock<ICoreRunLib> _coreRunLibMock;
 
         public SnapEmbeddedResourcesTests(BaseFixture baseFixture)
         {
+            _coreRunLibMock = new Mock<ICoreRunLib>();
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
@@ -41,7 +44,7 @@ namespace Snap.Tests.Core.Resources
             var snapApp = _baseFixture.BuildSnapApp(appId);
             snapApp.Target.Os = OSPlatform.Create(osPlatform);
             
-            var (memoryStream, coreRunFilename, coreRunOsPlatform) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp);
+            var (memoryStream, coreRunFilename, coreRunOsPlatform) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, _coreRunLibMock.Object);
             Assert.NotNull(memoryStream);
             Assert.True(memoryStream.Length > 0);
             Assert.Equal(expectedExeFilename, coreRunFilename);         
@@ -53,7 +56,7 @@ namespace Snap.Tests.Core.Resources
         {
             var snapApp = _baseFixture.BuildSnapApp("demoapp");
             snapApp.Target.Os = OSPlatform.OSX;
-            Assert.Throws<PlatformNotSupportedException>(() => _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp));
+            Assert.Throws<PlatformNotSupportedException>(() => _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, _coreRunLibMock.Object));
         }
         
         [Theory]

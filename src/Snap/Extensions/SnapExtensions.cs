@@ -306,6 +306,8 @@ namespace Snap.Extensions
             
             if (snapAppTarget.Icon != null)
             {
+                snapAppTarget.Icon = snapFilesystem.PathGetFullPath(snapAppTarget.Icon);
+
                 if (!snapFilesystem.FileExists(snapAppTarget.Icon))
                 {                    
                     throw new Exception($"Unable to find icon: {snapAppTarget.Icon}.");

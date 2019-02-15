@@ -7,11 +7,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Packaging;
 using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
-using Snap.Core.Models;
 using Snap.Logging;
 
 namespace Snap.AnyOS
@@ -94,7 +92,7 @@ namespace Snap.AnyOS
             OsImpl = snapOsImpl ?? throw new ArgumentNullException(nameof(snapOsImpl));
         }
 
-        public Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
+        public Task CreateShortcutsForExecutableAsync(SnapOsShortcutDescription shortcutDescription, ILog logger = null,
             CancellationToken cancellationToken = default)
         {
             return OsImpl.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);
@@ -121,7 +119,7 @@ namespace Snap.AnyOS
                                                      StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
         }
 
-        public async Task KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken)
+        public async Task KillAllRunningInsideDirectory(string workingDirectory, CancellationToken cancellationToken)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             var processes = await GetProcessesRunningInDirectoryAsync(workingDirectory, cancellationToken);

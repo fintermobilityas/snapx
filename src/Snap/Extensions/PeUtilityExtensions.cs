@@ -9,6 +9,7 @@ namespace Snap.Extensions
 {
     internal static class PeUtilityExtensions
     {
+        [UsedImplicitly]
         public static (PeUtility.SubSystemType subSystemType, bool is32Bit, bool is64Bit) GetPeDetails([NotNull] this Stream srcStream)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));

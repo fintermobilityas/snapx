@@ -6,10 +6,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Packaging;
 using Snap.AnyOS.Windows;
 using Snap.Core;
-using Snap.Core.Models;
 using Snap.Logging;
 
 namespace Snap.AnyOS.Unix

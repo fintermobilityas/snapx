@@ -8,7 +8,7 @@ namespace Snap.Reflection.Exceptions
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")] 
     internal abstract class CecilReflectorException : Exception
     {
-        public AssemblyDefinition AssemblyDefinition { get; }
+        public AssemblyDefinition AssemblyDefinition { [UsedImplicitly] get; }
 
         protected CecilReflectorException([NotNull] AssemblyDefinition assemblyDefinition, [NotNull] string message) : base($"{message}. Assembly: {assemblyDefinition.FullName}.")
         {

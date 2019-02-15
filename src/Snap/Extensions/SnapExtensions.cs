@@ -453,10 +453,10 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyReflector.FullName}");
             }
 
-            var snapSpecResource = assemblyReflector.MainModule.Resources.SingleOrDefault(x => x.Name == snapAppWriter.SnapAppLibraryName);
+            var snapSpecResource = assemblyReflector.MainModule.Resources.SingleOrDefault(x => x.Name == SnapConstants.SnapAppLibraryName);
             if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
             {
-                throw new Exception($"Unable to find resource {snapAppWriter.SnapAppLibraryName} in assembly {assemblyReflector.FullName}");
+                throw new Exception($"Unable to find resource {SnapConstants.SnapAppLibraryName} in assembly {assemblyReflector.FullName}");
             }
 
             using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())
@@ -477,7 +477,7 @@ namespace Snap.Extensions
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
 
-            var snapAppDll = filesystem.PathCombine(workingDirectory, snapAppWriter.SnapAppDllFilename);
+            var snapAppDll = filesystem.PathCombine(workingDirectory, SnapConstants.SnapAppDllFilename);
             if (!filesystem.FileExists(snapAppDll))
             {
                 throw new FileNotFoundException(snapAppDll);
@@ -517,7 +517,7 @@ namespace Snap.Extensions
             var snapSpecDllDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
             if (snapSpecDllDirectory == null)
             {
-                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. " +
+                throw new Exception($"Unable to find snap app dll: {SnapConstants.SnapAppDllFilename}. " +
                                              $"Assembly location: {assembly.Location}. " +
                                              $"Assembly name: {assembly.FullName}");
             }

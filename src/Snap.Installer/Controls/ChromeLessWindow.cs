@@ -48,7 +48,7 @@ namespace Snap.Installer.Controls
             WindowState = WindowState.Normal;
         }
 
-        protected class NativeMethodsWindows
+        protected static class NativeMethodsWindows
         {
             [DllImport("user32", SetLastError = true, EntryPoint = "SetActiveWindow")]
             static extern IntPtr SetActiveWindow(IntPtr hWnd);

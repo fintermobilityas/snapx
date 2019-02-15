@@ -8,6 +8,6 @@ namespace snapx.Options
     internal class Sha512Options : BaseSubOptions
     {
         [Option('f', "filename", HelpText = "Input filename", Required = true)]
-        public string Filename { get; set; }
+        public string Filename { get; [UsedImplicitly] set; }
     }
 }

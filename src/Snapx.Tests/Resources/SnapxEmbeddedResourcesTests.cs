@@ -1,5 +1,4 @@
 ﻿using snapx.Core;
-using Snap.Core;
 using Snap.Shared.Tests;
 using Xunit;
 

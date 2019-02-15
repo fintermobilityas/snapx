@@ -20,9 +20,6 @@ namespace Snap.Core
 {
     internal interface ISnapAppWriter
     {
-        string SnapAppLibraryName { get; }
-        string SnapDllFilename { get; }
-        string SnapAppDllFilename { get; }
         AssemblyDefinition BuildSnapAppAssembly(SnapApp snapsApp);
         AssemblyDefinition OptimizeSnapDllForPackageArchive(AssemblyDefinition assemblyDefinition, OSPlatform osPlatform);
         string ToSnapAppYamlString(SnapApp snapApp);
@@ -30,11 +27,7 @@ namespace Snap.Core
     }
 
     internal sealed class SnapAppWriter : ISnapAppWriter
-    {
-        public string SnapAppLibraryName => "Snap.App";
-        public string SnapDllFilename => "Snap.dll";
-        public string SnapAppDllFilename => SnapAppLibraryName + ".dll";
-      
+    {      
         static readonly Serializer YamlSerializerSnapApp = Build(new SerializerBuilder()
             .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter,
                 SnapAppReader.AbstractClassTypeMappingsSnapApp)
@@ -76,8 +69,8 @@ namespace Snap.Core
             var currentVersion = snapApp.Version;
 
             var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(SnapAppLibraryName, new Version(currentVersion.Major,
-                    currentVersion.Minor, currentVersion.Patch)), SnapAppLibraryName, ModuleKind.Dll);
+                new AssemblyNameDefinition(SnapConstants.SnapAppLibraryName, new Version(currentVersion.Major,
+                    currentVersion.Minor, currentVersion.Patch)), SnapConstants.SnapAppLibraryName, ModuleKind.Dll);
 
             var assemblyReflector = new CecilAssemblyReflector(assembly);
 
@@ -85,7 +78,7 @@ namespace Snap.Core
                 typeof(SnapAppReleaseDetailsAttribute).GetConstructor(Type.EmptyTypes));
 
             assemblyReflector.AddCustomAttribute(new CustomAttribute(snapAppReleaseDetailsAttributeMethodDefinition));
-            assemblyReflector.AddResource(new EmbeddedResource(SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr)));
+            assemblyReflector.AddResource(new EmbeddedResource(SnapConstants.SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr)));
 
             return assembly;
         }

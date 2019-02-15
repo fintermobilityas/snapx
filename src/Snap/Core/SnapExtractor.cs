@@ -61,7 +61,7 @@ namespace Snap.Core
             var snapFilesCount = await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, cancellationToken);
             if (snapFilesCount <= 0)
             {
-                logger?.Error($"Unable to find any files in target path: {_snapPack.NuspecRootTargetPath}");
+                logger?.Error($"Unable to find any files in target path: {SnapConstants.NuspecRootTargetPath}");
                 return new List<string>();
             }
 
@@ -73,15 +73,15 @@ namespace Snap.Core
             _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
 
             var snapFiles = (await _snapPack.GetFilesAsync(asyncPackageCoreReader, cancellationToken))
-                .Where(x => x.StartsWith(_snapPack.NuspecRootTargetPath))
+                .Where(x => x.StartsWith(SnapConstants.NuspecRootTargetPath))
                 .ToList();
             foreach (var sourcePath in snapFiles)
             {
-                var isSnapRootTargetItem = sourcePath.StartsWith(_snapPack.SnapNuspecTargetPath);
+                var isSnapRootTargetItem = sourcePath.StartsWith(SnapConstants.SnapNuspecTargetPath);
                 
                 if (!includeChecksumManifest 
                     && isSnapRootTargetItem 
-                    && sourcePath.EndsWith(_snapPack.ChecksumManifestFilename))
+                    && sourcePath.EndsWith(SnapConstants.ChecksumManifestFilename))
                 {
                     continue;
                 }
@@ -99,7 +99,7 @@ namespace Snap.Core
                 }
                 else
                 {
-                    var targetPath = sourcePath.Substring(_snapPack.NuspecRootTargetPath.Length + 1);
+                    var targetPath = sourcePath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
                     dstFilename = _snapFilesystem.PathCombine(destinationDirectory,  
                         _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(targetPath));
                 }

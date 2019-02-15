@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Moq;
-using NuGet.Packaging;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
@@ -137,11 +136,11 @@ namespace Snap.Tests.Core
                         // Corerun
                         _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp)),
                         // Install
-                        _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapAppDllFilename),
-                        _snapFilesystem.PathCombine(installAppDir, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(installAppDir, SnapConstants.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(installAppDir, SnapConstants.SnapDllFilename),
                         // Update
-                        _snapFilesystem.PathCombine(updateAppDir, _snapAppWriter.SnapAppDllFilename),
-                        _snapFilesystem.PathCombine(updateAppDir, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapDllFilename),
                         // Packages
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(installNupkgAbsoluteFilename)),
                         _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(updateNupkgAbsoluteFilename))
@@ -232,8 +231,8 @@ namespace Snap.Tests.Core
                     {
                         // Snap assemblies
                         _snapFilesystem.PathCombine(rootDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App)),
-                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapAppDllFilename),
-                        _snapFilesystem.PathCombine(appDir, _snapAppWriter.SnapDllFilename),
+                        _snapFilesystem.PathCombine(appDir, SnapConstants.SnapAppDllFilename),
+                        _snapFilesystem.PathCombine(appDir, SnapConstants.SnapDllFilename),
                         // App assemblies
                         _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename()),
                         _snapFilesystem.PathCombine(appDir, $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}"),

@@ -10,7 +10,6 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
-using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Core.Resources;

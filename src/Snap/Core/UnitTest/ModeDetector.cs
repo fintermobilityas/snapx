@@ -4,6 +4,7 @@
 // See the LICENSE file in the project root for full license information.
 
 using System;
+using JetBrains.Annotations;
 
 namespace Snap.Core.UnitTest
 {
@@ -61,6 +62,7 @@ namespace Snap.Core.UnitTest
         /// Overrides the mode detector with one of your own provided ones.
         /// </summary>
         /// <param name="modeDetector">The mode detector to use.</param>
+        [UsedImplicitly]
         public static void OverrideModeDetector(IModeDetector modeDetector)
         {
             Current = modeDetector;
@@ -97,6 +99,7 @@ namespace Snap.Core.UnitTest
         /// Gets a value indicating whether we are currently running from within a GUI design editor.
         /// </summary>
         /// <returns>If we are currently running from design mode.</returns>
+        [UsedImplicitly]
         public static bool InDesignMode()
         {
             if (_cachedInDesignModeResult.HasValue)

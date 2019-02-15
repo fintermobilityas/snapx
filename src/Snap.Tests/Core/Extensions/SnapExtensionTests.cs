@@ -624,6 +624,7 @@ namespace Snap.Tests.Core.Extensions
                 Assert.Equal(lhsNugetPushFeed.ApiKey, rhsNugetPushFeed.ApiKey);
                 Assert.Equal(lhsNugetPushFeed.Username, rhsNugetPushFeed.Username);
 
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (lhsNugetPushFeed.IsPasswordEncryptionSupported())
                 {
                     Assert.Equal(EncryptionUtility.DecryptString(lhsNugetPushFeed.Password), rhsNugetPushFeed.Password);

@@ -25,6 +25,7 @@ namespace Snap.AnyOS.Windows
 
     }
 
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     internal sealed class SnapOsShortcutDescription
     {
         public SnapApp SnapApp { get; set; }

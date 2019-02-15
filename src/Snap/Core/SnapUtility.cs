@@ -10,7 +10,7 @@ namespace Snap.Core
         /// <summary>
         /// The namespace for ISO OIDs (from RFC 4122, Appendix C).
         /// </summary>
-        public static readonly Guid IsoOidNamespace = new Guid("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
+        static readonly Guid IsoOidNamespace = new Guid("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
 
         // Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
         static void SwapByteOrder(byte[] guid)
@@ -31,11 +31,6 @@ namespace Snap.Core
         public static Guid CreateGuidFromHash(string text)
         {
             return CreateGuidFromHash(text, IsoOidNamespace);
-        }
-
-        public static Guid CreateGuidFromHash(byte[] data)
-        {
-            return CreateGuidFromHash(data, IsoOidNamespace);
         }
 
         public static Guid CreateGuidFromHash(string text, Guid namespaceId)
@@ -107,30 +102,6 @@ namespace Snap.Core
                     retries--;
                     Thread.Sleep(250);
                 }
-            }
-        }
-    }
-
-    internal static class Disposable
-    {
-        public static IDisposable Create(Action action)
-        {
-            return new AnonDisposable(action);
-        }
-
-        class AnonDisposable : IDisposable
-        {
-            static readonly Action DummyBlock = () => { };
-            Action _block;
-
-            public AnonDisposable(Action b)
-            {
-                _block = b;
-            }
-
-            public void Dispose()
-            {
-                Interlocked.Exchange(ref _block, DummyBlock)();
             }
         }
     }

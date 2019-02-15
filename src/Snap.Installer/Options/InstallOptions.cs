@@ -8,9 +8,9 @@ namespace Snap.Installer.Options
     internal sealed class InstallOptions : BaseSubOptions
     {
         [Option('f', "filename", HelpText = "Input filename")]
-        public string Filename { get; set; }
+        public string Filename { get; [UsedImplicitly] set; }
 
         [Option('c', "channel", HelpText = "Default channel")]
-        public string Channel { get; set; }
+        public string Channel { get; [UsedImplicitly] set; }
     }
 }

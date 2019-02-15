@@ -13,8 +13,6 @@ namespace Snap.Installer
 {
     internal sealed class MainWindow : ChromeLessWindow
     {
-        readonly ILog _logger;
-
         public static ISnapInstallerEnvironment Environment { get; set; }
         public static MainWindowViewModel ViewModel { get; set; }
 
@@ -22,7 +20,7 @@ namespace Snap.Installer
         {
             Debug.Assert(Environment != null, nameof(Environment) + " != null");
             
-            _logger = Environment.BuildLogger<MainWindow>();
+            var logger = Environment.BuildLogger<MainWindow>();
 
             InitializeComponent();
 #if DEBUG
@@ -33,7 +31,7 @@ namespace Snap.Installer
 
             Environment.CancellationToken.Register(() =>
             {
-                _logger.Info("Cancellation detected, closing main window.");
+                logger.Info("Cancellation detected, closing main window.");
                 Dispatcher.UIThread.InvokeAsync(Close);
             });
         }

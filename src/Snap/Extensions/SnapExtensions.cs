@@ -361,6 +361,11 @@ namespace Snap.Extensions
                 snapAppChannels.Add(new SnapChannel(snapsChannel.Name, currentChannel, pushFeed, updateFeed));
             }
 
+            if (snapApp.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase)))
+            {
+                throw new Exception("Fatal error! A persistent asset starting with 'app-' was detected in manifest. This is a reserved keyword.");
+            }
+
             return new SnapApp
             {
                 Id = snapApp.Id,

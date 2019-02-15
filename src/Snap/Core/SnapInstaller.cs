@@ -244,7 +244,8 @@ namespace Snap.Core
             string baseDirectory, string appDirectory, SemanticVersion currentVersion,
             bool isInitialInstall, ILog logger = null, CancellationToken cancellationToken = default)
         {
-            var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            var chmod = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
             var coreRunExeAbsolutePath = _snapFilesystem
                 .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
             var mainExeAbsolutePath = _snapFilesystem
@@ -258,7 +259,7 @@ namespace Snap.Core
                 logger?.Info($"Permissions changed successfully: {(chmodSuccess ? "true" : "false")}.");
             }
             
-            if (!isWindows)
+            if (chmod)
             {
                 await ChmodAsync(coreRunExeAbsolutePath);
                 await ChmodAsync(mainExeAbsolutePath);
@@ -283,7 +284,7 @@ namespace Snap.Core
                         UpdateOnly = isInitialInstall == false,
                         NuspecReader = nuspecReader,
                         ShortcutLocations = shortcutLocations,
-                        ExeAbsolutePath = coreRunExeAbsolutePath,
+                        ExeAbsolutePath = coreRunExeAbsolutePath
                     };
                     
                     await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription,logger, cancellationToken);
@@ -292,8 +293,7 @@ namespace Snap.Core
                 {
                     logger?.ErrorException($"Exception thrown while creating shortcut for exe: {coreRunExeFilename}", e);
                 }
-            }
-          
+            }          
            
             var allSnapAwareApps = new List<string> {coreRunExeAbsolutePath};
             

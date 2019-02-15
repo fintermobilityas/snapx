@@ -259,6 +259,9 @@ namespace snapx
             snapApps.Generic.Nuspecs = snapApps.Generic.Nuspecs == null ?
                 filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
                 filesystem.PathGetFullPath(snapApps.Generic.Nuspecs);
+
+            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Installers);
+            filesystem.DirectoryCreateIfNotExists(snapApps.Generic.Packages);
         }
 
     }

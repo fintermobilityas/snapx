@@ -13,6 +13,7 @@ using NuGet.Packaging;
 using NuGet.Versioning;
 using snapx.Core;
 using snapx.Options;
+using Snap;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Models;
@@ -27,7 +28,7 @@ namespace snapx
         static int CommandPack([NotNull] PackOptions packOptions, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
-            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ILog logger,
+            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,  [NotNull] ILog logger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -38,6 +39,7 @@ namespace snapx
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -191,7 +193,7 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var (installerBuiltSuccessfully, installerExeAbsolutePath) = BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
-                snapApp, snapAppChannel, snapApps.Generic.Installers, currentNupkgAbsolutePath,
+                snapApp, snapAppChannel, coreRunLib, snapApps.Generic.Installers, currentNupkgAbsolutePath,
                 cancellationToken).GetAwaiter().GetResult();
 
             if (!installerBuiltSuccessfully)
@@ -246,8 +248,10 @@ namespace snapx
             return 0;
         }
 
-        static async Task<(bool success, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
-            [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, [NotNull] string installersWorkingDirectory, [NotNull] string fullNupkgAbsolutePath, CancellationToken cancellationToken)
+        static async Task<(bool success, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
+            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
+            [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, ICoreRunLib coreRunLib, [NotNull] string installersWorkingDirectory,
+            [NotNull] string fullNupkgAbsolutePath, CancellationToken cancellationToken)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
@@ -273,6 +277,7 @@ namespace snapx
                 string warpPackerArch;
                 string installerFilename;
                 var chmod = false;
+                var changeSubSystemToWindowsGui = false;
 
                 if (snapOs.OsPlatform == OSPlatform.Windows)
                 {
@@ -297,6 +302,7 @@ namespace snapx
                         warpPackerArch = "windows-x64";
                         snapAppTargetRid = "win-x64";
                         installerFilename = "Snap.Installer.exe";
+                        changeSubSystemToWindowsGui = true;
                         break;
                     case "linux-x64":
                         installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;
@@ -357,6 +363,16 @@ namespace snapx
                 if (exitCode != 0)
                 {
                     return (false, null);
+                }
+
+                if (changeSubSystemToWindowsGui)
+                {
+                    var rcEditOptions = new RcEditOptions
+                    {
+                        ConvertSubSystemToWindowsGui = true,
+                        Filename = installerFinalAbsolutePath
+                    };
+                    CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
                 }
 
                 progressSource.Raise(100);

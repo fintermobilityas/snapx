@@ -10,7 +10,7 @@ namespace snapx
 {
     internal partial class Program
     {
-        static int CommandRcEdit([NotNull] RcEditOptions opts, [NotNull] CoreRunLib coreRunLib, 
+        static int CommandRcEdit([NotNull] RcEditOptions opts, [NotNull] ICoreRunLib coreRunLib, 
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ILog logger)
         {
             if (opts == null) throw new ArgumentNullException(nameof(opts));

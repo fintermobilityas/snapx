@@ -406,6 +406,11 @@ function Build-Snap-Installer {
         Command-Exec chmod @("+x $SnapInstallerExeAbsolutePath")
     }
 
+    if(Test-Path $SnapInstallerExeZipAbsolutePath)
+    {
+        Remove-Item $SnapInstallerExeZipAbsolutePath -Force | Out-Null
+    }
+
     Compress-Archive `
         -Path $SnapInstallerNetBuildPublishDir\* `
         -CompressionLevel Optimal `

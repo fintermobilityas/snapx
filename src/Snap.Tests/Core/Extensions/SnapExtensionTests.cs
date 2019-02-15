@@ -573,7 +573,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory));
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem);
             snapAppAfter.Version = snapAppBefore.Version.BumpMajor();
 
             // Generic

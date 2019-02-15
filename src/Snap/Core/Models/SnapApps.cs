@@ -119,6 +119,7 @@ namespace Snap.Core.Models
         public string Framework { get; set; }
         public string Rid { get; set; }
         public string Nuspec { get; set; }
+        public string Icon { get; set; }
 
         [UsedImplicitly]
         public SnapsTarget()
@@ -133,6 +134,7 @@ namespace Snap.Core.Models
             Framework = target.Framework;
             Rid = target.Rid;
             Nuspec = target.Nuspec;
+            Icon = target.Icon;
         }
 
         public SnapsTarget([NotNull] SnapsTarget target)
@@ -142,6 +144,7 @@ namespace Snap.Core.Models
             Framework = target.Framework;
             Rid = target.Rid;
             Nuspec = target.Nuspec;
+            Icon = target.Icon;
         }
     }
 

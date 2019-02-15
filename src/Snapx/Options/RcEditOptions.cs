@@ -11,5 +11,7 @@ namespace snapx.Options
         public string Filename { get; set; }
         [Option("gui-app", HelpText = "Change console application subsystem Windows GUI")]
         public bool ConvertSubSystemToWindowsGui { get; set; }
+        [Option("icon", HelpText = "Set icon for a windows executable")]
+        public string IconFilename { get; set; }
     }
 }

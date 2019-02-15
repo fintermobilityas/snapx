@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using snapx.Options;
 using Snap;
@@ -18,30 +19,57 @@ namespace snapx
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
+            var exitCode = -1;
+
+            if (!snapFilesystem.FileExists(opts.Filename))
+            {
+                logger.Error($"Filename does not exist: {opts.Filename}.");
+                goto done;
+            }
+            
             if (opts.ConvertSubSystemToWindowsGui)
             {
-                if (!snapFilesystem.FileExists(opts.Filename))
-                {
-                    logger.Error($"Unable to convert subsystem for executable, it does not exist: {opts.Filename}.");
-                    return -1;
-                }
-
                 logger.Info($"Attempting to change subsystem to Windows GUI for executable: {opts.Filename}.");
 
                 using (var srcStream = snapFilesystem.FileReadWrite(opts.Filename, false))
                 {
                     if (!srcStream.ChangeSubsystemToWindowsGui(SnapLogger))
                     {
-                        return -1;
+                        goto done;
                     }
 
-                    logger.Info(message: "Subsystem has been successfully changed to Windows GUI.");
+                    logger.Info("Subsystem has been successfully changed to Windows GUI.");
                 }
 
-                return 0;
+                exitCode = 0;
             }
 
-            return -1;
+            if (opts.IconFilename != null)
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    logger.Error("Modifying executable icon is not supported on this OS platform.");
+                    goto done;
+                }
+                opts.IconFilename = snapFilesystem.PathGetFullPath(opts.IconFilename);                
+                if (!snapFilesystem.FileExists(opts.IconFilename))
+                {
+                    logger.Error($"Unable to find icon with filename: {opts.IconFilename}");
+                    goto done;
+                }
+
+                if (!coreRunLib.SetIcon(opts.Filename, opts.IconFilename))
+                {
+                    logger.Error($"Unknown error setting icon for executable {opts.Filename}. Icon filename: {opts.Filename}.");
+                    goto done;
+                }
+
+                logger.Info($"Icon has been successfully updated. Filename: {opts.Filename}. Icon filename: {opts.IconFilename}.");                
+                exitCode = 0;
+            }
+
+            done:
+            return exitCode;
         }
 
     }

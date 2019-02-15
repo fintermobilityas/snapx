@@ -223,7 +223,7 @@ namespace snapx
                     goto error;
                 }
 
-                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources).ToList(), snapsFilename);
+                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), snapsFilename);
             }
             catch (YamlException yamlException)
             {

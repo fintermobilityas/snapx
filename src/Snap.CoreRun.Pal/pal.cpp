@@ -6,6 +6,7 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
+#include "vendor/rcedit/rcedit.hpp"
 #endif
 
 #if PLATFORM_LINUX
@@ -183,6 +184,35 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated() {
     is_elevated = uid < 0 || uid != euid ? TRUE : FALSE;
 #endif
     return is_elevated;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon_filename_in)
+{
+    if (!pal_fs_file_exists(filename_in)
+        || !pal_fs_file_exists(icon_filename_in))
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS || PLATFORM_MINGW
+    pal_utf16_string filename_in_utf16_string(filename_in);
+    pal_utf16_string icon_filename_in_utf16_string(icon_filename_in);
+    snap::rcedit::ResourceUpdater resourceUpdater;
+    if (!resourceUpdater.Load(filename_in_utf16_string.data()))
+    {
+        return FALSE;
+    }
+    if (!resourceUpdater.SetIcon(icon_filename_in_utf16_string.data()))
+    {
+        return FALSE;
+    }
+    if (!resourceUpdater.Commit())
+    {
+        return FALSE;
+    }
+    return TRUE;
+#endif
+    return FALSE;
 }
 
 
@@ -512,7 +542,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
 
     BOOL file_exists = FALSE;
 #if PLATFORM_WINDOWS
-    file_exists = PathFileExists(pal_utf16_string(file_path_in).data()) ? TRUE : FALSE;
+    pal_utf16_string file_path_in_utf16_string(file_path_in);
+    file_exists = PathFileExists(file_path_in_utf16_string.data()) == TRUE ? TRUE : FALSE;
 #elif PLATFORM_LINUX
     file_exists = access(file_path_in, F_OK) != -1 ? TRUE : FALSE;
 #endif

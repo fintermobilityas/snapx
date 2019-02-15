@@ -21,7 +21,7 @@ namespace Snap.Core.Models
         public SnapAppDeltaSummary DeltaSummary { get; set; }
         public List<string> PersistentAssets { get; set; }
         public List<SnapShortcutLocation> Shortcuts { get; set; }
-
+        
         [UsedImplicitly]
         public SnapApp()
         {
@@ -125,6 +125,7 @@ namespace Snap.Core.Models
         public string Framework { get; set; }
         public string Rid { get; set; }
         public string Nuspec { get; set; }
+        public string Icon { get; set; }
 
         [UsedImplicitly]
         public SnapTarget()
@@ -139,6 +140,7 @@ namespace Snap.Core.Models
             Framework = target.Framework;
             Rid = target.Rid;
             Nuspec = target.Nuspec;
+            Icon = target.Icon;
         }
 
         internal SnapTarget([NotNull] SnapsTarget snapsTarget) : this(new SnapTarget
@@ -146,7 +148,8 @@ namespace Snap.Core.Models
             Os = snapsTarget.Os,
             Framework = snapsTarget.Framework,
             Nuspec = snapsTarget.Nuspec,
-            Rid = snapsTarget.Rid
+            Rid = snapsTarget.Rid,
+            Icon = snapsTarget.Icon
         })
         {
             if (snapsTarget == null) throw new ArgumentNullException(nameof(snapsTarget));

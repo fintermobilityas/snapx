@@ -365,6 +365,8 @@ namespace snapx
                     return (false, null);
                 }
 
+                progressSource.Raise(80);
+                
                 if (changeSubSystemToWindowsGui)
                 {
                     var rcEditOptions = new RcEditOptions
@@ -372,15 +374,16 @@ namespace snapx
                         ConvertSubSystemToWindowsGui = true,
                         Filename = installerFinalAbsolutePath
                     };
+                    
                     CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
                 }
-
-                progressSource.Raise(100);
 
                 if (chmod)
                 {
                     await snapOs.ProcessManager.RunAsync("chmod", $"+x {installerFinalAbsolutePath}", cancellationToken);
                 }
+
+                progressSource.Raise(100);
 
                 return (true, installerFinalAbsolutePath);
 

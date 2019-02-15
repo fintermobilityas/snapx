@@ -18,12 +18,14 @@ namespace Snap.Tests.Core
         readonly BaseFixture _baseFixture;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapAppWriter _snapAppWriter;
+        readonly ISnapFilesystem _snapFilesystem;
 
         public SnapAppReaderTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
             _snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
+            _snapFilesystem = new SnapFilesystem();
         }
 
         [Fact]
@@ -113,7 +115,7 @@ namespace Snap.Tests.Core
             return snapApp;
         }
 
-        static void AssertSnapApps(SnapApps snapAppsBefore, SnapApps snapAppsAfter, INuGetPackageSources nuGetPackageSources)
+        void AssertSnapApps(SnapApps snapAppsBefore, SnapApps snapAppsAfter, INuGetPackageSources nuGetPackageSources)
         {
             Assert.NotNull(snapAppsBefore);
             Assert.NotNull(snapAppsAfter);
@@ -151,8 +153,8 @@ namespace Snap.Tests.Core
             }
 
             // Apps.     
-            var snapAppBefore = snapAppsBefore.BuildSnapApps(nuGetPackageSources).ToList();
-            var snapAppAfter = snapAppsAfter.BuildSnapApps(nuGetPackageSources).ToList();
+            var snapAppBefore = snapAppsBefore.BuildSnapApps(nuGetPackageSources, _snapFilesystem).ToList();
+            var snapAppAfter = snapAppsAfter.BuildSnapApps(nuGetPackageSources, _snapFilesystem).ToList();
             Assert.Equal(snapAppBefore.Count, snapAppAfter.Count);
 
             for (var i = 0; i < snapAppsBefore.Apps.Count; i++)

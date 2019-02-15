@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Extensions;
@@ -14,6 +15,8 @@ namespace Snap
     {
         bool Chmod(string filename, int mode);
         bool IsElevated();
+        bool SetIcon(string exeAbsolutePath, string iconAbsolutePath);
+        bool FileExists(string filename);
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -24,13 +27,22 @@ namespace Snap
 
         // generic
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate bool pal_is_elevated_delegate();
+        delegate int pal_is_elevated_delegate();
         readonly Delegate<pal_is_elevated_delegate> pal_is_elevated;
-        
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+        delegate int pal_set_icon_delegate(
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string exeFilename, 
+            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string iconFilename);
+        readonly Delegate<pal_set_icon_delegate> pal_set_icon;
+            
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate bool pal_fs_chmod_delegate(string filename, int mode);
+        delegate int pal_fs_chmod_delegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string filename, int mode);
         readonly Delegate<pal_fs_chmod_delegate> pal_fs_chmod;
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+        delegate int pal_fs_file_exists_delegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string filename);
+        readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
         public CoreRunLib([NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [NotNull] string workingDirectory)
         {
@@ -65,22 +77,47 @@ namespace Snap
 
             // generic
             pal_is_elevated = new Delegate<pal_is_elevated_delegate>(_libPtr, osPlatform);
+            pal_set_icon = new Delegate<pal_set_icon_delegate>(_libPtr, osPlatform);
             
             // filesystem
             pal_fs_chmod = new Delegate<pal_fs_chmod_delegate>(_libPtr, osPlatform);
+            pal_fs_file_exists = new Delegate<pal_fs_file_exists_delegate>(_libPtr, osPlatform);
         }
 
         public bool Chmod([NotNull] string filename, int mode)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
-            return pal_fs_chmod.Invoke(filename, mode);
+            return pal_fs_chmod.Invoke(filename, mode) == 1;
         }
 
         public bool IsElevated()
         {
             pal_is_elevated.ThrowIfDangling();
-            return pal_is_elevated.Invoke();
+            return pal_is_elevated.Invoke() == 1;
+        }
+
+        public bool SetIcon([NotNull] string exeAbsolutePath, [NotNull] string iconAbsolutePath)
+        {
+            if (exeAbsolutePath == null) throw new ArgumentNullException(nameof(exeAbsolutePath));
+            if (iconAbsolutePath == null) throw new ArgumentNullException(nameof(iconAbsolutePath));
+            pal_set_icon.ThrowIfDangling();
+            if (!FileExists(exeAbsolutePath))
+            {
+                throw new FileNotFoundException(exeAbsolutePath);
+            }
+            if (!FileExists(iconAbsolutePath))
+            {
+                throw new FileNotFoundException(iconAbsolutePath);
+            }
+            return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
+        }
+
+        public bool FileExists([NotNull] string filename)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            pal_fs_file_exists.ThrowIfDangling();
+            return pal_fs_file_exists.Invoke(filename) == 1;
         }
 
         public void Dispose()
@@ -94,9 +131,11 @@ namespace Snap
             {
                 // generic
                 pal_is_elevated.Unref();
+                pal_set_icon.Unref();
                 
                 // filesystem
                 pal_fs_chmod.Unref();
+                pal_fs_file_exists.Unref();
             }
 
             if (_osPlatform == OSPlatform.Windows)
@@ -200,6 +239,77 @@ namespace Snap
             public void Unref()
             {
                 Ptr = IntPtr.Zero;
+            }
+        }
+        
+        // https://www.cnblogs.com/lonelyxmas/p/4602655.html
+        class Utf8StringMarshaler : ICustomMarshaler
+        {           
+            static readonly Utf8StringMarshaler Instance = new Utf8StringMarshaler();
+
+            public void CleanUpManagedData(object ManagedObj)
+            {
+
+            }
+
+            public void CleanUpNativeData(IntPtr pNativeData)
+            {
+                Marshal.Release(pNativeData);
+            }
+
+            public int GetNativeDataSize()
+            {
+                return Marshal.SizeOf(typeof(byte));
+            }
+
+            public IntPtr MarshalManagedToNative(object ManagedObj)
+            {
+                if (ManagedObj == null)
+                {
+                    return IntPtr.Zero;
+                }
+
+                if (ManagedObj.GetType() != typeof(string))
+                {
+                    throw new ArgumentException("ManagedObj", "Can only marshal type of System.String");
+                }
+
+                var array = Encoding.UTF8.GetBytes((string)ManagedObj);
+                var size = Marshal.SizeOf(array[0]) * array.Length + Marshal.SizeOf(array[0]);
+                var ptr = Marshal.AllocHGlobal(size);
+                Marshal.Copy(array, 0, ptr, array.Length);
+                Marshal.WriteByte(ptr, size - 1, 0);
+                
+                return ptr;
+            }
+
+            public object MarshalNativeToManaged(IntPtr pNativeData)
+            {
+                if (pNativeData == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                var size = GetNativeDataSize(pNativeData);
+                var array = new byte[size - 1];
+                Marshal.Copy(pNativeData, array, 0, size - 1);
+                return Encoding.UTF8.GetString(array);
+            }
+            
+            static int GetNativeDataSize(IntPtr ptr)
+            {
+                int size;
+                for (size = 0; Marshal.ReadByte(ptr, size) > 0; size++)
+                {
+                }
+
+                return size;
+            }
+            
+            [UsedImplicitly]
+            public static ICustomMarshaler GetInstance(string cookie)
+            {
+                return Instance;
             }
         }
     }

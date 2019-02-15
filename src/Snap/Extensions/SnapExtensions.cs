@@ -257,23 +257,24 @@ namespace Snap.Extensions
             return snapFeed;
         }
 
-        internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources)
+        internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem)
         {
             foreach (var snapsApp in snapApps.Apps)
             {
                 foreach (var snapsTarget in snapsApp.Targets)
                 {
-                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources);
+                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources, snapFilesystem);
                 }
             }
         }
 
         internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid,
-            [NotNull] INuGetPackageSources nuGetPackageSources)
+            [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             if (rid == null) throw new ArgumentNullException(nameof(rid));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
 
             var snapApp = snapApps.Apps.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase));
             if (snapApp == null)
@@ -301,6 +302,14 @@ namespace Snap.Extensions
             if (!snapAppTarget.Framework.IsNetFrameworkValidSafe())
             {
                 throw new Exception($"Unknown .NET framework: {snapAppTarget.Framework}");
+            }
+            
+            if (snapAppTarget.Icon != null)
+            {
+                if (!snapFilesystem.FileExists(snapAppTarget.Icon))
+                {                    
+                    throw new Exception($"Unable to find icon: {snapAppTarget.Icon}.");
+                }
             }
 
             var snapAppUniqueChannels = snapApp.Channels.Distinct().ToList();
@@ -508,7 +517,9 @@ namespace Snap.Extensions
             var snapSpecDllDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
             if (snapSpecDllDirectory == null)
             {
-                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. Assembly location: {assembly.Location}. Assembly name: {assembly.FullName}");
+                throw new Exception($"Unable to find snap app dll: {snapAppWriter.SnapAppDllFilename}. " +
+                                             $"Assembly location: {assembly.Location}. " +
+                                             $"Assembly name: {assembly.FullName}");
             }
 
             return snapSpecDllDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader, snapAppWriter);

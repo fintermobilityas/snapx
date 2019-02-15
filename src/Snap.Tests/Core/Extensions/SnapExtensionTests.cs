@@ -31,8 +31,9 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Theory]
-        [InlineData(".builds", "id=demoapp;rid=linux-x64;version=1.0.0", ".builds")]
-        [InlineData(".builds/$id$/$rid$/$version$", "id=demoapp;rid=linux-x64;version=1.0.0", ".builds/demoapp/linux-x64/1.0.0")]
+        [InlineData("artifacts", "id=demoapp;rid=linux-x64;version=1.0.0", "artifacts")]
+        [InlineData("artifacts/$id$/$rid$/$version$", "id=demoapp;rid=linux-x64;version=1.0.0", "artifacts/demoapp/linux-x64/1.0.0")]
+        [InlineData("artifacts/$id$/$rid$/$version$/some/trailing/path", "id=demoapp;rid=linux-x64;version=1.0.0", "artifacts/demoapp/linux-x64/1.0.0/some/trailing/path")]
         public void TestExpandProperties(string valueStr, string dictionaryString, string expectedString)
         {
             var properties = BuildExpansionProperties(dictionaryString);

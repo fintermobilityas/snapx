@@ -152,7 +152,7 @@ namespace Snap.NuGet
                     packagesDirectory = cacheContext.GeneratedTempFolder;
                 }
                 
-                var downloadContext = new PackageDownloadContext(cacheContext, packagesDirectory, false);
+                var downloadContext = new PackageDownloadContext(cacheContext, packagesDirectory, true);
 
                 var sourceRepository = _packageSources.Get(packageSource);
                 var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);

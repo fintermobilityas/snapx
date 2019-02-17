@@ -105,14 +105,11 @@ namespace snapx
             
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-            ((bool valid, string id, string fullOrDelta, 
-                SemanticVersion semanticVersion, string rid, string channelName) nupkg, string nupkgFilename) previousFullNupkg = default;
-
             var pushFeed = nuGetPackageSources.Items.Single(x => x.Name == snapAppChannel.PushFeed.Name 
                                                                  && x.SourceUri == snapAppChannel.PushFeed.Source);
-
             var pushPackages = new List<string>();
-
+            string mostRecentReleaseNupkgAbsolutePath = null;
+            SnapApp mostRecentSnapApp = null;
             SnapReleases snapReleases;
             
             logger.Info("Downloading releases nupkg");
@@ -192,11 +189,16 @@ namespace snapx
                     {
                         return -1;
                     }
-                    
-                    var nupkgFilename = filesystem.PathCombine(snapApps.Generic.Packages, snapAppMostRecentRelease.FullFilename);
-                    previousFullNupkg = (nupkgFilename.ParseNugetLocalFilename(), nupkgFilename);
+                                        
+                    mostRecentReleaseNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapAppMostRecentRelease.FullFilename);                    
+                    await filesystem.FileWriteAsync(snapPreviousVersionDownloadResult.PackageStream, mostRecentReleaseNupkgAbsolutePath, cancellationToken);
 
                     logger.Info($"Successfully restored: {filesystem.PathGetFileName(snapAppMostRecentRelease.FullFilename)}");
+                    
+                    using (var packageArchiveReader = new PackageArchiveReader(snapPreviousVersionDownloadResult.PackageStream))
+                    {
+                        mostRecentSnapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
+                    }                    
                 }
                 else
                 {
@@ -209,17 +211,6 @@ namespace snapx
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
-            }
-
-            string previousNupkgAbsolutePath = null;
-            SnapApp previousSnapApp = null;
-            if (previousFullNupkg != default)
-            {
-                using (var coreReader = new PackageArchiveReader(previousFullNupkg.nupkgFilename))
-                {
-                    previousNupkgAbsolutePath = previousFullNupkg.nupkgFilename;
-                    previousSnapApp = await snapPack.GetSnapAppAsync(coreReader, cancellationToken);
-                }
             }
 
             var snapPackageDetails = new SnapPackageDetails
@@ -246,18 +237,18 @@ namespace snapx
             pushPackages.Add(currentNupkgAbsolutePath);
             snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel));
 
-            if (previousSnapApp == null)
+            if (mostRecentSnapApp == null)
             {                
                 goto buildReleasePackage;
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
-            logger.Info($"Building delta package from previous release: {previousSnapApp.Version}.");
+            logger.Info($"Building delta package from previous release: {mostRecentSnapApp.Version}.");
 
             var deltaProgressSource = new SnapProgressSource();
             deltaProgressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
 
-            var (deltaNupkgStream, deltaSnapApp) = await snapPack.BuildDeltaPackageAsync(previousNupkgAbsolutePath,
+            var (deltaNupkgStream, deltaSnapApp) = await snapPack.BuildDeltaPackageAsync(mostRecentReleaseNupkgAbsolutePath,
                 currentNupkgAbsolutePath, deltaProgressSource, cancellationToken: cancellationToken);
             var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, deltaSnapApp.BuildNugetLocalFilename());
             using (deltaNupkgStream)
@@ -480,8 +471,15 @@ namespace snapx
                     return;
                 }
             }
+            
+            logger.Info("Ready to publish application!");
+            logger.Info($"Id: {snapApp.Id}");
+            logger.Info($"Channel: {snapChannel.Name}");
+            logger.Info($"Version: {snapApp.Version}");
+            logger.Info($"Upstream name: {snapChannel.PushFeed.Name}");
+            logger.Info($"Upstream url: {snapChannel.PushFeed.Source}");
 
-            if (!logger.Prompt("y|yes",$"Ready to publish application to {packageSource.Name} ({packageSource.SourceUri}). Do you want to continue? [y|n]"))
+            if (!logger.Prompt("y|yes","Do you want to push this version upstream? [y|n]"))
             {
                 logger.Error("Publish aborted.");
                 return;

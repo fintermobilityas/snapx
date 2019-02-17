@@ -61,18 +61,6 @@ Codename:	cosmic";
         
 #if PLATFORM_UNIX
         [Fact]
-        public async Task TestNativeMethodsUnix_chmod()
-        {
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            {
-                var testFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
-                await _snapFilesystem.FileWriteUtf8StringAsync("yolo", testFilename, CancellationToken.None);
-
-                Assert.Equal(0,NativeMethodsUnix.chmod(testFilename, 0775));                            
-            }
-        }
-
-        [Fact]
         public async Task TestGetProcessesAsync()
         {
             var processes = await _snapOs.GetProcessesAsync(CancellationToken.None);

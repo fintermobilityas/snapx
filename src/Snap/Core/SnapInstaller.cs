@@ -208,8 +208,7 @@ namespace Snap.Core
             _snapFilesystem.DirectoryCreate(packagesDirectory);
 
             snapProgressSource?.Raise(40);
-            var nupkgFilename = _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename);
-            var dstNupkgFilename = _snapFilesystem.PathCombine(packagesDirectory, nupkgFilename);
+            var dstNupkgFilename = _snapFilesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
             logger?.Info($"Copying nupkg to {dstNupkgFilename}");
             await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
 

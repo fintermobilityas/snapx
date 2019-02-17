@@ -21,7 +21,7 @@
         <IsPackable>false</IsPackable>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
-        <GeneratePackageOnBuild Condition="'$(SnapNupkg)' == 'Release'">true</GeneratePackageOnBuild>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -47,6 +47,10 @@
 
     <PropertyGroup Condition="$(SnapBootstrap) == 'true'">
         <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(SnapNupkg) == 'true'">
+        <DefineConstants>$(DefineConstants);SNAP_NUPKG;</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(OsPlatform) == 'Windows'">

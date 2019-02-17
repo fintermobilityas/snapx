@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Native", "Snap-Installer")]
+    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer")]
     [string] $Target = "Bootstrap"
 )
 
@@ -60,6 +60,10 @@ function Build-Snap-Installer {
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
 }
 
+function Build-Snap {
+    .\bootstrap.ps1 -Target Snap
+}
+
 function Build-Summary {
     $BuildTime.Stop()		
     $Elapsed = $BuildTime.Elapsed
@@ -72,10 +76,15 @@ switch ($Target) {
         .\install_snapx.ps1 -Bootstrap $true
         Build-Snap-Installer
         .\install_snapx.ps1 -Bootstrap $false
+        Build-Snap
         Build-Summary
     }
     "Native" {
         Build-Native				
+        Build-Summary
+    }
+    "Snap" {
+        Build-Snap
         Build-Summary
     }
     "Snap-Installer" {        

@@ -1,10 +1,6 @@
 <Project>
     
     <PropertyGroup>
-        <SnapNupkg Condition="$(SnapNupkg) == ''">false</SnapNupkg>
-    </PropertyGroup>
-    
-    <PropertyGroup>
         <SnapCoreILRepackWorkingDirectory>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)</SnapCoreILRepackWorkingDirectory>
     </PropertyGroup>
 

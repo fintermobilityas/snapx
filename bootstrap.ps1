@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Native", "Snap-Installer")]
+    [ValidateSet("Native", "Snap", "Snap-Installer")]
     [string] $Target = "Native",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
@@ -77,6 +77,7 @@ if ($Cross) {
 # Projects
 
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
+$SnapNetSrcDir = Join-Path $WorkingDir src\Snap
 $SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
 
 # Functions
@@ -330,6 +331,33 @@ function Build-Native {
     }
 			
 }
+function Build-Snap {
+    Write-Output-Header "Building Snap"
+
+    Requires-Snapx 
+
+    Command-Exec $CommandDotnet @(
+        "clean $SnapNetSrcDir"
+    )
+
+    Command-Exec $CommandDotnet @(
+        ("build {0}" -f (Join-Path $SnapNetSrcDir Snap.csproj)),
+        "/p:SnapNupkg=true"
+        "--configuration $Configuration"
+    )
+
+    Command-Exec $CommandDotnet @(
+        ("pack {0}" -f (Join-Path $SnapNetSrcDir Snap.csproj)),
+        "--configuration $Configuration",
+        "--no-build"
+        "--no-dependencies"
+    )
+
+    # Clean is required because of ILRepack
+    Command-Exec $CommandDotnet @(
+       "clean $SnapNetSrcDir"
+    )
+}
 function Build-Snap-Installer {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -469,6 +497,9 @@ switch ($Target) {
                 Die "Unsupported os platform: $OSPlatform"
             }
         }
+    }
+    "Snap" {
+        Build-Snap
     }
     "Snap-Installer" {
         Build-Snap-Installer -Rid $DotNetRid

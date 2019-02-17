@@ -303,7 +303,7 @@ namespace Snap.Core
                 
                 progressSource?.Raise(60);
                 logger?.Debug("Adding snap assemblies");
-                await AddSnapAssemblies(coreRunLib, packageBuilder, packageDetails.App, cancellationToken);
+                await AddSnapAssets(coreRunLib, packageBuilder, packageDetails.App, cancellationToken);
  
                 progressSource?.Raise(70);
                 logger?.Debug("Adding checkingsum manifest");
@@ -885,7 +885,7 @@ namespace Snap.Core
             packageBuilder.Files.Add(BuildInMemoryPackageFile(checksumStream, SnapConstants.SnapNuspecTargetPath, SnapConstants.ChecksumManifestFilename));
         }
 
-        async Task AddSnapAssemblies([NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder, [NotNull] SnapApp snapApp, CancellationToken cancellationToken)
+        async Task AddSnapAssets([NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder, [NotNull] SnapApp snapApp, CancellationToken cancellationToken)
         {
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
@@ -894,6 +894,23 @@ namespace Snap.Core
             if (snapApp.Delta)
             {
                 throw new Exception("It's illegal to add snap assemblies to a delta package");
+            }
+            
+            // Icon (Windows has native platform support for icons)
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && snapApp.Target.Icon != null)
+            {
+                var iconExt = _snapFilesystem.PathGetExtension(snapApp.Target.Icon);
+                if (iconExt == null)
+                {
+                    throw new Exception($"Icon must have a valid extension: {snapApp.Target.Icon}.");
+                }
+
+                var iconMemoryStream = await _snapFilesystem.FileReadAsync(snapApp.Target.Icon, cancellationToken);
+
+                snapApp.Target.Icon = $"{snapApp.Id}{iconExt}";
+                
+                packageBuilder.Files.Add(BuildInMemoryPackageFile(iconMemoryStream, SnapConstants.SnapNuspecTargetPath,snapApp.Target.Icon));     
             }
             
             // Snap.dll
@@ -920,7 +937,7 @@ namespace Snap.Core
             // Corerun
             var (coreRunStream, coreRunFilename, _) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, coreRunLib);
 
-            packageBuilder.Files.Add(BuildInMemoryPackageFile(coreRunStream, SnapConstants.SnapNuspecTargetPath, coreRunFilename));            
+            packageBuilder.Files.Add(BuildInMemoryPackageFile(coreRunStream, SnapConstants.SnapNuspecTargetPath, coreRunFilename));                 
         }
 
         InMemoryPackageFile BuildInMemoryPackageFile(MemoryStream memoryStream, string targetPath, string filename)

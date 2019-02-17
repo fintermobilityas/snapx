@@ -54,7 +54,7 @@ namespace Snap.Installer
                 onFirstAnimationRenderedEvent.Dispose();
                 loggerUntilMainWindowVisible.Info("Main window should now be visible.");
 
-                var mainWindowLogger = new LogForwarder(environment.LogLevel, loggerUntilMainWindowVisible, (level, func, exception, parameters) =>
+                var mainWindowLogger = new LogForwarder(LogLevel.Info, loggerUntilMainWindowVisible, (level, func, exception, parameters) =>
                 {
                     var message = func?.Invoke();
                     if (message == null)

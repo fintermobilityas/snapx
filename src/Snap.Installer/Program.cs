@@ -44,13 +44,7 @@ namespace Snap.Installer
                 Console.WriteLine("Debugger attached.");
             }
 
-            var logLevel = LogLevel.Info;
-            if (args.Any(x => string.Equals("--verbose", x, StringComparison.InvariantCulture)))
-            {
-                logLevel = LogLevel.Trace;
-            }
-
-            return MainImpl(args, logLevel);
+            return MainImpl(args, LogLevel.Trace);
         }
 
         public static int MainImpl([NotNull] string[] args, LogLevel logLevel)

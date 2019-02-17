@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -204,7 +204,7 @@ Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
 Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
-Icon=""{shortcutDescription.ExeAbsolutePath}""
+Icon=""{shortcutDescription.IconAbsolutePath}""
 Name={shortcutDescription.SnapApp.Id}
 Comment={description}
 X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}

@@ -249,8 +249,14 @@ namespace Snap.Core
             var coreRunExeAbsolutePath = _snapFilesystem
                 .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
             var mainExeAbsolutePath = _snapFilesystem
-                .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
-
+                .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));            
+            var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ? 
+                _snapFilesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
+            
+            logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
+            logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
+            logger?.Debug($"{nameof(iconAbsolutePath)}: {iconAbsolutePath}");
+            
             async Task ChmodAsync(string exePath)
             {
                 if (exePath == null) throw new ArgumentNullException(nameof(exePath));
@@ -284,7 +290,8 @@ namespace Snap.Core
                         UpdateOnly = isInitialInstall == false,
                         NuspecReader = nuspecReader,
                         ShortcutLocations = shortcutLocations,
-                        ExeAbsolutePath = coreRunExeAbsolutePath
+                        ExeAbsolutePath = coreRunExeAbsolutePath,
+                        IconAbsolutePath = iconAbsolutePath
                     };
                     
                     await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription,logger, cancellationToken);

@@ -191,6 +191,7 @@ namespace Snap.Core.Models
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum SnapAppsPackStrategy
     {
+        [UsedImplicitly] none,
         push
     }
 

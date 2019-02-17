@@ -63,25 +63,14 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         argv[i] = strdup(arguments[i].c_str());
     }
 
-    const auto pid = fork();
     auto exitCode = -1;
-
-    if (pid < 0)
-    {
-        goto done;
-    }
 
     if (0 != chdir(working_dir.c_str()))
     {
         goto done;
     }
 
-    if (execvp(executable_full_path.c_str(), argv) < 0)
-    {
-        goto done;
-    }
-
-    exitCode = 0;
+    exitCode = execvp(executable_full_path.c_str(), argv);
 
 done:
     delete[] argv;

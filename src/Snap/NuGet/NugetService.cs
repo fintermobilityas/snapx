@@ -18,6 +18,7 @@ namespace Snap.NuGet
         Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, INuGetPackageSources packageSources, CancellationToken cancellationToken);
         Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
         Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
+        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, PackageSource packageSource, CancellationToken cancellationToken);
         Task<DownloadResourceResult> DownloadByPackageIdAsync([NotNull] PackageIdentity packageIdentity, [NotNull] PackageSource source, string packagesFolder, CancellationToken cancellationToken);
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default, int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
     }
@@ -54,6 +55,11 @@ namespace Snap.NuGet
         {
             var results = await FindByPackageIdAsync(packageId, includePrerelease, packageSources, cancellationToken);
             return results.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
+        }
+
+        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, PackageSource packageSource, CancellationToken cancellationToken)
+        {
+            return (await FindByPackageIdAsync(packageId, includePrerelease, packageSource, cancellationToken)).OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
         public async Task<DownloadResourceResult> DownloadByPackageIdAsync(PackageIdentity packageIdentity, PackageSource source, string packagesFolder, CancellationToken cancellationToken)
@@ -97,6 +103,7 @@ namespace Snap.NuGet
                 false,                
                 nugetLogger ?? NullLogger.Instance);
         }
+
 
         public async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync([NotNull] string searchTerm, [NotNull] SearchFilter filters, int skip, int take,
             [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken)

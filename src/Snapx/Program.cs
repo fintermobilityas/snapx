@@ -117,27 +117,29 @@ namespace snapx
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
-            var nugetLogger = new NugetLogger(SnapLogger);
-            var nugetService = new NugetService(nugetLogger);
 
-            return MainAsync(args, coreRunLib, snapOs, nugetService, snapExtractor, snapOs.Filesystem, 
+            var nugetServiceCommandPromote = new NugetService(new NugetLogger(SnapPromoteLogger));
+            var nugetServiceCommandPack = new NugetService(new NugetLogger(SnapPackLogger));
+
+            return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
                 snapPack, snapAppWriter, snapXEmbeddedResources, 
+                nugetServiceCommandPack,  nugetServiceCommandPromote,
                 toolWorkingDirectory, workingDirectory);
         }
 
         static int MainAsync([NotNull] string[] args,
             [NotNull] CoreRunLib coreRunLib,
-            [NotNull] ISnapOs snapOs, [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor,
+            [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, 
+            [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, 
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-            if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (snapInstaller == null) throw new ArgumentNullException(nameof(snapInstaller));
@@ -147,6 +149,7 @@ namespace snapx
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
+            if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
@@ -154,13 +157,12 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteNupkgOptions, PushNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions, InstallOptions>(args)
+                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions, InstallOptions>(args)
                 .MapResult(
                     (PromoteNupkgOptions opts) => CommandPromoteNupkg(opts, snapFilesystem,  snapAppReader,
-                        nuGetPackageSources, nugetService, SnapPromoteLogger, workingDirectory),
-                    (PushNupkgOptions options) => CommandPushNupkg(options, nugetService),
+                        nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory),
                     (PackOptions opts) => CommandPack(opts, snapFilesystem, snapAppReader,
-                        nuGetPackageSources, snapPack, nugetService, snapOs, snapXEmbeddedResources, coreRunLib, 
+                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, coreRunLib, 
                         SnapPackLogger, toolWorkingDirectory, workingDirectory),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (Sha1Options opts) => CommandSha1(opts, snapFilesystem, snapCryptoProvider, SnapLogger),

@@ -245,6 +245,97 @@ namespace Snap.Tests.Core.Extensions
             var actualPackageId = snapApp.BuildNugetLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
+        
+        [Fact]
+        public void TestBuildNugetFullFilename()
+        {
+            var currentChannel = new SnapChannel
+            {
+                Name = "test",
+                Current = true
+            };
+
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                Channels = new List<SnapChannel>
+                {
+                    currentChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{currentChannel.Name}.nupkg".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetFullFilename();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetDeltaFilename()
+        {
+            var currentChannel = new SnapChannel
+            {
+                Name = "test",
+                Current = true
+            };
+
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                DeltaSummary = new SnapAppDeltaSummary(),
+                Channels = new List<SnapChannel>
+                {
+                    currentChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{currentChannel.Name}.nupkg".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetDeltaFilename();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetReleasesUpstreamPackageId()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoApp"
+            };
+
+            var expectedPackageId = snapApp.Id.ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetReleasesUpstreamPackageId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetReleasesLocalFilename()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoApp"
+            };
+
+            var expectedFilename = $"{snapApp.Id}.nupkg".ToLowerInvariant();
+            
+            var actualFilename = snapApp.BuildNugetReleasesLocalFilename();
+            Assert.Equal(expectedFilename, actualFilename);
+        }
 
         [Fact]
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]

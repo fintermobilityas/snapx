@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using snapx.Options;
 using Snap.Core;
@@ -14,9 +15,9 @@ namespace snapx
 {
     internal partial class Program
     {
-        static int CommandPromoteNupkg([NotNull] PromoteNupkgOptions opts, [NotNull] ISnapFilesystem filesystem,
+        static async Task<int> CommandPromoteAsync([NotNull] PromoteNupkgOptions opts, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
-            [NotNull] ILog logger, [NotNull] string workingDirectory)
+            [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (opts == null) throw new ArgumentNullException(nameof(opts));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -27,11 +28,8 @@ namespace snapx
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (opts == null) throw new ArgumentNullException(nameof(opts));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
-            
-            var stopwatch = new Stopwatch();
-            stopwatch.Restart();
-            
-            var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader, 
+
+            var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, appReader,
                 nuGetPackageSources, opts.AppId, opts.Rid, workingDirectory);
             if (error)
             {
@@ -52,14 +50,14 @@ namespace snapx
                 if (!remainingChannels.Any())
                 {
                     logger.Info($"Unable to promote snap with id: {opts.AppId}. Channel name was not found: {opts.Channel}");
-                    return -1;                    
+                    return -1;
                 }
             }
 
             logger.Info($"Promoting to channels: {string.Join(", ", remainingChannels)}.");
-            
+
             var promotableSnapApps = new List<(SnapApp snapApp, SnapChannel channel, string upstreamPackageId)>();
-            
+
             foreach (var channelName in remainingChannels)
             {
                 var promoteableSnapApp = new SnapApp(snapApp);
@@ -72,21 +70,22 @@ namespace snapx
             foreach (var (_, _, upstreamPackageId) in promotableSnapApps)
             {
                 logger.Info($"Retrieving most version for nupkg: {upstreamPackageId}.");
-                var mostRecentMedatadata = SnapUtility.Retry(() => 
-                    nugetService.FindByMostRecentPackageIdAsync(
-                        upstreamPackageId, false, nuGetPackageSources, default).GetAwaiter().GetResult());
-                
+                var mostRecentMedatadata = await SnapUtility.Retry(async() =>
+                    await nugetService.FindByMostRecentPackageIdAsync(
+                        upstreamPackageId, nuGetPackageSources, cancellationToken));
+
                 if (mostRecentMedatadata != null)
                 {
                     logger.Error($"Nupkg is already published: {upstreamPackageId}");
                     return -1;
                 }
-                
+
                 logger.Info($"Upstream version: {mostRecentMedatadata.Identity.Version}.");
                 logger.Info("Downloading nupkg...");
             }
 
             return -1;
         }
+
     }
 }

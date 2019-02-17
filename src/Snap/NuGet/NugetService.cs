@@ -13,13 +13,17 @@ using NuGet.Protocol.Core.Types;
 namespace Snap.NuGet
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface INugetService
     {
         Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, INuGetPackageSources packageSources, CancellationToken cancellationToken);
-        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
-        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken);
-        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, PackageSource packageSource, CancellationToken cancellationToken);
-        Task<DownloadResourceResult> DownloadByPackageIdAsync([NotNull] PackageIdentity packageIdentity, [NotNull] PackageSource source, string packagesFolder, CancellationToken cancellationToken);
+        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken, bool noCache = false);
+        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, INuGetPackageSources packageSources, CancellationToken cancellationToken, bool noCache = false);
+        Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken, bool noCache = false);
+        Task<DownloadResourceResult> DownloadByPackageIdAsync([NotNull] PackageIdentity packageIdentity,
+            [NotNull] PackageSource source, string packagesDirectory, CancellationToken cancellationToken, bool noCache = false);
+        Task<DownloadResourceResult> DownloadLatestReleaseByPackageIdAsync(string packageId, string packagesDirectory, 
+            [NotNull] PackageSource source, CancellationToken cancellationToken , bool noCache = false);
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default, int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
     }
 
@@ -36,12 +40,12 @@ namespace Snap.NuGet
         }
 
         public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> FindByPackageIdAsync([NotNull] string packageId, bool includePrerelease,
-            [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken)
+            [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken, bool noCache = false)
         {
             if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
 
-            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, includePrerelease, x, cancellationToken));
+            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, includePrerelease, x, cancellationToken, noCache));
 
             var results = await Task.WhenAll(tasks);
 
@@ -51,26 +55,41 @@ namespace Snap.NuGet
                 .ToList();
         }
 
-        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources, CancellationToken cancellationToken)
+        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, INuGetPackageSources packageSources, CancellationToken cancellationToken, bool noCache = false)
         {
-            var results = await FindByPackageIdAsync(packageId, includePrerelease, packageSources, cancellationToken);
+            var results = await FindByPackageIdAsync(packageId, false, packageSources, cancellationToken, noCache);
             return results.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
-        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, bool includePrerelease, PackageSource packageSource, CancellationToken cancellationToken)
+        public async Task<NuGetPackageSearchMedatadata> FindByMostRecentPackageIdAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken, bool noCache = false)
         {
-            return (await FindByPackageIdAsync(packageId, includePrerelease, packageSource, cancellationToken)).OrderByDescending(x => x.Identity.Version).FirstOrDefault();
+            var medatadatas = (await FindByPackageIdAsync(packageId, false, packageSource, cancellationToken, noCache)).ToList();
+            return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
-        public async Task<DownloadResourceResult> DownloadByPackageIdAsync(PackageIdentity packageIdentity, PackageSource source, string packagesFolder, CancellationToken cancellationToken)
+        public async Task<DownloadResourceResult> DownloadByPackageIdAsync(PackageIdentity packageIdentity, PackageSource source, string packagesDirectory, CancellationToken cancellationToken,
+            bool noCache = false)
         {
             if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
             if (source == null) throw new ArgumentNullException(nameof(source));
 
-            return await DownloadByPackageIdentityAsync(source, packageIdentity, packagesFolder, cancellationToken);
+            return await DownloadByPackageIdentityAsync(source, packageIdentity, packagesDirectory, cancellationToken, noCache);
         }
 
-        public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, [NotNull] ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
+        public async Task<DownloadResourceResult> DownloadLatestReleaseByPackageIdAsync(string packageId, string packagesDirectory, PackageSource source, CancellationToken cancellationToken,
+            bool noCache = false)
+        {
+            var metadata = await FindByMostRecentPackageIdAsync(packageId, source, cancellationToken, noCache);
+            if (metadata == null)
+            {
+                return null;
+            }
+
+            return await DownloadByPackageIdAsync(metadata.Identity, metadata.Source, packagesDirectory, cancellationToken, noCache);
+        }
+
+        public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, 
+            [NotNull] ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
         {
             if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
@@ -122,19 +141,23 @@ namespace Snap.NuGet
                 .ToList();
         }
 
-        async Task<DownloadResourceResult> DownloadByPackageIdentityAsync(PackageSource packageSource, PackageIdentity packageIdentity, string globalPackagesFolder, CancellationToken cancellationToken)
+        async Task<DownloadResourceResult> DownloadByPackageIdentityAsync(PackageSource packageSource, PackageIdentity packageIdentity, string packagesDirectory, CancellationToken cancellationToken, bool noCache)
         {
             using (var cacheContext = new SourceCacheContext())
             {
-                // TODO(1): Enable signature checking if enabled in snap spec.
-                var downloadContext = new PackageDownloadContext(cacheContext);
+                if (noCache)
+                {
+                    cacheContext.NoCache = true;
+                    cacheContext.WithRefreshCacheTrue();
+                    packagesDirectory = cacheContext.GeneratedTempFolder;
+                }
+                
+                var downloadContext = new PackageDownloadContext(cacheContext, packagesDirectory, false);
 
                 var sourceRepository = _packageSources.Get(packageSource);
                 var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
 
-                // TODO(2): https://github.com/dotnet/corefx/issues/6849#issuecomment-195980023
-                // TODO(2): Should we botter with providing a progress source in order to indicate download progress? 
-                return await downloadResource.GetDownloadResourceResultAsync(packageIdentity, downloadContext, globalPackagesFolder, _nugetLogger, cancellationToken);
+                return await downloadResource.GetDownloadResourceResultAsync(packageIdentity, downloadContext, packagesDirectory, _nugetLogger, cancellationToken);
             }
         }
 
@@ -146,18 +169,25 @@ namespace Snap.NuGet
             return metadatas;
         }
 
-        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, PackageSource source, CancellationToken cancellationToken)
+        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, PackageSource source, CancellationToken cancellationToken, bool noCache = false)
         {
             var sourceRepository = _packageSources.Get(source);
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-            var metadatas = await FindPackageByIdAsync(metadataResource, packageId, includePrerelease, cancellationToken);
+            var metadatas = await FindPackageByIdAsync(metadataResource, packageId, includePrerelease, cancellationToken, noCache);
             return metadatas.Select(m => BuildNuGetPackageSearchMedatadata(source, m));
         }
 
-        async Task<IEnumerable<IPackageSearchMetadata>> FindPackageByIdAsync(PackageMetadataResource metadataResource, string packageName, bool includePrerelease, CancellationToken cancellationToken)
+        async Task<IEnumerable<IPackageSearchMetadata>> FindPackageByIdAsync(PackageMetadataResource metadataResource, string packageName, 
+            bool includePrerelease, CancellationToken cancellationToken, bool noCache = false)
         {
             using (var cacheContext = new SourceCacheContext())
             {
+                if (noCache)
+                {
+                    cacheContext.NoCache = true;
+                    cacheContext.WithRefreshCacheTrue();
+                }
+                
                 return await metadataResource.GetMetadataAsync(packageName, includePrerelease, false, cacheContext, _nugetLogger, cancellationToken);
             }
         }

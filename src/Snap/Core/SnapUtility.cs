@@ -73,17 +73,17 @@ namespace Snap.Core
             return new Guid(newGuid);
         }
 
-        public static void Retry(this Action block, int retries = 2, bool throwException = true)
+        public static void Retry(this Action block, int retries = 2, int delayInMilliseconds = 250, bool throwException = true)
         {
             Func<object> thunk = () => {
                 block();
                 return null;
             };
 
-            thunk.Retry(retries, throwException);
+            thunk.Retry(retries, delayInMilliseconds, throwException);
         }
 
-        public static T Retry<T>(this Func<T> block, int retries = 2, bool throwException = true)
+        public static T Retry<T>(this Func<T> block, int retries = 2, int delayInMilliseconds = 250, bool throwException = true)
         {
             while (true) {
                 try {
@@ -100,7 +100,10 @@ namespace Snap.Core
                     }
 
                     retries--;
-                    Thread.Sleep(250);
+                    if (delayInMilliseconds > 0)
+                    {
+                        Thread.Sleep(delayInMilliseconds);                        
+                    }
                 }
             }
         }

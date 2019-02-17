@@ -45,13 +45,7 @@
     </ItemGroup>
     
     <Target Name="ILRepack" AfterTargets="Build" Condition="$(SnapNupkg) AND $(TargetFramework) != ''">
-        <ILRepack OutputType="$(OutputType)"
-                  MainAssembly="$(AssemblyName).dll"
-                  OutputAssembly="$(AssemblyName).dll" 
-                  InputAssemblies="$(SnapCoreILRepackWorkingDirectory)\*.dll"
-                  WilcardInputAssemblies="true"
-                  InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)"
-                  WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
+        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="$(SnapCoreILRepackWorkingDirectory)\*.dll" WilcardInputAssemblies="true" InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)" WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
     </Target>
     
 </Project>

@@ -30,6 +30,7 @@ namespace snapx
         static readonly ILog SnapLogger = LogProvider.GetLogger("Snapx");
         static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snapx.Pack");
         static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
+        static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
 
         const int TerminalDashesWidth = 80;
 
@@ -67,6 +68,8 @@ namespace snapx
         static int MainImplAsync([NotNull] string[] args)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
+
+            var cancellationToken = CancellationToken.None;
             
             ISnapOs snapOs;
             try
@@ -118,14 +121,15 @@ namespace snapx
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
 
-            var nugetServiceCommandPromote = new NugetService(new NugetLogger(SnapPromoteLogger));
             var nugetServiceCommandPack = new NugetService(new NugetLogger(SnapPackLogger));
+            var nugetServiceCommandPromote = new NugetService(new NugetLogger(SnapPromoteLogger));
+            var nugetServiceNoopLogger = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
                 snapPack, snapAppWriter, snapXEmbeddedResources, 
-                nugetServiceCommandPack,  nugetServiceCommandPromote,
-                toolWorkingDirectory, workingDirectory);
+                nugetServiceCommandPack,  nugetServiceCommandPromote, nugetServiceNoopLogger,
+                toolWorkingDirectory, workingDirectory, cancellationToken);
         }
 
         static int MainAsync([NotNull] string[] args,
@@ -133,9 +137,10 @@ namespace snapx
             [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, 
-            [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, 
-            [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory)
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
+            [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote,
+            [NotNull] INugetService nugetServiceNoopLogger,
+            [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
@@ -150,6 +155,7 @@ namespace snapx
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
+            if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
@@ -157,17 +163,19 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions, InstallOptions>(args)
+                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha1Options, Sha512Options, RcEditOptions, InstallOptions, ListOptions>(args)
                 .MapResult(
-                    (PromoteNupkgOptions opts) => CommandPromoteNupkg(opts, snapFilesystem,  snapAppReader,
-                        nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory),
-                    (PackOptions opts) => CommandPack(opts, snapFilesystem, snapAppReader,
-                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, coreRunLib, 
-                        SnapPackLogger, toolWorkingDirectory, workingDirectory),
+                    (PromoteNupkgOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
+                        nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, coreRunLib, 
+                        SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (Sha1Options opts) => CommandSha1(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
                     (InstallOptions opts) => Snap.Installer.Program.Main(args),
+                    (ListOptions opts) => CommandListAsync(opts, snapFilesystem,  snapAppReader,
+                        nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     errs =>
                     {
                         snapOs.EnsureConsole();

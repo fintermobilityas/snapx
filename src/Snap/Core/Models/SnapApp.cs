@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
+using Snap.Extensions;
 using Snap.NuGet;
 using YamlDotNet.Serialization;
 
@@ -43,6 +44,25 @@ namespace Snap.Core.Models
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
             PersistentAssets = app.PersistentAssets.Select(x => x).ToList();
             Shortcuts = app.Shortcuts.Select(x => x).ToList();
+        }
+
+        public void SetCurrentChannel([NotNull] string channelName)
+        {
+            if (channelName == null) throw new ArgumentNullException(nameof(channelName));
+
+            var channelUpdated = false;
+            foreach (var channel in Channels)
+            {
+                channel.Current = false;
+                if (channel.Name != channelName) continue;
+                channel.Current = true;
+                channelUpdated = true;
+            }
+
+            if (!channelUpdated)
+            {
+                throw new Exception($"Channel not found: {channelName}");
+            }
         }
     }
     

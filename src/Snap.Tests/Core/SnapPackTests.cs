@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Mono.Cecil;
 using Moq;
 using NuGet.Packaging;
+using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
@@ -26,6 +27,7 @@ namespace Snap.Tests.Core
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
+        readonly ISnapAppReader _snapAppReader;
 
         public SnapPackTests(BaseFixture baseFixture)
         {
@@ -36,6 +38,7 @@ namespace Snap.Tests.Core
             _snapFilesystem = new SnapFilesystem();
             _snapPack = new SnapPack(_snapFilesystem,  new SnapAppReader(), new SnapAppWriter(), snapCryptoProvider, _snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
+            _snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
         }
 
@@ -941,6 +944,34 @@ namespace Snap.Tests.Core
                 var snapAppAfter = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader);
                 Assert.NotNull(snapAppAfter);
             }
-        }        
+        }
+
+        [Fact]
+        public async Task TestBuildReleasesPackage()
+        {
+            var snapApp1 = _baseFixture.BuildSnapApp();
+            snapApp1.Version = new SemanticVersion(1, 0, 0);
+            var snapApp2 = _baseFixture.BuildSnapApp();
+            snapApp2.Version = new SemanticVersion(2, 0, 0);
+
+            var releases = new SnapReleases();
+            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow()));
+            releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow()));
+
+            using (var releasesStream = _snapPack.BuildReleasesPackage(releases))
+            {
+                Assert.NotNull(releasesStream);
+                Assert.Equal(0, releasesStream.Position);
+
+                using (var packageArchiveReader = new PackageArchiveReader(releasesStream))
+                {
+                    var snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader);
+                    Assert.NotNull(snapReleases);
+                    Assert.Equal(2, snapReleases.Apps.Count);
+                    Assert.Equal(snapApp2.Version, snapReleases.Apps[0].Version);
+                    Assert.Equal(snapApp1.Version, snapReleases.Apps[1].Version);
+                }
+            }
+        }
     }
 }

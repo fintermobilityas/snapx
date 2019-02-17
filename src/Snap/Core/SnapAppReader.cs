@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
+using JetBrains.Annotations;
 using Snap.Core.Models;
 using Snap.Core.Yaml.NodeTypeResolvers;
 using Snap.Core.Yaml.TypeConverters;
@@ -19,6 +20,8 @@ namespace Snap.Core
         SnapApps BuildSnapAppsFromYamlString(string yamlString);
         SnapApp BuildSnapAppFromStream(MemoryStream stream);
         SnapApp BuildSnapAppFromYamlString(string yamlString);
+        SnapReleases BuildSnapReleasesFromStream(MemoryStream stream);
+        SnapReleases BuildSnapReleasesFromYamlString(string yamlString);
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -57,13 +60,15 @@ namespace Snap.Core
                 .Build();
         }
 
-        public SnapApps BuildSnapAppsFromStream(MemoryStream stream)
+        public SnapApps BuildSnapAppsFromStream([NotNull] MemoryStream stream)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             return BuildSnapAppsFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
         }
 
-        public SnapApp BuildSnapAppFromStream(MemoryStream stream)
+        public SnapApp BuildSnapAppFromStream([NotNull] MemoryStream stream)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             return BuildSnapAppFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
         }
 
@@ -73,8 +78,21 @@ namespace Snap.Core
             return DeserializerSnapApp.Deserialize<SnapApp>(yamlString);
         }
 
-        public SnapApps BuildSnapAppsFromYamlString(string yamlString)
+        public SnapReleases BuildSnapReleasesFromStream([NotNull] MemoryStream stream)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            return BuildSnapReleasesFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        public SnapReleases BuildSnapReleasesFromYamlString([NotNull] string yamlString)
+        {
+            if (string.IsNullOrWhiteSpace(yamlString)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(yamlString));
+            return DeserializerSnapApp.Deserialize<SnapReleases>(yamlString);
+        }
+
+        public SnapApps BuildSnapAppsFromYamlString([NotNull] string yamlString)
+        {
+            if (string.IsNullOrWhiteSpace(yamlString)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(yamlString));
             return DeserializerSnapApps.Deserialize<SnapApps>(yamlString);
         }
     }

@@ -35,9 +35,9 @@ namespace Snap.Core
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
         IEnumerable<string> DirectoryGetAllFiles(string rootPath);
-        Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken);
-        Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken);
-        Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken);
+        Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true);
+        Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
+        Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName);
         string FileReadAllText(string filename);
@@ -103,14 +103,14 @@ namespace Snap.Core
             throw new PlatformNotSupportedException();
         }
 
-        public async Task FileWriteUtf8StringAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteUtf8StringAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (utf8Text == null) throw new ArgumentNullException(nameof(utf8Text));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
 
             var outputBytes = Encoding.UTF8.GetBytes(utf8Text);
 
-            using (var outputStream = FileWrite(dstFilename))
+            using (var outputStream = FileWrite(dstFilename, overwrite))
             {
                 await outputStream.WriteAsync(outputBytes, 0, outputBytes.Length, cancellationToken);
             }
@@ -302,23 +302,23 @@ namespace Snap.Core
             return Directory.EnumerateFiles(rootPath, "*", SearchOption.TopDirectoryOnly);
         }
 
-        public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken)
+        public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (sourcePath == null) throw new ArgumentNullException(nameof(sourcePath));
             if (destinationPath == null) throw new ArgumentNullException(nameof(destinationPath));
 
             using (Stream source = FileRead(sourcePath))
-            using (Stream destination = FileWrite(destinationPath))
+            using (Stream destination = FileWrite(destinationPath, overwrite))
             {
                 await source.CopyToAsync(destination, cancellationToken);
             }
         }
 
-        public async Task FileWriteAsync([NotNull] Stream srcStream, [NotNull] string dstFilename, CancellationToken cancellationToken)
+        public async Task FileWriteAsync([NotNull] Stream srcStream, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
-            using (var dstStream = FileWrite(dstFilename))
+            using (var dstStream = FileWrite(dstFilename, overwrite))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
             }

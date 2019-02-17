@@ -209,6 +209,7 @@ namespace Snap.Core
         Task<int> CountNonNugetFilesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
         Task<IEnumerable<string>> GetFilesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
         Task<IEnumerable<SnapPackFileChecksum>> GetChecksumManifestAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
+        MemoryStream BuildReleasesPackage(SnapReleases releases);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -521,7 +522,7 @@ namespace Snap.Core
                 EnsureCoreRunSupportsThisPlatform();
    
                 await AddChecksumManifestAsync(packageBuilder, cancellationToken);
-
+                
                 progressSource?.Raise(80);
                 
                 var outputStream = new MemoryStream();
@@ -658,6 +659,41 @@ namespace Snap.Core
             {
                 var checksumManifestUtf8Content = await streamReader.ReadToEndAsync();
                 return ParseChecksumManifest(checksumManifestUtf8Content);
+            }
+        }
+
+        public MemoryStream BuildReleasesPackage([NotNull] SnapReleases releases)
+        {
+            if (releases == null) throw new ArgumentNullException(nameof(releases));
+
+            releases.Apps = releases.Apps.OrderByDescending(x => x.Version).ToList();
+
+            if (!releases.Apps.Any())
+            {
+                throw new Exception("Must contain atleast one release.");
+            }
+
+            var snapApp = releases.Apps.First();
+
+            var packageBuilder = new PackageBuilder
+            {
+                Id = snapApp.Id,
+                Version = new NuGetVersion(releases.Apps.Count, 0, 0),
+                Description = $"This nupkg contains all releases for {snapApp.Id}",
+                Authors = { "Unknown" }
+            };
+
+            var yamlString = _snapAppWriter.ToSnapReleasesYamlString(releases);
+
+            using (var snapReleasesStream = new MemoryStream(Encoding.UTF8.GetBytes(yamlString)))
+            {
+                packageBuilder.Files.Add(BuildInMemoryPackageFile(snapReleasesStream, SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename));
+
+                var outputStream = new MemoryStream();
+                packageBuilder.Save(outputStream);
+
+                outputStream.Seek(0, SeekOrigin.Begin);
+                return outputStream;                
             }
         }
 

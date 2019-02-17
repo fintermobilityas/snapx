@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Logging;
@@ -10,6 +11,27 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class LoggerExtensions
     {
+        public static bool Prompt([NotNull] this ILog logger, [NotNull] string verbsStr, [NotNull] string question, char delimeter = '|', bool warn = false)
+        {
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (verbsStr == null) throw new ArgumentNullException(nameof(verbsStr));
+            if (question == null) throw new ArgumentNullException(nameof(question));
+            if (delimeter <= 0) throw new ArgumentOutOfRangeException(nameof(delimeter));
+            var foregroundColor = Console.ForegroundColor;
+            if (warn)
+            {
+                Console.ForegroundColor = ConsoleColor.Magenta;
+            }
+            logger.Info(question);
+            if (warn)
+            {
+                Console.ForegroundColor = foregroundColor;
+            }
+            var verbs = verbsStr.Split(delimeter).ToList();
+            var value = Console.ReadLine();
+            return verbs.Any(verb => string.Equals(value, verb, StringComparison.InvariantCultureIgnoreCase));
+        }
+        
         public static void InfoWithDashses([NotNull] this ILog This, [NotNull] string message)
         {
             if (This == null) throw new ArgumentNullException(nameof(This));

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
@@ -24,6 +26,7 @@ namespace Snap.Core
         AssemblyDefinition OptimizeSnapDllForPackageArchive(AssemblyDefinition assemblyDefinition, OSPlatform osPlatform);
         string ToSnapAppYamlString(SnapApp snapApp);
         string ToSnapAppsYamlString(SnapApps snapApps);
+        string ToSnapReleasesYamlString(SnapReleases snapApps);
     }
 
     internal sealed class SnapAppWriter : ISnapAppWriter
@@ -118,6 +121,12 @@ namespace Snap.Core
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             return YamlSerializerSnapApps.Serialize(snapApps);
+        }
+
+        public string ToSnapReleasesYamlString([NotNull] SnapReleases snapApps)
+        {
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            return YamlSerializerSnapApp.Serialize(snapApps);
         }
     }
 }

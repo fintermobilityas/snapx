@@ -15,6 +15,12 @@ namespace Snap.Extensions
 {
     internal static class NuGetExtensions
     {
+        internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            return new PackageIdentity(snapRelease.UpstreamId, snapRelease.Version.ToNuGetVersion());
+        }
+        
         internal static bool IsMaybeASuccessfullDownloadSafe(this DownloadResourceResult downloadResourceResult)
         {
             return downloadResourceResult != null && (downloadResourceResult.Status == DownloadResourceResultStatus.Available ||

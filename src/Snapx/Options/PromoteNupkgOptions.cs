@@ -15,7 +15,5 @@ namespace snapx.Options
         public string Rid { get; [UsedImplicitly] set; }
         [Option('c', "channel", HelpText = "Channel name")]
         public string Channel { get; [UsedImplicitly] set; }
-        [Option("all", HelpText = "Promotes the application to all channels")]
-        public bool All { get; set; }
     }
 }

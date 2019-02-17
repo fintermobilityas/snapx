@@ -17,7 +17,8 @@ namespace Snap.Core
         public static readonly string NuspecTargetFrameworkMoniker = NuGetFramework.AnyFramework.Framework;
         public static readonly string NuspecRootTargetPath = $"lib/{NuspecTargetFrameworkMoniker}";
         public static readonly string SnapNuspecTargetPath = $"{NuspecRootTargetPath}/{SnapUniqueTargetPathFolderName}";
-        public static readonly string ChecksumManifestFilename = "Snap.Checksum.Manifest";
+        public const string ChecksumManifestFilename = "Snap.Checksum.Manifest";
+        public const string ReleasesFilename = "Snap.Releases";
 
         static OSPlatform GetOsPlatform()
         {

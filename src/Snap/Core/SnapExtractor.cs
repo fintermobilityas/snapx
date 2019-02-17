@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using Snap.Core.Models;
 using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.Logging;
 
 namespace Snap.Core
@@ -20,6 +22,7 @@ namespace Snap.Core
             CancellationToken cancellationToken = default, ILog logger = null);
         Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory,
             bool includeChecksumManifest = false, CancellationToken cancellationToken = default, ILog logger = null);
+        Task<SnapReleases> ExtractReleasesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] ISnapAppReader snapAppReader, CancellationToken cancellationToken = default);
     }
 
     internal sealed class SnapExtractor : ISnapExtractor
@@ -117,5 +120,25 @@ namespace Snap.Core
             return extractedFiles.OrderBy(x => x).ToList();
         }
 
+        public async Task<SnapReleases> ExtractReleasesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, ISnapAppReader snapAppReader, CancellationToken cancellationToken = default)
+        {
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+
+            var snapFilesCount = await _snapPack.CountNonNugetFilesAsync(asyncPackageCoreReader, cancellationToken);
+            if (snapFilesCount <= 0)
+            {
+                return null;
+            }
+
+            var snapReleasesFilename = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
+            using (var snapReleasesStream =
+                await asyncPackageCoreReader
+                    .GetStreamAsync(snapReleasesFilename, cancellationToken)
+                    .ReadToEndAsync(cancellationToken, true))
+            {                
+                return snapAppReader.BuildSnapReleasesFromStream(snapReleasesStream);
+            }
+        }
     }
 }

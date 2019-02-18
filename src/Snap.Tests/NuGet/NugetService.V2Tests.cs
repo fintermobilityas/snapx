@@ -5,6 +5,7 @@ using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using Snap.Core;
 using Snap.Logging;
 using Snap.NuGet;
 using Xunit;
@@ -14,10 +15,12 @@ namespace Snap.Tests.NuGet
     public class NugetServiceV2Tests
     {
         readonly NugetService _nugetService;
+        readonly ISnapFilesystem _snapFilesystem;
 
         public NugetServiceV2Tests()
         {
-            _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
+            _snapFilesystem = new SnapFilesystem();
+            _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
         }
 
         [Fact]
@@ -46,12 +49,12 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestFindByPackageIdAsync()
+        public async Task TestGetMetadatasAsync()
         {
             var packageSources = new NugetOrgOfficialV2PackageSources();
 
             var packages = await _nugetService
-                .FindByPackageIdAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
+                .GetMetadatasAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
 
             Assert.NotEmpty(packages);
             
@@ -76,12 +79,12 @@ namespace Snap.Tests.NuGet
         }
         
         [Fact]
-        public async Task TestDownloadPackageByIdentityAsync()
+        public async Task TestDownloadAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
 
-            var downloadResourceResult = await _nugetService.DownloadByPackageIdAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
+            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
             Assert.True(downloadResourceResult.PackageStream.CanRead);

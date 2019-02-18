@@ -118,7 +118,7 @@ namespace snapx
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
             
             var snapReleasesDownloadResult = await nugetService
-                .DownloadLatestReleaseByPackageIdAsync(snapApp.BuildNugetReleasesUpstreamPackageId(), 
+                .DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamPackageId(), 
                     snapReleasesPackageDirectory, pushFeed, cancellationToken, true);
             if (!snapReleasesDownloadResult.IsMaybeASuccessfullDownloadSafe())
             {
@@ -184,7 +184,7 @@ namespace snapx
                     logger.Info($"Attempting to restore: {snapAppMostRecentRelease.FullFilename}");
 
                     var snapPreviousVersionDownloadResult = await nugetService
-                        .DownloadByPackageIdAsync(snapAppMostRecentRelease.BuildPackageIdentity(), pushFeed, snapApps.Generic.Packages, cancellationToken);
+                        .DownloadAsync(snapAppMostRecentRelease.BuildPackageIdentity(), pushFeed, snapApps.Generic.Packages, cancellationToken);
                     if (!snapPreviousVersionDownloadResult.IsMaybeASuccessfullDownloadSafe())
                     {
                         return -1;

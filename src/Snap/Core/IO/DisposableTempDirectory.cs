@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace Snap.Core.IO
 {
@@ -8,11 +7,15 @@ namespace Snap.Core.IO
         readonly ISnapFilesystem _filesystem;
 
         public string WorkingDirectory { get; }
-        public DirectoryInfo WorkingDirectoryInfo => new DirectoryInfo(WorkingDirectory);
-
-        public DisposableTempDirectory(string workingDirectory, ISnapFilesystem filesystem)
+        
+        public DisposableTempDirectory(string workingDirectory, ISnapFilesystem filesystem, bool createRandomSubdirectory = true)
         {
             _filesystem = filesystem;
+            if (!createRandomSubdirectory)
+            {
+                WorkingDirectory = workingDirectory;
+                return;
+            }
             WorkingDirectory = filesystem.PathCombine(workingDirectory, Guid.NewGuid().ToString());
             filesystem.DirectoryCreate(WorkingDirectory);
         }

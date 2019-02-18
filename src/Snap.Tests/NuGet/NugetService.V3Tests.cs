@@ -37,8 +37,8 @@ namespace Snap.Tests.NuGet
             _coreRunLibMock = new Mock<ICoreRunLib>();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapCryptoProvider = new SnapCryptoProvider();
-            _nugetService = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
             _snapFilesystem = new SnapFilesystem();
+            _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources());
         }
 
@@ -68,12 +68,12 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestFindByPackageIdAsync()
+        public async Task TestGetMetadatasAsync()
         {
             var packageSources = new NugetOrgOfficialV3PackageSources();
 
             var packages = await _nugetService
-                .FindByPackageIdAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
+                .GetMetadatasAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
 
             Assert.NotEmpty(packages);
 
@@ -98,12 +98,12 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestDownloadByPackageIdAsync()
+        public async Task TestDownloadAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();
 
-            var downloadResourceResult = await _nugetService.DownloadByPackageIdAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
+            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
             Assert.True(downloadResourceResult.PackageStream.CanRead);

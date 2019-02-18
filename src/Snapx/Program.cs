@@ -121,9 +121,9 @@ namespace snapx
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
 
-            var nugetServiceCommandPack = new NugetService(new NugetLogger(SnapPackLogger));
-            var nugetServiceCommandPromote = new NugetService(new NugetLogger(SnapPromoteLogger));
-            var nugetServiceNoopLogger = new NugetService(new NugetLogger(new LogProvider.NoOpLogger()));
+            var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
+            var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
+            var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 

@@ -71,7 +71,7 @@ namespace Snap.Core
             _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
             _nugetPackageSources = snapApp.BuildNugetSources(_nugetSourcesTempDirectory.WorkingDirectory);
             
-            _nugetService = nugetService ?? new NugetService(new NugetLogger(Logger));
+            _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(Logger));
             snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
             snapAppReader = snapAppReader ?? new SnapAppReader();
@@ -110,7 +110,7 @@ namespace Snap.Core
         {
             snapProgressSource?.Raise(0);
 
-            var deltaUpdates = (await _nugetService.FindByPackageIdAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+            var deltaUpdates = (await _nugetService.GetMetadatasAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
                 .Where(x => x.Identity.Version > _snapApp.Version)
                 .OrderBy(x => x.Identity.Version)
                 .ToList();
@@ -128,7 +128,7 @@ namespace Snap.Core
             Logger.Info($"Delta updates found: {string.Join(",", deltaUpdates.Select(x => x.Identity.Version))}. Starting paralell download");
 
             var downloadResultsTasks =
-                deltaUpdates.Select(x => _nugetService.DownloadByPackageIdAsync(x.Identity, x.Source, _packagesDirectory, cancellationToken));
+                deltaUpdates.Select(x => _nugetService.DownloadAsync(x.Identity, x.Source, _packagesDirectory, cancellationToken));
             var downloadResourceResults = await Task.WhenAll(downloadResultsTasks);
             var downloadsFailed = downloadResourceResults.Where(x => x.IsMaybeASuccessfullDownloadSafe()).ToList();
             if (downloadsFailed.Any())
@@ -250,7 +250,7 @@ namespace Snap.Core
             snapProgressSource?.Raise(0);
 
             var update =
-                (await _nugetService.FindByPackageIdAsync(_snapApp.BuildFullNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+                (await _nugetService.GetMetadatasAsync(_snapApp.BuildFullNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
                 .Where(x => x.Identity.Version > _snapApp.Version)
                 .OrderBy(x => x.Identity.Version)
                 .FirstOrDefault();
@@ -261,7 +261,7 @@ namespace Snap.Core
             }
             
             Logger.Info($"Full nupkg update available: {update.Identity}. Starting download");
-            var downloadResourceResult = await _nugetService.DownloadByPackageIdAsync(update.Identity, update.Source, _packagesDirectory, cancellationToken);
+            var downloadResourceResult = await _nugetService.DownloadAsync(update.Identity, update.Source, _packagesDirectory, cancellationToken);
             if (downloadResourceResult.IsMaybeASuccessfullDownloadSafe())
             {
                 Logger.Error($"Failed to download full nupkg: {update.Identity}. Reason: {downloadResourceResult.Status}");

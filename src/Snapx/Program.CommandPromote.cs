@@ -71,7 +71,7 @@ namespace snapx
             {
                 logger.Info($"Retrieving most version for nupkg: {upstreamPackageId}.");
                 var mostRecentMedatadata = await SnapUtility.Retry(async() =>
-                    await nugetService.FindByMostRecentPackageIdAsync(
+                    await nugetService.GetLatestMetadataAsync(
                         upstreamPackageId, nuGetPackageSources, cancellationToken));
 
                 if (mostRecentMedatadata != null)

@@ -41,8 +41,8 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
-        <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview2.5782</NugetVersion>
+        <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>
+        <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(SnapBootstrap) == 'true'">
@@ -73,7 +73,4 @@
         <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(IsNetFullFramework) AND '$(TargetFramework)' == 'net461'">
-        <DefineConstants>$(DefineConstants);NET461;</DefineConstants>
-    </PropertyGroup>
 </Project>

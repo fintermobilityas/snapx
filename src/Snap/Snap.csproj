@@ -3,7 +3,7 @@
     <Import Project="Snap.Deps.targets" />
 
     <PropertyGroup>
-        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.2;net461</TargetFrameworks>
+        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>
         <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.2</TargetFrameworks>
         <RootNamespace>Snap</RootNamespace>
         <AssemblyName>Snap</AssemblyName>

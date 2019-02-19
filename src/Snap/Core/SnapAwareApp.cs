@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using NuGet.Versioning;
 using Snap.AnyOS;
+using Snap.Core.Models;
 using Snap.Core.UnitTest;
 using Snap.Extensions;
 using Snap.Logging;
@@ -10,16 +11,46 @@ using Snap.Logging;
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public static class SnapAwareApp
     {
         static readonly ILog Logger = LogProvider.GetLogger(nameof(SnapAwareApp));
-
+        static readonly object SyncRoot = new object();
+        
         static ISnapOs SnapOs { get; }
 
         static SnapAwareApp()
         {
+            lock (SyncRoot)
+            {
+                if (SnapOs != null)
+                {
+                    return;
+                }
+            }
+            
             SnapOs = AnyOS.SnapOs.AnyOs;
+
+            try
+            {
+                WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
+                Current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader(), new SnapAppWriter());
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException("Failed to load snap manifest.", e);
+            }
         }
+        
+        /// <summary>
+        /// Current application release information.
+        /// </summary>
+        public static SnapApp Current { get; }
+        
+        /// <summary>
+        /// Current application working directory.
+        /// </summary>
+        public static string WorkingDirectory { get; }
 
         /// <summary>
         /// Call this method as early as possible in app startup. This method
@@ -83,17 +114,29 @@ namespace Snap.Core
                 return;
             }
 
-            var app = typeof(SnapAwareApp).Assembly.GetSnapApp(SnapOs.Filesystem, new SnapAppReader(), new SnapAppWriter());
-
             try
             {
-                lookup[args[0]](app.Version);
-                if (!ModeDetector.InUnitTestRunner()) Environment.Exit(0);
+                lookup[args[0]](Current.Version);
+                #if !SNAP_NUPKG
+                if (ModeDetector.InUnitTestRunner())
+                {
+                    return;
+                }
+                #else
+                Environment.Exit(0);
+                #endif
             }
             catch (Exception ex)
             {
-                Logger.ErrorException("Failed to handle Snap events", ex);
-                if (!ModeDetector.InUnitTestRunner()) Environment.Exit(-1);
+                Logger.ErrorException($"Exception thrown while handling snap arguments. Arguments: {args}", ex);
+                #if !SNAP_NUPKG
+                if (ModeDetector.InUnitTestRunner())
+                {
+                    return;
+                }
+                #else
+                Environment.Exit(-1);
+                #endif
             }
         }
     }

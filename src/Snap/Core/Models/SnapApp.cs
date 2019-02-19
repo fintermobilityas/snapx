@@ -45,7 +45,7 @@ namespace Snap.Core.Models
             Shortcuts = app.Shortcuts.Select(x => x).ToList();
         }
 
-        public void SetCurrentChannel([NotNull] string channelName)
+        internal void SetCurrentChannel([NotNull] string channelName)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
 
@@ -68,7 +68,7 @@ namespace Snap.Core.Models
     public abstract class SnapFeed
     {
         public Uri Source { get; set; }
-        public abstract bool HasCredentials();
+        internal abstract bool HasCredentials();
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -97,7 +97,7 @@ namespace Snap.Core.Models
             ApiKey = snapFeed.ApiKey;
         }
 
-        public override bool HasCredentials()
+        internal override bool HasCredentials()
         {
             return Username != null || Password != null || ApiKey != null;
         }
@@ -132,7 +132,7 @@ namespace Snap.Core.Models
             return Source?.ToString() ?? throw new InvalidOperationException($"{nameof(Source)} should never be null.");
         }
 
-        public override bool HasCredentials()
+        internal override bool HasCredentials()
         {
             return !string.IsNullOrWhiteSpace(Source?.UserInfo);
         }

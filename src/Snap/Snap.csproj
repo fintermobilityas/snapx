@@ -16,7 +16,7 @@
     </PropertyGroup>
     
     <PropertyGroup>
-        <PackageId>Snap</PackageId>
+        <PackageId>Snapx.Core</PackageId>
         <Description>A cross platform application updater for .NET applications targeting either Windows or Unix.</Description>
     </PropertyGroup>
 

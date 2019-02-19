@@ -37,6 +37,7 @@
         <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+		<SnapCorePackageRelease Condition="$(SnapNupkg) AND $(TargetFramework) != ''">true</SnapCorePackageRelease>
         <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
     </PropertyGroup>
 
@@ -45,11 +46,11 @@
         <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(SnapBootstrap) == 'true'">
+    <PropertyGroup Condition="$(SnapBootstrap)">
         <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(SnapNupkg) == 'true'">
+    <PropertyGroup Condition="$(SnapNupkg)">
         <DefineConstants>$(DefineConstants);SNAP_NUPKG;</DefineConstants>
     </PropertyGroup>
 

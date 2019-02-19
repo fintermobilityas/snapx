@@ -21,9 +21,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.13">
-            <PrivateAssets>all</PrivateAssets>
-        </PackageReference>
         <PackageReference Include="LibLog" Version="5.0.5">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -43,9 +40,5 @@
         <EmbeddedResource Include="../../build/native/Unix/x86_64-w64-mingw32-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.dll" Link="Resources/corerun/libcorerun.dll" />
         <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun.so" />
     </ItemGroup>
-    
-    <Target Name="ILRepack" AfterTargets="Build" Condition="$(SnapNupkg) AND $(TargetFramework) != ''">
-        <ILRepack OutputType="$(OutputType)" MainAssembly="$(AssemblyName).dll" OutputAssembly="$(AssemblyName).dll" InputAssemblies="$(SnapCoreILRepackWorkingDirectory)\*.dll" WilcardInputAssemblies="true" InternalizeExcludeAssemblies="@(SnapCoreILRepackInternalizeExcludeAssemblies)" WorkingDirectory="$(SnapCoreILRepackWorkingDirectory)" />
-    </Target>
-    
+
 </Project>

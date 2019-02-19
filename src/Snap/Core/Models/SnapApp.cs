@@ -5,7 +5,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
-using Snap.Extensions;
 using Snap.NuGet;
 using YamlDotNet.Serialization;
 

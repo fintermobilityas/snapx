@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
-using NuGet.Packaging.Core;
-using NuGet.Protocol;
 using NuGet.Versioning;
 using snapx.Core;
 using snapx.Options;

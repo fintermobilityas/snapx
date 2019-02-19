@@ -124,7 +124,6 @@ namespace Snap.Core
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [DebuggerDisplay("{TargetPath} - {Sha1Checksum}")]
     internal struct SnapPackFileChecksum : IEquatable<SnapPackFileChecksum>
     {
         public readonly string TargetPath;

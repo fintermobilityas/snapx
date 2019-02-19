@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -31,18 +30,20 @@ namespace Snap.Installer
         
         public static int Main(string[] args)
         {
+#if !SNAP_NUPKG
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
-                var process = Process.GetCurrentProcess();
+                var process = System.Diagnostics.Process.GetCurrentProcess();
 
-                while (!Debugger.IsAttached)
+                while (!System.Diagnostics.Debugger.IsAttached)
                 {
                     Console.WriteLine($"Waiting for debugger to attach... Process id: {process.Id}");
                     Thread.Sleep(1000);
                 }
-                
+
                 Console.WriteLine("Debugger attached.");
             }
+#endif
 
             return MainImpl(args, LogLevel.Trace);
         }
@@ -239,7 +240,8 @@ namespace Snap.Installer
             config.AddTarget("logfile", fileTarget);
             config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, fileTarget));
 
-            if (Debugger.IsAttached)
+            #if !SNAP_NUPKG
+            if (System.Diagnostics.Debugger.IsAttached)
             {
                 var debugTarget = new DebuggerTarget
                 {
@@ -248,6 +250,7 @@ namespace Snap.Installer
                 config.AddTarget("debug", debugTarget);
                 config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, debugTarget));
             }
+            #endif
 
             LogManager.Configuration = config;
         }

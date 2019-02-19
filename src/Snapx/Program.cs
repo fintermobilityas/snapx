@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -36,11 +35,12 @@ namespace snapx
 
         internal static int Main(string[] args)
         {
+            #if !SNAP_NUPKG
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
-                var process = Process.GetCurrentProcess();
+                var process = System.Diagnostics.Process.GetCurrentProcess();
 
-                while (!Debugger.IsAttached)
+                while (!System.Diagnostics.Debugger.IsAttached)
                 {
                     Console.WriteLine($"Waiting for debugger to attach... Process id: {process.Id}");
                     Thread.Sleep(1000);
@@ -48,6 +48,7 @@ namespace snapx
 
                 Console.WriteLine("Debugger attached.");
             }
+            #endif
             
             try
             {

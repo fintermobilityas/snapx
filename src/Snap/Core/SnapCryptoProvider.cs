@@ -14,10 +14,8 @@ namespace Snap.Core
     {
         string Sha512(byte[] content);
         string Sha512(Stream content);
-        string Sha1(StringBuilder content, Encoding encoding);
-        string Sha1(byte[] content);
-        string Sha1(Stream content);
-        string Sha1(AssemblyDefinition assemblyDefinition);
+        string Sha512(StringBuilder content, Encoding encoding);
+        string Sha512(AssemblyDefinition assemblyDefinition);
     }
 
     internal sealed class SnapCryptoProvider : ISnapCryptoProvider
@@ -42,39 +40,21 @@ namespace Snap.Core
             return HashToString(hash);
         }
 
-        public string Sha1([NotNull] StringBuilder content, [NotNull] Encoding encoding)
+        public string Sha512([NotNull] StringBuilder content, [NotNull] Encoding encoding)
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
             if (encoding == null) throw new ArgumentNullException(nameof(encoding));
-            return Sha1(encoding.GetBytes(content.ToString()));
+            return Sha512(encoding.GetBytes(content.ToString()));
         }
 
-        public string Sha1([NotNull] byte[] content)
-        {
-            if (content == null) throw new ArgumentNullException(nameof(content));
-            var sha1 = SHA1.Create();
-            var hash = sha1.ComputeHash(content);
-
-            return HashToString(hash);
-        }
-
-        public string Sha1([NotNull] Stream content)
-        {
-            if (content == null) throw new ArgumentNullException(nameof(content));
-            var sha1 = SHA1.Create();
-            var hash = sha1.ComputeHash(content);
-
-            return HashToString(hash);
-        }
-
-        public string Sha1([NotNull] AssemblyDefinition assemblyDefinition)
+        public string Sha512([NotNull] AssemblyDefinition assemblyDefinition)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
             using (var outputStream = new MemoryStream())
             {
                 assemblyDefinition.Write(outputStream);
                 outputStream.Seek(0, SeekOrigin.Begin);
-                return Sha1(outputStream);
+                return Sha512(outputStream);
             }
         }
 

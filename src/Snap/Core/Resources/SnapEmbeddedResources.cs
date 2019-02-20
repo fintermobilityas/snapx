@@ -155,11 +155,11 @@ namespace Snap.Core.Resources
             {
                 if (lhsStream == null) throw new ArgumentNullException(nameof(lhsStream));
                 if (filename == null) throw new ArgumentNullException(nameof(filename));
-                var lhsSha1 = snapCryptoProvider.Sha1(lhsStream);
+                var lhsSha512 = snapCryptoProvider.Sha512(lhsStream);
                 using (var rhsStream = filesystem.FileRead(filename))
                 {
-                    var rhsSha1 = snapCryptoProvider.Sha1(rhsStream);
-                    return !string.Equals(lhsSha1, rhsSha1);
+                    var rhsSha512 = snapCryptoProvider.Sha512(rhsStream);
+                    return !string.Equals(lhsSha512, rhsSha512);
                 }
             }
             

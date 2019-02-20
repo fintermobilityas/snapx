@@ -47,7 +47,7 @@ namespace Snap.Core
             // comput the hash of the name space ID concatenated with the 
             // name (step 4)
             byte[] hash;
-            using (var algorithm = SHA1.Create()) {
+            using (var algorithm = SHA512.Create()) {
                 algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
                 algorithm.TransformFinalBlock(nameBytes, 0, nameBytes.Length);
                 hash = algorithm.Hash;

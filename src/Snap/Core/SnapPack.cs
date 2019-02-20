@@ -39,8 +39,8 @@ namespace Snap.Core
         public SnapApp CurrentSnapApp { get; }
         public IAsyncPackageCoreReader PreviousNupkgAsyncPackageCoreReader { get; }
         public IAsyncPackageCoreReader CurrentNupkgAsyncPackageCoreReader { get; }
-        public string PreviousNupkgSha1Checksum { get; }
-        public string CurrentNupkgSha1Checksum { get; }
+        public string PreviousNupkgSha512Checksum { get; }
+        public string CurrentNupkgSha512Checksum { get; }
         public List<SnapPackFileChecksum> PreviousNupkgFileChecksums { get; set; }
         public List<SnapPackFileChecksum> CurrentNupkgFileChecksums { get; set; }
 
@@ -55,8 +55,8 @@ namespace Snap.Core
         }
 
         public SnapPackDeltaSummary(
-            [NotNull] string previousNupkgSha1Checksum,
-            [NotNull] string currentNupkgSha1Checksum,
+            [NotNull] string previousNupkgSha512Checksum,
+            [NotNull] string currentNupkgSha512Checksum,
             [NotNull] SnapApp previousSnapApp,
             [NotNull] SnapApp currentSnapApp,
             [NotNull] string previousNugpkgFilename,
@@ -66,8 +66,8 @@ namespace Snap.Core
             [NotNull] List<SnapPackFileChecksum> previousNupkgFileChecksums,
             [NotNull] List<SnapPackFileChecksum> currentNupkgFileChecksums) : this()
         {
-            PreviousNupkgSha1Checksum = previousNupkgSha1Checksum ?? throw new ArgumentNullException(nameof(previousNupkgSha1Checksum));
-            CurrentNupkgSha1Checksum = currentNupkgSha1Checksum ?? throw new ArgumentNullException(nameof(currentNupkgSha1Checksum));
+            PreviousNupkgSha512Checksum = previousNupkgSha512Checksum ?? throw new ArgumentNullException(nameof(previousNupkgSha512Checksum));
+            CurrentNupkgSha512Checksum = currentNupkgSha512Checksum ?? throw new ArgumentNullException(nameof(currentNupkgSha512Checksum));
             PreviousSnapApp = previousSnapApp ?? throw new ArgumentNullException(nameof(previousSnapApp));
             CurrentSnapApp = currentSnapApp ?? throw new ArgumentNullException(nameof(currentSnapApp));
             PreviousNupkgFilename = previousNugpkgFilename ?? throw new ArgumentNullException(nameof(previousNugpkgFilename));
@@ -127,7 +127,7 @@ namespace Snap.Core
     internal struct SnapPackFileChecksum : IEquatable<SnapPackFileChecksum>
     {
         public readonly string TargetPath;
-        public readonly string Sha1Checksum;
+        public readonly string Sha512Checksum;
         public readonly string Filename;
 
         public static SnapPackFileChecksum Empty => new SnapPackFileChecksum();
@@ -142,17 +142,17 @@ namespace Snap.Core
             return !(lhs == rhs);
         }
 
-        public SnapPackFileChecksum([NotNull] string effectivePath, [NotNull] string filename, [NotNull] string sha1Checksum)
+        public SnapPackFileChecksum([NotNull] string effectivePath, [NotNull] string filename, [NotNull] string sha512Checksum)
         {
             TargetPath = effectivePath ?? throw new ArgumentNullException(nameof(effectivePath));
             Filename = filename ?? throw new ArgumentNullException(nameof(filename));
-            Sha1Checksum = sha1Checksum ?? throw new ArgumentNullException(nameof(sha1Checksum));
+            Sha512Checksum = sha512Checksum ?? throw new ArgumentNullException(nameof(sha512Checksum));
         }
 
         public bool Equals(SnapPackFileChecksum other)
         {
             return string.Equals(TargetPath, other.TargetPath)
-                   && string.Equals(Sha1Checksum, other.Sha1Checksum) 
+                   && string.Equals(Sha512Checksum, other.Sha512Checksum) 
                    && string.Equals(Filename, other.Filename);
         }
 
@@ -167,7 +167,7 @@ namespace Snap.Core
             unchecked
             {
                 var hashCode = (TargetPath != null ? TargetPath.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (Sha1Checksum != null ? Sha1Checksum.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Sha512Checksum != null ? Sha512Checksum.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Filename != null ? Filename.GetHashCode() : 0);
                 return hashCode;
             }
@@ -331,8 +331,8 @@ namespace Snap.Core
             var previousNupkgStream = _snapFilesystem.FileRead(previousNupkgAbsolutePath);
             var currentNupkgMemoryStream = _snapFilesystem.FileRead(currentNupkgAbsolutePath);
 
-            var previousNupkgSha1Checksum = _snapCryptoProvider.Sha1(previousNupkgStream);
-            var currentNupkgSha1Checksum = _snapCryptoProvider.Sha1(currentNupkgMemoryStream);
+            var previousNupkgSha512Checksum = _snapCryptoProvider.Sha512(previousNupkgStream);
+            var currentNupkgSha512Checksum = _snapCryptoProvider.Sha512(currentNupkgMemoryStream);
 
             var previousNupkgPackageArchiveReader = new PackageArchiveReader(previousNupkgStream);
             var currentNupkgPackageArchiveReader = new PackageArchiveReader(currentNupkgMemoryStream);
@@ -374,8 +374,8 @@ namespace Snap.Core
             var currentChecksums = (await GetChecksumManifestAsync(currentNupkgPackageArchiveReader, cancellationToken)).ToList();
 
             var deltaSummary = new SnapPackDeltaSummary(
-                previousNupkgSha1Checksum,
-                currentNupkgSha1Checksum,
+                previousNupkgSha512Checksum,
+                currentNupkgSha512Checksum,
                 previousSnapApp,
                 currentSnapApp,
                 previousSnapApp.BuildNugetLocalFilename(),
@@ -402,7 +402,7 @@ namespace Snap.Core
                     goto next;
                 }
 
-                if (!current.Sha1Checksum.Equals(previous.Sha1Checksum, StringComparison.Ordinal))
+                if (!current.Sha512Checksum.Equals(previous.Sha512Checksum, StringComparison.Ordinal))
                 {
                     deltaSummary.Modified.Add(current);
                     goto next;
@@ -441,11 +441,11 @@ namespace Snap.Core
                     $"Unknown error building delta summary between previous and current nupkg. Previous: {previousNupkgAbsolutePath}. Current: {currentNupkgAbsolutePath}");
             }
 
-            if (deltaSummary.PreviousNupkgSha1Checksum == deltaSummary.CurrentNupkgSha1Checksum)
+            if (deltaSummary.PreviousNupkgSha512Checksum == deltaSummary.CurrentNupkgSha512Checksum)
             {
                 throw new Exception("Unable to build delta package because previous and current nupkg is the same nupkg. " +
-                                    $"Previous: {previousNupkgAbsolutePath} ({deltaSummary.PreviousNupkgSha1Checksum}). " +
-                                    $"Current: {currentNupkgAbsolutePath} ({deltaSummary.CurrentNupkgSha1Checksum}). ");
+                                    $"Previous: {previousNupkgAbsolutePath} ({deltaSummary.PreviousNupkgSha512Checksum}). " +
+                                    $"Current: {currentNupkgAbsolutePath} ({deltaSummary.CurrentNupkgSha512Checksum}). ");
             }
 
             progressSource?.Raise(30);
@@ -546,7 +546,7 @@ namespace Snap.Core
             
             var deltaNupkgStream = _snapFilesystem.FileRead(deltaNupkgAbsolutePath);
             var fullNupkgStream = _snapFilesystem.FileRead(fullNupkgAbsolutePath);
-            var fullNupkgSha1Checksum = _snapCryptoProvider.Sha1(fullNupkgStream);
+            var fullNupkgSha512Checksum = _snapCryptoProvider.Sha512(fullNupkgStream);
 
             progressSource?.Raise(10);
 
@@ -573,10 +573,10 @@ namespace Snap.Core
                     $"Full nupkg: {fullNupkgAbsolutePath}. ");
             }
 
-            if (fullNupkgSha1Checksum != deltaSnapApp.DeltaSummary.FullNupkgSha1Checksum)
+            if (fullNupkgSha512Checksum != deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum)
             {
                 throw new Exception("Checksum mismatch for specified full nupkg. " +
-                                    $"Expected SHA1 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha1Checksum} but was {fullNupkgSha1Checksum}. " +
+                                    $"Expected SHA512 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum} but was {fullNupkgSha512Checksum}. " +
                                     $"Delta nupkg: {deltaNupkgAbsolutePath}. " +
                                     $"Full nupkg: {fullNupkgAbsolutePath}. ");
             }
@@ -909,7 +909,7 @@ namespace Snap.Core
             {
                 using (var shaStream = await inputStream.ReadToEndAsync(cancellationToken, true))
                 {
-                    stringBuilder.Append($"{targetPath}:{filename}:{_snapCryptoProvider.Sha1(shaStream)}");
+                    stringBuilder.Append($"{targetPath}:{filename}:{_snapCryptoProvider.Sha512(shaStream)}");
                     stringBuilder.Append(_snapFilesystem.FixedNewlineChar);
                 }
 

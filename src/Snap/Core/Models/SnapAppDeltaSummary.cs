@@ -12,7 +12,7 @@ namespace Snap.Core.Models
     {
         public string TargetPath { get; set; }
         public string Filename { get; set; }
-        public string Sha1Checksum { get; set; }
+        public string Sha512Checksum { get; set; }
 
         [UsedImplicitly]
         public SnapAppFileDeltaChecksum()
@@ -25,14 +25,14 @@ namespace Snap.Core.Models
             if (checksum == null) throw new ArgumentNullException(nameof(checksum));
             TargetPath = checksum.TargetPath;
             Filename = checksum.Filename;
-            Sha1Checksum = checksum.Sha1Checksum;
+            Sha512Checksum = checksum.Sha512Checksum;
         }
 
         internal SnapAppFileDeltaChecksum(SnapPackFileChecksum checksum)
         {
             TargetPath = checksum.TargetPath;
             Filename = checksum.Filename;
-            Sha1Checksum = checksum.Sha1Checksum;
+            Sha512Checksum = checksum.Sha512Checksum;
         }
     }
     
@@ -45,7 +45,7 @@ namespace Snap.Core.Models
         public List<string> Unmodified { get; set; }
         public List<string> Deleted { get; set; }
         public string FullNupkgFilename { get; set; }
-        public string FullNupkgSha1Checksum { get; set; }
+        public string FullNupkgSha512Checksum { get; set; }
         public List<SnapAppFileDeltaChecksum> FullNupkgFileChecksums { get; set; } 
 
         public SnapAppDeltaSummary()
@@ -61,7 +61,7 @@ namespace Snap.Core.Models
             if (deltaSummary == null) throw new ArgumentNullException(nameof(deltaSummary));
                         
             FullNupkgFilename = deltaSummary.FullNupkgFilename;
-            FullNupkgSha1Checksum = deltaSummary.FullNupkgSha1Checksum;
+            FullNupkgSha512Checksum = deltaSummary.FullNupkgSha512Checksum;
             FullNupkgFileChecksums = deltaSummary.FullNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
 
             New.AddRange(deltaSummary.New);
@@ -77,7 +77,7 @@ namespace Snap.Core.Models
             if (deltaSummary == null) throw new ArgumentNullException(nameof(deltaSummary));
 
             FullNupkgFilename = deltaSummary.CurrentNupkgFilename;
-            FullNupkgSha1Checksum = deltaSummary.CurrentNupkgSha1Checksum;
+            FullNupkgSha512Checksum = deltaSummary.CurrentNupkgSha512Checksum;
             FullNupkgFileChecksums = deltaSummary.CurrentNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
 
             New.AddRange(deltaSummary.New.Select(x => x.TargetPath));

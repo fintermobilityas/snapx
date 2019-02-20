@@ -540,7 +540,7 @@ namespace Snap.Tests.Core
                     
                     Assert.StartsWith(SnapConstants.NuspecRootTargetPath, checksum.TargetPath);
                     Assert.Equal(expectedNuspecEffectivePath, checksum.TargetPath);
-                    Assert.Equal(40, checksum.Sha1Checksum.Length);                                        
+                    Assert.Equal(128, checksum.Sha512Checksum.Length);                                        
                 }
             }
         }
@@ -747,7 +747,7 @@ namespace Snap.Tests.Core
                 Assert.True(snapAppDelta.Delta);
                 Assert.NotNull(snapAppDelta.DeltaSummary);
                 Assert.Equal(snapAppDelta.DeltaSummary.FullNupkgFilename, currentNupkgSnapApp.BuildNugetLocalFilename());
-                Assert.Equal(40, snapAppDelta.DeltaSummary.FullNupkgSha1Checksum.Length);
+                Assert.Equal(128, snapAppDelta.DeltaSummary.FullNupkgSha512Checksum.Length);
 
                 var expectedLayout = new List<string>
                 {

@@ -40,7 +40,6 @@ namespace Snap.Core
         readonly ISnapPack _snapPack;
         readonly DisposableTempDirectory _nugetSourcesTempDirectory;
         readonly ISnapAppReader _snapAppReader;
-        readonly ISnapAppWriter _snapAppWriter;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -74,8 +73,8 @@ namespace Snap.Core
             snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
             _snapAppReader = snapAppReader ?? new SnapAppReader();
-            _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
-            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
+            var snapAppWriter1 = snapAppWriter ?? new SnapAppWriter();
+            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, snapAppWriter1, snapCryptoProvider, snapEmbeddedResources);
             snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
             _snapInstaller = snapInstaller ?? new SnapInstaller(snapExtractor, _snapPack, _snapOs.Filesystem, _snapOs, snapEmbeddedResources);
 
@@ -141,13 +140,13 @@ namespace Snap.Core
 
             if (!deltaUpdates.Any())
             {
-                Logger.Info("Delta updates was not found, falling back to full update");
-                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                Logger.Info("Unable to find any delta updates in nuget feed. Attempting to install full nupkg!");
+                return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
 
             snapProgressSource?.Raise(20);
 
-            Logger.Info($"Delta updates found: {string.Join(",", deltaUpdates.Select(x => x.Identity.Version))}. Starting paralell download");
+            Logger.Info($"Delta updates found! Updates that need to be reassembled: {string.Join(",", deltaUpdates.Select(x => x.Identity.Version))}.");
 
             var downloadResultsTasks =
                 deltaUpdates.Select(x => _nugetService.DownloadAsync(x.Identity, x.Source, _packagesDirectory, cancellationToken));
@@ -155,13 +154,13 @@ namespace Snap.Core
             var downloadsFailed = downloadResourceResults.Where(x => x.IsMaybeASuccessfullDownloadSafe()).ToList();
             if (downloadsFailed.Any())
             {
-                Logger.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. Falling back to full installation");
-                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                Logger.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. Attempting to install full nupkg!");
+                return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
 
             snapProgressSource?.Raise(40);
 
-            Logger.Info($"Successfully downloaded {deltaUpdates.Count} delta updates");
+            Logger.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
 
             var deltas = deltaUpdates.Select(x =>
             {
@@ -183,8 +182,8 @@ namespace Snap.Core
             {
                 if (!_snapOs.Filesystem.FileExists(deltaNupkg))
                 {
-                    Logger.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}");
-                    continue;
+                    Logger.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}. Attempting to install full nupkg!");
+                    return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
                 }
 
                 using (var asyncCoreReader = new PackageArchiveReader(deltaNupkg))
@@ -192,14 +191,14 @@ namespace Snap.Core
                     var snapApp = await _snapPack.GetSnapAppAsync(asyncCoreReader, cancellationToken);
                     if (snapApp == null)
                     {
-                        Logger.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}");
-                        return null;
+                        Logger.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. Attempting to install full nupkg!");
+                        return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
                     }
 
                     if (!snapApp.Delta)
                     {
-                        Logger.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}");
-                        return null;
+                        Logger.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}. Attempting to install full nupkg!");
+                        return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
                     }
 
                     deltaSnaps.Add((snapApp, deltaNupkg));
@@ -221,53 +220,69 @@ namespace Snap.Core
                 if (!_snapOs.Filesystem.FileExists(thisDeltaFullNupkg))
                 {
                     Logger.Error($"Failed to apply delta update {index} of {total}. Full nupkg was not found: {thisDeltaFullNupkg}. Falling back to full nupkg installation");
-                    return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                    return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
                 }
 
                 Logger.Info($"Reassembling delta update {index} of {total}. Full nupkg: {thisDeltaFullNupkg}. Delta nupkg: {deltaNupkg}");
 
-                var (nupkgStream, snapApp) =
-                    await _snapPack.ReassambleFullPackageAsync(deltaSnap.DeltaSummary.FullNupkgFilename, thisDeltaFullNupkg, cancellationToken: cancellationToken);
+                try
+                {
+                    var (nupkgStream, snapApp) =
+                        await _snapPack.ReassambleFullPackageAsync(deltaSnap.DeltaSummary.FullNupkgFilename, thisDeltaFullNupkg, cancellationToken: cancellationToken);
 
-                fullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapApp.BuildNugetLocalFilename());
-                updatedSnapApp = snapApp;
+                    fullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapApp.BuildNugetLocalFilename());
+                    updatedSnapApp = snapApp;
 
-                Logger.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {fullNupkg}");
+                    Logger.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {fullNupkg}");
 
-                await _snapOs.Filesystem.FileWriteAsync(nupkgStream, fullNupkg, cancellationToken);
+                    await _snapOs.Filesystem.FileWriteAsync(nupkgStream, fullNupkg, cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    Logger.ErrorException($"Unknown error while reassembling delta update at index {index}. Attempting to install full nupkg!", e);
+                    return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
+                }
             }
 
             snapProgressSource?.Raise(70);
 
-            Logger.Info($"Finished building deltas. Attempting to install full nupkg: {fullNupkg}");
+            Logger.Info($"Finished building deltas. Attempting to install reassembled full nupkg: {fullNupkg}");
 
             if (updatedSnapApp == null)
             {
-                Logger.Error($"Unable to install full nupkg because {nameof(updatedSnapApp)} is null. Falling back to full nupkg installation");
-                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                Logger.Error($"Fatal error! Unable to install full nupkg because {nameof(updatedSnapApp)} is null. Attempting to install full nupkg!");
+                return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
             
             if (!_snapOs.Filesystem.FileExists(fullNupkg))
             {
-                Logger.Error($"Unable to install final full nupkg because it does not exist on disk: {fullNupkg}. Falling back to full nupkg installation");
-                return await InstallFullNupkg(snapProgressSource, cancellationToken);
+                Logger.Error($"Unable to install final full nupkg because it does not exist on disk: {fullNupkg}. Attempting to install full nupkg!");
+                return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
 
-            var appDir = _snapOs.Filesystem.PathCombine(_rootDirectory, $"app-{updatedSnapApp.Version}");
-            updatedSnapApp = await _snapInstaller.UpdateAsync(fullNupkg, appDir, cancellationToken: cancellationToken);
-            
-            if (updatedSnapApp == null)
+            try
             {
-                Logger.Error("Full installation did not succeed, reason unknown");
-                return null;
+                var appDir = _snapOs.Filesystem.PathCombine(_rootDirectory, $"app-{updatedSnapApp.Version}");
+                updatedSnapApp = await _snapInstaller.UpdateAsync(fullNupkg, appDir, cancellationToken: cancellationToken);
+                if (updatedSnapApp == null)
+                {
+                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install reassembled full nupkg: {fullNupkg}");
+                }
             }
-            
+            catch (Exception e)
+            {
+                Logger.ErrorException("Exception thrown while installing full nupkg reassembled from one or multiple delta packages." +
+                                      $"Filename: {fullNupkg}. " +
+                                      "Attempting to install full nupkg!", e);
+                return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
+            }
+                       
             snapProgressSource?.Raise(100);
 
             return updatedSnapApp;
         }
 
-        async Task<SnapApp> InstallFullNupkg(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
+        async Task<SnapApp> UpdateFromFullNupkgAsync(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
         {
             snapProgressSource?.Raise(0);
 

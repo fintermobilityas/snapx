@@ -22,6 +22,7 @@ namespace Snap.Core
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
         void Restart(string arguments = null);
+        string GetStubExecutableAbsolutePath();
     }
 
     public sealed class SnapUpdateManager : ISnapUpdateManager
@@ -119,6 +120,12 @@ namespace Snap.Core
             }
             
             _snapOs.ProcessManager.StartNonBlocking(coreRun, $"{arguments} --corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}");
+        }
+
+        public string GetStubExecutableAbsolutePath()
+        {
+            typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
+            return coreRunFullPath;
         }
 
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)

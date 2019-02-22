@@ -58,6 +58,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char* filename_in, char* icon_filename_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds);
 
 // - Environment
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char* environment_variable_in, char** environment_variable_value_out);

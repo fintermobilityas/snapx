@@ -17,6 +17,7 @@
 #include <dirent.h> // opendir
 #include <libgen.h> // dirname
 #include <dlfcn.h> // dlopen
+#include <signal.h> // kill
 
 // GLOBALS
 
@@ -210,6 +211,87 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon
     {
         return FALSE;
     }
+    return TRUE;
+#endif
+    return FALSE;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid)
+{
+    if(pid < 0)
+    {
+        return FALSE;
+    }
+
+    BOOL process_exists = FALSE;
+#if PLATFORM_WINDOWS
+    auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    if(process != nullptr)
+    {
+        auto ret = WaitForSingleObject(process, 0);
+        assert(0 != CloseHandle(process));
+        process_exists = ret == WAIT_OBJECT_0 ? TRUE : FALSE;
+    }
+#elif PLATFORM_LINUX
+    struct stat dontcare;
+    std::string proc_path("/proc/" + std::to_string(pid));
+    if (stat(proc_path.c_str(), &dontcare) != -1)
+    {
+        process_exists = TRUE;
+    }
+#endif
+
+    return process_exists;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid)
+{
+    if(pid < 0)
+    {
+        return FALSE;
+    }
+
+    BOOL process_killed = FALSE;
+#if PLATFORM_WINDOWS
+    auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    if(process != nullptr)
+    {
+        process_killed = TerminateProcess(process, 1);
+        assert(0 != CloseHandle(process));
+    }
+#elif PLATFORM_LINUX
+    auto result = kill(pid, SIGTERM);
+    process_killed = result == 0;
+#endif
+
+    return process_killed;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out)
+{
+    BOOL has_pid = FALSE;
+#if PLATFORM_WINDOWS
+    has_pid = TRUE;
+    *pid_out = GetCurrentProcessId();
+#elif PLATFORM_LINUX
+    has_pid = TRUE;
+    *pid_out = getpid();
+#endif
+    return has_pid;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds)
+{
+    if(milliseconds < 0)
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS
+    ::Sleep(milliseconds);
+    return TRUE;
+#elif PLATFORM_LINUX
+    usleep(milliseconds);
     return TRUE;
 #endif
     return FALSE;

@@ -543,7 +543,7 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestGetSnapStubExecutableFullPath()
+        public void GetCoreRunExecutableFullPath()
         {
             var snapApp = _baseFixture.BuildSnapApp();
             var workingDirectory = _baseFixture.WorkingDirectory;
@@ -554,7 +554,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var stubExecutableFullPath = workingDirectory.GetSnapStubExecutableFullPath(_fileSystem, _appReader, _appWriter, out var stubExecutableExeName);
+                var stubExecutableFullPath = workingDirectory.GetCoreRunExecutableFullPath(_fileSystem, _appReader, out var stubExecutableExeName);
 
                 Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
                 Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
@@ -562,7 +562,7 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestGetSnapStubExecutableFullPath_Assembly_Location()
+        public void GetCoreRunExecutableFullPath_Assembly_Location()
         {
             var snapApp = _baseFixture.BuildSnapApp();
             var workingDirectory = _baseFixture.WorkingDirectory;
@@ -573,7 +573,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetSnapStubExecutableFullPath(_fileSystem, _appReader, _appWriter, out var stubExecutableExeName);
+                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetCoreRunExecutableFullPath(_fileSystem, _appReader, out var stubExecutableExeName);
 
                 Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
                 Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
@@ -589,7 +589,7 @@ namespace Snap.Tests.Core.Extensions
             using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(appSpec))
             using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
             {
-                var appSpecAfter = workingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader, _appWriter);
+                var appSpecAfter = workingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
                 Assert.NotNull(appSpecAfter);
             }
         }

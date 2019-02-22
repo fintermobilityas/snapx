@@ -34,7 +34,7 @@ namespace Snap.Core
             try
             {
                 WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
-                Current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader(), new SnapAppWriter());
+                Current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
             }
             catch (Exception e)
             {

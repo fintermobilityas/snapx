@@ -21,6 +21,7 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
+        void Restart(string arguments = null);
     }
 
     public sealed class SnapUpdateManager : ISnapUpdateManager
@@ -37,6 +38,8 @@ namespace Snap.Core
         readonly ISnapInstaller _snapInstaller;
         readonly ISnapPack _snapPack;
         readonly DisposableTempDirectory _nugetSourcesTempDirectory;
+        readonly ISnapAppReader _snapAppReader;
+        readonly ISnapAppWriter _snapAppWriter;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -69,9 +72,9 @@ namespace Snap.Core
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(Logger));
             snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
-            snapAppReader = snapAppReader ?? new SnapAppReader();
-            snapAppWriter = snapAppWriter ?? new SnapAppWriter();
-            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
+            _snapAppReader = snapAppReader ?? new SnapAppReader();
+            _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
+            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
             _snapInstaller = snapInstaller ?? new SnapInstaller(snapExtractor, _snapPack, _snapOs.Filesystem, _snapOs, snapEmbeddedResources);
 
@@ -99,6 +102,23 @@ namespace Snap.Core
                 Logger.Error("Exception thrown when attempting to update to latest release", e);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Restart current application. The stub executable will wait for this process until exit and then
+        /// 
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <exception cref="FileNotFoundException"></exception>
+        public void Restart(string arguments = null)
+        {
+            var coreRun = typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
+            if (!_snapOs.Filesystem.FileExists(coreRunFullPath))
+            {
+                throw new FileNotFoundException($"Unable to find corerun executable: {coreRunFullPath}");
+            }
+            
+            _snapOs.ProcessManager.StartNonBlocking(coreRun, $"{arguments} --corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}");
         }
 
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)

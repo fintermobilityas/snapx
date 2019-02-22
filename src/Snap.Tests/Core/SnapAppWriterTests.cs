@@ -55,7 +55,7 @@ namespace Snap.Tests.Core
 
             using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
             {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
             }
         }
@@ -82,7 +82,7 @@ namespace Snap.Tests.Core
 
             using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
             {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
 
                 var snapAppAfterChannel = snapAppAfter.Channels.Single();
@@ -105,7 +105,7 @@ namespace Snap.Tests.Core
 
             using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
             {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
                 
                 Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
@@ -125,7 +125,7 @@ namespace Snap.Tests.Core
 
             using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
             {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader, _snapAppWriter);
+                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
                 
                 Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);

@@ -705,7 +705,7 @@ namespace Snap.Core
             using (var assemblyStream = await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
             using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyStream, new ReaderParameters(ReadingMode.Immediate)))
             {
-                var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader, _snapAppWriter);
+                var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader);
                 return snapApp;
             }
         }

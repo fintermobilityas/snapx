@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 
 namespace Snap.AnyOS
 {
@@ -23,6 +24,7 @@ namespace Snap.AnyOS
         SnapOsProcess Build(int pid, string name, string workingDirectory = default, string exeAbsoluteLocation = default);
         Task<(int exitCode, string standardOutput)> RunAsync(string fileName, string arguments, CancellationToken cancellationToken, string workingDirectory = "");
         Task<(int exitCode, string standardOutput)> RunAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken);
+        void StartNonBlocking(string fileName, string arguments, string workingDirectory = "");
         Task<bool> ChmodExecuteAsync(string filename, CancellationToken cancellationToken);
     }
     
@@ -100,6 +102,25 @@ namespace Snap.AnyOS
             }
 
             return (pi.ExitCode, textResult.Trim());
+        }
+
+        public void StartNonBlocking([NotNull] string fileName, string arguments, string workingDirectory = "")
+        {
+            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            
+            var processStartInfo =
+                new ProcessStartInfo(fileName, arguments)
+                {
+                    UseShellExecute = false,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    ErrorDialog = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    WorkingDirectory = workingDirectory
+                };
+
+            Process.Start(processStartInfo);;
         }
 
         public async Task<bool> ChmodExecuteAsync(string filename, CancellationToken cancellationToken)

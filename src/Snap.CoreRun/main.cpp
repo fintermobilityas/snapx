@@ -17,7 +17,7 @@ inline bool command_wait_for_pid(int pid)
     BOOL process_stilling_running;
     while((process_stilling_running = pal_process_is_running(pid)) == TRUE)
     {
-        pal_sleep_ms(100);
+        pal_usleep(100);
     }
 
     if(process_stilling_running == FALSE)

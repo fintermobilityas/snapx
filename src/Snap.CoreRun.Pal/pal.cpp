@@ -280,7 +280,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out)
     return has_pid;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)
 {
     if(milliseconds < 0)
     {

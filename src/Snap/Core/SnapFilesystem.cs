@@ -29,6 +29,7 @@ namespace Snap.Core
         string DirectoryWorkingDirectory();
         Task DirectoryDeleteOrJustGiveUpAsync(string directory, List<string> excludePaths = null);
         string DirectoryGetParent(string path);
+        void SetCurrentDirectory(string path);
         DisposableTempDirectory WithDisposableTempDirectory(string workingDirectory);
         DisposableTempDirectory WithDisposableTempDirectory();
         IEnumerable<string> EnumerateDirectories(string path);
@@ -265,6 +266,12 @@ namespace Snap.Core
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
             return Directory.Exists(directory);
+        }
+
+        public void SetCurrentDirectory([NotNull] string path)
+        {
+            if (path == null) throw new ArgumentNullException(nameof(path));
+            Directory.SetCurrentDirectory(path);
         }
 
         public DisposableTempDirectory WithDisposableTempDirectory([NotNull] string workingDirectory)

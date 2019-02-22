@@ -28,6 +28,11 @@ namespace Snap.Core
                     return;
                 }
             }
+
+            if (Current != null)
+            {
+                throw new Exception($"Expected {nameof(Current)} to equal null.");
+            }
             
             SnapOs = AnyOS.SnapOs.AnyOs;
 
@@ -45,7 +50,7 @@ namespace Snap.Core
         /// <summary>
         /// Current application release information.
         /// </summary>
-        public static SnapApp Current { get; }
+        public static SnapApp Current { get; internal set; }
         
         /// <summary>
         /// Current application working directory.

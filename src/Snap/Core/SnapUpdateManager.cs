@@ -18,6 +18,7 @@ using Snap.NuGet;
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
@@ -29,7 +30,6 @@ namespace Snap.Core
     {
         static readonly ILog Logger = LogProvider.For<SnapUpdateManager>();
 
-        readonly string _workingDirectory;
         readonly string _rootDirectory;
         readonly string _packagesDirectory;
         readonly SnapApp _snapApp;
@@ -55,18 +55,21 @@ namespace Snap.Core
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }
 
+        [SuppressMessage("ReSharper", "JoinNullCheckWithUsage")]
         internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null, 
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null, 
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
             ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
         {
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
             _snapOs = snapOs ?? SnapOs.AnyOs;
-            _rootDirectory = _snapOs.Filesystem.DirectoryGetParent(_workingDirectory);
+            _rootDirectory = _snapOs.Filesystem.DirectoryGetParent(workingDirectory);
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
-            _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
             _nugetSourcesTempDirectory = new DisposableTempDirectory(
                 _snapOs.Filesystem.PathCombine(_snapOs.SpecialFolders.InstallerCacheDirectory, "temp", "nuget"), _snapOs.Filesystem);
-            _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
+            _snapApp = snapApp;
             _nugetPackageSources = snapApp.BuildNugetSources(_nugetSourcesTempDirectory.WorkingDirectory);
             
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(Logger));
@@ -127,11 +130,25 @@ namespace Snap.Core
             return coreRunFullPath;
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
-        {
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken  = default)
+        {            
             snapProgressSource?.Raise(0);
 
-            var deltaUpdates = (await _nugetService.GetMetadatasAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+            List<NuGetPackageSearchMedatadata> metadatas;
+
+            try
+            {
+                metadatas = (await _nugetService
+                    .GetMetadatasAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
+                    .ToList();
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Exception thrown while checking for updates", e);
+                return null;
+            }
+            
+            var deltaUpdates = metadatas
                 .Where(x => x.Identity.Version > _snapApp.Version)
                 .OrderBy(x => x.Identity.Version)
                 .ToList();

@@ -1,7 +1,6 @@
 #include "corerun.hpp"
 #include "stubexecutable.hpp"
 
-
 inline bool command_wait_for_pid(int pid)
 {
     if(pid < 0)
@@ -15,18 +14,18 @@ inline bool command_wait_for_pid(int pid)
         return false;
     }
 
-    auto attempts = 150;
-    auto process_stilling_running = FALSE;
+    BOOL process_stilling_running;
     while((process_stilling_running = pal_process_is_running(pid)) == TRUE)
     {
         pal_sleep_ms(100);
     }
 
-    if(process_stilling_running == FALSE) {
+    if(process_stilling_running == FALSE)
+    {
         return TRUE;
     }
 
-    return pal_process_kill(pid);
+    return pal_process_kill(pid) == TRUE;
 }
 
 int main_impl(int argc, char **argv, const int cmd_show_windows)
@@ -35,11 +34,12 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
         return -1;
     }
 
-    std::vector<std::string> args(argv, argv + argc);
+    std::vector<std::string> stubexecutable_arguments(argv, argv + argc);
 
-    const auto command_wait_pid_str = std::string("--wait-pid=");
+    const auto command_wait_pid_str = std::string("--corerun-wait-for-process-id="); // These are arguments are intentionally verbose
 
-    for(auto value : args)
+    auto argv_index = 0;
+    for(auto value : stubexecutable_arguments)
     {
         const auto command_wait_pid_value = pal_str_startswith(value.c_str(), command_wait_pid_str.c_str());
 
@@ -54,6 +54,8 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
                 continue;
             }
 
+            stubexecutable_arguments.erase(stubexecutable_arguments.begin() + argv_index);
+
             if(!command_wait_for_pid(pid))
             {
                 return -1;
@@ -62,6 +64,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
             break;
         }
 
+        ++argv_index;
     }
 
     char* app_name = nullptr;

@@ -13,6 +13,7 @@ using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
+using Snap.Logging;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -21,6 +22,7 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class SnapExtensions
     {
+        static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -514,31 +516,25 @@ namespace Snap.Extensions
                 return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
             }
         }
-
-        [UsedImplicitly]
-        internal static string GetCoreRunExecutableFullPath([NotNull] this string stubExecutableWorkingDirectory, [NotNull] ISnapFilesystem snapFilesystem, 
-            [NotNull] ISnapAppReader snapAppReader, out string coreRunFullPath)
-        {
-            if (stubExecutableWorkingDirectory == null) throw new ArgumentNullException(nameof(stubExecutableWorkingDirectory));
-            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
-            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
-
-            var snapApp = stubExecutableWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
-
-            coreRunFullPath = $"{snapApp.Id}.exe";
-
-            return snapFilesystem.PathCombine(stubExecutableWorkingDirectory, $"..\\{coreRunFullPath}");
-        }
-
-        [UsedImplicitly]
-        internal static string GetCoreRunExecutableFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem,
+    
+        internal static void GetCoreRunExecutableFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem,
             [NotNull] ISnapAppReader snapAppReader, out string coreRunFullPath)
         {
             if (assembly == null) throw new ArgumentNullException(nameof(assembly));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
 
-            return snapFilesystem.PathGetDirectoryName(assembly.Location).GetCoreRunExecutableFullPath(snapFilesystem, snapAppReader, out coreRunFullPath);
+            var assemblyLocationDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
+            var snapApp = assemblyLocationDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
+            var parentDirectory = snapFilesystem.DirectoryGetParent(assemblyLocationDirectory);            
+            
+            var exeName = snapApp.Id;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                exeName += ".exe";
+            }
+            
+            coreRunFullPath = snapFilesystem.PathCombine(parentDirectory, exeName);
         }
 
         internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)

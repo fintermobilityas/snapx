@@ -1,6 +1,9 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    $Bootstrap = $false
+    $Bootstrap = $false,
+    [Parameter(Position = 1, ValueFromPipeline = $true)]
+    [ValidateSet("Debug", "Release")]
+    $Configuration = "Release"
 )
 
 function Write-Output-Colored {
@@ -64,8 +67,8 @@ $Properties = $Properties -join " "
 
 Exec "& dotnet tool uninstall -g snapx" -AllowFail $true
 Exec "& dotnet clean src/Snapx"
-Exec "& dotnet build -c Release src/Snapx -f netcoreapp2.2 $Properties"
-Exec "& dotnet pack -c Release src/Snapx --no-build"
+Exec "& dotnet build -c $Configuration src/Snapx -f netcoreapp2.2 $Properties"
+Exec "& dotnet pack -c $Configuration src/Snapx --no-build"
 Exec "& dotnet tool install --global --add-source ./nupkgs snapx"
 
 . snapx 

@@ -22,7 +22,7 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
-        void Restart(string arguments = null);
+        (string stubExecutableFullPath, string shutdownArguments) Restart(string arguments = null);
         string GetStubExecutableAbsolutePath();
     }
 
@@ -112,16 +112,34 @@ namespace Snap.Core
         /// 
         /// </summary>
         /// <param name="arguments"></param>
-        /// <exception cref="FileNotFoundException"></exception>
-        public void Restart(string arguments = null)
+        /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
+        /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
+        public (string stubExecutableFullPath, string shutdownArguments) Restart(string arguments = null)
         {
-            var coreRun = typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
-            if (!_snapOs.Filesystem.FileExists(coreRunFullPath))
+            typeof(SnapUpdateManager).Assembly
+                .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
+            
+            if (!_snapOs.Filesystem.FileExists(stubExecutableFullPath))
             {
-                throw new FileNotFoundException($"Unable to find corerun executable: {coreRunFullPath}");
+                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
             }
             
-            _snapOs.ProcessManager.StartNonBlocking(coreRun, $"{arguments} --corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}");
+            var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
+
+            var shutdownArguments = arguments == null ? argumentWaitForProcessId : $"{arguments} {argumentWaitForProcessId}";
+            
+            var process = _snapOs.ProcessManager.StartNonBlocking(stubExecutableFullPath, shutdownArguments);
+
+            if (process.HasExited)
+            {
+                throw new Exception($"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
+            }            
+
+            // For X reasons I have observed that if the machine is really busy/overloaded the underlying OS scheduler
+            // sometimes delays process creation.
+            Thread.Sleep(1000);
+
+            return (stubExecutableFullPath, shutdownArguments);
         }
 
         public string GetStubExecutableAbsolutePath()
@@ -132,15 +150,13 @@ namespace Snap.Core
 
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken  = default)
         {            
-            snapProgressSource?.Raise(0);
-
             List<NuGetPackageSearchMedatadata> metadatas;
 
             try
             {
                 metadatas = (await _nugetService
                     .GetMetadatasAsync(_snapApp.BuildDeltaNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
-                    .ToList();
+                    .ToList();                
             }
             catch (Exception e)
             {
@@ -153,15 +169,13 @@ namespace Snap.Core
                 .OrderBy(x => x.Identity.Version)
                 .ToList();
 
-            snapProgressSource?.Raise(10);
-
             if (!deltaUpdates.Any())
             {
                 Logger.Info("Unable to find any delta updates in nuget feed. Attempting to install full nupkg!");
                 return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
 
-            snapProgressSource?.Raise(20);
+            snapProgressSource?.Raise(10);
 
             Logger.Info($"Delta updates found! Updates that need to be reassembled: {string.Join(",", deltaUpdates.Select(x => x.Identity.Version))}.");
 
@@ -175,7 +189,7 @@ namespace Snap.Core
                 return await UpdateFromFullNupkgAsync(snapProgressSource, cancellationToken);
             }
 
-            snapProgressSource?.Raise(40);
+            snapProgressSource?.Raise(20);
 
             Logger.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
 
@@ -189,7 +203,7 @@ namespace Snap.Core
                 return _snapOs.Filesystem.PathCombine(_packagesDirectory, snapAppDelta.BuildNugetLocalFilename());
             }).ToList();
 
-            snapProgressSource?.Raise(50);
+            snapProgressSource?.Raise(30);
 
             var deltaSnaps = new List<(SnapApp app, string nupkg)>();
 
@@ -224,7 +238,7 @@ namespace Snap.Core
                 index++;
             }
 
-            snapProgressSource?.Raise(60);
+            snapProgressSource?.Raise(50);
 
             index = 0;
 
@@ -301,8 +315,6 @@ namespace Snap.Core
 
         async Task<SnapApp> UpdateFromFullNupkgAsync(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
         {
-            snapProgressSource?.Raise(0);
-
             var update =
                 (await _nugetService.GetMetadatasAsync(_snapApp.BuildFullNugetUpstreamPackageId(), false, _nugetPackageSources, cancellationToken))
                 .Where(x => x.Identity.Version > _snapApp.Version)
@@ -312,7 +324,9 @@ namespace Snap.Core
             if (update == null || update.Identity.Version == _snapApp.Version)
             {
                 return null;
-            }
+            } 
+            
+            snapProgressSource?.Raise(0);            
             
             Logger.Info($"Full nupkg update available: {update.Identity}. Starting download");
             var downloadResourceResult = await _nugetService.DownloadAsync(update.Identity, update.Source, _packagesDirectory, cancellationToken);

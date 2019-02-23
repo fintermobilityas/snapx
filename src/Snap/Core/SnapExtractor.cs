@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -97,7 +98,8 @@ namespace Snap.Core
 
                     if (sourcePathFilename == coreRunExeFilename)
                     {
-                        dstFilename = _snapFilesystem.PathCombine(_snapFilesystem.DirectoryGetParent(dstFilename), sourcePathFilename);
+                        dstFilename = _snapFilesystem.PathCombine(
+                            _snapFilesystem.DirectoryGetParent(destinationDirectory), sourcePathFilename);          
                     }
                 }
                 else

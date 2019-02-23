@@ -64,6 +64,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void)
+{
+    while(!pal_isdebuggerpresent())
+    {
+        pal_usleep(100);
+    }
+
+    return TRUE;
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL pinning_required, void** instance_out)
 {
     if (name_in == nullptr)
@@ -278,6 +288,73 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out)
     *pid_out = getpid();
 #endif
     return has_pid;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in,
+                                                          const int argc_in, char **argv_in,
+                                                          const int cmd_show_in /* Only applicable on Windows */,
+                                                          int *pid_out)
+{
+    if(filename_in == nullptr
+        || working_dir_in == nullptr
+        || argc_in <= 0)
+    {
+        return FALSE;
+    }
+
+#if PLATFORM_WINDOWS
+    auto cmd_line = std::string();
+    cmd_line += filename_in;
+
+    for(auto i = 0; i < argc_in; i++)
+    {
+        cmd_line += argv_in[i];
+    }
+
+    pal_utf16_string lp_command_line_utf16_string(cmd_line);
+    pal_utf16_string lp_current_directory_utf16_string(working_dir_in);
+
+    STARTUPINFO si = { 0 };
+    PROCESS_INFORMATION pi = { nullptr };
+
+    si.cb = sizeof si;
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = cmd_show;
+
+    const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
+        nullptr, nullptr, true,
+        0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
+
+    if (!create_process_result)
+    {
+        return -1;
+    }
+
+    AllowSetForegroundWindow(pi.dwProcessId);
+    WaitForInputIdle(pi.hProcess, 5 * 1000);
+
+    return TRUE;
+#elif PLATFORM_LINUX
+    PAL_UNUSED(cmd_show_in);
+
+    pid_t child_pid;
+    if (0 != chdir(working_dir_in))
+    {
+        return -1;
+    }
+
+    child_pid = fork();
+    if(child_pid == 0)
+    {
+        execvp(filename_in, argv_in);
+    } else {
+        *pid_out = child_pid;
+    }
+
+    return TRUE;
+#else
+    return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)

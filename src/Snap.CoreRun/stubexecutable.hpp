@@ -10,7 +10,7 @@ namespace snap
     class stubexecutable
     {
     public:
-        static int run(std::vector<std::string> arguments, const int cmd_show);
+        static int run(std::vector<std::string> arguments, int cmd_show);
     private:
 
         static std::string find_app_dir();

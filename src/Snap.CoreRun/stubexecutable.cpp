@@ -24,59 +24,26 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     }
 
     const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_C + app_name);
-#if PLATFORM_WINDOWS
+    arguments.insert(arguments.begin(), executable_full_path);
 
-    std::string cmd_line("\"");
-    cmd_line += executable_full_path;
-    cmd_line += "\" ";
+    const auto argc = static_cast<int>(arguments.size());
+    const auto argv = new char*[argc];
 
-    for (auto const& argument : arguments)
+    for (auto i = 0; i < argc; i++)
     {
-        cmd_line += argument;
-    }
-
-    pal_utf16_string lp_command_line_utf16_string(cmd_line);
-    pal_utf16_string lp_current_directory_utf16_string(working_dir);
-
-    STARTUPINFO si = { 0 };
-    PROCESS_INFORMATION pi = { nullptr };
-
-    si.cb = sizeof si;
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = cmd_show;
-
-    const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
-        nullptr, nullptr, true,
-        0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
-
-    if (!create_process_result)
-    {
-        return -1;
-    }
-
-    AllowSetForegroundWindow(pi.dwProcessId);
-    WaitForInputIdle(pi.hProcess, 5 * 1000);
-#elif PLATFORM_LINUX
-    const auto argv = new char*[arguments.size() + 1];
-    argv[0] = strdup(executable_full_path.c_str());
-    for (auto i = 1; i < arguments.size(); i++) {
         argv[i] = strdup(arguments[i].c_str());
     }
 
-    auto exitCode = -1;
-
-    if (0 != chdir(working_dir.c_str()))
+    auto process_pid = 0;
+    if(!pal_process_daemonize(executable_full_path.c_str(), working_dir.c_str(), argc, argv, cmd_show, &process_pid)
+        || process_pid <= 0)
     {
-        goto done;
+        delete[] argv;
+        return -1;
     }
 
-    exitCode = execvp(executable_full_path.c_str(), argv);
-
-done:
     delete[] argv;
-    return exitCode;
-#endif
-    return -1;
+    return 0;
 }
 
 std::string snap::stubexecutable::find_app_dir()
@@ -140,15 +107,14 @@ std::string snap::stubexecutable::find_latest_app_dir()
         }
 
         auto current_app_ver = std::string(directory_name).substr(4); // Skip 'app-'
-        std::string current_app_ver_s(current_app_ver.c_str());
 
         version::Semver200_version current_app_semver;
 
         try
         {
-            current_app_semver = version::Semver200_version(current_app_ver_s);
+            current_app_semver = version::Semver200_version(current_app_ver);
         }
-        catch (const version::Parse_error)
+        catch (const version::Parse_error&)
         {
             continue;
         }

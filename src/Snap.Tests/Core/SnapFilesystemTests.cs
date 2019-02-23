@@ -84,6 +84,15 @@ namespace Snap.Tests.Core
                 Assert.False(_snapFilesystem.DirectoryExists(deleteThisDirectory));
             }
         }
+
+        [Fact]
+        public void TestDirectoryGetParent()
+        {
+            using(var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory))
+            {
+                Assert.Equal(_baseFixture.WorkingDirectory, _snapFilesystem.DirectoryGetParent(tmpDir.WorkingDirectory));
+            }
+        }
         
     }
 }

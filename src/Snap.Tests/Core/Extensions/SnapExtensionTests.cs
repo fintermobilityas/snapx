@@ -543,44 +543,6 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void GetCoreRunExecutableFullPath()
-        {
-            var snapApp = _baseFixture.BuildSnapApp();
-            var workingDirectory = _baseFixture.WorkingDirectory;
-
-            var expectedStubExecutableName = $"{snapApp.Id}.exe";
-            var expectedStubExecutableFullPath = _fileSystem.PathCombine(workingDirectory, $"..\\{expectedStubExecutableName}");
-
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
-            {
-                var stubExecutableFullPath = workingDirectory.GetCoreRunExecutableFullPath(_fileSystem, _appReader, out var stubExecutableExeName);
-
-                Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
-                Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
-            }
-        }
-
-        [Fact]
-        public void GetCoreRunExecutableFullPath_Assembly_Location()
-        {
-            var snapApp = _baseFixture.BuildSnapApp();
-            var workingDirectory = _baseFixture.WorkingDirectory;
-
-            var expectedStubExecutableName = $"{snapApp.Id}.exe";
-            var expectedStubExecutableFullPath = _fileSystem.PathCombine(workingDirectory, $"..\\{expectedStubExecutableName}");
-
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
-            {
-                var stubExecutableFullPath = typeof(SnapExtensionTests).Assembly.GetCoreRunExecutableFullPath(_fileSystem, _appReader, out var stubExecutableExeName);
-
-                Assert.Equal(expectedStubExecutableFullPath, stubExecutableFullPath);
-                Assert.Equal(expectedStubExecutableName, stubExecutableExeName);
-            }
-        }
-
-        [Fact]
         public void TestGetSnapAppFromDirectory()
         {
             var appSpec = _baseFixture.BuildSnapApp();

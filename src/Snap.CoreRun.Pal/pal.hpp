@@ -53,6 +53,7 @@ typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
 // - Generic
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);
@@ -61,6 +62,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char* filename_in, char* icon_f
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, const int argc_in,
+                                                          char **argv_in,
+                                                          const int cmd_show_in /* Only applicable on Windows */,
+                                                          int *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
 
 // - Environment

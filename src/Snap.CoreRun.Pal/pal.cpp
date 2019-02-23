@@ -319,7 +319,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     si.cb = sizeof si;
     si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = cmd_show;
+    si.wShowWindow = cmd_show_in;
 
     const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
         nullptr, nullptr, true,

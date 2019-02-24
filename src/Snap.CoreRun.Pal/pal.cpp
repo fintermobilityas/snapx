@@ -804,6 +804,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
         while ((entry = readdir(dir)) != nullptr)
         {
             std::string absolute_path_s;
+            std::string entry_name(entry->d_name);
 
             switch (type)
             {
@@ -813,15 +814,15 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     continue;
                 }
 
-                if (pal_str_iequals(entry->d_name, ".") ||
-                    pal_str_iequals(entry->d_name, ".."))
+                if (pal_str_iequals(entry_name.c_str(), ".") ||
+                    pal_str_iequals(entry_name.c_str(), ".."))
                 {
                     continue;
                 }
 
                 absolute_path_s.assign(path_in);
                 absolute_path_s.append("/");
-                absolute_path_s.append(entry->d_name);
+                absolute_path_s.append(entry_name);
 
                 break;
             case 1:
@@ -829,27 +830,29 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                 {
                     // Regular file
                 case DT_REG:
-                    if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
+                    if (filter_extension_in != nullptr
+                        && FALSE == pal_str_endswith(entry_name.c_str(), filter_extension_in))
                     {
                         continue;
                     }
 
                     absolute_path_s.assign(path_in);
                     absolute_path_s.append("/");
-                    absolute_path_s.append(entry->d_name);
+                    absolute_path_s.append(entry_name.c_str());
                     break;
 
                     // Handle symlinks and file systems that do not support d_type
                 case DT_LNK:
                 case DT_UNKNOWN:
-                    if (filter_extension_in != nullptr && FALSE == pal_str_endswith(entry->d_name, filter_extension_in))
+                    if (filter_extension_in != nullptr
+                        && FALSE == pal_str_endswith(entry_name.c_str(), filter_extension_in))
                     {
                         continue;
                     }
 
                     absolute_path_s.assign(path_in);
                     absolute_path_s.append("/");
-                    absolute_path_s.append(entry->d_name);
+                    absolute_path_s.append(entry_name.c_str());
 
                     struct stat sb;
                     if (stat(absolute_path_s.c_str(), &sb) == -1)

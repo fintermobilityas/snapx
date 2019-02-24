@@ -118,7 +118,7 @@ namespace snapx
             var snapReleasesDownloadResult = await nugetService
                 .DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamPackageId(), 
                     snapReleasesPackageDirectory, pushFeed, cancellationToken, true);
-            if (!snapReleasesDownloadResult.IsMaybeASuccessfullDownloadSafe())
+            if (!snapReleasesDownloadResult.SuccessSafe())
             {
                 if (!logger.Prompt(   "y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
                                                 "Is this the first time you are publishing this application? " +
@@ -183,7 +183,7 @@ namespace snapx
 
                     var snapPreviousVersionDownloadResult = await nugetService
                         .DownloadAsync(snapAppMostRecentRelease.BuildPackageIdentity(), pushFeed, snapApps.Generic.Packages, cancellationToken);
-                    if (!snapPreviousVersionDownloadResult.IsMaybeASuccessfullDownloadSafe())
+                    if (!snapPreviousVersionDownloadResult.SuccessSafe())
                     {
                         return -1;
                     }
@@ -226,17 +226,24 @@ namespace snapx
 
             logger.Info($"Building full package: {snapApp.Version}.");
             var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());
+            long currentNupkgFilesize;
             using (var currentNupkgStream = await snapPack.BuildFullPackageAsync(snapPackageDetails, coreRunLib, logger, cancellationToken))
             {
+                currentNupkgFilesize = currentNupkgStream.Length;
+                
                 logger.Info($"Writing nupkg: {filesystem.PathGetFileName(currentNupkgAbsolutePath)}. Final size: {currentNupkgStream.Length.BytesAsHumanReadable()}.");
                 await filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default);
             }
 
-            pushPackages.Add(currentNupkgAbsolutePath);
-            snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel));
+            // Only upload the genisis full nupkg. 
+            if (mostRecentSnapApp == null)
+            {
+                pushPackages.Add(currentNupkgAbsolutePath);                
+            }
 
             if (mostRecentSnapApp == null)
             {                
+                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgFilesize, 0));
                 goto buildReleasePackage;
             }
 
@@ -248,6 +255,7 @@ namespace snapx
 
             var (deltaNupkgStream, deltaSnapApp) = await snapPack.BuildDeltaPackageAsync(mostRecentReleaseNupkgAbsolutePath,
                 currentNupkgAbsolutePath, deltaProgressSource, cancellationToken: cancellationToken);
+            var deltaNupkgFilesize = deltaNupkgStream.Length;
             var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, deltaSnapApp.BuildNugetLocalFilename());
             using (deltaNupkgStream)
             {
@@ -255,7 +263,8 @@ namespace snapx
                 await filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default);
             }
             
-            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel));
+            snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgFilesize, deltaNupkgFilesize));
+            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel, currentNupkgFilesize, deltaNupkgFilesize));
             pushPackages.Add(deltaNupkgAbsolutePath);
 
         buildReleasePackage:

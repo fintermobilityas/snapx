@@ -30,7 +30,6 @@ namespace Snap.Installer
         
         public static int Main(string[] args)
         {
-#if !SNAP_NUPKG
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
                 var process = System.Diagnostics.Process.GetCurrentProcess();
@@ -43,7 +42,6 @@ namespace Snap.Installer
 
                 Console.WriteLine("Debugger attached.");
             }
-#endif
 
             return MainImpl(args, LogLevel.Trace);
         }
@@ -177,7 +175,6 @@ namespace Snap.Installer
             container.Register<ISnapInstaller>(c => new SnapInstaller(
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapPack>(),
-                c.GetInstance<ISnapFilesystem>(),
                 c.GetInstance<ISnapOs>(),
                 c.GetInstance<ISnapEmbeddedResources>()
             ));
@@ -240,7 +237,6 @@ namespace Snap.Installer
             config.AddTarget("logfile", fileTarget);
             config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, fileTarget));
 
-            #if !SNAP_NUPKG
             if (System.Diagnostics.Debugger.IsAttached)
             {
                 var debugTarget = new DebuggerTarget
@@ -250,7 +246,6 @@ namespace Snap.Installer
                 config.AddTarget("debug", debugTarget);
                 config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, debugTarget));
             }
-            #endif
 
             LogManager.Configuration = config;
         }

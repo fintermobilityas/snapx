@@ -273,7 +273,7 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{currentChannel.Name}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildNugetFullFilename();
+            var actualPackageId = snapApp.BuildNugetFullLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
@@ -305,7 +305,7 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{currentChannel.Name}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildNugetDeltaFilename();
+            var actualPackageId = snapApp.BuildNugetDeltaLocalFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         

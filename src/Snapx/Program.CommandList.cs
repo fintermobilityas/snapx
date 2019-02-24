@@ -102,7 +102,7 @@ namespace snapx
                         await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamPackageId(),
                             filesystem.PathGetTempPath(), x.packageSource, cancellationToken, true),
                         retriesPerTask, delayInMilliseconds,true);
-                    downloadResults.Add((downloadResult.IsMaybeASuccessfullDownloadSafe(), downloadResult, x.snapApp.Id));
+                    downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
                 }
                 catch (Exception)
                 {

@@ -61,9 +61,9 @@ Codename:	cosmic";
         
 #if PLATFORM_UNIX
         [Fact]
-        public async Task TestGetProcessesAsync()
+        public void TestGetProcesses()
         {
-            var processes = await _snapOs.GetProcessesAsync(CancellationToken.None);
+            var processes = _snapOs.GetProcesses();
             Assert.NotEmpty(processes);
         }
 #endif

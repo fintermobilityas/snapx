@@ -31,9 +31,14 @@ namespace Snap.Core
 
             if (Current != null)
             {
+                if (ModeDetector.InUnitTestRunner())
+                {
+                    return;
+                }
+                
                 throw new Exception($"Expected {nameof(Current)} to equal null.");
             }
-            
+                        
             SnapOs = AnyOS.SnapOs.AnyOs;
 
             try

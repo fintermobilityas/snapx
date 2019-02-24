@@ -275,11 +275,11 @@ namespace Snap.AnyOS.Windows
             shortcut.IconPath = target;
             shortcut.IconIndex = 0;
 
-            logger?.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save, 2), "Couldn't write shortcut " + shortcut.ShortCutFile);
+            logger?.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save), "Couldn't write shortcut " + shortcut.ShortCutFile);
             logger?.Info("Finished shortcut successfully");
         }
         
-        public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)
+        public List<SnapOsProcess> GetProcesses()
         {
             var processes = EnumerateProcesses().Select(x =>
             {
@@ -289,7 +289,7 @@ namespace Snap.AnyOS.Windows
                     !processNameValid ? null : Filesystem.PathGetFileName(x.processName));
             }).ToList();
 
-            return Task.FromResult(processes);
+            return processes;
         }
 
         public bool EnsureConsole()

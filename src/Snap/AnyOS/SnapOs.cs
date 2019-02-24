@@ -22,6 +22,7 @@ namespace Snap.AnyOS
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapOs
     {
         ISnapOsTaskbar Taskbar { get; }
@@ -33,9 +34,9 @@ namespace Snap.AnyOS
         Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
             CancellationToken cancellationToken = default);
         bool EnsureConsole();
-        Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
-        Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync(string workingDirectory, CancellationToken cancellationToken);
-        Task KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken);
+        List<SnapOsProcess> GetProcesses();
+        List<SnapOsProcess> GetProcessesRunningInDirectory(string workingDirectory, CancellationToken cancellationToken);
+        void KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken);
         void Kill(int pid);
         void Kill(SnapOsProcess process);
     }
@@ -51,7 +52,7 @@ namespace Snap.AnyOS
         Task CreateShortcutsForExecutableAsync([NotNull] SnapOsShortcutDescription shortcutDescription, ILog logger = null,
             CancellationToken cancellationToken = default);
         bool EnsureConsole();
-        Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken);
+        List<SnapOsProcess> GetProcesses();
     }
 
     internal sealed class SnapOs : ISnapOs
@@ -103,26 +104,26 @@ namespace Snap.AnyOS
             return OsImpl.EnsureConsole();
         }
 
-        public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)
+        public List<SnapOsProcess> GetProcesses()
         {
-            return OsImpl.GetProcessesAsync(cancellationToken);
+            return OsImpl.GetProcesses();
         }
 
-        public async Task<List<SnapOsProcess>> GetProcessesRunningInDirectoryAsync([NotNull] string workingDirectory,
+        public List<SnapOsProcess> GetProcessesRunningInDirectory([NotNull] string workingDirectory,
             CancellationToken cancellationToken)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            var processes = await GetProcessesAsync(cancellationToken);
+            var processes = GetProcesses();
             
             return processes.Where(x => x.Pid > 0 && x.WorkingDirectory != null && x.WorkingDirectory.StartsWith(workingDirectory, 
                                                  DistroType == SnapOsDistroType.Windows ? 
                                                      StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
         }
 
-        public async Task KillAllRunningInsideDirectory(string workingDirectory, CancellationToken cancellationToken)
+        public void KillAllRunningInsideDirectory(string workingDirectory, CancellationToken cancellationToken)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            var processes = await GetProcessesRunningInDirectoryAsync(workingDirectory, cancellationToken);
+            var processes = GetProcessesRunningInDirectory(workingDirectory, cancellationToken);
             foreach (var process in processes)
             {
                 Kill(process);

@@ -97,54 +97,26 @@ namespace Snap.Tests.NuGet
             Assert.Null(v450Release);
         }
 
-        [Fact]
-        public async Task TestDownloadAsync()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestDownloadAsync(bool noCache)
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();
-
-            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
+            var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
+            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages");
+            
+            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,packagesDirectory, CancellationToken.None, noCache);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
             Assert.True(downloadResourceResult.PackageStream.CanRead);
             Assert.Equal(63411,downloadResourceResult.PackageStream.Length);
-            Assert.NotNull(downloadResourceResult.PackageReader.NuspecReader);
 
-            var upstreamPackageIdentity = downloadResourceResult.PackageReader.NuspecReader.GetIdentity();
-            Assert.Equal(packageIdentity, upstreamPackageIdentity);
+            Assert.Null(downloadResourceResult.PackageReader);
+           
+            var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, localFilename);
+            Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
         }
-
-        [Fact(Skip = "Todo: Mock me. Only for works for YouPark employees right now")]
-        public async Task TestPushAsync()
-        {
-            var nuGetMachineWidePackageSources = new NuGetMachineWidePackageSources(_snapFilesystem, _baseFixture.WorkingDirectory);
-            var youparkAppsPackageSource = nuGetMachineWidePackageSources.Items.Single(x => x.Name == "youpark-apps");
-
-            var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var testDllReflector = new CecilAssemblyReflector(testDllAssemblyDefinition);
-            testDllReflector.SetSnapAware();
-
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
-            {
-                { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
-                { $"subdirectory\\{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
-            };
-
-            var snapApp = _baseFixture.BuildSnapApp();
-            
-            var (nupkgMemoryStream, _) = await _baseFixture.BuildInMemoryPackageAsync(snapApp, _coreRunLibMock.Object, 
-                _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
-
-            using (nupkgMemoryStream)
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            {
-                var nupkgFilename = Path.Combine(tmpDir.WorkingDirectory, "test.nupkg");
-
-                await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgFilename, CancellationToken.None);
-
-                await _nugetService.PushAsync(nupkgFilename, nuGetMachineWidePackageSources, youparkAppsPackageSource);
-            }
-        }
-
     }
 }

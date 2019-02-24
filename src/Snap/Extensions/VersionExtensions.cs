@@ -8,21 +8,24 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class VersionExtensions
     {
-        public static SemanticVersion BumpMajor(this SemanticVersion version)
+        public static SemanticVersion BumpMajor(this SemanticVersion version, int inc = 1)
         {
-            return new SemanticVersion(version.Major + 1, version.Minor, version.Patch, version.ReleaseLabels,
+            if (inc <= 0) throw new ArgumentOutOfRangeException(nameof(inc));
+            return new SemanticVersion(version.Major + inc, version.Minor, version.Patch, version.ReleaseLabels,
                 version.Metadata);
         }
 
-        public static SemanticVersion BumpMinor(this SemanticVersion version)
+        public static SemanticVersion BumpMinor(this SemanticVersion version, int inc = 1)
         {
-            return new SemanticVersion(version.Major, version.Minor + 1, version.Patch, version.ReleaseLabels,
+            if (inc <= 0) throw new ArgumentOutOfRangeException(nameof(inc));
+            return new SemanticVersion(version.Major, version.Minor + inc, version.Patch, version.ReleaseLabels,
                 version.Metadata);
         }
 
-        public static SemanticVersion BumpPatch(this SemanticVersion version)
+        public static SemanticVersion BumpPatch(this SemanticVersion version, int inc = 1)
         {
-            return new SemanticVersion(version.Major, version.Minor, version.Patch + 1, version.ReleaseLabels,
+            if (inc <= 0) throw new ArgumentOutOfRangeException(nameof(inc));
+            return new SemanticVersion(version.Major, version.Minor, version.Patch + inc, version.ReleaseLabels,
                 version.Metadata);
         }
 

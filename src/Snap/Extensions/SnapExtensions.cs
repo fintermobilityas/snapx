@@ -22,7 +22,6 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class SnapExtensions
     {
-        static readonly ILog Logger = LogProvider.GetCurrentClassLogger();
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -140,14 +139,14 @@ namespace Snap.Extensions
             return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
         }
         
-        internal static string BuildNugetFullFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetFullLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
             return $"{snapApp.Id}_full_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
         }
 
-        internal static string BuildNugetDeltaFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetDeltaLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();

@@ -36,6 +36,7 @@ namespace Snap.Core
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
         IEnumerable<string> DirectoryGetAllFiles(string rootPath);
+        void FileWrite(Stream srcStream, string destFilename, bool overwrite = true);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
         Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
@@ -307,6 +308,17 @@ namespace Snap.Core
         {
             if (rootPath == null) throw new ArgumentNullException(nameof(rootPath));
             return Directory.EnumerateFiles(rootPath, "*", SearchOption.TopDirectoryOnly);
+        }
+
+        public void FileWrite([NotNull] Stream srcStream, [NotNull] string destFilename, bool overwrite = true)
+        {
+            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
+            if (destFilename == null) throw new ArgumentNullException(nameof(destFilename));
+
+            using (var dstStream = FileWrite(destFilename, overwrite))
+            {
+                srcStream.CopyTo(dstStream);
+            }
         }
 
         public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true)

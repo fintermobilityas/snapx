@@ -5,6 +5,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.Extensions;
+using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {
@@ -19,7 +20,9 @@ namespace Snap.Core.Models
         public string ChannelName { get; set; }
         public SnapTarget Target { get; set; }
         public string FullFilename { get; set; }
+        public long FullFilesize { get; set; }
         public string DeltaFilename { get; set; }
+        public long DeltaFilesize { get; set; }
         public bool Delta { get; set; }
 
         [UsedImplicitly]
@@ -37,30 +40,39 @@ namespace Snap.Core.Models
             ChannelName = release.ChannelName;
             Target = new SnapTarget(release.Target);
             FullFilename = release.FullFilename;
+            FullFilesize = release.FullFilesize;
             DeltaFilename = release.DeltaFilename;
+            DeltaFilesize = release.DeltaFilesize;
             Delta = release.Delta;
         }
         
-        public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel) : this(new SnapRelease
+        public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel, long fullFilesize, long deltaFileSize) : this(new SnapRelease
         {
             Id = snapApp.Id,
             Version = snapApp.Version,
             UpstreamId = snapApp.BuildNugetUpstreamPackageId(),
             ChannelName = channel.Name,
             Target = snapApp.Target,
-            FullFilename = snapApp.BuildNugetFullFilename(),
-            DeltaFilename = snapApp.BuildNugetDeltaFilename(),
+            FullFilename = snapApp.BuildNugetFullLocalFilename(),
+            FullFilesize = fullFilesize,
+            DeltaFilename = snapApp.BuildNugetDeltaLocalFilename(),
+            DeltaFilesize = deltaFileSize,
             Delta = snapApp.Delta
         })
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (channel == null) throw new ArgumentNullException(nameof(channel));
+            if (fullFilesize < 0) throw new ArgumentOutOfRangeException(nameof(fullFilesize), fullFilesize, "Must be greater than or equal to zero");
+            if (deltaFileSize < 0) throw new ArgumentOutOfRangeException(nameof(deltaFileSize), deltaFileSize, "Must be greater than or equal to zero");
+            if(Delta && deltaFileSize <= 0) throw new ArgumentOutOfRangeException(nameof(deltaFileSize), deltaFileSize, $"Must be greater than zero when delta release");
         }
     }
     
     public class SnapReleases
     {
         public List<SnapRelease> Apps { get; set; }
+        [YamlIgnore]
+        public SemanticVersion Version => new SemanticVersion(Apps.Count, 0, 0);
 
         [UsedImplicitly]
         public SnapReleases()

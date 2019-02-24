@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,11 +22,43 @@ namespace Snap.Extensions
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             return new PackageIdentity(snapRelease.UpstreamId, snapRelease.Version.ToNuGetVersion());
         }
-        
-        internal static bool IsMaybeASuccessfullDownloadSafe(this DownloadResourceResult downloadResourceResult)
+
+        internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapApp snapApp)
         {
-            return downloadResourceResult != null && (downloadResourceResult.Status == DownloadResourceResultStatus.Available ||
-                                                      downloadResourceResult.Status == DownloadResourceResultStatus.AvailableWithoutStream);
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));            
+            return new PackageIdentity(snapApp.BuildNugetUpstreamPackageId(), snapApp.Version.ToNuGetVersion());
+        }
+
+        internal static NuGetPackageSearchMedatadata BuildPackageSearchMedatadata([NotNull] this SnapApp snapApp,
+            [NotNull] INuGetPackageSources nugetSources)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (nugetSources == null) throw new ArgumentNullException(nameof(nugetSources));
+
+            var channel = snapApp.Channels.Single(x => x.Current);
+            var updateFeed = (SnapNugetFeed) channel.UpdateFeed;
+            var packageSource = nugetSources.Items.Single(x => x.Name == updateFeed.Name && x.SourceUri == updateFeed.Source);
+            
+            return new NuGetPackageSearchMedatadata(snapApp.BuildPackageIdentity(), packageSource, DateTimeOffset.Now, new List<PackageDependency>());
+        }
+               
+        internal static DownloadResourceResult BuildDownloadResourceResult([NotNull] this SnapApp snapApp, 
+            [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nugetSources)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (packageStream == null) throw new ArgumentNullException(nameof(packageStream));
+            if (nugetSources == null) throw new ArgumentNullException(nameof(nugetSources));
+
+            var channel = snapApp.Channels.Single(x => x.Current);
+            var updateFeed = (SnapNugetFeed) channel.UpdateFeed;
+            var packageSource = nugetSources.Items.Single(x => x.Name == updateFeed.Name && x.SourceUri == updateFeed.Source);
+
+            return new DownloadResourceResult(new MemoryStream(packageStream.ToArray()), new PackageArchiveReader(packageStream), packageSource.Name);
+        }
+        
+        internal static bool SuccessSafe(this DownloadResourceResult downloadResourceResult)
+        {
+            return downloadResourceResult != null && downloadResourceResult.Status == DownloadResourceResultStatus.Available;
         }
         
         public static IPackageFile GetPackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)

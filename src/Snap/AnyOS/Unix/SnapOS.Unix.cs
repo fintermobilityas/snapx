@@ -128,10 +128,10 @@ namespace Snap.AnyOS.Unix
             return false;
         }
 
-        public Task<List<SnapOsProcess>> GetProcessesAsync(CancellationToken cancellationToken)
+        public List<SnapOsProcess> GetProcesses()
         {
             var processes = Process.GetProcesses().Select(process => OsProcessManager.Build(process.Id, process.ProcessName)).ToList();
-            return Task.FromResult(processes);
+            return processes;
         }
 
         public (string distributorId, string description, string release, string codeName) ParseLsbRelease(string text)

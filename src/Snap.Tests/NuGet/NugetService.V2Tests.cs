@@ -8,17 +8,20 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Logging;
 using Snap.NuGet;
+using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snap.Tests.NuGet
 {
-    public class NugetServiceV2Tests
+    public class NugetServiceV2Tests : IClassFixture<BaseFixture>
     {
+        readonly BaseFixture _baseFixture;
         readonly NugetService _nugetService;
         readonly ISnapFilesystem _snapFilesystem;
 
-        public NugetServiceV2Tests()
+        public NugetServiceV2Tests(BaseFixture baseFixture)
         {
+            _baseFixture = baseFixture;
             _snapFilesystem = new SnapFilesystem();
             _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
         }
@@ -77,22 +80,27 @@ namespace Snap.Tests.NuGet
             var v450Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
             Assert.Null(v450Release);
         }
-        
-        [Fact]
-        public async Task TestDownloadAsync()
+                
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestDownloadAsync(bool noCache)
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
-
-            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource, string.Empty, CancellationToken.None);
+            var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
+            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages");
+            
+            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,packagesDirectory, CancellationToken.None, noCache);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
             Assert.True(downloadResourceResult.PackageStream.CanRead);
             Assert.Equal(63411,downloadResourceResult.PackageStream.Length);
-            Assert.NotNull(downloadResourceResult.PackageReader.NuspecReader);
 
-            var upstreamPackageIdentity = downloadResourceResult.PackageReader.NuspecReader.GetIdentity();
-            Assert.Equal(packageIdentity, upstreamPackageIdentity);
+            Assert.Null(downloadResourceResult.PackageReader);
+           
+            var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, localFilename);
+            Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
         }
     }
 }

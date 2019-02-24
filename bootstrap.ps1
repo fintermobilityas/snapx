@@ -409,8 +409,6 @@ function Build-Snap-Installer {
         "clean $SnapInstallerNetSrcDir"
     )
 
-    Write-Output-Header-Warn "Snap.Installer is published in debug mode. Does anyone know why the dotnet toolset is unable to publish this particular project in Release mode? :("
-
     Command-Exec $CommandDotnet @(
         ("publish {0}" -f (Join-Path $SnapInstallerNetSrcDir Snap.Installer.csproj)),
         "/p:ShowLinkerSizeComparison=true",

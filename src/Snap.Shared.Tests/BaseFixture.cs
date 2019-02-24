@@ -268,7 +268,7 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryPackageAsync(
+        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryFullPackageAsync(
             [NotNull] SnapApp snapApp, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapFilesystem filesystem, 
             [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)

@@ -35,7 +35,6 @@ namespace snapx
 
         internal static int Main(string[] args)
         {
-            #if !SNAP_NUPKG
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
                 var process = System.Diagnostics.Process.GetCurrentProcess();
@@ -48,7 +47,6 @@ namespace snapx
 
                 Console.WriteLine("Debugger attached.");
             }
-            #endif
             
             try
             {
@@ -119,7 +117,7 @@ namespace snapx
             var snapAppWriter = new SnapAppWriter();
             var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
-            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs.Filesystem, snapOs, snapEmbeddedResources);
+            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));

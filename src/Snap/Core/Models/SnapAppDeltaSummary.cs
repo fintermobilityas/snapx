@@ -76,9 +76,9 @@ namespace Snap.Core.Models
         {
             if (deltaSummary == null) throw new ArgumentNullException(nameof(deltaSummary));
 
-            FullNupkgFilename = deltaSummary.CurrentNupkgFilename;
-            FullNupkgSha512Checksum = deltaSummary.CurrentNupkgSha512Checksum;
-            FullNupkgFileChecksums = deltaSummary.CurrentNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
+            FullNupkgFilename = deltaSummary.PreviousNupkgFilename;
+            FullNupkgSha512Checksum = deltaSummary.PreviousNupkgSha512Checksum;
+            FullNupkgFileChecksums = deltaSummary.PreviousNupkgFileChecksums.Select(x => new SnapAppFileDeltaChecksum(x)).ToList();
 
             New.AddRange(deltaSummary.New.Select(x => x.TargetPath));
             Modified.AddRange(deltaSummary.Modified.Select(x => x.TargetPath));

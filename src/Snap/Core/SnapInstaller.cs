@@ -46,16 +46,14 @@ namespace Snap.Core
     {        
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapPack _snapPack;
-        readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapOs _snapOs;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
-        public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack, [NotNull] ISnapFilesystem snapFilesystem,
+        public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack,
             [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
         {
             _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
             _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
@@ -65,6 +63,13 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            
+            if (!_snapOs.Filesystem.FileExists(nupkgAbsoluteFilename))
+            {
+                logger?.Error($"Unable to find nupkg: {nupkgAbsoluteFilename}");
+                return null;
+            }
+
             using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
             {                
                 return await UpdateAsync(nupkgAbsoluteFilename, baseDirectory, asyncPackageCoreReader, 
@@ -79,8 +84,12 @@ namespace Snap.Core
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
 
-            // NB! Progress source values is chosen at random in order to indicate some kind of "progress" to the end user.
-
+            if (!_snapOs.Filesystem.FileExists(nupkgAbsoluteFilename))
+            {
+                logger?.Error($"Unable to find nupkg: {nupkgAbsoluteFilename}");
+                return null;
+            }
+            
             snapProgressSource?.Raise(0);
             logger?.Debug("Attempting to get snap app details from nupkg");
             var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
@@ -89,39 +98,39 @@ namespace Snap.Core
                                   $"Version: {snapApp.Version}. ");
 
             var appDirectory = GetApplicationDirectory(baseDirectory, snapApp.Version);
-            if (!_snapFilesystem.DirectoryExists(baseDirectory))
+            if (!_snapOs.Filesystem.DirectoryExists(baseDirectory))
             {
                 logger?.Error($"App directory does not exist: {appDirectory}");
                 return null;
             }
 
             snapProgressSource?.Raise(10);
-            if (_snapFilesystem.DirectoryExists(appDirectory))
+            if (_snapOs.Filesystem.DirectoryExists(appDirectory))
             {
-                await _snapOs.KillAllRunningInsideDirectory(appDirectory, cancellationToken);
+                _snapOs.KillAllRunningInsideDirectory(appDirectory, cancellationToken);
                 logger?.Info($"Deleting existing app directory: {appDirectory}");
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(appDirectory);
+                await _snapOs.Filesystem.DirectoryDeleteOrJustGiveUpAsync(appDirectory);
             }
             else
             {
                 logger?.Info($"Creating app directory: {appDirectory}");
-                _snapFilesystem.DirectoryCreateIfNotExists(appDirectory);
+                _snapOs.Filesystem.DirectoryCreateIfNotExists(appDirectory);
             }
 
             var packagesDirectory = GetPackagesDirectory(baseDirectory);
-            if (!_snapFilesystem.DirectoryExists(packagesDirectory))
+            if (!_snapOs.Filesystem.DirectoryExists(packagesDirectory))
             {
                 logger?.Error($"Packages directory does not exist: {packagesDirectory}");
                 return null;
             }
 
             snapProgressSource?.Raise(20);
-            var nupkgFilename = _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename);
-            var dstNupkgFilename = _snapFilesystem.PathCombine(packagesDirectory, nupkgFilename);
-            if (!_snapFilesystem.FileExists(dstNupkgFilename))
+            var nupkgFilename = _snapOs.Filesystem.PathGetFileName(nupkgAbsoluteFilename);
+            var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, nupkgFilename);
+            if (!_snapOs.Filesystem.FileExists(dstNupkgFilename))
             {
                 logger?.Info($"Copying nupkg to packages folder: {dstNupkgFilename}");
-                await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
+                await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
             }
 
             snapProgressSource?.Raise(30);
@@ -152,6 +161,13 @@ namespace Snap.Core
         {
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            
+            if (!_snapOs.Filesystem.FileExists(nupkgAbsoluteFilename))
+            {
+                logger?.Error($"Unable to find nupkg: {nupkgAbsoluteFilename}");
+                return null;
+            }
+
             using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
             {
                 return await InstallAsync(nupkgAbsoluteFilename, baseDirectory, asyncPackageCoreReader, snapProgressSource, logger, cancellationToken);
@@ -166,6 +182,12 @@ namespace Snap.Core
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             
             snapProgressSource?.Raise(0);
+
+            if (!_snapOs.Filesystem.FileExists(nupkgAbsoluteFilename))
+            {
+                logger?.Error($"Unable to find nupkg: {nupkgAbsoluteFilename}");
+                return null;
+            }
        
             logger?.Debug("Attempting to get snap app details from nupkg");
             var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
@@ -191,31 +213,31 @@ namespace Snap.Core
             }
             
             snapProgressSource?.Raise(10);
-            if (_snapFilesystem.DirectoryExists(baseDirectory))
+            if (_snapOs.Filesystem.DirectoryExists(baseDirectory))
             {
-                await _snapOs.KillAllRunningInsideDirectory(baseDirectory, cancellationToken);
+                _snapOs.KillAllRunningInsideDirectory(baseDirectory, cancellationToken);
                 logger?.Info($"Deleting existing base directory: {baseDirectory}");
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(baseDirectory, snapApp.PersistentAssets);
+                await _snapOs.Filesystem.DirectoryDeleteOrJustGiveUpAsync(baseDirectory, snapApp.PersistentAssets);
             }
 
             snapProgressSource?.Raise(20);
             logger?.Info($"Creating base directory: {baseDirectory}");
-            _snapFilesystem.DirectoryCreate(baseDirectory);
+            _snapOs.Filesystem.DirectoryCreate(baseDirectory);
 
             snapProgressSource?.Raise(30);
             var packagesDirectory = GetPackagesDirectory(baseDirectory);
             logger?.Info($"Creating packages directory: {packagesDirectory}");
-            _snapFilesystem.DirectoryCreate(packagesDirectory);
+            _snapOs.Filesystem.DirectoryCreate(packagesDirectory);
 
             snapProgressSource?.Raise(40);
-            var dstNupkgFilename = _snapFilesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
+            var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
             logger?.Info($"Copying nupkg to {dstNupkgFilename}");
-            await _snapFilesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
+            await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
 
             snapProgressSource?.Raise(50);
             var appDirectory = GetApplicationDirectory(baseDirectory, snapApp.Version);
             logger?.Info($"Creating app directory: {appDirectory}");
-            _snapFilesystem.DirectoryCreate(appDirectory);
+            _snapOs.Filesystem.DirectoryCreate(appDirectory);
 
             snapProgressSource?.Raise(60);
             logger?.Info($"Extracting nupkg to app directory: {appDirectory}");
@@ -245,12 +267,12 @@ namespace Snap.Core
         {
             var chmod = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-            var coreRunExeAbsolutePath = _snapFilesystem
+            var coreRunExeAbsolutePath = _snapOs.Filesystem
                 .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
-            var mainExeAbsolutePath = _snapFilesystem
+            var mainExeAbsolutePath = _snapOs.Filesystem
                 .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));            
             var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ? 
-                _snapFilesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
+                _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
             
             logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
             logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
@@ -270,7 +292,7 @@ namespace Snap.Core
                 await ChmodAsync(mainExeAbsolutePath);
             }
 
-            var coreRunExeFilename = _snapFilesystem.PathGetFileName(coreRunExeAbsolutePath);
+            var coreRunExeFilename = _snapOs.Filesystem.PathGetFileName(coreRunExeAbsolutePath);
 
             if (!snapApp.Shortcuts.Any())
             {
@@ -337,13 +359,13 @@ namespace Snap.Core
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (version == null) throw new ArgumentNullException(nameof(version));
-            return _snapFilesystem.PathCombine(baseDirectory, "app-" + version);
+            return _snapOs.Filesystem.PathCombine(baseDirectory, "app-" + version);
         }
 
         string GetPackagesDirectory([NotNull] string baseDirectory)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
-            return _snapFilesystem.PathCombine(baseDirectory, "packages");
+            return _snapOs.Filesystem.PathCombine(baseDirectory, "packages");
         }
 
     }

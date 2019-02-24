@@ -404,13 +404,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environmen
 
     return TRUE;
 #else
-    auto value = std::getenv(environment_variable_in);
+    const auto value = ::getenv(environment_variable_in);
     if (value == nullptr)
     {
         return FALSE;
     }
 
-    *environment_variable_value_out = std::getenv(environment_variable_in);
+    *environment_variable_value_out = strdup(value);
     return TRUE;
 #endif
 }
@@ -423,8 +423,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char * envir
         return FALSE;
     }
 
-    auto true_or_false = pal_str_iequals(environment_variable_value_out, "1") == 0
-        || pal_str_iequals(environment_variable_value_out, "true") == 0 ? TRUE : FALSE;
+    auto true_or_false = FALSE;
+    if (pal_str_iequals(environment_variable_value_out, "1")
+        || pal_str_iequals(environment_variable_value_out, "true"))
+    {
+        true_or_false = TRUE;
+    }
 
     delete environment_variable_value_out;
 
@@ -1330,10 +1334,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
     std::string str1(lhs);
     std::string str2(rhs);
 
-    const auto iequals = str1.size() == str2.size()
-        && std::equal(str1.begin(), str1.end(), str2.begin(), [](char & c1, char & c2) {
-        return c1 == c2 || std::toupper(c1) == std::toupper(c2);
-            });
+    auto equals = ((str1.size() == str2.size()) && std::equal(str1.begin(), str1.end(), str2.begin(), [](char & c1, char & c2){
+        return (c1 == c2 || std::toupper(c1) == std::toupper(c2));
+    })) ? TRUE : FALSE;
 
-    return iequals ? TRUE : FALSE;
+    return equals;
 }

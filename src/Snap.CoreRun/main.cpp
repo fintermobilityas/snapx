@@ -32,11 +32,26 @@ inline bool command_wait_for_pid(int pid)
     return pal_process_kill(pid) == TRUE;
 }
 
+inline void snapx_maybe_wait_for_debugger()
+{
+    if(!pal_env_get_variable_bool("SNAPX_WAIT_DEBUGGER"))
+    {
+        return;
+    }
+
+    std::cout << "Waiting for debugger to attach..." << std::endl;
+    pal_wait_for_debugger();
+    std::cout << "Debugger attached." << std::endl;
+}
+
 int main_impl(int argc, char **argv, const int cmd_show_windows)
 {
-    if(pal_is_elevated()) {
+    if(pal_is_elevated())
+    {
         return -1;
     }
+
+    snapx_maybe_wait_for_debugger();
 
     const auto this_executable_full_path = std::string(argv[0]);
 

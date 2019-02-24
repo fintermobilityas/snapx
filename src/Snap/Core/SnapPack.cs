@@ -694,8 +694,8 @@ namespace Snap.Core
             {
                 Id = snapApp.BuildNugetReleasesUpstreamPackageId(),
                 Version = releases.Version.ToNuGetVersion(),
-                Description = $"This nupkg contains all releases for {snapRelease.Id}",
-                Authors = {"Unknown"}
+                Description = $"Snapx application database. This file contains release details for application: {snapApp.Id}. Channels: {string.Join(",", snapApp.Channels.Select(x => x.Name))}.",
+                Authors = {"Snapx"}
             };
 
             foreach (var release in releases.Apps)

@@ -632,8 +632,6 @@ namespace Snap.Core
 
             progressSource?.Raise(70);
 
-            EnsureCoreRunSupportsThisPlatform();
-
             await AddChecksumManifestAsync(packageBuilder, cancellationToken);
 
             progressSource?.Raise(80);

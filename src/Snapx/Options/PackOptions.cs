@@ -15,5 +15,7 @@ namespace snapx.Options
         public string Rid { get; [UsedImplicitly] set; }
         [Option('v', "version", HelpText = "New application version", Required = true)]
         public string Version { get; [UsedImplicitly] set; }
+        [Option('y', "yes", HelpText = "Answer yes to all prompts")]
+        public bool YesToAllPrompts { get; [UsedImplicitly] set; }
     }
 }

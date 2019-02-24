@@ -11,7 +11,7 @@ namespace Snap.Extensions
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class LoggerExtensions
     {
-        public static bool Prompt([NotNull] this ILog logger, [NotNull] string verbsStr, [NotNull] string question, char delimeter = '|', bool warn = false)
+        public static bool Prompt([NotNull] this ILog logger, [NotNull] string verbsStr, [NotNull] string question, char delimeter = '|', bool warn = false, bool infoOnly = false)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (verbsStr == null) throw new ArgumentNullException(nameof(verbsStr));
@@ -26,6 +26,11 @@ namespace Snap.Extensions
             if (warn)
             {
                 Console.ForegroundColor = foregroundColor;
+            }
+            if (infoOnly)
+            {
+                Console.WriteLine("y");
+                return true;
             }
             var verbs = verbsStr.Split(delimeter).ToList();
             var value = Console.ReadLine();

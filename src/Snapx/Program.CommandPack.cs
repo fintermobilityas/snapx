@@ -120,9 +120,9 @@ namespace snapx
                     snapReleasesPackageDirectory, pushFeed, cancellationToken, true);
             if (!snapReleasesDownloadResult.SuccessSafe())
             {
-                if (!logger.Prompt(   "y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
+                if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
                                                 "Is this the first time you are publishing this application? " +
-                                                "NB! The package may not yet be visible to due to upstream caching. [y/n]")
+                                                "NB! The package may not yet be visible to due to upstream caching. [y/n]", infoOnly: packOptions.YesToAllPrompts)
                 )
                 {
                     return -1;
@@ -201,7 +201,7 @@ namespace snapx
                 else
                 {
                     if (!logger.Prompt("y|yes","A previous release for current application does not exist. If you have recently published a new version " +
-                                        "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]")
+                                        "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]", infoOnly: packOptions.YesToAllPrompts)
                     )
                     {
                         return -1;
@@ -298,7 +298,7 @@ namespace snapx
 
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
-                await PushPackagesAsync(logger, filesystem, nugetService, snapApp, snapAppChannel, pushPackages, cancellationToken);
+                await PushPackagesAsync(packOptions, logger, filesystem, nugetService, snapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -451,10 +451,11 @@ namespace snapx
             }
         }
 
-        static async Task PushPackagesAsync([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
+        static async Task PushPackagesAsync([NotNull] PackOptions packOptions, [NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
             [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, 
             [NotNull] List<string> packages, CancellationToken cancellationToken)
         {
+            if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
@@ -472,7 +473,7 @@ namespace snapx
 
             if (snapChannel.UpdateFeed.HasCredentials())
             {
-                if (!logger.Prompt("y|yes","Update feed contains credentials. Do you want to continue? [y|n]"))
+                if (!logger.Prompt("y|yes","Update feed contains credentials. Do you want to continue? [y|n]", infoOnly: packOptions.YesToAllPrompts))
                 {
                     logger.Error("Publish aborted.");
                     return;
@@ -486,7 +487,7 @@ namespace snapx
             logger.Info($"Upstream name: {snapChannel.PushFeed.Name}");
             logger.Info($"Upstream url: {snapChannel.PushFeed.Source}");
 
-            if (!logger.Prompt("y|yes","Do you want to push this version upstream? [y|n]"))
+            if (!logger.Prompt("y|yes","Do you want to push this version upstream? [y|n]", infoOnly: packOptions.YesToAllPrompts))
             {
                 logger.Error("Publish aborted.");
                 return;

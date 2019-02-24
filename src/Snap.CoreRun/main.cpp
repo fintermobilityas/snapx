@@ -117,13 +117,6 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
         ++argv_index;
     }
 
-    run:
-    char* app_name = nullptr;
-    if (!pal_fs_get_own_executable_name(&app_name))
-    {
-        return -1;
-    }
-
     return snap::stubexecutable::run(stubexecutable_arguments, cmd_show_windows);
 }
 

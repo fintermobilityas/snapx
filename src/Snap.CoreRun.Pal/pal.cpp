@@ -814,8 +814,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     continue;
                 }
 
-                if (pal_str_iequals(entry_name.c_str(), ".") ||
-                    pal_str_iequals(entry_name.c_str(), ".."))
+                if (entry_name == "." || entry_name == "..")
                 {
                     continue;
                 }
@@ -838,7 +837,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 
                     absolute_path_s.assign(path_in);
                     absolute_path_s.append("/");
-                    absolute_path_s.append(entry_name.c_str());
+                    absolute_path_s.append(entry_name);
                     break;
 
                     // Handle symlinks and file systems that do not support d_type
@@ -852,17 +851,17 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 
                     absolute_path_s.assign(path_in);
                     absolute_path_s.append("/");
-                    absolute_path_s.append(entry_name.c_str());
+                    absolute_path_s.append(entry_name);
 
-                    struct stat sb;
-                    if (stat(absolute_path_s.c_str(), &sb) == -1)
+                    struct stat file_stat;
+                    if (stat(absolute_path_s.c_str(), &file_stat) == -1)
                     {
                         absolute_path_s.clear();
                         continue;
                     }
 
                     // Must be a regular file.
-                    if (!S_ISREG(sb.st_mode))
+                    if (!S_ISREG(file_stat.st_mode))
                     {
                         absolute_path_s.clear();
                         continue;

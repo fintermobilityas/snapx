@@ -9,6 +9,16 @@
 
 using std::string;
 
+inline std::string join(const std::vector<std::string>& strings, const char* delimiter = " ")
+{
+    std::string str = std::string();
+    for (auto const& s : strings)
+    {
+        str += s + delimiter;
+    }
+    return str;
+}
+
 int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
 {
     auto app_name(find_own_executable_name());
@@ -23,11 +33,16 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         return -1;
     }
 
+    std::cout << "Working directory: " << working_dir << std::endl;
+
     const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_C + app_name);
     arguments.insert(arguments.begin(), executable_full_path);
 
     const auto argc = static_cast<int>(arguments.size());
     const auto argv = new char*[argc];
+
+    std::cout << "Executable: " << executable_full_path << std::endl;
+    std::cout << "Arguments: " << join(arguments, " ") << std::endl;
 
     for (auto i = 0; i < argc; i++)
     {

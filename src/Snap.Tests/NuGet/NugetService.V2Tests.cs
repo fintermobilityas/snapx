@@ -89,7 +89,7 @@ namespace Snap.Tests.NuGet
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
             var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
-            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages");
+            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages_v2");
             
             var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,packagesDirectory, CancellationToken.None, noCache);
             Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);

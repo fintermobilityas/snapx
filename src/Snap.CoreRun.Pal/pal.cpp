@@ -337,13 +337,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 #elif PLATFORM_LINUX
     PAL_UNUSED(cmd_show_in);
 
-    pid_t child_pid;
     if (0 != chdir(working_dir_in))
     {
         return -1;
     }
 
-    child_pid = fork();
+    auto child_pid = fork();
     if(child_pid == 0)
     {
         execvp(filename_in, argv_in);

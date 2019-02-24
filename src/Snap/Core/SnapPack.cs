@@ -672,7 +672,7 @@ namespace Snap.Core
         {
             if (releases == null) throw new ArgumentNullException(nameof(releases));
 
-            releases.Apps = releases.Apps.OrderByDescending(x => x.Version).ToList();
+            releases.Apps = releases.Apps.OrderBy(x => x.Version).ToList();
 
             if (!releases.Apps.Any())
             {

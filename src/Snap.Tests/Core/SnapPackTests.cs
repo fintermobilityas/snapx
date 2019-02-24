@@ -956,8 +956,10 @@ namespace Snap.Tests.Core
             snapApp2.Version = new SemanticVersion(2, 0, 0);
 
             var releases = new SnapReleases();
-            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), 10, 1));
+
+            // Ordering is intentional
             releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow(), 20, 2));
+            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), 10, 1));
 
             var expectedPackageId = $"{snapApp1.Id}_snapx";
             
@@ -973,8 +975,8 @@ namespace Snap.Tests.Core
                     var snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader);
                     Assert.NotNull(snapReleases);
                     Assert.Equal(2, snapReleases.Apps.Count);
-                    Assert.Equal(snapApp2.Version, snapReleases.Apps[0].Version);
-                    Assert.Equal(snapApp1.Version, snapReleases.Apps[1].Version);
+                    Assert.Equal(snapApp1.Version, snapReleases.Apps[0].Version);
+                    Assert.Equal(snapApp2.Version, snapReleases.Apps[1].Version);
                 }
             }
         }

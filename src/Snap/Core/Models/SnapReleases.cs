@@ -21,9 +21,11 @@ namespace Snap.Core.Models
         public SnapTarget Target { get; set; }
         public string FullFilename { get; set; }
         public long FullFilesize { get; set; }
+        public string FullChecksum { get; set; }
         public string DeltaFilename { get; set; }
         public long DeltaFilesize { get; set; }
-        public bool Delta { get; set; }
+        public string DeltaChecksum { get; set; }
+        public bool IsDelta { get; set; }
 
         [UsedImplicitly]
         public SnapRelease()
@@ -41,12 +43,16 @@ namespace Snap.Core.Models
             Target = new SnapTarget(release.Target);
             FullFilename = release.FullFilename;
             FullFilesize = release.FullFilesize;
+            FullChecksum = release.FullChecksum;
             DeltaFilename = release.DeltaFilename;
             DeltaFilesize = release.DeltaFilesize;
-            Delta = release.Delta;
+            DeltaChecksum = release.DeltaChecksum;
+            IsDelta = release.IsDelta;
         }
         
-        public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel, long fullFilesize, long deltaFileSize) : this(new SnapRelease
+        public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel, 
+            string fullChecksum = null, long fullFilesize = 0, 
+            string deltaChecksum = null, long deltaFileSize = 0) : this(new SnapRelease
         {
             Id = snapApp.Id,
             Version = snapApp.Version,
@@ -55,16 +61,15 @@ namespace Snap.Core.Models
             Target = snapApp.Target,
             FullFilename = snapApp.BuildNugetFullLocalFilename(),
             FullFilesize = fullFilesize,
+            FullChecksum = fullChecksum,
             DeltaFilename = snapApp.BuildNugetDeltaLocalFilename(),
             DeltaFilesize = deltaFileSize,
-            Delta = snapApp.Delta
+            DeltaChecksum = deltaChecksum,
+            IsDelta = snapApp.Delta
         })
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (channel == null) throw new ArgumentNullException(nameof(channel));
-            if (fullFilesize < 0) throw new ArgumentOutOfRangeException(nameof(fullFilesize), fullFilesize, "Must be greater than or equal to zero");
-            if (deltaFileSize < 0) throw new ArgumentOutOfRangeException(nameof(deltaFileSize), deltaFileSize, "Must be greater than or equal to zero");
-            if(Delta && deltaFileSize <= 0) throw new ArgumentOutOfRangeException(nameof(deltaFileSize), deltaFileSize, $"Must be greater than zero when delta release");
         }
     }
     

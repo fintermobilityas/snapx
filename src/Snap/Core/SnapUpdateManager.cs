@@ -193,7 +193,7 @@ namespace Snap.Core
             }
             
             var deltaUpdates = snapReleases.Apps
-                .Where(x => x.Delta && x.Version > _snapApp.Version)
+                .Where(x => x.IsDelta && x.Version > _snapApp.Version)
                 .OrderBy(x => x.Version)
                 .ToList();
 
@@ -300,7 +300,7 @@ namespace Snap.Core
 
                 try
                 {
-                    var (nupkgStream, snapApp) =
+                    var (nupkgStream, snapApp, _) =
                         await _snapPack.ReassambleFullPackageAsync(deltaNupkgFilename, nextFullNupkg, cancellationToken: cancellationToken);
 
                     updatedSnapApp = snapApp;

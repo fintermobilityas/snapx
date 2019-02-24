@@ -150,7 +150,7 @@ namespace snapx
                         var deltaNupkgPackageId = snapAppTmp.BuildDeltaNugetUpstreamPackageId();
 
                         var fullRelease = releases.Apps.FirstOrDefault(x => x.UpstreamId == fullNupkgPackageId);                        
-                        var deltaRelease = releases.Apps.FirstOrDefault(x => x.UpstreamId == deltaNupkgPackageId);
+                        var deltaRelease = releases.Apps.LastOrDefault(x => x.UpstreamId == deltaNupkgPackageId);
 
                         var rowValue = fullRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)

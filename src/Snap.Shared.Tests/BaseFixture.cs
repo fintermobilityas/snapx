@@ -268,7 +268,7 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildInMemoryFullPackageAsync(
+        internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails, string checksum)> BuildInMemoryFullPackageAsync(
             [NotNull] SnapApp snapApp, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapFilesystem filesystem, 
             [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
@@ -311,8 +311,8 @@ namespace Snap.Shared.Tests
 
                 await filesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-                var nupkgMemoryStream = await snapPack.BuildFullPackageAsync(snapPackDetails, coreRunLib, cancellationToken: cancellationToken);
-                return (nupkgMemoryStream, snapPackDetails);
+                var (nupkgMemoryStream, checksum) = await snapPack.BuildFullPackageAsync(snapPackDetails, coreRunLib, cancellationToken: cancellationToken);
+                return (nupkgMemoryStream, snapPackDetails, checksum);
             }
         }
 

@@ -39,8 +39,15 @@ namespace Snap.Core
         {
             if (content == null) throw new ArgumentNullException(nameof(content));
 
+            if (!content.CanSeek)
+            {
+                throw new Exception("Stream must be seekable");
+            }
+
             var sha512 = SHA512.Create();
             var hash = sha512.ComputeHash(content);
+
+            content.Seek(0, SeekOrigin.Begin);
 
             return HashToString(hash);
         }

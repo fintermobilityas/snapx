@@ -76,11 +76,11 @@ namespace Snap.Core.Logging
 
             if (exception != null)
             {
-                Console.Error.WriteLine("{0} | {1} | {2} | {3}", DateTime.UtcNow, logLevel, name, message);
+                Console.Error.WriteLine($"{DateTime.UtcNow} | {name} | {message}");
                 return;
             }
 
-            Console.WriteLine("{0} | {1} | {2} | {3}", DateTime.UtcNow, logLevel, name, message);
+            Console.WriteLine($"{DateTime.UtcNow} | {name} | {message}");
         }
     }
 }

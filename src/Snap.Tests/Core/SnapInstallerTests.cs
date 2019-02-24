@@ -90,7 +90,7 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
-            var (installNupkgMemoryStream, installPackageDetails) = await _baseFixture
+            var (installNupkgMemoryStream, installPackageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
             
             var updatedSnapApp = new SnapApp(snapApp)
@@ -98,7 +98,7 @@ namespace Snap.Tests.Core
                 Version = snapApp.Version.BumpMajor()
             };
             
-            var (updateNupkgMemoryStream, updatePackageDetails) = await _baseFixture
+            var (updateNupkgMemoryStream, updatePackageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(updatedSnapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (installNupkgMemoryStream)
@@ -213,7 +213,7 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
 
-            var (nupkgMemoryStream, packageDetails) = await _baseFixture
+            var (nupkgMemoryStream, packageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (nupkgMemoryStream)
@@ -314,7 +314,7 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(nameof(excludedDirectory), _snapFilesystem.PathGetFileName(excludedFileInsideDirectory))
                 };
                 
-                var (nupkgMemoryStream, _) = await _baseFixture
+                var (nupkgMemoryStream, _, _) = await _baseFixture
                     .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
                 var nupkgAbsoluteFilename = await WriteNupkgAsync(snapApp, nupkgMemoryStream,

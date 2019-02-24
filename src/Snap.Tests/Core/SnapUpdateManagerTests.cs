@@ -38,7 +38,7 @@ namespace Snap.Tests.Core
         {
             _baseFixture = baseFixture;
             _coreRunLibMock = new Mock<ICoreRunLib>();
-            ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
+            var snapCryptoProvider = new SnapCryptoProvider();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapOs = SnapOs.AnyOs;
             _snapPack = new SnapPack(_snapOs.Filesystem, new SnapAppReader(), new SnapAppWriter(), snapCryptoProvider, _snapEmbeddedResources);
@@ -66,13 +66,13 @@ namespace Snap.Tests.Core
                 var nugetPackageSources = snapApp.BuildNugetSources(nugetPackageSourcesDir.WorkingDirectory);
                 var packagesDirectory = _snapOs.Filesystem.PathCombine(installDir.WorkingDirectory, "packages");
                 
-                var (fullNupkg1MemoryStream, fullNupkg1PackageDetails) =
+                var (fullNupkg1MemoryStream, fullNupkg1PackageDetails, fullNupkg1Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version);
                 
                 var fullNupkg1AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
                     fullNupkg1PackageDetails.App.BuildNugetFullLocalFilename());
 
-                var (fullNupkg2MemoryStream, fullNupkg2PackageDetails) =
+                var (fullNupkg2MemoryStream, fullNupkg2PackageDetails, fullNupkg2Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version.BumpMajor());
 
                 var fullNupkg2AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
@@ -81,7 +81,7 @@ namespace Snap.Tests.Core
                 await _snapOs.Filesystem.FileWriteAsync(fullNupkg1MemoryStream, fullNupkg1AbsolutePath, default);
                 await _snapOs.Filesystem.FileWriteAsync(fullNupkg2MemoryStream, fullNupkg2AbsolutePath, default);
 
-                var (deltaNupkgMemoryStream, deltaSnapApp) = await 
+                var (deltaNupkgMemoryStream, deltaSnapApp, deltaNupkgChecksum) = await 
                     _snapPack
                         .BuildDeltaPackageAsync(fullNupkg1AbsolutePath, fullNupkg2AbsolutePath);
                 
@@ -90,11 +90,16 @@ namespace Snap.Tests.Core
                 Assert.NotNull(installedSnapApp);
 
                 var (_, snapReleasesMemoryStream, snapReleasesFilenameAbsolutePath) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
-                    new List<(SnapApp snapApp, long fullFilesize, long deltaFilesize)>
+                    new List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize)>
                     {
-                        (fullNupkg1PackageDetails.App, fullNupkg1MemoryStream.Length, 0),
-                        (fullNupkg2PackageDetails.App, fullNupkg2MemoryStream.Length, deltaNupkgMemoryStream.Length),
-                        (deltaSnapApp, fullNupkg2MemoryStream.Length, deltaNupkgMemoryStream.Length),
+                        (fullNupkg1PackageDetails.App, fullNupkg1Checksum, 
+                            fullNupkg1MemoryStream.Length, null, 0),
+                        
+                        (fullNupkg2PackageDetails.App, fullNupkg2Checksum,
+                            fullNupkg2MemoryStream.Length, deltaNupkgChecksum, deltaNupkgMemoryStream.Length),
+                        
+                        (deltaSnapApp, fullNupkg2Checksum, fullNupkg2MemoryStream.Length, 
+                            deltaNupkgChecksum, deltaNupkgMemoryStream.Length)
                     });
                 
                 var progressSourceMock = new Mock<ISnapProgressSource>();
@@ -166,19 +171,19 @@ namespace Snap.Tests.Core
                 var nugetPackageSources = snapApp.BuildNugetSources(nugetPackageSourcesDir.WorkingDirectory);
                 var packagesDirectory = _snapOs.Filesystem.PathCombine(installDir.WorkingDirectory, "packages");
                 
-                var (fullNupkg1MemoryStream, fullNupkg1PackageDetails) =
+                var (fullNupkg1MemoryStream, fullNupkg1PackageDetails, fullNupkg1Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version);
                 
                 var fullNupkg1AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
                     fullNupkg1PackageDetails.App.BuildNugetFullLocalFilename());
 
-                var (fullNupkg2MemoryStream, fullNupkg2PackageDetails) =
+                var (fullNupkg2MemoryStream, fullNupkg2PackageDetails, fullNupkg2Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version.BumpMajor(1));
 
                 var fullNupkg2AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
                     fullNupkg2PackageDetails.App.BuildNugetFullLocalFilename());
 
-                var (fullNupkg3MemoryStream, fullNupkg3PackageDetails) =
+                var (fullNupkg3MemoryStream, fullNupkg3PackageDetails, fullNupkg3Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version.BumpMajor(2));
 
                 var fullNupkg3AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
@@ -188,11 +193,11 @@ namespace Snap.Tests.Core
                 await _snapOs.Filesystem.FileWriteAsync(fullNupkg2MemoryStream, fullNupkg2AbsolutePath, default);
                 await _snapOs.Filesystem.FileWriteAsync(fullNupkg3MemoryStream, fullNupkg3AbsolutePath, default);
 
-                var (deltaNupkg1MemoryStream, deltaSnapApp1) = await 
+                var (deltaNupkg1MemoryStream, deltaSnapApp1, deltaNupkg1Checksum) = await 
                     _snapPack
                         .BuildDeltaPackageAsync(fullNupkg1AbsolutePath, fullNupkg2AbsolutePath);
 
-                var (deltaNupkg2MemoryStream, deltaSnapApp2) = await 
+                var (deltaNupkg2MemoryStream, deltaSnapApp2, deltaNupkg2Checksum) = await 
                     _snapPack
                         .BuildDeltaPackageAsync(fullNupkg2AbsolutePath, fullNupkg3AbsolutePath);
 
@@ -201,13 +206,21 @@ namespace Snap.Tests.Core
                 Assert.NotNull(installedSnapApp);
 
                 var (_, snapReleasesMemoryStream, snapReleasesFilenameAbsolutePath) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
-                    new List<(SnapApp snapApp, long fullFilesize, long deltaFilesize)>
+                    new List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize)>
                     {
-                        (fullNupkg1PackageDetails.App, fullNupkg1MemoryStream.Length, 0),
-                        (fullNupkg2PackageDetails.App, fullNupkg2MemoryStream.Length, deltaNupkg1MemoryStream.Length),
-                        (fullNupkg3PackageDetails.App, fullNupkg3MemoryStream.Length, deltaNupkg2MemoryStream.Length),
-                        (deltaSnapApp1, fullNupkg2MemoryStream.Length, deltaNupkg1MemoryStream.Length),
-                        (deltaSnapApp2, fullNupkg3MemoryStream.Length, deltaNupkg2MemoryStream.Length),
+                        (fullNupkg1PackageDetails.App, fullNupkg1Checksum, fullNupkg1MemoryStream.Length, null, 0),
+                        
+                        (fullNupkg2PackageDetails.App, fullNupkg2Checksum, fullNupkg2MemoryStream.Length, 
+                            deltaNupkg1Checksum, deltaNupkg1MemoryStream.Length),
+                        
+                        (fullNupkg3PackageDetails.App, fullNupkg3Checksum, fullNupkg3MemoryStream.Length, 
+                            deltaNupkg2Checksum, deltaNupkg2MemoryStream.Length),
+                        
+                        (deltaSnapApp1, fullNupkg2Checksum, fullNupkg2MemoryStream.Length, 
+                            deltaNupkg2Checksum, deltaNupkg1MemoryStream.Length),
+                        
+                        (deltaSnapApp2, fullNupkg3Checksum, fullNupkg3MemoryStream.Length,  
+                            deltaNupkg2Checksum, deltaNupkg2MemoryStream.Length),
                     });
 
                 var progressSourceMock = new Mock<ISnapProgressSource>();
@@ -298,26 +311,27 @@ namespace Snap.Tests.Core
         }
                 
         async Task<(SnapReleases snapReleases, MemoryStream memoryStream, string filenameAbsolutePath)> BuildSnapReleasesNupkgAsync([NotNull] SnapApp snapApp, 
-            [NotNull] string packagesDirectory, [NotNull] List<(SnapApp snapApp, long fullFilesize, long deltaFilesize)> packages)
+            [NotNull] string packagesDirectory, [NotNull] List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize)> packages)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (packages == null) throw new ArgumentNullException(nameof(packages));
             var snapReleases = new SnapReleases();
 
-            foreach (var (thisSnapApp, fullFilesize, deltaFilesize) in packages)
+            foreach (var (thisSnapApp, fullChecksum, fullFilesize, deltaChecksum, deltaFilesize) in packages)
             {
                 snapReleases.Apps.Add(new SnapRelease(thisSnapApp, 
-                    snapApp.GetCurrentChannelOrThrow(), fullFilesize, deltaFilesize));                
+                    snapApp.GetCurrentChannelOrThrow(), fullChecksum, fullFilesize, deltaChecksum, deltaFilesize));                
             }
                 
             var releasesNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetReleasesLocalFilename());
-            var releasesMemoryStream = _snapPack.BuildReleasesPackage(snapReleases);
+            var releasesMemoryStream = _snapPack.BuildReleasesPackage(snapApp, snapReleases);
             await _snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, default);
 
             return (snapReleases, releasesMemoryStream, releasesNupkgAbsolutePath);
         } 
 
+        [UsedImplicitly]
         void SetupGetMetadatasAsync([NotNull] Mock<INugetService> nugetServiceMock, 
             SnapApp snapApp, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] params SnapApp[] snapAppses)
@@ -400,7 +414,7 @@ namespace Snap.Tests.Core
         }
 
         
-        Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails)> BuildFullNupkgAsync([NotNull] SnapApp snapApp,
+        Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails, string checksum)> BuildFullNupkgAsync([NotNull] SnapApp snapApp,
             [NotNull] SemanticVersion semanticVersion)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));

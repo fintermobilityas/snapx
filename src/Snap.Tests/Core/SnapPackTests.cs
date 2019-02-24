@@ -105,7 +105,7 @@ namespace Snap.Tests.Core
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
             };            
                         
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -117,7 +117,7 @@ namespace Snap.Tests.Core
                 { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
             };            
 
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -175,7 +175,7 @@ namespace Snap.Tests.Core
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
             };            
             
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -187,7 +187,7 @@ namespace Snap.Tests.Core
                 { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
             };            
                         
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -245,7 +245,7 @@ namespace Snap.Tests.Core
                 { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
             };            
                         
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -259,7 +259,7 @@ namespace Snap.Tests.Core
                 { currentNupkgAssemblyDefinition2.BuildRelativeFilename(), currentNupkgAssemblyDefinition2 }
             };            
                         
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -321,7 +321,7 @@ namespace Snap.Tests.Core
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
             };            
              
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -334,7 +334,7 @@ namespace Snap.Tests.Core
                 { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
             };            
             
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -394,7 +394,7 @@ namespace Snap.Tests.Core
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
             };            
              
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -408,7 +408,7 @@ namespace Snap.Tests.Core
                 { _snapFilesystem.PathCombine("zubdirectory", "zubdirectory2", currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename()), currentNupkgTestDllAssemblyDefinition }
             };            
             
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -470,7 +470,7 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
-            var (nupkgMemoryStream, _) = await _baseFixture
+            var (nupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (testDllAssemblyDefinition)
@@ -497,7 +497,7 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
             };
             
-            var (nupkgMemoryStream, packageDetails) = await _baseFixture
+            var (nupkgMemoryStream, packageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (testDllAssemblyDefinition)
@@ -560,7 +560,7 @@ namespace Snap.Tests.Core
                 { $"subdirectory/subdirectory2/{dllDefinition2.BuildRelativeFilename()}", dllDefinition2 }
             };
             
-            var (nupkgMemoryStream, packageDetails) = await _baseFixture
+            var (nupkgMemoryStream, packageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
 
             using (mainAssemblyDefinition)
@@ -629,7 +629,7 @@ namespace Snap.Tests.Core
                 var subdirectory = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "subdirectory");
                 _snapFilesystem.DirectoryCreate(subdirectory);
                                 
-                var (nupkgMemoryStream, packageDetails) = await _baseFixture
+                var (nupkgMemoryStream, packageDetails, _) = await _baseFixture
                     .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
                     
                 using (mainAssemblyDefinition)
@@ -696,7 +696,7 @@ namespace Snap.Tests.Core
                 { previousNupkgAssemblyDefinition2.BuildRelativeFilename(), previousNupkgAssemblyDefinition2 }
             };            
                         
-            var (previousNupkgMemoryStream, currentPackageDetails) = await _baseFixture
+            var (previousNupkgMemoryStream, currentPackageDetails, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -717,7 +717,7 @@ namespace Snap.Tests.Core
             var currentNupkgSnapApp = new SnapApp(previousNupkgSnapApp);
             currentNupkgSnapApp.Version = currentNupkgSnapApp.Version.BumpMajor();
             
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             MemoryStream deltaNupkgStream;
@@ -829,7 +829,7 @@ namespace Snap.Tests.Core
                 { previousNupkgAssemblyDefinition2.BuildRelativeFilename(), previousNupkgAssemblyDefinition2 }
             };               
                         
-            var (previousNupkgMemoryStream, _) = await _baseFixture
+            var (previousNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(previousNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, previousNupkgNuspecLayout);
             
             // 2. Current
@@ -847,7 +847,7 @@ namespace Snap.Tests.Core
                 { currentNupkgAssemblyDefinition3.BuildRelativeFilename(), currentNupkgAssemblyDefinition3 }
             };     
             
-            var (currentNupkgMemoryStream, _) = await _baseFixture
+            var (currentNupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(currentNupkgSnapApp, _coreRunLibMock.Object,  _snapFilesystem, _snapPack, _snapEmbeddedResources, currentNupkgNuspecLayout);
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
@@ -861,13 +861,13 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteAsync(previousNupkgMemoryStream, previousNupkgAbsoluteFilename, CancellationToken.None);
                 await _snapFilesystem.FileWriteAsync(currentNupkgMemoryStream, currentNupkgAbsoluteFilename, CancellationToken.None);
 
-                var (deltaNupkgStream, snapAppDelta) = await _snapPack.BuildDeltaPackageAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename);
+                var (deltaNupkgStream, snapAppDelta, _) = await _snapPack.BuildDeltaPackageAsync(previousNupkgAbsoluteFilename, currentNupkgAbsoluteFilename);
                 Assert.NotNull(deltaNupkgStream);
 
                 var deltaNupkgAbsoluteFilename = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, snapAppDelta.BuildNugetLocalFilename());
                 await _snapFilesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsoluteFilename, CancellationToken.None);
 
-                var (reassembledNupkgStream, snapAppReassembled) = await _snapPack.ReassambleFullPackageAsync(deltaNupkgAbsoluteFilename, 
+                var (reassembledNupkgStream, snapAppReassembled, _) = await _snapPack.ReassambleFullPackageAsync(deltaNupkgAbsoluteFilename, 
                     previousNupkgAbsoluteFilename, progressSource.Object);
                 Assert.NotNull(reassembledNupkgStream);
                 Assert.NotNull(snapAppReassembled);
@@ -933,7 +933,7 @@ namespace Snap.Tests.Core
             var testDll = _baseFixture.BuildEmptyLibrary("test");
             var mainExe = _baseFixture.BuildSnapAwareEmptyExecutable(snapAppBefore);
             
-            var (nupkgMemoryStream, _) = await _baseFixture
+            var (nupkgMemoryStream, _, _) = await _baseFixture
                 .BuildInMemoryFullPackageAsync(snapAppBefore, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, new Dictionary<string, AssemblyDefinition>
                 {
                     { mainExe.BuildRelativeFilename(), mainExe },
@@ -951,19 +951,22 @@ namespace Snap.Tests.Core
         public async Task TestBuildReleasesPackage()
         {
             var snapApp1 = _baseFixture.BuildSnapApp();
-            snapApp1.Version = new SemanticVersion(1, 0, 0);
-            var snapApp2 = _baseFixture.BuildSnapApp();
-            snapApp2.Version = new SemanticVersion(2, 0, 0);
+            snapApp1.Version = snapApp1.Version.BumpMajor();
+            var snapApp2 = new SnapApp(snapApp1);
+            snapApp2.Version = snapApp1.Version.BumpMajor();
 
             var releases = new SnapReleases();
 
+            var checksum1 = string.Join("", Enumerable.Repeat("X", 128));
+            var checksum2 = string.Join("", Enumerable.Repeat("X", 128));
+            
             // Ordering is intentional
-            releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow(), 20, 2));
-            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), 10, 1));
+            releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow(), checksum1, 20, checksum2, 2));
+            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), checksum1, 10, checksum2, 1));
 
             var expectedPackageId = $"{snapApp1.Id}_snapx";
             
-            using (var releasesStream = _snapPack.BuildReleasesPackage(releases))
+            using (var releasesStream = _snapPack.BuildReleasesPackage(snapApp1, releases))
             {
                 Assert.NotNull(releasesStream);
                 Assert.Equal(0, releasesStream.Position);
@@ -980,5 +983,6 @@ namespace Snap.Tests.Core
                 }
             }
         }
+                
     }
 }

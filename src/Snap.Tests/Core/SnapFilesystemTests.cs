@@ -19,7 +19,7 @@ namespace Snap.Tests.Core
         }
         
         [Fact]
-        public async Task TestDeleteDirectoryOrJustGiveUpAsync()
+        public async Task TestDirectoryDeleteAsync()
         {
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
@@ -32,25 +32,25 @@ namespace Snap.Tests.Core
                 var testFile = _snapFilesystem.PathCombine(subDirectory, "mytEstFile.txt");
                 await _snapFilesystem.FileWriteUtf8StringAsync("yolo", testFile, default);
                 
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootDirectory);
+                await _snapFilesystem.DirectoryDeleteAsync(rootDirectory);
                 
                 Assert.False(_snapFilesystem.DirectoryExists(rootDirectory));
             }
         }
         
         [Fact]
-        public async Task TestDeleteDirectoryOrJustGiveUpAsync_Non_Existant_Directory()
+        public async Task TestDirectoryDeleteAsync_Non_Existant_Directory()
         {
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
                 var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");                
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootDirectory);                
+                await _snapFilesystem.DirectoryDeleteAsync(rootDirectory);                
                 Assert.False(_snapFilesystem.DirectoryExists(rootDirectory));
             }
         }
         
         [Fact]
-        public async Task TestDeleteDirectoryOrJustGiveUpAsync_ExcludePaths()
+        public async Task TestDirectoryDeleteAsync_ExcludePaths()
         {
             using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
@@ -69,7 +69,7 @@ namespace Snap.Tests.Core
                 var deleteThisFile = _snapFilesystem.PathCombine(rootDirectory, "deleteThisFile.txt");
                 await _snapFilesystem.FileWriteUtf8StringAsync("yolo2", excludeFile, default);
 
-                await _snapFilesystem.DirectoryDeleteOrJustGiveUpAsync(rootDirectory, new List<string>
+                await _snapFilesystem.DirectoryDeleteAsync(rootDirectory, new List<string>
                 {
                     excludeDirectory,
                     excludeFile

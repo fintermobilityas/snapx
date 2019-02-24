@@ -22,7 +22,7 @@ namespace Snap.Core.IO
 
         public void Dispose()
         {
-            _filesystem.DirectoryDeleteOrJustGiveUpAsync(WorkingDirectory).Wait();
+            _filesystem.DirectoryDeleteAsync(WorkingDirectory).GetAwaiter().GetResult();
         }
     }
 }

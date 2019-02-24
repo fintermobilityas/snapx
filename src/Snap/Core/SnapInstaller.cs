@@ -109,7 +109,7 @@ namespace Snap.Core
             {
                 _snapOs.KillAllRunningInsideDirectory(appDirectory, cancellationToken);
                 logger?.Info($"Deleting existing app directory: {appDirectory}");
-                await _snapOs.Filesystem.DirectoryDeleteOrJustGiveUpAsync(appDirectory);
+                await _snapOs.Filesystem.DirectoryDeleteAsync(appDirectory);
             }
             else
             {
@@ -217,7 +217,7 @@ namespace Snap.Core
             {
                 _snapOs.KillAllRunningInsideDirectory(baseDirectory, cancellationToken);
                 logger?.Info($"Deleting existing base directory: {baseDirectory}");
-                await _snapOs.Filesystem.DirectoryDeleteOrJustGiveUpAsync(baseDirectory, snapApp.PersistentAssets);
+                await _snapOs.Filesystem.DirectoryDeleteAsync(baseDirectory, snapApp.PersistentAssets);
             }
 
             snapProgressSource?.Raise(20);

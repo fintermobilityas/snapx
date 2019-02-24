@@ -24,10 +24,9 @@ namespace Snap.Core
         void DirectoryCreate(string directory);
         void DirectoryCreateIfNotExists(string directory);
         bool DirectoryExists(string directory);
-        void DirectoryDelete(string directory);
+        void DirectoryDelete(string directory, bool recursive = false);
         Task DirectoryDeleteAsync(string directory, List<string> excludePaths = null);
         string DirectoryWorkingDirectory();
-        Task DirectoryDeleteOrJustGiveUpAsync(string directory, List<string> excludePaths = null);
         string DirectoryGetParent(string path);
         void SetCurrentDirectory(string path);
         DisposableTempDirectory WithDisposableTempDirectory(string workingDirectory);
@@ -364,10 +363,10 @@ namespace Snap.Core
             return dstStream;
         }
 
-        public void DirectoryDelete(string directory)
+        public void DirectoryDelete(string directory, bool recursive = false)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
-            Directory.Delete(directory);
+            Directory.Delete(directory, recursive);
         }
 
         public async Task DirectoryDeleteAsync([NotNull] string directory, List<string> excludePaths = null)
@@ -415,7 +414,12 @@ namespace Snap.Core
                         return;
                     }
                 }
-                File.SetAttributes(file, FileAttributes.Normal);
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    File.SetAttributes(file, FileAttributes.Normal);                    
+                }
+                
                 File.Delete(file);
             });
 
@@ -435,7 +439,10 @@ namespace Snap.Core
             await Task.WhenAll(fileOperations, directoryOperations);
 
             Logger.Debug("Now deleting folder: {0}", directory);
-            File.SetAttributes(directory, FileAttributes.Normal);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                File.SetAttributes(directory, FileAttributes.Normal);                
+            }
 
             try
             {
@@ -451,19 +458,6 @@ namespace Snap.Core
         public string DirectoryWorkingDirectory()
         {
             return Directory.GetCurrentDirectory();
-        }
-
-        public async Task DirectoryDeleteOrJustGiveUpAsync([NotNull] string directory, List<string> excludePaths = null)
-        {
-            if (directory == null) throw new ArgumentNullException(nameof(directory));
-            try
-            {
-                await DirectoryDeleteAsync(directory, excludePaths);
-            }
-            catch (Exception)
-            {
-                // ignore
-            }
         }
 
         public string PathGetFileName([NotNull] string filename)

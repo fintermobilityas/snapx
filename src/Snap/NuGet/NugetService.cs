@@ -14,6 +14,7 @@ using NuGet.Protocol.Core.Types;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Extensions;
+using Snap.Logging.LogProviders;
 
 namespace Snap.NuGet
 {
@@ -168,8 +169,9 @@ namespace Snap.NuGet
         {
             using (var cacheContext = new SourceCacheContext())
             {
-                var tempPackagesDirectory = new DisposableTempDirectory(packagesDirectory, _snapFilesystem);
-                var redirectedPackagesDirectory = _snapFilesystem.PathCombine(tempPackagesDirectory.WorkingDirectory, "nuget_install_dir");
+                var tempPackagesDirectory = _snapFilesystem.PathCombine(packagesDirectory, Guid.NewGuid().ToString());
+                var redirectedPackagesDirectory = _snapFilesystem.PathCombine(tempPackagesDirectory, "nuget_install_dir");
+                _snapFilesystem.DirectoryCreate(redirectedPackagesDirectory);
 
                 if (noCache)
                 {
@@ -178,7 +180,7 @@ namespace Snap.NuGet
                     cacheContext.GeneratedTempFolder = redirectedPackagesDirectory;
                 }
 
-                using (tempPackagesDirectory)
+                using (new DisposableAction(() => _snapFilesystem.DirectoryDelete(redirectedPackagesDirectory, true)))
                 {
                     var downloadContext = new PackageDownloadContext(cacheContext, redirectedPackagesDirectory, false);
 

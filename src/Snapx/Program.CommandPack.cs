@@ -134,6 +134,7 @@ namespace snapx
             {   
                 logger.Info("Unpacking releases nupkg");
 
+                using (snapReleasesDownloadResult)
                 using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream))
                 {
                     snapReleases = await snapExtractor.ExtractReleasesAsync(packageArchiveReader, appReader, cancellationToken);
@@ -189,14 +190,14 @@ namespace snapx
                     }
                                         
                     mostRecentReleaseNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapAppMostRecentRelease.FullFilename);                    
-                    await filesystem.FileWriteAsync(snapPreviousVersionDownloadResult.PackageStream, mostRecentReleaseNupkgAbsolutePath, cancellationToken);
-
-                    logger.Info($"Successfully restored: {filesystem.PathGetFileName(snapAppMostRecentRelease.FullFilename)}");
                     
+                    using(snapPreviousVersionDownloadResult)
                     using (var packageArchiveReader = new PackageArchiveReader(snapPreviousVersionDownloadResult.PackageStream))
                     {
                         mostRecentSnapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
                     }                    
+
+                    logger.Info($"Successfully restored: {filesystem.PathGetFileName(snapAppMostRecentRelease.FullFilename)}");
                 }
                 else
                 {

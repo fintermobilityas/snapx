@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -221,6 +221,7 @@ namespace Snap.Core
                 });
             var downloadResourceResults = await Task.WhenAll(downloadResultsTasks);
             var downloadsFailed = downloadResourceResults.Where(x => !x.SuccessSafe()).ToList();
+            downloadResourceResults.ForEach(x => x.Dispose());
             if (downloadsFailed.Any())
             {
                 Logger.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. ");

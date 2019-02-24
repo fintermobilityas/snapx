@@ -959,6 +959,8 @@ namespace Snap.Tests.Core
             releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), 10, 1));
             releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow(), 20, 2));
 
+            var expectedPackageId = $"{snapApp1.Id}_snapx";
+            
             using (var releasesStream = _snapPack.BuildReleasesPackage(releases))
             {
                 Assert.NotNull(releasesStream);
@@ -966,6 +968,8 @@ namespace Snap.Tests.Core
 
                 using (var packageArchiveReader = new PackageArchiveReader(releasesStream))
                 {
+                    Assert.Equal(expectedPackageId, packageArchiveReader.GetIdentity().Id);
+                    
                     var snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader);
                     Assert.NotNull(snapReleases);
                     Assert.Equal(2, snapReleases.Apps.Count);

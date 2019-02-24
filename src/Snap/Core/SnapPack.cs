@@ -685,7 +685,7 @@ namespace Snap.Core
 
             var packageBuilder = new PackageBuilder
             {
-                Id = snapApp.Id,
+                Id = snapApp.BuildNugetReleasesUpstreamPackageId(),
                 Version = releases.Version.ToNuGetVersion(),
                 Description = $"This nupkg contains all releases for {snapApp.Id}",
                 Authors = {"Unknown"}

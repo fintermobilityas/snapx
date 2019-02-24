@@ -128,7 +128,7 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
             var fullOrDelta = delta ? "delta" : "full";
-            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_{channel.Name}".ToLowerInvariant();
+            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_{channel.Name}_snapx".ToLowerInvariant();
         }
 
         internal static string BuildNugetLocalFilename([NotNull] this SnapApp snapApp)
@@ -136,27 +136,33 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
             var fullOrDelta = snapApp.Delta ? "delta" : "full";
-            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_{channel.Name}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
         
         internal static string BuildNugetFullLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
-            return $"{snapApp.Id}_full_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_full_{snapApp.Target.Rid}_{channel.Name}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
 
         internal static string BuildNugetDeltaLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var channel = snapApp.GetCurrentChannelOrThrow();
-            return $"{snapApp.Id}_delta_{snapApp.Version.ToMajorMinorPatch()}_{snapApp.Target.Rid}_{channel.Name}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_delta_{snapApp.Target.Rid}_{channel.Name}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
 
         internal static string BuildNugetReleasesUpstreamPackageId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return snapApp.Id.ToLowerInvariant();
+            return $"{snapApp.Id.ToLowerInvariant()}_snapx";
+        }
+        
+        internal static string BuildNugetReleasesUpstreamPackageId([NotNull] this SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            return $"{snapRelease.Id.ToLowerInvariant()}_snapx";
         }
         
         internal static string BuildNugetReleasesLocalFilename([NotNull] this SnapApp snapApp)
@@ -193,15 +199,21 @@ namespace Snap.Extensions
 
             id = string.IsNullOrWhiteSpace(values[0]) ? null : values[0];
             fullOrDelta = values[1] == "delta" ? "delta" : values[1] == "full" ? "full" : null;
+            rid = string.IsNullOrWhiteSpace(values[2]) ? null : values[2];            
+            channelName = nupkgExtensionPos == -1 || string.IsNullOrWhiteSpace(values[3]) ? null : values[3];
 
-            if (!SemanticVersion.TryParse(values[2], out semanticVersion))
+            if (!values[4].StartsWith("snapx.", StringComparison.InvariantCulture))
             {
                 goto done;
             }
-
-            rid = string.IsNullOrWhiteSpace(values[3]) ? null : values[3];
-            channelName = nupkgExtensionPos == -1 || string.IsNullOrWhiteSpace(values[4]) ? 
-                null : values[4].Replace(".nupkg", string.Empty);
+            
+            var semanticVersionStr = nupkgExtensionPos == -1 || 
+                                     string.IsNullOrWhiteSpace(values[4]) ? null : values[4].Replace(".nupkg", string.Empty);
+            semanticVersionStr = semanticVersionStr?.Replace("snapx.", string.Empty, StringComparison.InvariantCulture);
+            if (!SemanticVersion.TryParse(semanticVersionStr, out semanticVersion))
+            {
+                semanticVersion = null;
+            }
 
             done:
             var valid = id != null && fullOrDelta != null && semanticVersion != null && rid != null && channelName != null && nupkgExtensionPos != -1;

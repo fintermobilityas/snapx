@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -12,11 +14,11 @@ using NLog.Config;
 using NLog.Targets;
 using Snap.AnyOS;
 using Snap.Core;
-using Snap.Core.Logging;
 using Snap.Core.Resources;
 using Snap.Installer.Core;
 using Snap.Installer.Options;
 using Snap.Logging;
+using Snap.Logging.LogProviders;
 using Snap.NuGet;
 using LogLevel = Snap.Logging.LogLevel;
 
@@ -32,9 +34,9 @@ namespace Snap.Installer
         {
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
-                var process = System.Diagnostics.Process.GetCurrentProcess();
+                var process = Process.GetCurrentProcess();
 
-                while (!System.Diagnostics.Debugger.IsAttached)
+                while (!Debugger.IsAttached)
                 {
                     Console.WriteLine($"Waiting for debugger to attach... Process id: {process.Id}");
                     Thread.Sleep(1000);
@@ -58,8 +60,8 @@ namespace Snap.Installer
             try
             {
                 var snapOs = SnapOs.AnyOs;               
-                ConfigureNlog(snapOs.Filesystem, snapOs.SpecialFolders);
-                LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(logLevel));
+                ConfigureNlog(snapOs);
+                LogProvider.SetCurrentLogProvider(new NLogLogProvider());
                 var environment = BuildEnvironment(snapOs, environmentCts, logLevel);
                 exitCode = MainImpl(environment, snapInstallerLogger, args);
             }
@@ -214,37 +216,46 @@ namespace Snap.Installer
             return result;
         }
 
-        static void ConfigureNlog([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapOsSpecialFolders specialFolders)
+        static void ConfigureNlog([NotNull] ISnapOs snapOs)
         {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (specialFolders == null) throw new ArgumentNullException(nameof(specialFolders));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
 
-            var assemblyName = typeof(Program).Assembly;
+            var assemblyVersion = typeof(Program)
+                                      .Assembly
+                                      .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                                      .InformationalVersion ?? "0.0.0";
+
+            var processName = snapOs.ProcessManager.Current.ProcessName;
             
-            var layout = $"${{date}} Process id: ${{processid}}, Version: ${{assembly-version:${assemblyName}}}, Thread: ${{threadname}}, ${{logger}} - ${{message}} " +
+            var layout = $"${{date}} Process id: ${{processid}}, Version: ${{assembly-version:${assemblyVersion}}}, Thread: ${{threadname}}, ${{logger}} - ${{message}} " +
                          "${onexception:EXCEPTION OCCURRED\\:${exception:format=ToString,StackTrace}}";
-
+                      
             var config = new LoggingConfiguration();
-            var fileTarget = new FileTarget
+            
+            var fileTarget = new FileTarget("logfile")
             {
-                FileName = filesystem.PathCombine(specialFolders.InstallerCacheDirectory, "setup.log"),
-                Layout = layout,
-                ArchiveEvery = FileArchivePeriod.Day,
-                ArchiveNumbering = ArchiveNumberingMode.Rolling,
-                MaxArchiveFiles = 104
+                FileName = snapOs.Filesystem.PathCombine(snapOs.Filesystem.DirectoryWorkingDirectory(), $"{processName}.log"),
+                Layout = layout
             };
+            
+            Console.WriteLine($"Logfile: {fileTarget.FileName}");
+            
+            config.AddRule(NLog.LogLevel.Trace, NLog.LogLevel.Fatal, fileTarget);
 
-            config.AddTarget("logfile", fileTarget);
-            config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, fileTarget));
-
-            if (System.Diagnostics.Debugger.IsAttached)
+            var consoleTarget = new ConsoleTarget("logconsole")
             {
-                var debugTarget = new DebuggerTarget
+                Layout = layout
+            };
+            
+            config.AddRule(NLog.LogLevel.Trace, NLog.LogLevel.Fatal, consoleTarget);
+            
+            if (Debugger.IsAttached)
+            {
+                var debugTarget = new DebuggerTarget("debug")
                 {
                     Layout = layout
                 };
-                config.AddTarget("debug", debugTarget);
-                config.LoggingRules.Add(new LoggingRule("*", NLog.LogLevel.Trace, debugTarget));
+                config.AddRule(NLog.LogLevel.Trace, NLog.LogLevel.Fatal, debugTarget);
             }
 
             LogManager.Configuration = config;

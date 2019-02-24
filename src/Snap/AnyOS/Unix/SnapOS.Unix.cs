@@ -200,11 +200,12 @@ namespace Snap.AnyOS.Unix
                     return $@"
 #!/usr/bin/env xdg-open
 [Desktop Entry]
+Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
 Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
-Icon=""{shortcutDescription.IconAbsolutePath}""
+Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
 Comment={description}
 X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}

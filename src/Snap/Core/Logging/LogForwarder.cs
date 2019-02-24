@@ -24,7 +24,7 @@ namespace Snap.Core.Logging
         {
             if (logLevel < _logLevel)
             {
-                return false;
+                return _logger.Log(logLevel, messageFunc, exception, formatParameters);
             }
 
             var message = messageFunc?.Invoke();

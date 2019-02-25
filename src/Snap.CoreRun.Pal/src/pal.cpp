@@ -254,9 +254,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
     auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
     if(process != nullptr)
     {
-        auto ret = WaitForSingleObject(process, 0);
         assert(0 != CloseHandle(process));
-        process_exists = ret == WAIT_OBJECT_0 ? TRUE : FALSE;
+        process_exists = TRUE;
     }
 #elif PLATFORM_LINUX
     struct stat dontcare;

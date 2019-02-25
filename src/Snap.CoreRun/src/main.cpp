@@ -5,31 +5,23 @@
 #include "unistd.h" // fork
 #endif
 
-inline bool command_wait_for_pid(int pid)
+inline void command_wait_for_pid(int pid)
 {
     if(pid < 0)
     {
-        return false;
+        return;
     }
 
     pal_pid_t this_pid;
     if(!pal_process_get_pid(&this_pid) || this_pid == pid)
     {
-        return false;
+        return;
     }
 
-    BOOL process_stilling_running;
-    while((process_stilling_running = pal_process_is_running(pid)) == TRUE)
+    while(TRUE == pal_process_is_running(pid))
     {
-        pal_usleep(100);
+        pal_usleep(250);        
     }
-
-    if(process_stilling_running == FALSE)
-    {
-        return TRUE;
-    }
-
-    return pal_process_kill(pid) == TRUE;
 }
 
 inline void snapx_maybe_wait_for_debugger()

@@ -75,7 +75,8 @@ namespace Snap.Core
         /// version. Your application will exit afterwards.</param>
         /// <param name="arguments">Use in a unit-test runner to mock the 
         /// arguments. In your app, leave this as null.</param>
-        public static void HandleEvents(
+        /// <returns>If this methods returns TRUE then you should exit your program immediately.</returns>
+        public static bool ProcessEvents(
             Action<SemanticVersion> onInstalled = null,
             Action<SemanticVersion> onUpdated = null,
             string[] arguments = null)
@@ -83,7 +84,7 @@ namespace Snap.Core
             var args = (arguments ?? Environment.GetCommandLineArgs()).Skip(1).ToArray();
             if (args.Length != 2)
             {
-                return;
+                return false;
             }
 
             var invoke = new[] {
@@ -94,7 +95,7 @@ namespace Snap.Core
             var actionName = args[0];
             if (!invoke.ContainsKey(actionName))
             {
-                return;
+                return false;
             }
 
             try
@@ -109,16 +110,20 @@ namespace Snap.Core
 
                 if (string.Equals(actionName, "--snap-installed", StringComparison.InvariantCulture))
                 {
-                    return;
+                    return false;
                 }
 
                 SnapOs.Exit();
+
+                return true;
             }
             catch (Exception ex)
             {
                 Logger.ErrorException($"Exception thrown while handling snap event. Action: {actionName}", ex);
                 
                 SnapOs.Exit(-1);
+
+                return true;
             }
         }
 

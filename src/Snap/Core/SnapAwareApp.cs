@@ -17,7 +17,7 @@ namespace Snap.Core
         static readonly ILog Logger = LogProvider.GetLogger(nameof(SnapAwareApp));
         static readonly object SyncRoot = new object();
         
-        static ISnapOs SnapOs { get; }
+        internal static ISnapOs SnapOs { get; set; }
 
         static SnapAwareApp()
         {
@@ -80,16 +80,15 @@ namespace Snap.Core
             Action<SemanticVersion> onUpdated = null,
             string[] arguments = null)
         {
-            void DefaultBlock(SemanticVersion v)
+            var args = (arguments ?? Environment.GetCommandLineArgs()).Skip(1).ToArray();
+            if (args.Length == 0)
             {
+                return;
             }
 
-            var args = arguments ?? Environment.GetCommandLineArgs().Skip(1).ToArray();
-            if (args.Length == 0) return;
-
             var invoke = new[] {
-                new { Key = "--snap-installed", Value = onInstalled ??  DefaultBlock },
-                new { Key = "--snap-updated", Value = onUpdated ??  DefaultBlock }
+                new { Key = "--snap-installed", Value = onInstalled ??  DefaultAction },
+                new { Key = "--snap-updated", Value = onUpdated ??  DefaultAction }
             }.ToDictionary(k => k.Key, v => v.Value);
 
             var actionName = args[0];
@@ -100,22 +99,29 @@ namespace Snap.Core
 
             try
             {
+                Logger.Trace($"Handling event: {actionName}.");
+
                 invoke[actionName](Current.Version);
-                Logger.Trace($"Successfully handled event: {actionName}.");
-                if (!string.Equals(actionName, "--snap-install", StringComparison.InvariantCulture))
+
+                Logger.Trace($"Handled event: {actionName}.");
+
+                if (string.Equals(actionName, "--snap-installed", StringComparison.InvariantCulture))
                 {
-                    #if SNAP_NUPKG
-                    Environment.Exit(0);
-                    #endif
+                    return;
                 }
+
+                SnapOs.Exit();
             }
             catch (Exception ex)
             {
                 Logger.ErrorException($"Exception thrown while handling snap event. Action: {actionName}", ex);
-                #if SNAP_NUPKG
-                Environment.Exit(-1);
-                #endif
+                
+                SnapOs.Exit(-1);
             }
+        }
+
+        static void DefaultAction(SemanticVersion version)
+        {
         }
     }
 }

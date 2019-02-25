@@ -39,6 +39,7 @@ namespace Snap.AnyOS
         void KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken);
         void Kill(int pid);
         void Kill(SnapOsProcess process);
+        void Exit(int exitCode = 0);
     }
 
     internal interface ISnapOsImpl 
@@ -140,7 +141,9 @@ namespace Snap.AnyOS
             Kill(process.Pid);
         }
 
-       
-
+        public void Exit(int exitCode = 0)
+        {
+            Environment.Exit(exitCode);
+        }
     }
 }

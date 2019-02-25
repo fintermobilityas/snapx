@@ -90,7 +90,7 @@ string(STRIP "${SNAP_COMPILER_STR}" SNAP_COMPILER_STR)
 message(STATUS "")
 message(STATUS "  Options:")
 message(STATUS "    Lto: "           ${BUILD_ENABLE_LTO})
-message(STATUS "    Tests: "		${BUILD_ENABLE_TESTS})
+message(STATUS "    Tests: "		 ${BUILD_ENABLE_TESTS})
 
 message(STATUS "  C/C++:")
 message(STATUS "    C++ Compiler: "           ${SNAP_COMPILER_STR})

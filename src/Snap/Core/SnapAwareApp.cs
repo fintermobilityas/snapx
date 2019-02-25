@@ -81,7 +81,7 @@ namespace Snap.Core
             string[] arguments = null)
         {
             var args = (arguments ?? Environment.GetCommandLineArgs()).Skip(1).ToArray();
-            if (args.Length == 0)
+            if (args.Length != 2)
             {
                 return;
             }
@@ -101,7 +101,9 @@ namespace Snap.Core
             {
                 Logger.Trace($"Handling event: {actionName}.");
 
-                invoke[actionName](Current.Version);
+                var currentVersion = SemanticVersion.Parse(args[1]);
+
+                invoke[actionName](currentVersion);
 
                 Logger.Trace($"Handled event: {actionName}.");
 

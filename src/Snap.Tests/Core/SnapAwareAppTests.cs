@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    [CollectionDefinition(nameof(SnapAwareAppTests), DisableParallelization = true)]
     public class SnapAwareAppTests : IClassFixture<BaseFixture>
     {
         readonly ISnapFilesystem _snapFilesystem;
@@ -34,30 +33,84 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
+        public void Test_HandleEvents_Empty()
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            SnapAwareApp.HandleEvents();
+
+            snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public void Test_HandleEvents_Invalid_Arguments_Count()
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            SnapAwareApp.HandleEvents(arguments: new[]
+            {
+                "--a",
+                "--b",
+                "--c"
+            });
+
+            snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
         public void Test_HandleEvents_OnInstalled()
         {
             var snapOsMock = new Mock<ISnapOs>();
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
 
-            SnapAwareApp.Current = _baseFixture.BuildSnapApp();
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
             var wasInvoked = false;
-            SemanticVersion semanticVersion = null;
+            SemanticVersion currentVersion = null;
+            var expectedVersion = SemanticVersion.Parse("21212.0.0");
             SnapAwareApp.HandleEvents(arguments: new[]
             {
                 "c:\\my.exe",                
-                "--snap-installed"
+                "--snap-installed",
+                expectedVersion.ToNormalizedString()
             }, onInstalled: version =>
             {
                 wasInvoked = true;
-                semanticVersion = version;
+                currentVersion = version;
             });
 
             Assert.True(wasInvoked);
-            Assert.Equal(SnapAwareApp.Current.Version, semanticVersion);
+            Assert.Equal(expectedVersion, currentVersion);
 
             snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public void Test_HandleEvents_OnInstalled_Invalid_Version()
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            var wasInvoked = false;
+            SnapAwareApp.HandleEvents(arguments: new[]
+            {
+                "c:\\my.exe",                
+                "--snap-installed",
+                "..."
+            }, onInstalled: version =>
+            {
+                wasInvoked = true;
+            });
+
+            Assert.False(wasInvoked);
+
+            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
         }
 
         [Fact]
@@ -66,25 +119,51 @@ namespace Snap.Tests.Core
             var snapOsMock = new Mock<ISnapOs>();
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
 
-            SnapAwareApp.Current = _baseFixture.BuildSnapApp();
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
             var wasInvoked = false;
-            SemanticVersion semanticVersion = null;
+            SemanticVersion currentVersion = null;
+            var expectedVersion = SemanticVersion.Parse("21212.0.0");
             SnapAwareApp.HandleEvents(arguments: new[]
             {
                 "c:\\my.exe",                
-                "--snap-updated"
+                "--snap-updated",
+                expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
             {
                 wasInvoked = true;
-                semanticVersion = version;
+                currentVersion = version;
             });
 
             Assert.True(wasInvoked);
-            Assert.Equal(SnapAwareApp.Current.Version, semanticVersion);
+            Assert.Equal(expectedVersion, currentVersion);
 
             snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == 0)), Times.Once);
+        }
+
+        
+        [Fact]
+        public void Test_HandleEvents_OnUpdated_Invalid_Version()
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            var wasInvoked = false;
+            SnapAwareApp.HandleEvents(arguments: new[]
+            {
+                "c:\\my.exe",                
+                "--snap-updated",
+                "..."
+            }, onInstalled: version =>
+            {
+                wasInvoked = true;
+            });
+
+            Assert.False(wasInvoked);
+
+            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
         }
 
         [Fact]
@@ -92,25 +171,26 @@ namespace Snap.Tests.Core
         {
             var snapOsMock = new Mock<ISnapOs>();
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
-
-            SnapAwareApp.Current = _baseFixture.BuildSnapApp();
+            
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
             var wasInvoked = false;
-            SemanticVersion semanticVersion = null;
+            SemanticVersion currentVersion = null;
+            var expectedVersion = SemanticVersion.Parse("21212.0.0");
             SnapAwareApp.HandleEvents(arguments: new[]
             {
                 "c:\\my.exe",                
-                "--snap-updated"
+                "--snap-updated",
+                expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
             {
                 wasInvoked = true;
-                semanticVersion = version;
+                currentVersion = version;
                 throw new Exception("YOLO");
             });
 
             Assert.True(wasInvoked);
-            Assert.Equal(SnapAwareApp.Current.Version, semanticVersion);
+            Assert.Equal(expectedVersion, currentVersion);
 
             snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
         }

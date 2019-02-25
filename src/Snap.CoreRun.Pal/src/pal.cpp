@@ -1,6 +1,20 @@
 #include "pal.hpp"
 #include <cassert>
 
+#if _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4068)
+#endif
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wnonportable-include-path"
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+
+#if _MSC_VER
+#pragma warning( pop )
+#endif
+
 #if PLATFORM_WINDOWS
 #include <shlwapi.h> // PathIsDirectory, PathFileExists
 #include <strsafe.h> // StringCchLengthA
@@ -114,8 +128,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
 
     *instance_out = instance;
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
@@ -126,7 +141,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
     }
 #if PLATFORM_WINDOWS
     auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
-    return TRUE;
+    return free_library_result == TRUE;
 #elif PLATFORM_LINUX
     dlclose(instance_in);
     return TRUE;
@@ -173,21 +188,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated() {
 #if PLATFORM_WINDOWS
     // https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
     SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
-    PSID administratos_group;
+    PSID administrators_group;
     is_elevated = AllocateAndInitializeSid(
         &nt_authority,
         2,
         SECURITY_BUILTIN_DOMAIN_RID,
         DOMAIN_ALIAS_RID_ADMINS,
         0, 0, 0, 0, 0, 0,
-        &administratos_group);
+        &administrators_group);
     if (is_elevated)
     {
-        if (!CheckTokenMembership(NULL, administratos_group, &is_elevated))
+        if (!CheckTokenMembership(nullptr, administrators_group, &is_elevated))
         {
             is_elevated = FALSE;
         }
-        FreeSid(administratos_group);
+        FreeSid(administrators_group);
     }
 #elif PLATFORM_LINUX
     auto uid = getuid();
@@ -222,11 +237,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon
         return FALSE;
     }
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 {
     if(pid < 0)
     {
@@ -250,11 +266,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid)
         process_exists = TRUE;
     }
 #endif
-
     return process_exists;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
 {
     if(pid < 0)
     {
@@ -277,9 +292,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid)
     return process_killed;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
 {
-    BOOL has_pid = FALSE;
+    BOOL has_pid;
 #if PLATFORM_WINDOWS
     has_pid = TRUE;
     *pid_out = GetCurrentProcessId();
@@ -293,7 +308,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in,
                                                           const int argc_in, char **argv_in,
                                                           const int cmd_show_in /* Only applicable on Windows */,
-                                                          int *pid_out)
+                                                          pal_pid_t *pid_out)
 {
     if(filename_in == nullptr
         || working_dir_in == nullptr
@@ -324,7 +339,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     si.cb = sizeof si;
     si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = cmd_show_in;
+    si.wShowWindow = static_cast<WORD>(cmd_show_in);
 
     const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
         nullptr, nullptr, true,
@@ -376,8 +391,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)
 #elif PLATFORM_LINUX
     usleep(milliseconds);
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 
@@ -394,7 +410,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environmen
 
 #if PLATFORM_WINDOWS && !PLATFORM_MINGW
     wchar_t* w_env = nullptr;
-    _wdupenv_s(&w_env, 0, environment_variable_in_utf16_string.data());
+    _wdupenv_s(&w_env, nullptr, environment_variable_in_utf16_string.data());
     if (w_env == nullptr)
     {
         return FALSE;
@@ -709,7 +725,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
         return FALSE;
     }
 
-    BOOL file_exists = FALSE;
+    BOOL file_exists;
 #if PLATFORM_WINDOWS
     pal_utf16_string file_path_in_utf16_string(file_path_in);
     file_exists = PathFileExists(file_path_in_utf16_string.data()) == TRUE ? TRUE : FALSE;
@@ -800,7 +816,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
     paths_success = TRUE;
 
 #elif PLATFORM_LINUX
-
     std::string filter_extension_s(filter_extension_in == nullptr ? std::string() : filter_extension_in);
 
     DIR* dir = opendir(path_in);
@@ -901,11 +916,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 }
 #endif
 
-    if (!paths_success)
-    {
-        return FALSE;
-    }
-
     *paths_out_len = paths.size();
 
     const auto paths_array = new char*[*paths_out_len];
@@ -955,8 +965,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
         *working_directory_out = strdup(cwd);
         return TRUE;
 }
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char ** own_executable_name_out)
@@ -993,8 +1004,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char ** own_e
 
         return TRUE;
 }
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
@@ -1031,8 +1043,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
 
         return TRUE;
 }
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in)
@@ -1074,7 +1087,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     return directory_exists;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, int* file_size_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out)
 {
     if (filename_in == nullptr)
     {
@@ -1097,12 +1110,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
         return FALSE;
     }
 
-    *file_size_out = GetFileSize(h_file, NULL);
+    *file_size_out = GetFileSize(h_file, nullptr);
 
     assert(0 != CloseHandle(h_file));
 
     return TRUE;
-#else
+#elif PLATFORM_LINUX
     auto h_file = fopen(filename_in, "rb");
     if (h_file == nullptr)
     {
@@ -1114,8 +1127,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
     assert(0 == fclose(h_file));
 
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out)
@@ -1126,7 +1140,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         return FALSE;
     }
 
-    int total_bytes_to_read = 0;
+    size_t total_bytes_to_read;
     if (!pal_fs_get_file_size(filename_in, &total_bytes_to_read) || total_bytes_to_read <= 0)
     {
         return FALSE;
@@ -1170,7 +1184,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         if (read_offset > 0)
         {
             delete[] bytes_out;
-            bytes_out = nullptr;
         }
         return FALSE;
     }
@@ -1195,8 +1208,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
     *bytes_out = buffer;
     *bytes_read_out = total_bytes_read;
     return TRUE;
-#endif
+#else
     return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in)
@@ -1214,7 +1228,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int m
     const auto status = mkdir(directory_in, mode_in);
     return status == 0 ? TRUE : FALSE;
 #endif
-    return FALSE;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out)
@@ -1233,7 +1246,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
     auto result_errno = _wfopen_s(&p_file, filename_in_utf16_string.data(), mode_in_utf16_string.data());
     if(result_errno == 0)
     {
-        *file_handle_out = reinterpret_cast<pal_file_handle_t*>(p_file);
+        *file_handle_out = p_file;
         fopen_success = TRUE;
     }
 #elif PLATFORM_LINUX
@@ -1244,7 +1257,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
         fopen_success = TRUE;
     }
 #endif
-
     return fopen_success;
 }
 
@@ -1295,8 +1307,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_h
     {
         return FALSE;
     }
-
-    BOOL fclose_success = FALSE;
+    BOOL fclose_success;
 #if PLATFORM_WINDOWS || PLATFORM_LINUX
     fclose_success = fclose(pal_file_handle_in) == 0 ? TRUE : FALSE;
     if(fclose_success)
@@ -1349,3 +1360,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 
     return equals;
 }
+
+#if _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4068)
+#endif
+
+#pragma clang diagnostic pop
+
+#if _MSC_VER
+#pragma warning( pop )
+#endif

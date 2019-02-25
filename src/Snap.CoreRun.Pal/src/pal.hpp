@@ -48,6 +48,14 @@ extern "C" {
 typedef int BOOL;
 typedef FILE pal_file_handle_t;
 
+#if PLATFORM_WINDOWS
+typedef DWORD pal_pid_t;
+#elif PLATFORM_MINGW
+typedef int pal_pid_t;
+#elif PLATFORM_LINUX
+typedef pid_t pal_pid_t;
+#endif
+
 // - Callbacks
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
@@ -59,13 +67,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char* filename_in, char* icon_filename_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(int pid);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(int pid);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(int* pid_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, const int argc_in,
                                                           char **argv_in,
                                                           const int cmd_show_in /* Only applicable on Windows */,
-                                                          int *pid_out);
+                                                          pal_pid_t *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
 
 // - Environment
@@ -87,7 +95,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_executable_name_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, int* file_size_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);

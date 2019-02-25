@@ -45,7 +45,7 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         argv[i] = strdup(arguments[i].c_str());
     }
 
-    auto process_pid = 0;
+    pal_pid_t process_pid;
     if(!pal_process_daemonize(executable_full_path.c_str(), working_dir.c_str(), argc, argv, cmd_show, &process_pid)
         || process_pid <= 0)
     {

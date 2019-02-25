@@ -12,7 +12,7 @@ inline bool command_wait_for_pid(int pid)
         return false;
     }
 
-    int this_pid = 0;
+    pal_pid_t this_pid;
     if(!pal_process_get_pid(&this_pid) || this_pid == pid)
     {
         return false;

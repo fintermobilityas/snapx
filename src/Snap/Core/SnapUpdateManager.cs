@@ -24,7 +24,7 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
-        (string stubExecutableFullPath, string shutdownArguments) Restart(string arguments = null);
+        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(string arguments = null, CancellationToken cancellationToken = default);
         string GetStubExecutableAbsolutePath();
     }
 
@@ -115,9 +115,11 @@ namespace Snap.Core
         /// 
         /// </summary>
         /// <param name="arguments"></param>
+        /// <param name="cancellationToken"></param>
         /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
         /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        public (string stubExecutableFullPath, string shutdownArguments) Restart(string arguments = null)
+        /// <exception cref="OperationCanceledException">Is thrown when restart is cancelled by user.</exception>
+        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(string arguments = null, CancellationToken cancellationToken = default)
         {
             typeof(SnapUpdateManager).Assembly
                 .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
@@ -138,9 +140,7 @@ namespace Snap.Core
                 throw new Exception($"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
             }            
 
-            // For X reasons I have observed that if the machine is really busy/overloaded the underlying OS scheduler
-            // sometimes delays process creation.
-            Thread.Sleep(1000);
+            await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
 
             return (stubExecutableFullPath, shutdownArguments);
         }

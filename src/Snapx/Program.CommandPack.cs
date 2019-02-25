@@ -340,13 +340,16 @@ namespace snapx
                 string warpPackerArch;
                 string installerFilename;
                 string setupExtension;
+                string setupIcon = null;
                 var chmod = false;
                 var changeSubSystemToWindowsGui = false;
+                var installerIconSupported = false;
 
                 if (snapOs.OsPlatform == OSPlatform.Windows)
                 {
                     warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindows;
                     warpPackerRid = "win-x64";
+                    installerIconSupported = true;
                 }
                 else if (snapOs.OsPlatform == OSPlatform.Linux)
                 {
@@ -368,6 +371,10 @@ namespace snapx
                         installerFilename = "Snap.Installer.exe";
                         changeSubSystemToWindowsGui = true;
                         setupExtension = ".exe";
+                        if (installerIconSupported && snapApp.Target.Icon != null)
+                        {
+                            setupIcon = snapApp.Target.Icon;
+                        }
                         break;
                     case "linux-x64":
                         installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;
@@ -406,6 +413,21 @@ namespace snapx
                     await Task.WhenAll(
                         warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
                         snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken));
+
+                    if (installerIconSupported && setupIcon != null)
+                    {
+                        logger.Info($"Writing installer icon: {setupIcon}.");
+
+                        var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
+
+                        var rcEditOptions = new RcEditOptions
+                        {
+                            Filename = zipArchiveInstallerFilename,
+                            IconFilename = setupIcon
+                        };
+
+                        CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
+                    }
                 }
 
                 progressSource.Raise(50);
@@ -438,10 +460,14 @@ namespace snapx
 
                 if (changeSubSystemToWindowsGui)
                 {
+                    // NB! Unable to set icon on warped executable. Please refer to the following issue:
+                    // https://github.com/electron/rcedit/issues/70
+
                     var rcEditOptions = new RcEditOptions
                     {
                         ConvertSubSystemToWindowsGui = true,
-                        Filename = installerFinalAbsolutePath
+                        Filename = installerFinalAbsolutePath,
+                        //IconFilename = setupIcon 
                     };
 
                     CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);

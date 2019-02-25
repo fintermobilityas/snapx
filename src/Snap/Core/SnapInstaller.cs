@@ -329,7 +329,7 @@ namespace Snap.Core
             };
             
             var args = isInitialInstall ? 
-                $"--snap-install {currentVersion}" : 
+                $"--snap-installed {currentVersion}" : 
                 $"--snap-updated {currentVersion}";
 
             InvokeSnapAwareApps(allSnapAwareApps, args);

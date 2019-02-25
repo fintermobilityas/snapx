@@ -66,32 +66,18 @@ namespace Snap.Core
         /// Call this method as early as possible in app startup. This method
         /// will dispatch to your methods to set up your app. Depending on the
         /// parameter, your app will exit after this method is called, which 
-        /// is required by Snap. SnapUpdateManager has methods to help you to
-        /// do this, such as CreateShortcutForThisExe.
+        /// is required by Snap. 
         /// </summary>
-        /// <param name="onInitialInstall">Called when your app is initially
-        /// installed. Set up app shortcuts here as well as file associations.
+        /// <param name="onInstalled">Called when your app is initially
+        /// installed. Your application will not exit afterwards.
         /// </param>
-        /// <param name="onAppUpdate">Called when your app is updated to a new
-        /// version.</param>
-        /// <param name="onAppObsoleted">Called when your app is no longer the
-        /// latest version (i.e. they have installed a new version and your app
-        /// is now the old version)</param>
-        /// <param name="onAppUninstall">Called when your app is uninstalled 
-        /// via Programs and Features. Remove all of the things that you created
-        /// in onInitialInstall.</param>
-        /// <param name="onFirstRun">Called the first time an app is run after
-        /// being installed. Your application will **not** exit after this is
-        /// dispatched, you should use this as a hint (i.e. show a 'Welcome' 
-        /// screen, etc etc.</param>
+        /// <param name="onUpdated">Called when your app is updated to a new
+        /// version. Your application will exit afterwards.</param>
         /// <param name="arguments">Use in a unit-test runner to mock the 
         /// arguments. In your app, leave this as null.</param>
         public static void HandleEvents(
-            Action<SemanticVersion> onInitialInstall = null,
-            Action<SemanticVersion> onAppUpdate = null,
-            Action<SemanticVersion> onAppObsoleted = null,
-            Action<SemanticVersion> onAppUninstall = null,
-            Action onFirstRun = null,
+            Action<SemanticVersion> onInstalled = null,
+            Action<SemanticVersion> onUpdated = null,
             string[] arguments = null)
         {
             void DefaultBlock(SemanticVersion v)
@@ -102,49 +88,30 @@ namespace Snap.Core
             if (args.Length == 0) return;
 
             var lookup = new[] {
-                new { Key = "--snap-install", Value = onInitialInstall ??  DefaultBlock },
-                new { Key = "--snap-updated", Value = onAppUpdate ??  DefaultBlock },
-                new { Key = "--snap-obsolete", Value = onAppObsoleted ??  DefaultBlock },
-                new { Key = "--snap-uninstall", Value = onAppUninstall ??  DefaultBlock }
+                new { Key = "--snap-installed", Value = onInstalled ??  DefaultBlock },
+                new { Key = "--snap-updated", Value = onUpdated ??  DefaultBlock }
             }.ToDictionary(k => k.Key, v => v.Value);
 
-            if (args[0] == "--snap-firstrun")
-            {
-                (onFirstRun ?? (() => { }))();
-                return;
-            }
-
-            if (args.Length != 2)
-            {
-                return;
-            }
-
-            if (!lookup.ContainsKey(args[0]))
+            var actionKey = args[0];
+            if (!lookup.ContainsKey(actionKey))
             {
                 return;
             }
 
             try
             {
-                lookup[args[0]](Current.Version);
-                #if !SNAP_NUPKG
-                if (ModeDetector.InUnitTestRunner())
+                lookup[actionKey](Current.Version);
+                if (!string.Equals(actionKey, "--snap-install", StringComparison.InvariantCulture))
                 {
-                    return;
+                    #if SNAP_NUPKG
+                    Environment.Exit(0);
+                    #endif
                 }
-                #else
-                Environment.Exit(0);
-                #endif
             }
             catch (Exception ex)
             {
                 Logger.ErrorException($"Exception thrown while handling snap arguments. Arguments: {args}", ex);
-                #if !SNAP_NUPKG
-                if (ModeDetector.InUnitTestRunner())
-                {
-                    return;
-                }
-                #else
+                #if SNAP_NUPKG
                 Environment.Exit(-1);
                 #endif
             }

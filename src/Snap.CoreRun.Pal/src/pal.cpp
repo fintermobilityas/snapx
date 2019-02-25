@@ -335,6 +335,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
         return -1;
     }
 
+    *pid_out = pi.dwProcessId;
+
     AllowSetForegroundWindow(pi.dwProcessId);
     WaitForInputIdle(pi.hProcess, 5 * 1000);
 

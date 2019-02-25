@@ -23,11 +23,7 @@ namespace Snap.Tests.Core
         
         [Fact]
         public void TestCurrent_Is_Null()
-        {
-            _snapFilesystem.FileDeleteIfExists(
-                _snapFilesystem.PathCombine(
-                    _baseFixture.WorkingDirectory, SnapConstants.SnapAppDllFilename));
-            
+        {                      
             var app = SnapAwareApp.Current;
             Assert.Null(app);
         }

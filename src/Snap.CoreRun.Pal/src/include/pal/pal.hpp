@@ -74,7 +74,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, const int argc_in,
                                                           char **argv_in,
-                                                          const int cmd_show_in /* Only applicable on Windows */,
+                                                          int cmd_show_in /* Only applicable on Windows */,
                                                           pal_pid_t *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
 
@@ -86,7 +86,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_i
 
 // - Filesystem
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, int mode);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, uint32_t mode);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char* path_in_lhs, const char* path_in_rhs, char** path_out);
@@ -102,7 +102,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint32_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, void* data_in, size_t data_len_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);

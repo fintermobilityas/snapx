@@ -62,7 +62,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
         tracer_pid = strstr(buf, TracerPid);
         if (tracer_pid)
         {
-            debugger_present = !!atoi(tracer_pid + sizeof(TracerPid) - 1);
+            debugger_present = atoi(tracer_pid + sizeof(TracerPid) - 1) != 0;
         }
     }
 
@@ -257,7 +257,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
         process_exists = TRUE;
     }
 #elif PAL_PLATFORM_LINUX
-    struct stat dontcare;
+    struct stat dontcare = { 0 };
     std::string proc_path("/proc/" + std::to_string(pid));
     if (stat(proc_path.c_str(), &dontcare) != -1)
     {
@@ -274,7 +274,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
         return FALSE;
     }
 
-    BOOL process_killed = FALSE;
+    BOOL process_killed;
 #if PAL_PLATFORM_WINDOWS
     auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
     if (process != nullptr)
@@ -282,12 +282,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
         process_killed = TerminateProcess(process, 1);
         assert(0 != CloseHandle(process));
     }
+    return process_killed;
 #elif PAL_PLATFORM_LINUX
     auto result = kill(pid, SIGTERM);
     process_killed = result == 0;
-#endif
-
     return process_killed;
+#else
+    return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
@@ -502,7 +504,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char * environment_
 
 // - Filesystem
 
-BOOL pal_fs_chmod(const char *path_in, int mode) {
+BOOL pal_fs_chmod(const char *path_in, uint32_t mode) {
     if (path_in == nullptr) {
         return FALSE;
     }
@@ -724,7 +726,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
         return FALSE;
     }
 
-    BOOL file_exists = FALSE;
+    BOOL file_exists;
 #if PAL_PLATFORM_WINDOWS
     pal_utf16_string file_path_in_utf16_string(file_path_in);
     auto file_attributes = GetFileAttributes(file_path_in_utf16_string.data());
@@ -735,11 +737,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
     }
     return file_exists;
 #elif PAL_PLATFORM_LINUX
-    struct stat st;
+    struct stat st = { 0 };
     file_exists = stat(file_path_in, &st) == 0 && (st.st_mode & S_IFDIR) == 0;
     return file_exists;
 #else
-    return file_exists;
+    return FALSE;
 #endif
 }
 
@@ -857,7 +859,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
             case 1:
                 switch (entry->d_type)
                 {
-                    // Regular file
+                    default:
+                        continue;
+                // Regular file
                 case DT_REG:
                     if (filter_extension_in != nullptr
                         && FALSE == pal_str_endswith(entry_name.c_str(), filter_extension_in))
@@ -870,7 +874,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     absolute_path_s.append(entry_name);
                     break;
 
-                    // Handle symlinks and file systems that do not support d_type
+                // Handle symlinks and file systems that do not support d_type
                 case DT_LNK:
                 case DT_UNKNOWN:
                     if (filter_extension_in != nullptr
@@ -883,7 +887,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     absolute_path_s.append("/");
                     absolute_path_s.append(entry_name);
 
-                    struct stat file_stat;
+                    struct stat file_stat = { 0 };
                     if (stat(absolute_path_s.c_str(), &file_stat) == -1)
                     {
                         absolute_path_s.clear();
@@ -1139,7 +1143,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
     }
 
     fseek(h_file, 0, SEEK_END);
-    *file_size_out = ftell(h_file);
+    *file_size_out = static_cast<size_t>(ftell(h_file));
     assert(0 == fclose(h_file));
 
     return TRUE;
@@ -1222,14 +1226,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         return FALSE;
     }
     *bytes_out = buffer;
-    *bytes_read_out = total_bytes_read;
+    *bytes_read_out = static_cast<int>(total_bytes_read);
     return TRUE;
 #else
     return FALSE;
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, int mode_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint32_t mode_in)
 {
     if (directory_in == nullptr || mode_in <= 0)
     {
@@ -1302,7 +1306,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const cha
     if (!pal_fs_fopen(filename, mode_in, &file_handle))
     {
         return FALSE;
-}
+    }
 
     if (!pal_fs_fwrite(file_handle, data_in, data_len_in))
     {

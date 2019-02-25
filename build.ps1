@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer")]
+    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer", "Run-Native-Mingw-UnitTests-Windows")]
     [string] $Target = "Bootstrap"
 )
 
@@ -43,6 +43,8 @@ function Build-Native {
             exit 0
         }
 
+        Run-Native-Mingw-UnitTests-Windows
+    
         .\bootstrap.ps1 -Target Native -Configuration Debug 
         .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 	
     }
@@ -70,6 +72,12 @@ function Build-Summary {
     Write-Output-Header "Build elapsed: $Elapsed ($OSVersion)"
 }
 
+function Run-Native-Mingw-UnitTests-Windows
+{
+    .\bootstrap.ps1 -Target Run-Native-Mingw-UnitTests-Windows -Configuration Debug 
+    .\bootstrap.ps1 -Target Run-Native-Mingw-UnitTests-Windows -Configuration Release 
+}
+
 switch ($Target) {
     "Bootstrap" {
         Build-Native
@@ -81,6 +89,11 @@ switch ($Target) {
     }
     "Native" {
         Build-Native				
+        Build-Summary
+    }
+    "Run-Native-Mingw-UnitTests-Windows"
+    {
+        Run-Native-Mingw-UnitTests-Windows
         Build-Summary
     }
     "Snap" {

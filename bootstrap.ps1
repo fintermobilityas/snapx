@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Native", "Snap", "Snap-Installer")]
+    [ValidateSet("Native", "Snap", "Snap-Installer", "Run-Native-Mingw-UnitTests-Windows")]
     [string] $Target = "Native",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
@@ -12,6 +12,9 @@ param(
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $DotNetRid = $null
 )
+
+$ErrorActionPreference = "Stop"; 
+$ConfirmPreference = "None"; 
 
 # Global Variables
 
@@ -524,6 +527,29 @@ switch ($Target) {
                 Build-Native		
             }
             default {
+                Die "Unsupported os platform: $OSPlatform"
+            }
+        }
+    }
+    "Run-Native-Mingw-UnitTests-Windows" {
+        switch($OSPlatform)
+        {
+            "Windows" {
+                $SnapCoreRunMingwBuildOutputDir = Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\$Configuration
+                $CommandGTests = Join-Path $SnapCoreRunMingwBuildOutputDir Snap.Tests.exe
+                
+                Write-Output-Header "Running mingw unit tests"
+
+                if($false -eq (Test-Path $CommandGTests)) {
+                    Die "Unable to find test runner: $CommandGTests"
+                }
+
+                Push-Location $SnapCoreRunMingwBuildOutputDir
+                Command-Exec $CommandGTests @()		
+                Pop-Location 
+
+            }
+            default{
                 Die "Unsupported os platform: $OSPlatform"
             }
         }

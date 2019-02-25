@@ -4,7 +4,7 @@
 #include <iostream>
 
 // - String internal
-#if defined(PLATFORM_WINDOWS) || defined(PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
 wchar_t* pal_str_widen(const char* utf8_str);
 char* pal_str_narrow(const wchar_t* utf16_str);
 #ifndef TRUE
@@ -13,18 +13,24 @@ char* pal_str_narrow(const wchar_t* utf16_str);
 #ifndef FALSE
 #define FALSE 0
 #endif
-#if defined(PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_MINGW)
 #include <string.h>
 #ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0x0080
+#define _strdup strdup
+#define _wcsdup wcsdup
 #endif
 #endif
-#elif defined(PLATFORM_LINUX)
-#endif
+#elif defined(PAL_PLATFORM_LINUX)
 #include <string.h>
+#define _strdup strdup
+#define _wcsdup wcsdup
+#else
+#error "Unsupported platform"
+#endif
 
 template<class TStringClass, class TStorageClass, class TStdString>
-class pal_unicode_string
+class pal_string
 {
     virtual TStorageClass data() = 0;
     virtual TStorageClass dup() = 0;
@@ -36,7 +42,7 @@ class pal_unicode_string
     virtual bool empty() = 0;
 };
 
-class pal_utf8_string : public pal_unicode_string<pal_utf8_string, char*, std::string>
+class pal_utf8_string : public pal_string<pal_utf8_string, char*, std::string>
 {
     char* m_ptr;
     std::string m_value;
@@ -65,12 +71,12 @@ public:
 
     }
 
-    pal_utf8_string(const std::string& utf8_string) : pal_utf8_string(strdup(utf8_string.data()), true)
+    pal_utf8_string(const std::string& utf8_string) : pal_utf8_string(_strdup(utf8_string.data()), true)
     {
 
     }
 
-#if PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS
     pal_utf8_string(wchar_t* utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string), true)
     {
 
@@ -99,12 +105,12 @@ public:
 
     virtual char* dup() override
     {
-        return strdup(m_value.c_str());
+        return _strdup(m_value.c_str());
     }
 
     virtual char* slice(size_t start_pos) override
     {
-        return strdup(str().substr(start_pos).c_str());
+        return _strdup(str().substr(start_pos).c_str());
     }
 
     virtual char* data() override
@@ -140,8 +146,8 @@ public:
 
 };
 
-#if PLATFORM_WINDOWS
-class pal_utf16_string : public pal_unicode_string<pal_utf16_string, wchar_t*, std::wstring>
+#if PAL_PLATFORM_WINDOWS
+class pal_utf16_string : public pal_string<pal_utf16_string, wchar_t*, std::wstring>
 {
     wchar_t* m_ptr;
     std::wstring m_value;
@@ -193,7 +199,7 @@ public:
 
     virtual wchar_t* dup() override
     {
-        return wcsdup(m_value.c_str());
+        return _wcsdup(m_value.c_str());
     }
 
     virtual wchar_t* data() override
@@ -203,7 +209,7 @@ public:
 
     virtual wchar_t* slice(size_t start_pos) override
     {
-        return wcsdup(str().substr(start_pos).c_str());
+        return _wcsdup(str().substr(start_pos).c_str());
     }
 
     virtual std::wstring str() const override

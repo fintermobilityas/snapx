@@ -4,7 +4,6 @@ project(corerun CXX)
 
 list(APPEND corerun_INCLUDE_DIRS
    vendor
-   ../Snap.CoreRun.Pal/src
 )
 
 set(corerun_SOURCES
@@ -23,10 +22,6 @@ add_executable(corerun
 	src/main.cpp
 )
 
-target_compile_definitions(corerun PRIVATE 
-	ELPP_NO_DEFAULT_LOG_FILE
-)	
-
 if(WIN32)
 	
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -34,9 +29,6 @@ if(WIN32)
 		set(CMAKE_CREATE_CONSOLE_EXE "/subsystem:windows") # Override subsystem on Windows.
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")	
-        target_compile_definitions(corerun PRIVATE 
-		    PLATFORM_MINGW
-	    )	
 	endif()
 	
 	set(CompilerFlags
@@ -50,17 +42,12 @@ if(WIN32)
 	endforeach()
 	
 	target_compile_definitions(corerun PRIVATE 
-		PLATFORM_WINDOWS
 		_CRT_NONSTDC_NO_WARNINGS
 		_UNICODE
 		UNICODE
 	)	
 
 elseif(UNIX)
-
-	target_compile_definitions(corerun PRIVATE 
-		PLATFORM_LINUX
-	)	
 
     target_link_libraries(corerun PRIVATE
         libstdc++.a

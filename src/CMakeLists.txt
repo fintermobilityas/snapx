@@ -27,32 +27,41 @@ add_subdirectory(Snap.CoreRun.Pal)
 add_subdirectory(Snap.CoreRun)
 
 if (BUILD_ENABLE_TESTS)
+
   add_subdirectory(Vendor/gtest)
+
   enable_testing()
+
   include_directories(
-				  ${gtest_SOURCE_DIR}/include
-				  ${gtest_SOURCE_DIR}
+	${gtest_SOURCE_DIR}/include
+	${gtest_SOURCE_DIR}
   )
 
-  set(tests_SOURCES )
+  set(tests_SOURCES 
+    Snap.CoreRun.Pal/test/anyos.cpp
+  )
 
   if(WIN32)
-	  list(APPEND tests_SOURCES
-	  	Snap.CoreRun.Pal/test/windows.cpp
-	  	Snap.CoreRun/test/windows.cpp
-	  )
+	list(APPEND tests_SOURCES
+	    Snap.CoreRun.Pal/test/windows.cpp
+	    Snap.CoreRun/test/windows.cpp
+	)
   elseif(UNIX)
-	  list(APPEND tests_SOURCES
-		Snap.CoreRun.Pal/test/unix.cpp
-	  	Snap.CoreRun/test/unix.cpp
-	  )
+	list(APPEND tests_SOURCES
+	    Snap.CoreRun.Pal/test/unix.cpp
+	    Snap.CoreRun/test/unix.cpp
+	)
   endif()
 
   add_executable(Snap.Tests ${tests_SOURCES})
+
   target_link_libraries(Snap.Tests
 				  gtest
 				  pal_static
 				  gtest_main)
+
+  set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD 17)
+  set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD_REQUIRED ON)
 
 endif()
 
@@ -67,6 +76,7 @@ if(WIN32)
 		endif()	
 
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
+		set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")	
 		set(CMAKE_CXX_FLAGS_RELEASE "-O -DNDEBUG")	
 		if(BUILD_ENABLE_LTO)
 			set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s -flto -fwhole-program -ffunction-sections -fdata-sections -Wl,--gc-sections -ffast-math")			
@@ -74,12 +84,11 @@ if(WIN32)
 	endif()
 elseif(UNIX)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O -DNDEBUG")
 	endif()
 endif()
 
-# ========================== C/C++ options ==========================
 if(CMAKE_CXX_COMPILER_VERSION)
   set(SNAP_COMPILER_STR "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ARG1} (ver ${CMAKE_CXX_COMPILER_VERSION})")
 else()

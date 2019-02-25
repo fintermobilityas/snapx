@@ -1,13 +1,13 @@
-#include "pal_string.hpp"
+#include "pal/pal_string.hpp"
 
-#if PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS
 #include <shlwapi.h> // MultiByteToWideChar
 #include <strsafe.h> // StringCchLengthA
 #endif
 
 #include <stdexcept>
 
-#if PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS
 // https://stackoverflow.com/a/10766913
 wchar_t * pal_str_widen(const char * utf8_str)
 {

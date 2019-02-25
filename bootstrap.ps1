@@ -189,11 +189,15 @@ function Command-Exec {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $Command,
-        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Position = 1, ValueFromPipeline = $true)]
         [string[]] $Arguments
     )
 
-    $CommandStr = "{0} {1}" -f $Command, ($Arguments -join " ")
+    if($Arguments.Length -gt 0) {
+        $CommandStr = "{0} {1}" -f $Command, ($Arguments -join " ")
+    } else {
+        $CommandStr = $Command
+    }
     $CommandDashes = "-" * [math]::min($CommandStr.Length, [console]::BufferWidth)
 
     Write-Output-Colored $CommandDashes -ForegroundColor White
@@ -301,14 +305,22 @@ function Build-Native {
     Write-Output ""
 	
     Command-Exec $CommandCmake $CmakeArguments
-	
+    
+    $CommandGTests = Join-Path $SnapCoreRunBuildOutputDir Snap.Tests
+    $RunGTests = $true
+
     switch ($OSPlatform) {
         "Unix" {
             sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
 
+            if($Cross)
+            {
+                $RunGTests = $false
+            }
+
             if ($Configuration -eq "Release") {
                 $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun
-                if ($Cross -eq $TRUE) {
+                if ($Cross) {
                     $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\corerun.exe
                 }
                 #Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
@@ -320,6 +332,11 @@ function Build-Native {
                 "--build `"$SnapCoreRunBuildOutputDir`" --config $Configuration"
             )
         
+            $SnapTestsExePath = Join-Path $SnapCoreRunBuildOutputDir $Configuration\Snap.Tests.exe
+            $CoreRunExePath = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration
+            Copy-Item $SnapTestsExePath $CoreRunExePath | Out-Null
+            $CommandGTests = Join-Path $CoreRunExePath Snap.Tests.exe
+
             if ($Configuration -eq "Release") {
                 $SnapCoreRunBinary = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration\corerun.exe
                 #Command-Exec $CommandUpx @("--ultra-brute $SnapCoreRunBinary")
@@ -329,8 +346,23 @@ function Build-Native {
             Die "Unsupported os platform: $OSPlatform"
         }
     }
-			
+
+    if($RunGTests -eq $false)
+    {
+        return
+    }
+
+    Write-Output-Header "Running unit tests"
+
+    if($false -eq (Test-Path $CommandGTests)) {
+        Die "Unable to find test runner: $CommandGTests"
+    }
+
+    Push-Location $SnapCoreRunBuildOutputDir
+    Command-Exec $CommandGTests @()		
+    Pop-Location 
 }
+
 function Build-Snap {
     Write-Output-Header "Building Snap"
 

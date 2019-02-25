@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pal.hpp"
+#include "pal/pal.hpp"
 
-#ifdef PLATFORM_WINDOWS
+#ifdef PAL_PLATFORM_WINDOWS
 #include "resource.h"
 #endif

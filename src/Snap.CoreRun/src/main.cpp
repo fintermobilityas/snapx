@@ -1,7 +1,7 @@
 #include "corerun.hpp"
 #include "stubexecutable.hpp"
 
-#if PLATFORM_LINUX
+#if PAL_PLATFORM_LINUX
 #include "unistd.h" // fork
 #endif
 
@@ -70,7 +70,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
 
             stubexecutable_arguments.erase(stubexecutable_arguments.begin() + argv_index); // Remove "this" argument
 
-#if PLATFORM_LINUX
+#if PAL_PLATFORM_LINUX
             // We have to resolve stub executable working directory before fork
             char* working_dir = nullptr;
             if(!pal_fs_get_directory_name_absolute_path(this_executable_full_path.c_str(), &working_dir))
@@ -112,7 +112,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
     return snap::stubexecutable::run(stubexecutable_arguments, cmd_show_windows);
 }
 
-#if PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS
 #include <shellapi.h>
 
 // ReSharper disable all

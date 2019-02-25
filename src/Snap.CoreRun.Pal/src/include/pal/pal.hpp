@@ -1,17 +1,17 @@
 #pragma once
 
-#include "pal_string.hpp"
-
-#ifdef PLATFORM_WINDOWS
+#ifdef PAL_PLATFORM_WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 #endif
 
+#ifndef PAL_UNUSED
 #define PAL_UNUSED(x) (void)(x)
+#endif
 
-#ifdef PLATFORM_WINDOWS
+#ifdef PAL_PLATFORM_WINDOWS
 #define PAL_MAX_PATH MAX_PATH 
 #define PAL_DIRECTORY_SEPARATOR_STR "\\"
 #define PAL_DIRECTORY_SEPARATOR_WIDE_STR L"\\"
@@ -20,7 +20,7 @@
 #define PAL_CORECLR_TPA_SEPARATOR_C ';'
 #define PAL_API __declspec( dllexport )
 #define PAL_CALLING_CONVENTION __cdecl
-#elif PLATFORM_LINUX
+#elif PAL_PLATFORM_LINUX
 #include <limits.h>
 #define PAL_MAX_PATH PATH_MAX
 #define TRUE 1
@@ -40,6 +40,8 @@
 #error Unsupported platform
 #endif
 
+#include "pal_string.hpp"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,16 +50,18 @@ extern "C" {
 typedef int BOOL;
 typedef FILE pal_file_handle_t;
 
-#if PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS
 typedef DWORD pal_pid_t;
-#elif PLATFORM_LINUX
+#elif PAL_PLATFORM_LINUX
 typedef pid_t pal_pid_t;
 #endif
 
 // - Callbacks
+
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
 // - Generic
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
@@ -75,11 +79,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
 
 // - Environment
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char* environment_variable_in, char** environment_variable_value_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char* environment_variable_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_in, char** environment_out);
 
 // - Filesystem
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, int mode);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char* path_in, char** path_out);
@@ -90,6 +96,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char* path_in, pal_f
         const char* filter_extension_in, char*** files_out, size_t* files_out_len);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_process_real_path(char** real_path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_executable_name_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
@@ -102,6 +109,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_h
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, void* data_in, size_t data_len_in);
 
 // - String
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char* src, const char* str);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_startswith(const char* src, const char* str);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char* rhs);

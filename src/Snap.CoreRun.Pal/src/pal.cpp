@@ -303,12 +303,17 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     }
 
 #if PLATFORM_WINDOWS
-    auto cmd_line = std::string();
+    auto cmd_line = std::string("\"");
     cmd_line += filename_in;
+    cmd_line += "\" ";
 
     for(auto i = 0; i < argc_in; i++)
     {
         cmd_line += argv_in[i];
+        if(i + 1 < argc_in) 
+        {
+            cmd_line += " ";
+        }
     }
 
     pal_utf16_string lp_command_line_utf16_string(cmd_line);

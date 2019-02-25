@@ -4,14 +4,14 @@ project(corerun CXX)
 
 list(APPEND corerun_INCLUDE_DIRS
    vendor
-   ../Snap.CoreRun.Pal
+   ../Snap.CoreRun.Pal/src
 )
 
 set(corerun_SOURCES
-   corerun.hpp
-   stubexecutable.cpp
-   vendor/semver/semver200_comparator.cpp 
-   vendor/semver/semver200_parser.cpp
+   src/corerun.hpp
+   src/stubexecutable.cpp
+   src/vendor/semver/semver200_comparator.cpp 
+   src/vendor/semver/semver200_parser.cpp
 )
 
 include_directories(
@@ -20,7 +20,7 @@ include_directories(
 
 add_executable(corerun 
 	${corerun_SOURCES}
-	main.cpp
+	src/main.cpp
 )
 
 target_compile_definitions(corerun PRIVATE 

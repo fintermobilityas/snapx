@@ -16,7 +16,7 @@
         <EmbeddedResource Include="**\*.xaml" SubType="Designer" />        
         <EmbeddedResource Include="Assets\**\*" />        
         <EmbeddedResource Remove="Assets\AssetsTypeRoot.cs" />
-        <EmbeddedResource Include="../Snap.CoreRun/resources/CoreRun.ico" Link="Assets\snap.ico" />
+        <EmbeddedResource Include="../Snap.CoreRun/src/resources/CoreRun.ico" Link="Assets\snap.ico" />
         <Compile Update="**\*.xaml.cs" DependentUpon="%(Filename)" />
     </ItemGroup>
 

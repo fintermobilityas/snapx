@@ -3,20 +3,20 @@ cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 project(pal CXX)
 
 list(APPEND pal_INCLUDE_DIRS
-   pal 
+   src/pal 
 )
 
 list(APPEND pal_SOURCES
-   pal_string.cpp
-   pal.cpp
+   src/pal_string.cpp
+   src/pal.cpp
 )
 
 if(WIN32)
 	list(APPEND pal_INCLUDE_DIRS
-		vendor
+		src/vendor
 	)
 	list(APPEND pal_SOURCES
-		vendor/rcedit/rcedit.cpp 
+		src/vendor/rcedit/rcedit.cpp 
 	)
 endif()
 

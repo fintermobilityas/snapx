@@ -20,24 +20,55 @@ add_definitions(-DSNAP_VERSION_MAJOR=${SNAP_VERSION_MAJOR})
 add_definitions(-DSNAP_VERSION_MINOR=${SNAP_VERSION_MINOR})
 add_definitions(-DSNAP_VERSION_PATCH=${SNAP_VERSION_PATCH})
 
-option(ENABLE_LTO OFF)
+option(BUILD_ENABLE_LTO "Enable lto support" OFF)
+option(BUILD_ENABLE_TESTS "Build with tests enabled" ON)
 
 add_subdirectory(Snap.CoreRun.Pal)
 add_subdirectory(Snap.CoreRun)
+
+if (BUILD_ENABLE_TESTS)
+  add_subdirectory(Vendor/gtest)
+  enable_testing()
+  include_directories(
+				  ${gtest_SOURCE_DIR}/include
+				  ${gtest_SOURCE_DIR}
+  )
+
+  set(tests_SOURCES )
+
+  if(WIN32)
+	  list(APPEND tests_SOURCES
+	  	Snap.CoreRun.Pal/test/windows.cpp
+	  	Snap.CoreRun/test/windows.cpp
+	  )
+  elseif(UNIX)
+	  list(APPEND tests_SOURCES
+		Snap.CoreRun.Pal/test/unix.cpp
+	  	Snap.CoreRun/test/unix.cpp
+	  )
+  endif()
+
+  add_executable(Snap.Tests ${tests_SOURCES})
+  target_link_libraries(Snap.Tests
+				  gtest
+				  pal_static
+				  gtest_main)
+
+endif()
 
 if(WIN32)
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG} /MP -DDEBUG -D_DEBUG")
 		set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /MP -DNDEBUG")
 
-		if(ENABLE_LTO)
+		if(BUILD_ENABLE_LTO)
 		    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O1 /GL")
 		    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 		endif()	
 
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
 		set(CMAKE_CXX_FLAGS_RELEASE "-O -DNDEBUG")	
-		if(ENABLE_LTO)
+		if(BUILD_ENABLE_LTO)
 			set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s -flto -fwhole-program -ffunction-sections -fdata-sections -Wl,--gc-sections -ffast-math")			
 		endif()
 	endif()
@@ -58,12 +89,13 @@ string(STRIP "${SNAP_COMPILER_STR}" SNAP_COMPILER_STR)
 
 message(STATUS "")
 message(STATUS "  Options:")
-message(STATUS "    Lto enabled:"           ${ENABLE_LTO})
+message(STATUS "    Lto: "           ${BUILD_ENABLE_LTO})
+message(STATUS "    Tests: "		${BUILD_ENABLE_TESTS})
 
 message(STATUS "  C/C++:")
-message(STATUS "    C++ Compiler:"           ${SNAP_COMPILER_STR})
-message(STATUS "    C++ flags (Debug):"      ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG})
-message(STATUS "    C++ flags (Release):"    ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE})
+message(STATUS "    C++ Compiler: "           ${SNAP_COMPILER_STR})
+message(STATUS "    C++ flags (Debug): "      ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG})
+message(STATUS "    C++ flags (Release): "    ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE})
 
 if(WIN32 OR UNIX)
   message(STATUS "    Linker flags (Debug):"   ${CMAKE_EXE_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS_DEBUG})

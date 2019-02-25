@@ -277,7 +277,7 @@ function Build-Native {
     )
 	
     if ($Lto) {
-        $CmakeArguments += "-DENABLE_LTO=1"
+        $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"
     }
 
     if ($Configuration -eq "Debug") {

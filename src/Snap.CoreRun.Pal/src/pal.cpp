@@ -963,7 +963,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
     {
         *working_directory_out = strdup(cwd);
         return TRUE;
-}
+    }
+    return FALSE;
 #else
     return FALSE;
 #endif
@@ -1002,7 +1003,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char ** own_e
         *own_executable_name_out = strdup(executable_name.c_str());
 
         return TRUE;
-}
+    }
+    return FALSE;
 #else
     return FALSE;
 #endif
@@ -1041,7 +1043,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
         *path_absolute_out = strdup(real_path_str.c_str());
 
         return TRUE;
-}
+    }
+    return FALSE;
 #else
     return FALSE;
 #endif

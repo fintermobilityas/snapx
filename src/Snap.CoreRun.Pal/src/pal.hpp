@@ -50,8 +50,6 @@ typedef FILE pal_file_handle_t;
 
 #if PLATFORM_WINDOWS
 typedef DWORD pal_pid_t;
-#elif PLATFORM_MINGW
-typedef int pal_pid_t;
 #elif PLATFORM_LINUX
 typedef pid_t pal_pid_t;
 #endif

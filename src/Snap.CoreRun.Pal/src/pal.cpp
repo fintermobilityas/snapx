@@ -21,9 +21,7 @@
 #include <cctype> // toupper
 #include <direct.h> // mkdir
 #include "vendor/rcedit/rcedit.hpp"
-#endif
-
-#if PLATFORM_LINUX
+#elif PLATFORM_LINUX
 #include <sys/stat.h> // stat
 #include <sys/types.h> // O_RDONLY
 #include <unistd.h> // getcwd
@@ -32,8 +30,6 @@
 #include <libgen.h> // dirname
 #include <dlfcn.h> // dlopen
 #include <signal.h> // kill
-
-// GLOBALS
 
 static const char* symlink_entrypoint_executable = "/proc/self/exe";
 #endif
@@ -141,7 +137,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
     }
 #if PLATFORM_WINDOWS
     auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
-    return free_library_result == TRUE;
+    if(free_library_result == 0) 
+    {
+        return TRUE;
+    }
+    return FALSE;
 #elif PLATFORM_LINUX
     dlclose(instance_in);
     return TRUE;

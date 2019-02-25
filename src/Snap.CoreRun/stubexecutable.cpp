@@ -1,12 +1,6 @@
 #include "stubexecutable.hpp"
 #include "vendor/semver/semver200.h"
 
-#if PLATFORM_LINUX
-#include <unistd.h> // fork
-#include <sys/types.h> // pid_t
-#include <sys/wait.h> // wait
-#endif
-
 using std::string;
 
 inline std::string join(const std::vector<std::string>& strings, const char* delimiter = " ")

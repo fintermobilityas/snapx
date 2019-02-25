@@ -326,7 +326,7 @@ namespace Snap.Core
             var allSnapAwareApps = new List<string> {coreRunExeAbsolutePath};
             
             await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
-                $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");
+                $"--snap-installed {currentVersion}" : $"--snap-updated {currentVersion}");
         }
 
         Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 

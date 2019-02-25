@@ -698,7 +698,7 @@ namespace Snap.Core
             {
                 Id = snapApp.BuildNugetReleasesUpstreamPackageId(),
                 Version = releases.Version.ToNuGetVersion(),
-                Description = $"Snapx application database. This file contains release details for application: {snapApp.Id}. Channels: {string.Join(",", snapApp.Channels.Select(x => x.Name))}.",
+                Description = $"Snapx application database. This file contains release details for application: {snapApp.Id}. Channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}.",
                 Authors = {"Snapx"}
             };
 

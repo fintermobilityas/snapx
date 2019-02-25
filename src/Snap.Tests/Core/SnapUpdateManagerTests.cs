@@ -438,7 +438,7 @@ namespace Snap.Tests.Core
             ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
         {
             return new SnapUpdateManager(workingDirectory,
-                snapApp, nugetService, snapOs, snapCryptoProvider, snapEmbeddedResources, snapAppReader, snapAppWriter, snapPack, snapExtractor, snapInstaller);
+                snapApp, null, nugetService, snapOs, snapCryptoProvider, snapEmbeddedResources, snapAppReader, snapAppWriter, snapPack, snapExtractor, snapInstaller);
         }
     }
 }

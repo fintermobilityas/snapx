@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
@@ -30,8 +31,6 @@ namespace Snap.Core
 
     public sealed class SnapUpdateManager : ISnapUpdateManager
     {
-        static readonly ILog Logger = LogProvider.For<SnapUpdateManager>();
-
         readonly string _rootDirectory;
         readonly string _packagesDirectory;
         readonly SnapApp _snapApp;
@@ -43,23 +42,24 @@ namespace Snap.Core
         readonly DisposableTempDirectory _nugetSourcesTempDirectory;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapExtractor _snapExtractor;
+        readonly ILog _logger;
 
         [UsedImplicitly]
-        public SnapUpdateManager() : this(
+        public SnapUpdateManager(ILog logger = null) : this(
             Directory.GetParent(
-                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName)
+                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName, logger)
         {
 
         }
 
         [UsedImplicitly]
-        internal SnapUpdateManager([NotNull] string workingDirectory) : this(workingDirectory, SnapAwareApp.Current)
+        internal SnapUpdateManager([NotNull] string workingDirectory, ILog logger = null) : this(workingDirectory, SnapAwareApp.Current, logger)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }
 
         [SuppressMessage("ReSharper", "JoinNullCheckWithUsage")]
-        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null, 
+        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null, 
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null, 
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
             ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
@@ -67,6 +67,7 @@ namespace Snap.Core
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
+            _logger = logger ?? LogProvider.For<SnapUpdateManager>();
             _snapOs = snapOs ?? SnapOs.AnyOs;
             _rootDirectory = workingDirectory;
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
@@ -75,7 +76,7 @@ namespace Snap.Core
             _snapApp = snapApp;
             _nugetPackageSources = snapApp.BuildNugetSources(_nugetSourcesTempDirectory.WorkingDirectory);
             
-            _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(Logger));
+            _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
             snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
             _snapAppReader = snapAppReader ?? new SnapAppReader();
@@ -97,7 +98,7 @@ namespace Snap.Core
             _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
         }
 
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource, CancellationToken cancellationToken = default)
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -105,7 +106,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                Logger.Error("Exception thrown when attempting to update to latest release", e);
+                _logger?.Error("Exception thrown when attempting to update to latest release", e);
                 return null;
             }
         }
@@ -161,7 +162,8 @@ namespace Snap.Core
                 var channel = _snapApp.Channels.Single(x => x.Current);
                 if (!(channel.UpdateFeed is SnapNugetFeed snapNugetFeed))
                 {
-                    throw new NotImplementedException("Todo: Retrieve update feed credentials from http feed.");
+                    _logger?.Error("Todo: Retrieve update feed credentials from http feed.");
+                    return null;
                 }
 
                 packageSource = _nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name 
@@ -172,7 +174,7 @@ namespace Snap.Core
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
-                    Logger.Error($"Unknown error while downloading {_snapApp.BuildNugetReleasesUpstreamPackageId()} from {packageSource.Source}.");
+                    _logger?.Error($"Unknown error while downloading {_snapApp.BuildNugetReleasesUpstreamPackageId()} from {packageSource.Source}.");
                     return null;
                 }
                                 
@@ -181,14 +183,14 @@ namespace Snap.Core
                     snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader, cancellationToken);
                     if (snapReleases == null)
                     {
-                        Logger.Error("Unknown error unpacking releases nupkg");
+                        _logger?.Error("Unknown error unpacking releases nupkg");
                         return null;
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Error("Exception thrown while checking for updates", e);
+                _logger?.Error("Exception thrown while checking for updates", e);
                 return null;
             }
             
@@ -205,13 +207,13 @@ namespace Snap.Core
             var baseFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, _snapApp.BuildNugetFullLocalFilename());
             if (!_snapOs.Filesystem.FileExists(baseFullNupkg))
             {
-                Logger.Info($"Unable to find current full nupkg: {baseFullNupkg} which is required for reassembling delta packages.");
+                _logger?.Error($"Unable to find current full nupkg: {baseFullNupkg} which is required for reassembling delta packages.");
                 return null;
             }
 
             snapProgressSource?.Raise(0);
 
-            Logger.Info($"Delta updates found! Updates that need to be reassembled: {string.Join(",", deltaUpdates.Select(x => x.Version))}.");
+            _logger?.Info($"Delta updates found! Updates that need to be reassembled: {string.Join(",", deltaUpdates.Select(x => x.Version))}.");
 
             var downloadResultsTasks =
                 deltaUpdates.Select(x =>
@@ -224,13 +226,13 @@ namespace Snap.Core
             downloadResourceResults.ForEach(x => x.Dispose());
             if (downloadsFailed.Any())
             {
-                Logger.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. ");
+                _logger?.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. ");
                 return null;
             }
             
             snapProgressSource?.Raise(10);
 
-            Logger.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
+            _logger?.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
 
             var deltas = deltaUpdates.Select(x =>
             {
@@ -252,7 +254,7 @@ namespace Snap.Core
             {
                 if (!_snapOs.Filesystem.FileExists(deltaNupkg))
                 {
-                    Logger.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}. ");
+                    _logger?.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}. ");
                     return null;
                 }
 
@@ -261,13 +263,13 @@ namespace Snap.Core
                     var snapApp = await _snapPack.GetSnapAppAsync(asyncCoreReader, cancellationToken);
                     if (snapApp == null)
                     {
-                        Logger.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. ");
+                        _logger?.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. ");
                         return null;
                     }
 
                     if (!snapApp.Delta)
                     {
-                        Logger.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
+                        _logger?.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
                         return null;
                     }
 
@@ -292,11 +294,11 @@ namespace Snap.Core
             {
                 if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
                 {
-                    Logger.Error($"Failed to apply delta update {index} of {total}. Full nupkg was not found: {nextFullNupkg}.");
+                    _logger?.Error($"Failed to apply delta update {index} of {total}. Full nupkg was not found: {nextFullNupkg}.");
                     return null;
                 }
 
-                Logger.Info($"Reassembling delta update {index} of {total}. Full nupkg: {nextFullNupkg}. Delta nupkg: {deltaNupkgFilename}");
+                _logger?.Info($"Reassembling delta update {index} of {total}. Full nupkg: {nextFullNupkg}. Delta nupkg: {deltaNupkgFilename}");
 
                 try
                 {
@@ -306,13 +308,13 @@ namespace Snap.Core
                     updatedSnapApp = snapApp;
                     nextFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, updatedSnapApp.BuildNugetFullLocalFilename());
 
-                    Logger.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {nextFullNupkg}");
+                    _logger?.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {nextFullNupkg}");
 
                     await _snapOs.Filesystem.FileWriteAsync(nupkgStream, nextFullNupkg, cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    Logger.ErrorException($"Unknown error while reassembling delta update at index {index}.", e);
+                    _logger?.ErrorException($"Unknown error while reassembling delta update at index {index}.", e);
                     return null;
                 }
 
@@ -321,17 +323,17 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(70);
 
-            Logger.Info($"Finished building deltas. Attempting to install reassembled full nupkg: {nextFullNupkg}");
+            _logger?.Info($"Finished building deltas. Attempting to install reassembled full nupkg: {nextFullNupkg}");
 
             if (updatedSnapApp == null)
             {
-                Logger.Error($"Fatal error! Unable to install full nupkg because {nameof(updatedSnapApp)} is null.");
+                _logger?.Error($"Fatal error! Unable to install full nupkg because {nameof(updatedSnapApp)} is null.");
                 return null;
             }
             
             if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
             {
-                Logger.Error($"Unable to install final full nupkg because it does not exist on disk: {nextFullNupkg}.");
+                _logger?.Error($"Unable to install final full nupkg because it does not exist on disk: {nextFullNupkg}.");
                 return null;
             }
 
@@ -339,7 +341,7 @@ namespace Snap.Core
 
             try
             {
-                updatedSnapApp = await _snapInstaller.UpdateAsync(nextFullNupkg, _rootDirectory, cancellationToken: cancellationToken);
+                updatedSnapApp = await _snapInstaller.UpdateAsync(nextFullNupkg, _rootDirectory, logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install reassembled full nupkg: {nextFullNupkg}");
@@ -347,7 +349,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                Logger.ErrorException("Exception thrown while installing full nupkg reassembled from one or multiple delta packages." +
+                _logger?.ErrorException("Exception thrown while installing full nupkg reassembled from one or multiple delta packages." +
                                       $"Filename: {nextFullNupkg}.", e);
                 return null;
             }

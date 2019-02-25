@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Mono.Cecil;
+using Mono.Cecil.Cil;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.Core;
@@ -212,11 +213,43 @@ namespace Snap.Shared.Tests
                     RandomSource.Next(0, 1000), 
                     RandomSource.Next(0, 1000)) : 
                 new Version(1, 0, 0, 0);
-            
-            var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(applicationName, version), applicationName, ModuleKind.Console);
 
+            var hideConsoleWindow = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 
+                ModuleKind.Windows : ModuleKind.Console;
+
+            var assembly = AssemblyDefinition.CreateAssembly(
+                new AssemblyNameDefinition(applicationName, version), applicationName, 
+                hideConsoleWindow);
+             
             var mainModule = assembly.MainModule;
+
+            var programType = new TypeDefinition(applicationName, "Program",
+                TypeAttributes.Class | TypeAttributes.Public, mainModule.TypeSystem.Object);
+
+            mainModule.Types.Add(programType);
+
+            var ctor = new MethodDefinition(".ctor", MethodAttributes.Public | MethodAttributes.HideBySig
+                | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName, mainModule.TypeSystem.Void);
+
+            var il = ctor.Body.GetILProcessor();
+            il.Append(il.Create(OpCodes.Ldarg_0));
+            il.Append(il.Create(OpCodes.Call, mainModule.ImportReference(method: typeof(object).GetConstructor(Array.Empty<Type>()))));
+            il.Append(il.Create(OpCodes.Nop));
+            il.Append(il.Create(OpCodes.Ret));
+            programType.Methods.Add(ctor);
+
+            var mainMethod = new MethodDefinition("Main",
+                MethodAttributes.Public | MethodAttributes.Static, mainModule.TypeSystem.Void);
+            programType.Methods.Add(mainMethod);
+
+            var argsParameter = new ParameterDefinition("args",
+                ParameterAttributes.None, mainModule.ImportReference(typeof(string[])));
+            mainMethod.Parameters.Add(argsParameter);
+            il = mainMethod.Body.GetILProcessor();
+            il.Append(il.Create(OpCodes.Nop));
+            il.Append(il.Create(OpCodes.Ret));
+
+            assembly.EntryPoint = mainMethod;
 
             if (references == null)
             {

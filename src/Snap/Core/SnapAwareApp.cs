@@ -87,21 +87,22 @@ namespace Snap.Core
             var args = arguments ?? Environment.GetCommandLineArgs().Skip(1).ToArray();
             if (args.Length == 0) return;
 
-            var lookup = new[] {
+            var invoke = new[] {
                 new { Key = "--snap-installed", Value = onInstalled ??  DefaultBlock },
                 new { Key = "--snap-updated", Value = onUpdated ??  DefaultBlock }
             }.ToDictionary(k => k.Key, v => v.Value);
 
-            var actionKey = args[0];
-            if (!lookup.ContainsKey(actionKey))
+            var actionName = args[0];
+            if (!invoke.ContainsKey(actionName))
             {
                 return;
             }
 
             try
             {
-                lookup[actionKey](Current.Version);
-                if (!string.Equals(actionKey, "--snap-install", StringComparison.InvariantCulture))
+                invoke[actionName](Current.Version);
+                Logger.Trace($"Successfully handled event: {actionName}.");
+                if (!string.Equals(actionName, "--snap-install", StringComparison.InvariantCulture))
                 {
                     #if SNAP_NUPKG
                     Environment.Exit(0);
@@ -110,7 +111,7 @@ namespace Snap.Core
             }
             catch (Exception ex)
             {
-                Logger.ErrorException($"Exception thrown while handling snap arguments. Arguments: {args}", ex);
+                Logger.ErrorException($"Exception thrown while handling snap event. Action: {actionName}", ex);
                 #if SNAP_NUPKG
                 Environment.Exit(-1);
                 #endif

@@ -315,7 +315,7 @@ namespace Snap.Core
                         IconAbsolutePath = iconAbsolutePath
                     };
                     
-                    await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription,logger, cancellationToken);
+                    await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -323,37 +323,35 @@ namespace Snap.Core
                 }
             }          
            
-            var allSnapAwareApps = new List<string> {coreRunExeAbsolutePath};
-            
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
-                $"--snap-install {currentVersion}" : $"--snap-updated {currentVersion}");
-        }
-
-        Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 
-            TimeSpan cancelInvokeProcessesAfterTs, string args, ILog logger = null)
-        {
-            logger?.Info(
-                $"Invoking {allSnapAwareApps.Count} processes with arguments: {args}. " +
-                         $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
-
-            return allSnapAwareApps.ForEachAsync(async exe =>
+            var allSnapAwareApps = new List<string>
             {
-                using (var cts = new CancellationTokenSource())
-                {
-                    cts.CancelAfter(cancelInvokeProcessesAfterTs);
+                coreRunExeAbsolutePath
+            };
+            
+            var args = isInitialInstall ? 
+                $"--snap-install {currentVersion}" : 
+                $"--snap-updated {currentVersion}";
 
-                    try
-                    {
-                        await _snapOs.ProcessManager.RunAsync(exe, args, cts.Token);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger?.ErrorException($"Couldn't run Snap hook: {args}, continuing: {exe}.", ex);
-                    }
-                }
-            }, 1 /* at a time */);
+            InvokeSnapAwareApps(allSnapAwareApps, args);
         }
 
+        void InvokeSnapAwareApps([NotNull] IReadOnlyCollection<string> allSnapAwareApps, string args, ILog logger = null)
+        {
+            if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
+
+            foreach (var exe in allSnapAwareApps)
+            {
+                try
+                {
+                    logger?.Info($"Starting process: {exe}. Arguments: {args}");
+                    _snapOs.ProcessManager.StartNonBlocking(exe, args);
+                }
+                catch (Exception ex)
+                {
+                    logger?.ErrorException($"Error starting process: {exe}.", ex);
+                }
+            }
+        }
         
         string GetApplicationDirectory(string baseDirectory, SemanticVersion version)
         {

@@ -417,10 +417,24 @@ namespace Snap.Core
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    File.SetAttributes(file, FileAttributes.Normal);                    
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);                    
+                    }
+                    catch (UnauthorizedAccessException e)
+                    {
+                        Logger.Warn($"Unable to set file attribute to 'Normal' for file: {file}", e);
+                    }
                 }
-                
-                File.Delete(file);
+
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    Logger.Warn($"Unable to delete file: {file}", e);
+                }
             });
 
             var directoryOperations =
@@ -441,7 +455,14 @@ namespace Snap.Core
             Logger.Debug("Now deleting folder: {0}", directory);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                File.SetAttributes(directory, FileAttributes.Normal);                
+                try
+                {
+                    File.SetAttributes(directory, FileAttributes.Normal);   
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    Logger.Warn($"Unable to set file attribute to 'Normal' for directory: {directory}", e);
+                }          
             }
 
             try

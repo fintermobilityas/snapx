@@ -8,12 +8,11 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;
-using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using Snap.Core;
-using Snap.Core.IO;
 using Snap.Extensions;
+using Snap.Logging;
 using Snap.Logging.LogProviders;
 
 namespace Snap.NuGet
@@ -46,6 +45,7 @@ namespace Snap.NuGet
 
     internal class NugetService : INugetService
     {
+        readonly ILog _logger = LogProvider.For<INugetService>();
         readonly ISnapNugetLogger _nugetLogger;
         readonly ISnapFilesystem _snapFilesystem;
 
@@ -180,7 +180,17 @@ namespace Snap.NuGet
                     cacheContext.GeneratedTempFolder = redirectedPackagesDirectory;
                 }
 
-                using (new DisposableAction(() => _snapFilesystem.DirectoryDelete(redirectedPackagesDirectory, true)))
+                using (new DisposableAction(() =>
+                {
+                    try
+                    {
+                        _snapFilesystem.DirectoryDelete(redirectedPackagesDirectory, true);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.ErrorException("Exception thrown while attempting to delete nuget temp directory", e);
+                    }
+                }))
                 {
                     var downloadContext = new PackageDownloadContext(cacheContext, redirectedPackagesDirectory, false);
 

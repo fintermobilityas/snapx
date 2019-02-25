@@ -103,20 +103,23 @@ namespace Snap.Tests.NuGet
         public async Task TestDownloadAsync(bool noCache)
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
-            var packageSource = new NugetOrgOfficialV3PackageSources().Items.First();
+            var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
             var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
-            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages_v3");
-            
-            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,packagesDirectory, CancellationToken.None, noCache);
-            Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
-            Assert.True(downloadResourceResult.PackageStream.CanRead);
-            Assert.Equal(63411,downloadResourceResult.PackageStream.Length);
+            using (var packagesDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,
+                packagesDirectory.WorkingDirectory, CancellationToken.None, noCache))
+            {
+                Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
-            Assert.Null(downloadResourceResult.PackageReader);
-           
-            var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, localFilename);
-            Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
+                Assert.True(downloadResourceResult.PackageStream.CanRead);
+                Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
+
+                Assert.Null(downloadResourceResult.PackageReader);
+
+                var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory.WorkingDirectory, localFilename);
+                Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
+            }      
         }
     }
 }

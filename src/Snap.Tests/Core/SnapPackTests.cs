@@ -920,8 +920,7 @@ namespace Snap.Tests.Core
                         Assert.Equal(expectedLayout[i], extractedDiskLayout[i]);
                     }
                     
-                }
-            
+                }            
             }
         }
 

@@ -195,27 +195,22 @@ namespace Snap.NuGet
                         {
                             return downloadResult;
                         }
+                    }
 
-                        if (downloadResult.PackageStream.CanSeek)
-                        {
-                            downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
-                        }
-                    
-                        var localFilenameAbsolutePath = _snapFilesystem.PathCombine(
+                    var localFilenameAbsolutePath = _snapFilesystem.PathCombine(
                             redirectedPackagesDirectory, packageIdentity.Id.ToLowerInvariant(), packageIdentity.Version.ToNormalizedString(),
                             $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg");
 
-                        if (!_snapFilesystem.FileExists(localFilenameAbsolutePath))
-                        {
-                            throw new FileNotFoundException(localFilenameAbsolutePath);    
-                        }
-                    
-                        var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, _snapFilesystem.PathGetFileName(localFilenameAbsolutePath));
-                        _snapFilesystem.FileDeleteIfExists(dstFilenameAbsolutePath);
-                        _snapFilesystem.FileMove(localFilenameAbsolutePath, dstFilenameAbsolutePath);
+                    if (!_snapFilesystem.FileExists(localFilenameAbsolutePath))
+                    {
+                        throw new FileNotFoundException(localFilenameAbsolutePath);    
+                    }
+                
+                    var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, _snapFilesystem.PathGetFileName(localFilenameAbsolutePath));
+                    _snapFilesystem.FileDeleteIfExists(dstFilenameAbsolutePath);
+                    _snapFilesystem.FileMove(localFilenameAbsolutePath, dstFilenameAbsolutePath);
 
-                        return new DownloadResourceResult(_snapFilesystem.FileRead(dstFilenameAbsolutePath), packageSource.Source);
-                    }                   
+                    return new DownloadResourceResult(_snapFilesystem.FileRead(dstFilenameAbsolutePath), packageSource.Source);                              
                 }
             }
         }

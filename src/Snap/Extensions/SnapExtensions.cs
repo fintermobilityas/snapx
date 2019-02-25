@@ -209,7 +209,7 @@ namespace Snap.Extensions
             
             var semanticVersionStr = nupkgExtensionPos == -1 || 
                                      string.IsNullOrWhiteSpace(values[4]) ? null : values[4].Replace(".nupkg", string.Empty);
-            semanticVersionStr = semanticVersionStr?.Replace("snapx.", string.Empty, StringComparison.InvariantCulture);
+            semanticVersionStr = semanticVersionStr?.Replace("snapx.", string.Empty);
             if (!SemanticVersion.TryParse(semanticVersionStr, out semanticVersion))
             {
                 semanticVersion = null;

@@ -6,6 +6,7 @@ using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.Core.IO;
 using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;
@@ -89,18 +90,21 @@ namespace Snap.Tests.NuGet
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
             var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
-            var packagesDirectory = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "packages_v2");
-            
-            var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,packagesDirectory, CancellationToken.None, noCache);
-            Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
-            Assert.True(downloadResourceResult.PackageStream.CanRead);
-            Assert.Equal(63411,downloadResourceResult.PackageStream.Length);
+            using (var packagesDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,
+                packagesDirectory.WorkingDirectory, CancellationToken.None, noCache))
+            {
+                Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
-            Assert.Null(downloadResourceResult.PackageReader);
-           
-            var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, localFilename);
-            Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
+                Assert.True(downloadResourceResult.PackageStream.CanRead);
+                Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
+
+                Assert.Null(downloadResourceResult.PackageReader);
+
+                var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory.WorkingDirectory, localFilename);
+                Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
+            }      
         }
     }
 }

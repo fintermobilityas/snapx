@@ -205,7 +205,8 @@ namespace Snap.Core
         Task<SnapPackDeltaSummary> BuildDeltaSummaryAsync(
             [NotNull] string previousNupkgAbsolutePath, [NotNull] string currentNupkgAbsolutePath, CancellationToken cancellationToken = default);
 
-        Task<(MemoryStream memoryStream, SnapApp snapApp, string checksum)> BuildDeltaPackageAsync([NotNull] string previousNupkgAbsolutePath,
+        Task<(MemoryStream memoryStream, SnapApp snapApp, string checksum)> BuildDeltaPackageAsync
+        ([NotNull] string previousNupkgAbsolutePath,
             [NotNull] string currentNupkgAbsolutePath,
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default);
 
@@ -567,100 +568,103 @@ namespace Snap.Core
 
             progressSource?.Raise(10);
 
-            var deltaCoreReader = new PackageArchiveReader(deltaNupkgStream);
-            var fullNupkgCoreReader = new PackageArchiveReader(fullNupkgStream);
-            var fullNupkgSha512Checksum = _snapCryptoProvider.Sha512(fullNupkgCoreReader, Encoding.UTF8);
-
-            var deltaSnapApp = await GetSnapAppAsync(deltaCoreReader, cancellationToken);
-
-            if (!deltaSnapApp.Delta)
+            using (deltaNupkgStream)
+            using (fullNupkgStream)
+            using (var deltaCoreReader = new PackageArchiveReader(deltaNupkgStream))
+            using (var fullNupkgCoreReader = new PackageArchiveReader(fullNupkgStream))
             {
-                throw new Exception("The delta package specified is not a delta package. " +
-                                    $"Delta nupkg: {deltaNupkgAbsolutePath}. " +
-                                    $"Full nupkg: {fullNupkgAbsolutePath}. ");
-            }
+                var fullNupkgSha512Checksum = _snapCryptoProvider.Sha512(fullNupkgCoreReader, Encoding.UTF8);
+                var deltaSnapApp = await GetSnapAppAsync(deltaCoreReader, cancellationToken);
 
-            if (deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum != fullNupkgSha512Checksum)
-            {
-                throw new Exception("Checksum mismatch for specified full nupkg. " +
-                                    $"Expected SHA512 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum} but was {fullNupkgSha512Checksum}. " +
-                                    $"Delta nupkg: {deltaNupkgAbsolutePath}. " +
-                                    $"Full nupkg: {fullNupkgAbsolutePath}. ");
-            }
-
-            progressSource?.Raise(30);
-
-            var reassembledSnapApp = new SnapApp(deltaSnapApp)
-            {
-                DeltaSummary = null
-            };
-
-            var currentManifestData = await deltaCoreReader.GetManifestMetadataAsync(cancellationToken);
-            if (currentManifestData == null)
-            {
-                throw new Exception($"Unable to extract manifest data from current nupkg: {deltaNupkgAbsolutePath}");
-            }
-
-            var packageBuilder = new PackageBuilder();
-            packageBuilder.Populate(currentManifestData);
-            packageBuilder.Id = reassembledSnapApp.BuildNugetUpstreamPackageId();
-
-            progressSource?.Raise(50);
-
-            // New
-            foreach (var targetPath in deltaSnapApp.DeltaSummary.New)
-            {
-                var srcStream = await deltaCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
-                packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, targetPath, string.Empty));
-            }
-
-            // Modified
-            foreach (var targetPath in deltaSnapApp.DeltaSummary.Modified)
-            {
-                var deltaStream = new MemoryStream();
-                using (var oldDataStream = await fullNupkgCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
-                using (var patchDataStream = await deltaCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
+                if (!deltaSnapApp.Delta)
                 {
-                    // ReSharper disable once AccessToDisposedClosure
-                    SnapBinaryPatcher.Apply(oldDataStream, () => patchDataStream.DuplicateStream(), deltaStream);
+                    throw new Exception("The delta package specified is not a delta package. " +
+                                        $"Delta nupkg: {deltaNupkgAbsolutePath}. " +
+                                        $"Full nupkg: {fullNupkgAbsolutePath}. ");
                 }
 
-                deltaStream.Seek(0, SeekOrigin.Begin);
-                packageBuilder.Files.Add(BuildInMemoryPackageFile(deltaStream, targetPath, string.Empty));
-            }
+                if (deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum != fullNupkgSha512Checksum)
+                {
+                    throw new Exception("Checksum mismatch for specified full nupkg. " +
+                                        $"Expected SHA512 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum} but was {fullNupkgSha512Checksum}. " +
+                                        $"Delta nupkg: {deltaNupkgAbsolutePath}. " +
+                                        $"Full nupkg: {fullNupkgAbsolutePath}. ");
+                }
 
-            progressSource?.Raise(60);
+                progressSource?.Raise(30);
 
-            // Unmodified
-            foreach (var targetPath in deltaSnapApp.DeltaSummary.Unmodified)
-            {
-                var srcStream = await fullNupkgCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
-                packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, targetPath, string.Empty));
-            }
+                var reassembledSnapApp = new SnapApp(deltaSnapApp)
+                {
+                    DeltaSummary = null
+                };
 
-            progressSource?.Raise(70);
+                var currentManifestData = await deltaCoreReader.GetManifestMetadataAsync(cancellationToken);
+                if (currentManifestData == null)
+                {
+                    throw new Exception($"Unable to extract manifest data from current nupkg: {deltaNupkgAbsolutePath}");
+                }
 
-            await AddChecksumManifestAsync(packageBuilder, cancellationToken);
+                var packageBuilder = new PackageBuilder();
+                packageBuilder.Populate(currentManifestData);
+                packageBuilder.Id = reassembledSnapApp.BuildNugetUpstreamPackageId();
 
-            progressSource?.Raise(80);
-                        
-            var reassembledSha512Checksum = _snapCryptoProvider.Sha512(packageBuilder, Encoding.UTF8);
-            if (reassembledSha512Checksum != deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum)
-            {
-                throw new Exception($"Failed to reassemble {deltaSnapApp.DeltaSummary.FullNupkgFilename} because of checksum mismatch. " +
-                                    $"Expected SHA512 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum}");
-            }  
-            
-            progressSource?.Raise(90);
+                progressSource?.Raise(50);
 
-            var outputStream = new MemoryStream();
-            packageBuilder.Save(outputStream);
+                // New
+                foreach (var targetPath in deltaSnapApp.DeltaSummary.New)
+                {
+                    var srcStream = await deltaCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
+                    packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, targetPath, string.Empty));
+                }
 
-            outputStream.Seek(0, SeekOrigin.Begin);
+                // Modified
+                foreach (var targetPath in deltaSnapApp.DeltaSummary.Modified)
+                {
+                    var deltaStream = new MemoryStream();
+                    using (var oldDataStream = await fullNupkgCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
+                    using (var patchDataStream = await deltaCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
+                    {
+                        // ReSharper disable once AccessToDisposedClosure
+                        SnapBinaryPatcher.Apply(oldDataStream, () => patchDataStream.DuplicateStream(), deltaStream);
+                    }
 
-            progressSource?.Raise(100);
+                    deltaStream.Seek(0, SeekOrigin.Begin);
+                    packageBuilder.Files.Add(BuildInMemoryPackageFile(deltaStream, targetPath, string.Empty));
+                }
 
-            return (outputStream, nextSnapApp: reassembledSnapApp, reassembledSha512Checksum);
+                progressSource?.Raise(60);
+
+                // Unmodified
+                foreach (var targetPath in deltaSnapApp.DeltaSummary.Unmodified)
+                {
+                    var srcStream = await fullNupkgCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
+                    packageBuilder.Files.Add(BuildInMemoryPackageFile(srcStream, targetPath, string.Empty));
+                }
+
+                progressSource?.Raise(70);
+
+                await AddChecksumManifestAsync(packageBuilder, cancellationToken);
+
+                progressSource?.Raise(80);
+                            
+                var reassembledSha512Checksum = _snapCryptoProvider.Sha512(packageBuilder, Encoding.UTF8);
+                if (reassembledSha512Checksum != deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum)
+                {
+                    throw new Exception($"Failed to reassemble {deltaSnapApp.DeltaSummary.FullNupkgFilename} because of checksum mismatch. " +
+                                        $"Expected SHA512 checksum: {deltaSnapApp.DeltaSummary.FullNupkgSha512Checksum}");
+                }  
+                
+                progressSource?.Raise(90);
+
+                var outputStream = new MemoryStream();
+                packageBuilder.Save(outputStream);
+
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                progressSource?.Raise(100);
+
+                return (outputStream, nextSnapApp: reassembledSnapApp, reassembledSha512Checksum);
+            }            
         }
 
         public async Task<IEnumerable<SnapPackFileChecksum>> GetChecksumManifestAsync(

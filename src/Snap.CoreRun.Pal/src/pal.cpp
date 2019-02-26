@@ -573,6 +573,95 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char * path_
     return TRUE;
 }
 
+#if PAL_PLATFORM_LINUX
+
+// https://github.com/qpalzmqaz123/path_combine/blob/master/path_combine.c
+
+inline int unix_path_combine_cleanup(char *path)
+{
+    char *str;
+    char *parent_dir;
+    char *current_dir;
+    char *tail;
+
+    if (0 == strlen(path)) {
+        return 0;
+    }
+
+    /* resolve parent dir */
+    while (1) {
+        str = strstr(path, "/../");
+        if (NULL == str) {
+            break;
+        }
+
+        *str = 0;
+        if (NULL == strchr(path, '/')) {
+            return 1;
+        }
+        parent_dir = strrchr(path, '/') + 1;
+
+        current_dir = str + 4;
+
+        /* replace parent dir */
+        memcpy(parent_dir, current_dir, strlen(current_dir) + 1);
+    }
+
+    /* resolve current dir */
+    while (1) {
+        str = strstr(path, "/./");
+        if (NULL == str) {
+            break;
+        }
+
+        memcpy(str + 1, str + 3, strlen(str + 3) + 1);
+    }
+
+    /* remove tail '/' or '/.' */
+    tail = path + strlen(path) - 1;
+    if ('/' == *tail) {
+        *tail = 0;
+    } else if (0 == strcmp(tail - 1, "/.")) {
+        *(tail - 1) = 0;
+    } else if (0 == strcmp(tail - 2, "/..")) {
+        strcat(path, "/");
+        unix_path_combine_cleanup(path);
+    }
+
+    return 0;
+}
+
+inline char* unix_path_combine(const char *path1, const char *path2, char *buffer)
+{
+    if (pal_str_is_null_or_whitespace(path1) 
+        || pal_str_is_null_or_whitespace(path2)) {
+        return nullptr;
+    } else if (nullptr == path1) {
+        strcpy(buffer, path2);
+        goto EXIT;
+    } else if (nullptr == path2) {
+        strcpy(buffer, path1);
+        goto EXIT;
+    }
+
+    if ('/' == path2[0]) {
+        strcpy(buffer, path2);
+        goto EXIT;
+    }
+
+    strcpy(buffer, path1);
+
+    if ('/' != path1[strlen(path1) - 1]) {
+        strcat(buffer, "/");
+    }
+
+    strcat(buffer, path2);
+
+EXIT:
+    return 0 == unix_path_combine_cleanup(buffer) ? buffer : nullptr;
+}
+#endif
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, const char * path2, char ** path_out)
 {
     if (path1 == nullptr
@@ -595,125 +684,15 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, cons
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    /*
-
-    Adapted from: https://github.com/qpalzmqaz123/path_combine/blob/master/path_combine.c
-
-    typedef struct {
-        const char *path1;
-        const char *path2;
-        const char *combined;
-    } test_t;
-
-    test_t test_data[] = {
-        { "/a/b/c", "/c/d/e", "/c/d/e" },
-        { "/a/b/c", "d", "/a/b/c/d" },
-        { "/foo/bar", "./baz", "/foo/bar/baz" },
-        { "/foo/bar", "./baz/", "/foo/bar/baz" },
-        { "a", ".",  "a"},
-        { "a.", ".",  "a."},
-        { "a./b.", ".",  "a./b."},
-        { "a/b", "..",  "a"},
-        { "a", "..a",  "a/..a"},
-        { "a", "../a",  NULL},
-        { "a", "c../a",  "a/c../a"},
-        { "a/b", "../",  "a"},
-        { "a/b", ".././c/d/../../.",  "a"},
-        { NULL, NULL, NULL }
-    };
-
-    */
-
-    char buffer[PAL_MAX_PATH];
-
-    std::function<int(char*)> path_combine_recursive;
-    path_combine_recursive = [path_combine_recursive](char *path)
+    char buffer[1024];
+    if(nullptr == unix_path_combine(path1, path2, buffer))
     {
-        char *str;
-
-        if (0 == strlen(path)) {
-            return 0;
-        }
-
-        // Resolve parent dir
-        while (true) {
-            str = strstr(path, "/../");
-            if (nullptr == str) {
-                break;
-            }
-
-            *str = 0;
-            if (nullptr == strchr(path, '/')) {
-                return 1;
-            }
-
-            const auto parent_dir = strrchr(path, '/') + 1;
-            const auto current_dir = str + 4;
-
-            // Replace parent dir
-            memcpy(parent_dir, current_dir, strlen(current_dir) + 1);
-        }
-
-        // Resolve current dir
-        while (true) {
-            str = strstr(path, "/./");
-            if (nullptr == str) {
-                break;
-            }
-
-            memcpy(str + 1, str + 3, strlen(str + 3) + 1);
-        }
-
-        // Remove tail '/' or '/.' 
-        const auto tail = path + strlen(path) - 1;
-        if ('/' == *tail) {
-            *tail = 0;
-        }
-        else if (0 == strcmp(tail - 1, "/.")) {
-            *(tail - 1) = 0;
-        }
-        else if (0 == strcmp(tail - 2, "/..")) {
-            strcat(path, "/");
-            path_combine_recursive(path);
-        }
-
-        return 0;
-    };
-
-    const auto path_combine = [path_combine_recursive, path_out](char* buffer)
-    {
-        if (0 == path_combine_recursive(buffer)) {
-            *path_out = strdup(buffer);
-            return TRUE;
-        }
-        return FALSE;
-    };
-
-    if (nullptr == path1 && nullptr == path2) {
         return FALSE;
     }
-    if (nullptr == path1) {
-        strcpy(buffer, path2);
-        return path_combine(buffer);
-    }
-    if (nullptr == path2) {
-        strcpy(buffer, path1);
-        return path_combine(buffer);
-    }
 
-    if ('/' == path2[0]) {
-        strcpy(buffer, path2);
-        return path_combine(buffer);
-    }
-
-    strcpy(buffer, path1);
-
-    if ('/' != path1[strlen(path1) - 1]) {
-        strcat(buffer, "/");
-    }
-
-    strcat(buffer, path2);
-    return path_combine(buffer);
+    *path_out = strdup(buffer);
+    
+    return TRUE;
 #else
     return FALSE;
 #endif
@@ -1385,6 +1364,24 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
     })) ? TRUE : FALSE;
 
     return equals;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* str)
+{
+    if(str == nullptr)
+    {
+        return TRUE;
+    }
+
+#if PAL_PLATFORM_WINDOWS
+    pal_utf16_string value(str);
+    return value.empty_or_whitespace() ? TRUE : FALSE;
+#elif PAL_PLATFORM_LINUX
+    pal_utf8_string value(str);
+    return value.empty_or_whitespace() ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
 }
 
 #if _MSC_VER

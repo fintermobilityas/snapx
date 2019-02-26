@@ -114,6 +114,22 @@ namespace
         EXPECT_EQ(path, nullptr);
     }
 
+    TEST(PAL_FS, pal_fs_file_exists_ReturnsFalseIfDirectory)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_NE(working_dir, nullptr);
+        ASSERT_FALSE(pal_fs_file_exists(working_dir));
+    }
+
+    TEST(PAL_FS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
+    {
+        char* exe_abs_path = nullptr;
+        EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
+        EXPECT_NE(exe_abs_path, nullptr);
+        EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
+    }    
+
     TEST(PAL_FS, pal_fs_list_directories_DoesNotSegfault)
     {
         char** directories_array = nullptr;

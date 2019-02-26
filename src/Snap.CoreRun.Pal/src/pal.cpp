@@ -1100,7 +1100,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
     {
         directory_exists = TRUE;
-}
+    }
 
 #elif PAL_PLATFORM_LINUX
     auto directory = opendir(path_in);

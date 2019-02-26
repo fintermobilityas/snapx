@@ -19,14 +19,14 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     if (app_name.empty())
     {
         std::cerr << "Error: Unable to find own executable name" << std::endl;
-        return -1;
+        return 1;
     }
 
     auto working_dir(find_latest_app_dir());
     if (working_dir.empty())
     {
         std::cerr << "Error: Unable to find latest app dir" << std::endl;
-        return -1;
+        return 1;
     }
 
     std::cout << "Working directory: " << working_dir << std::endl;
@@ -50,7 +50,7 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         || process_pid <= 0)
     {
         delete[] argv;
-        return -1;
+        return 1;
     }
 
     delete[] argv;

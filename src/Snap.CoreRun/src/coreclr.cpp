@@ -21,33 +21,33 @@ int snap::coreclr::run(const std::string& this_executable_path, const std::strin
     if (!pal_fs_file_exists(dotnet_executable_path.c_str()))
     {
         LOG(ERROR) << "Coreclr: Executable does not exist. Path: " << dotnet_executable_path << std::endl;
-        return -1;
+        return 1;
     }
 
     char* dotnet_executable_working_directory = nullptr;
     if (!pal_fs_get_directory_name_absolute_path(dotnet_executable_path.c_str(), &dotnet_executable_working_directory))
     {
         LOG(ERROR) << "Coreclr: Unable to obtain directory full path for executable. Path: " << dotnet_executable_path << std::endl;
-        return -1;
+        return 1;
     }
 
     auto core_clr_instance = try_load_core_clr(dotnet_executable_path.c_str(), version::Semver200_version());
     if (core_clr_instance == nullptr)
     {
         LOG(ERROR) << "Coreclr: " << core_clr_dll << " not found." << std::endl;
-        return -1;
+        return 1;
     }
 
     const auto trusted_platform_assemblies_str = build_trusted_platform_assemblies_str(dotnet_executable_path, core_clr_instance);
     if (trusted_platform_assemblies_str.empty())
     {
         LOG(ERROR) << "Coreclr: Unable to build trusted platform assemblies list (TPA)." << std::endl;
-        return -1;
+        return 1;
     }
 
     if (!core_clr_instance->initialize_coreclr(this_executable_path, dotnet_executable_path, dotnet_executable_working_directory, trusted_platform_assemblies_str))
     {
-        return -1;
+        return 1;
     }
 
     std::stringstream core_clr_version;
@@ -75,7 +75,7 @@ int snap::coreclr::run(const std::string& this_executable_path, const std::strin
     auto dotnet_exit_exit_code = 0;
     if (!core_clr_instance->execute_assembly(dotnet_executable_path, arguments, &coreclr_exit_code, &dotnet_exit_exit_code))
     {
-        return -1;
+        return 1;
     }
 
     LOG(INFO) << "Coreclr: Successfully executed assembly. " 

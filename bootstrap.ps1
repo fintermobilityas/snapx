@@ -26,7 +26,6 @@ $OSVersion = [Environment]::OSVersion
 $ProcessorCount = [Environment]::ProcessorCount
 $Arch = $null
 $ArchCross = $null
-$PathSeperator = [IO.Path]::PathSeparator
 
 $CmakeGenerator = $null
 $CommandCmake = $null

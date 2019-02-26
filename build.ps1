@@ -81,10 +81,25 @@ function Run-Native-Mingw-UnitTests-Windows
 switch ($Target) {
     "Bootstrap" {
         Build-Native
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
         .\install_snapx.ps1 -Bootstrap $true
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
         Build-Snap-Installer
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
         .\install_snapx.ps1 -Bootstrap $false
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
         Build-Snap
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
         Build-Summary
     }
     "Native" {

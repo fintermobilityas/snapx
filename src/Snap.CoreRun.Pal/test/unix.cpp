@@ -47,6 +47,15 @@ namespace
         EXPECT_TRUE(pal_env_get_variable("PWD", &environment_variable));
         EXPECT_NE(environment_variable, nullptr);
     }
+
+    TEST(PAL_FS_UNIX, pal_fs_get_own_executable_name_ReturnsThisProcessExeName)
+    {
+        char *exe_name = nullptr;
+        EXPECT_TRUE(pal_fs_get_own_executable_name(&exe_name));
+        EXPECT_NE(exe_name, nullptr);
+        ASSERT_STREQ(exe_name, "Snap.Tests");
+    }
+
     TEST(PAL_FS_UNIX, pal_fs_path_combine)
     {
         EXPECT_GT(path_combine_test_cases.size(), 0u);

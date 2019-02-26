@@ -94,7 +94,13 @@ function Die {
     Write-Host $Message -ForegroundColor Red
     Write-Host
 
-    exit $LASTEXITCODE
+    $exitCode = $LASTEXITCODE
+    if(0 -eq $exitCode)
+    {
+        $exitCode = 1
+    }
+
+    exit $exitCode
 }
 function Write-Output-Colored {
     param(
@@ -360,9 +366,16 @@ function Build-Native {
         Die "Unable to find test runner: $CommandGTests"
     }
 
-    Push-Location $SnapCoreRunBuildOutputDir
-    Command-Exec $CommandGTests @()		
-    Pop-Location 
+    try {
+        Push-Location $SnapCoreRunBuildOutputDir
+        Command-Exec $CommandGTests @()		
+    } finally {
+        Pop-Location 
+        if(0 -ne $LASTEXITCODE)
+        {
+            Die "One or multiple unit tests failed"
+        }
+    }
 }
 
 function Build-Snap {
@@ -543,12 +556,20 @@ switch ($Target) {
                     Die "Unable to find test runner: $CommandGTests"
                 }
 
-                Push-Location $SnapCoreRunMingwBuildOutputDir
-                Command-Exec $CommandGTests @()		
-                Pop-Location 
+                try 
+                {
+                    Push-Location $SnapCoreRunMingwBuildOutputDir
+                    Command-Exec $CommandGTests @()		
+                } finally {             
+                    Pop-Location 
+                    if(0 -ne $LASTEXITCODE)
+                    {
+                        Die "One or multiple unit tests failed"
+                    }                   
+                }
 
             }
-            default{
+            default {
                 Die "Unsupported os platform: $OSPlatform"
             }
         }

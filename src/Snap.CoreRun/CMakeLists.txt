@@ -22,6 +22,33 @@ add_executable(corerun
 	src/main.cpp
 )
 
+add_executable(corerun_demoapp
+    src/main_demoapp.cpp
+)
+
+add_library(corerun_static 
+	${corerun_SOURCES}
+)
+
+target_include_directories(corerun_demoapp PUBLIC
+	../Vendor/json/include
+)
+
+target_link_libraries(corerun_demoapp PUBLIC
+	pal_static
+)
+
+target_include_directories(corerun_static PUBLIC 
+    vendor
+    src
+)
+
+target_link_libraries(corerun_static PUBLIC
+	pal_static
+)
+
+target_link_libraries(corerun PUBLIC pal_static)
+
 if(WIN32)
 	
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -40,22 +67,14 @@ if(WIN32)
 	foreach(CompilerFlag ${CompilerFlags})
 	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
-	
-	target_compile_definitions(corerun PRIVATE 
-		_CRT_NONSTDC_NO_WARNINGS
-		_UNICODE
-		UNICODE
-	)	
 
 elseif(UNIX)
 
-    target_link_libraries(corerun PRIVATE
+    target_link_libraries(corerun PUBLIC
         libstdc++.a
     )
-	
+
 endif()
 
-target_link_libraries(corerun PUBLIC pal_static)
-
-set_property(TARGET corerun PROPERTY CXX_STANDARD 17)
-set_property(TARGET corerun PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET corerun corerun_static corerun_demoapp PROPERTY CXX_STANDARD 17)
+set_property(TARGET corerun corerun_static corerun_demoapp PROPERTY CXX_STANDARD_REQUIRED ON)

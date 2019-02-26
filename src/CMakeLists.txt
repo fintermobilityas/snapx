@@ -11,15 +11,6 @@ endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 
-set(SNAP_VERSION_MAJOR 1)
-set(SNAP_VERSION_MINOR 0)
-set(SNAP_VERSION_PATCH 0)
-set(SNAP_VERSION ${SNAP_VERSION_MAJOR}.${SNAP_VERSION_MINOR}.${SNAP_VERSION_PATCH})
-
-add_definitions(-DSNAP_VERSION_MAJOR=${SNAP_VERSION_MAJOR})
-add_definitions(-DSNAP_VERSION_MINOR=${SNAP_VERSION_MINOR})
-add_definitions(-DSNAP_VERSION_PATCH=${SNAP_VERSION_PATCH})
-
 option(BUILD_ENABLE_LTO "Enable lto support" OFF)
 option(BUILD_ENABLE_TESTS "Build with tests enabled" ON)
 
@@ -35,31 +26,59 @@ if (BUILD_ENABLE_TESTS)
   include_directories(
     ${gtest_SOURCE_DIR}/include
     ${gtest_SOURCE_DIR}
+    Vendor
     Vendor/json/include
   )
 
   set(tests_SOURCES 
+    Vendor/crossguid/Guid.cpp
     Snap.CoreRun.Pal/test/anyos.cpp
+  	Snap.CoreRun/test/anyos.cpp
   )
 
   if(WIN32)
-	list(APPEND tests_SOURCES
-	    Snap.CoreRun.Pal/test/windows.cpp
-	    Snap.CoreRun/test/windows.cpp
-	)
+    list(APPEND tests_SOURCES
+        Snap.CoreRun.Pal/test/windows.cpp
+    )
+    list(APPEND tests_DEFINES		
+	    GUID_WINDOWS
+    )
+    list(APPEND tests_LIBS
+	    ole32
+    )
   elseif(UNIX)
-	list(APPEND tests_SOURCES
-	    Snap.CoreRun.Pal/test/unix.cpp
-	    Snap.CoreRun/test/unix.cpp
-	)
+    list(APPEND tests_SOURCES
+        Snap.CoreRun.Pal/test/unix.cpp
+    )
+    list(APPEND tests_DEFINES		
+	    GUID_LIBUUID
+    )
+    list(APPEND tests_LIBS
+	    uuid
+    )
   endif()
 
   add_executable(Snap.Tests ${tests_SOURCES})
 
-  target_link_libraries(Snap.Tests
+  target_compile_definitions(Snap.Tests PRIVATE 
+    ${tests_DEFINES}
+  )	
+
+  target_link_libraries(Snap.Tests PRIVATE
+                  ${tests_LIBS}
+				  corerun_static
 				  gtest
-				  pal_static
-				  gtest_main)
+                  gtest_main)
+                
+  add_custom_command(TARGET Snap.Tests PRE_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:Snap.Tests>"
+    COMMENT "Copying corerun_demoapp to tests directory"
+  )
+
+  add_custom_command(TARGET Snap.Tests PRE_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun>" "$<TARGET_FILE_DIR:Snap.Tests>"
+    COMMENT "Copying corerun to tests directory"
+  )
 
   set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD 17)
   set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD_REQUIRED ON)

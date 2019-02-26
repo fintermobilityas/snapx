@@ -15,7 +15,7 @@ namespace
 
         path_combine_test_case() = delete;
 
-        explicit path_combine_test_case(const char* path1, const char* path2, const char* combined) :
+        path_combine_test_case(const char* path1, const char* path2, const char* combined) :
             path1(path1), path2(path2), combined(combined)
         {
 
@@ -50,7 +50,7 @@ namespace
     TEST(PAL_ENV_UNIX, pal_env_get_variable_Reads_PWD_Variable)
     {
         char *environment_variable = nullptr;
-        EXPECT_TRUE(pal_env_get_variable("PWD", &environment_variable));
+        EXPECT_TRUE(pal_env_get("PWD", &environment_variable));
         EXPECT_NE(environment_variable, nullptr);
     }
 

@@ -32,10 +32,10 @@ namespace
         ASSERT_STREQ(exe_name, "Snap.Tests.exe");
     }
 
-    TEST(PAL_ENV_WINDOWS, pal_env_get_variable_Reads_PATH_Variable)
+    TEST(PAL_ENV_WINDOWS, pal_env_get_Reads_PATH_Variable)
     {
         char* environment_variable = nullptr;
-        EXPECT_TRUE(pal_env_get_variable("PATH", &environment_variable));
+        EXPECT_TRUE(pal_env_get("PATH", &environment_variable));
         EXPECT_NE(environment_variable, nullptr);
     }
 

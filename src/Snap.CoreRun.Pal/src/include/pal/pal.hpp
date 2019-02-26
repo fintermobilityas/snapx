@@ -72,6 +72,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char* filename_in, char* icon_f
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in, 
+    const int argc_in, char **argv_in, int *exit_code_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, const int argc_in,
                                                           char **argv_in,
                                                           int cmd_show_in /* Only applicable on Windows */,
@@ -79,11 +81,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os();
 
 // - Environment
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char* environment_variable_in, char** environment_variable_value_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char* environment_variable_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char* value_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char* environment_variable_in, char** environment_variable_value_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_bool(const char* environment_variable_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_in, char** environment_out);
 
 // - Filesystem
@@ -105,10 +109,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint32_t mode_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, void* data_in, size_t data_len_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const void* data_in, size_t data_len_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, void* data_in, size_t data_len_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, const void* data_in, size_t data_len_in);
 
 // - String
 

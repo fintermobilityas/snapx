@@ -20,6 +20,7 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
+#include <wchar.h>
 #include "vendor/rcedit/rcedit.hpp"
 #elif PAL_PLATFORM_LINUX
 #include <sys/stat.h> // stat
@@ -305,14 +306,81 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
     return has_pid;
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in, 
+    const int argc_in, char **argv_in, int *exit_code_out)
+{
+    if (filename_in == nullptr
+        || working_dir_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if PAL_PLATFORM_WINDOWS
+    auto cmd_line = std::string("\"");
+    cmd_line += filename_in;
+    cmd_line += "\" ";
+
+    for (auto i = 0; i < argc_in; i++)
+    {
+        cmd_line += argv_in[i];
+        if (i + 1 < argc_in)
+        {
+            cmd_line += " ";
+        }
+    }
+
+    pal_utf16_string lp_command_line_utf16_string(cmd_line);
+    pal_utf16_string lp_current_directory_utf16_string(working_dir_in);
+
+    STARTUPINFO si = { 0 };
+    PROCESS_INFORMATION pi = { nullptr };
+
+    const auto create_process_result = CreateProcess(nullptr, 
+        lp_command_line_utf16_string.data(),
+        nullptr, nullptr, true,
+        0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
+
+    if (!create_process_result)
+    {
+        return FALSE;
+    }
+
+    auto result = WaitForSingleObject(pi.hProcess, INFINITE);
+    if (result != WAIT_OBJECT_0)
+    {
+        return FALSE;
+    }
+
+    DWORD exit_code;
+    if (FALSE == GetExitCodeProcess(pi.hProcess, &exit_code))
+    {
+        return FALSE;
+    }
+
+    *exit_code_out = exit_code;
+
+    return TRUE;
+#elif PAL_PLATFORM_LINUX
+    if (0 != chdir(working_dir_in))
+    {
+        return -1;
+    }
+
+    *exit_code_out = execvp(filename_in, argv_in);
+
+    return TRUE;
+#else
+    return FALSE;
+#endif
+    }
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in,
     const int argc_in, char **argv_in,
     const int cmd_show_in /* Only applicable on Windows */,
     pal_pid_t *pid_out)
 {
     if (filename_in == nullptr
-        || working_dir_in == nullptr
-        || argc_in <= 0)
+        || working_dir_in == nullptr)
     {
         return FALSE;
     }
@@ -347,7 +415,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     if (!create_process_result)
     {
-        return -1;
+        return FALSE;
     }
 
     *pid_out = pi.dwProcessId;
@@ -417,12 +485,31 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux()
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os()
 {
-    return pal_is_linux() 
+    return pal_is_linux()
         || pal_is_windows() ? FALSE : TRUE;
 }
 
 // - Environment
-PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environment_variable_in, char ** environment_variable_value_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char* value_in)
+{
+    if(name_in == nullptr)
+    {
+        return FALSE;
+    }
+#if PAL_PLATFORM_WINDOWS
+    pal_utf16_string name_in_utf16_string(name_in);
+    pal_utf16_string value_in_utf16_string(value_in == nullptr ? "" : value_in);
+    const auto success = SetEnvironmentVariable(name_in_utf16_string.data(), value_in_utf16_string.empty() ? nullptr : value_in_utf16_string.data());
+    return success == TRUE;
+#elif PAL_PLATFORM_LINUX
+    const auto success = value_in == nullptr ? unsetenv(name_in) : setenv(name_in, value_in, 1 /* overwrite */);
+    return success == 0;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variable_in, char ** environment_variable_value_out)
 {
     if (environment_variable_in == nullptr)
     {
@@ -432,24 +519,27 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environmen
 #if PAL_PLATFORM_WINDOWS
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
 
-#if PAL_PLATFORM_WINDOWS && !PAL_PLATFORM_MINGW
-    wchar_t* w_env = nullptr;
-    _wdupenv_s(&w_env, nullptr, environment_variable_in_utf16_string.data());
-    if (w_env == nullptr)
-    {
-        return FALSE;
-    }
-#else
+#if PAL_PLATFORM_MINGW
     auto w_env = _wgetenv(environment_variable_in_utf16_string.data());
-#endif
-    if (w_env == nullptr)
+    if (w_env != nullptr)
+    {
+        *environment_variable_value_out = pal_utf8_string(w_env).dup();
+        return TRUE;
+    }
+    return FALSE;
+#else
+    const int buffer_size = 65535;
+    wchar_t buffer[buffer_size];
+    auto actual_len = GetEnvironmentVariable(environment_variable_in_utf16_string.data(), buffer, buffer_size);
+    if(actual_len <= 0)
     {
         return FALSE;
     }
 
-    *environment_variable_value_out = pal_utf8_string(w_env).dup();
+    *environment_variable_value_out = pal_utf8_string(buffer + '\0').dup();
 
     return TRUE;
+#endif
 #else
     const auto value = ::getenv(environment_variable_in);
     if (value == nullptr)
@@ -462,10 +552,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environmen
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable_bool(const char * environment_variable_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_bool(const char * environment_variable_in)
 {
     char* environment_variable_value_out = nullptr;
-    if (!pal_env_get_variable(environment_variable_in, &environment_variable_value_out))
+    if (!pal_env_get(environment_variable_in, &environment_variable_value_out))
     {
         return FALSE;
     }
@@ -502,7 +592,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char * environment_
     while (std::regex_search(environment_in_str, match, expression)) {
         const auto match_str = match[1].str();
         char* environment_variable_value = nullptr;
-        if (!pal_env_get_variable(match_str.c_str(), &environment_variable_value))
+        if (!pal_env_get(match_str.c_str(), &environment_variable_value))
         {
             continue;
         }
@@ -572,7 +662,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(cons
     delete path_in_cpy;
     return FALSE;
 #endif
-}
+    }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char * path_in, char ** path_out)
 {
@@ -644,9 +734,11 @@ inline int unix_path_combine_cleanup(char *path)
     tail = path + strlen(path) - 1;
     if ('/' == *tail) {
         *tail = 0;
-    } else if (0 == strcmp(tail - 1, "/.")) {
+    }
+    else if (0 == strcmp(tail - 1, "/.")) {
         *(tail - 1) = 0;
-    } else if (0 == strcmp(tail - 2, "/..")) {
+    }
+    else if (0 == strcmp(tail - 2, "/..")) {
         strcat(path, "/");
         unix_path_combine_cleanup(path);
     }
@@ -656,13 +748,15 @@ inline int unix_path_combine_cleanup(char *path)
 
 inline char* unix_path_combine(const char *path1, const char *path2, char *buffer)
 {
-    if (pal_str_is_null_or_whitespace(path1) 
+    if (pal_str_is_null_or_whitespace(path1)
         || pal_str_is_null_or_whitespace(path2)) {
         return nullptr;
-    } else if (nullptr == path1) {
+    }
+    else if (nullptr == path1) {
         strcpy(buffer, path2);
         goto EXIT;
-    } else if (nullptr == path2) {
+    }
+    else if (nullptr == path2) {
         strcpy(buffer, path1);
         goto EXIT;
     }
@@ -670,7 +764,7 @@ inline char* unix_path_combine(const char *path1, const char *path2, char *buffe
     if ('/' == path2[0]) {
         strcpy(buffer, path2);
         goto EXIT;
-    }
+}
 
     strcpy(buffer, path1);
 
@@ -708,13 +802,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, cons
     return TRUE;
 #elif PAL_PLATFORM_LINUX
     char buffer[1024];
-    if(nullptr == unix_path_combine(path1, path2, buffer))
+    if (nullptr == unix_path_combine(path1, path2, buffer))
     {
         return FALSE;
     }
 
     *path_out = strdup(buffer);
-    
+
     return TRUE;
 #else
     return FALSE;
@@ -737,8 +831,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
         || file_attributes & FILE_ATTRIBUTE_DIRECTORY)
     {
         file_exists = FALSE;
-    }
-    else 
+}
+    else
     {
         file_exists = PathFileExists(file_path_in_utf16_string.data()) == TRUE ? TRUE : FALSE;
     }
@@ -867,9 +961,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
             case 1:
                 switch (entry->d_type)
                 {
-                    default:
-                        continue;
-                // Regular file
+                default:
+                    continue;
+                    // Regular file
                 case DT_REG:
                     if (filter_extension_in != nullptr
                         && FALSE == pal_str_endswith(entry_name.c_str(), filter_extension_in))
@@ -882,7 +976,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
                     absolute_path_s.append(entry_name);
                     break;
 
-                // Handle symlinks and file systems that do not support d_type
+                    // Handle symlinks and file systems that do not support d_type
                 case DT_LNK:
                 case DT_UNKNOWN:
                     if (filter_extension_in != nullptr
@@ -930,10 +1024,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
             }
 
             paths.emplace_back(strdup(absolute_path_s.data()));
-        }
+    }
 
         closedir(dir);
-    }
+}
 #endif
 
     *paths_out_len = paths.size();
@@ -1067,7 +1161,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
         *path_absolute_out = strdup(real_path_str.c_str());
 
         return TRUE;
-}
+    }
     return FALSE;
 #else
     return FALSE;
@@ -1098,7 +1192,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     if (attributes == INVALID_FILE_ATTRIBUTES)
     {
         directory_exists = FALSE;
-    }
+}
     else if (attributes & FILE_ATTRIBUTE_DIRECTORY)
     {
         directory_exists = TRUE;
@@ -1188,7 +1282,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
     if (h_file == INVALID_HANDLE_VALUE)
     {
         return FALSE;
-}
+    }
 
     int read_offset = 0;
     DWORD read_buffer_bytes_read = 0;
@@ -1200,6 +1294,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         if (read_offset == 0)
         {
             *bytes_out = new char[total_bytes_to_read];
+            if(total_bytes_to_read < read_buffer_size)
+            {
+                std::memcpy(*bytes_out, &read_buffer, read_buffer_bytes_read);
+                read_offset = read_buffer_bytes_read;
+                break;
+            }
         }
         std::memcpy(*bytes_out + read_offset, &read_buffer[0], read_buffer_bytes_read * sizeof read_buffer[0]);
         read_offset += read_buffer_bytes_read;
@@ -1258,6 +1358,88 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint3
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
+{
+    if (filename_in == nullptr)
+    {
+        return FALSE;
+    }
+#if PAL_PLATFORM_WINDOWS
+    pal_utf16_string filename_in_utf16_string(filename_in);
+    const auto success = DeleteFile(filename_in_utf16_string.data());
+    return success == TRUE;
+#elif PAL_PLATFORM_LINUX
+    const auto success = remove(filename_in);
+    return success == 0 ? TRUE : FALSE;
+#else 
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive)
+{
+    if (directory_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if PAL_PLATFORM_WINDOWS
+    pal_utf16_string directory_in_utf16_string(directory_in);
+    if (!recursive)
+    {
+        const auto status = _wrmdir(directory_in_utf16_string.data());
+        return status == 0 ? TRUE : FALSE;
+    }
+#elif PAL_PLATFORM_LINUX
+    if(!recursive)
+    {
+        const auto status = rmdir(directory_in);
+        return status == 0 ? TRUE : FALSE;    
+    }
+#else
+    return FALSE;
+#endif
+
+    char** files_array = nullptr;
+    size_t files_array_len = 0u;
+    if (pal_fs_list_files(directory_in, nullptr, nullptr, &files_array, &files_array_len))
+    {
+        std::vector<std::string> files(files_array, files_array + files_array_len);
+        for (const auto filename : files)
+        {
+            pal_fs_rmfile(filename.c_str());
+        }
+
+        delete[] files_array;
+        files_array = nullptr;
+        files_array_len = 0;
+    }
+
+    char** directories_array = nullptr;
+    size_t directories_array_len = 0u;
+    if (!pal_fs_list_directories(directory_in, nullptr, nullptr, &directories_array, &directories_array_len)
+        || directories_array_len <= 0)
+    {
+        return pal_fs_rmdir(directory_in, FALSE);
+    }
+
+    std::vector<std::string> directories(directories_array, directories_array + directories_array_len);
+
+    delete[] directories_array;
+    directories_array = nullptr;
+    directories_array_len = 0;
+
+    for (auto directory : directories)
+    {
+        if (!pal_fs_rmdir(directory.c_str(), TRUE))
+        {
+            return FALSE;
+        }
+    }
+
+    return pal_fs_rmdir(directory_in, FALSE);
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out)
 {
     if (filename_in == nullptr
@@ -1288,7 +1470,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
     return fopen_success;
     }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, void* data_in, size_t data_len_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const void* data_in, size_t data_len_in)
 {
     if (pal_file_handle_in == nullptr
         || data_in == nullptr
@@ -1308,7 +1490,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
     return fwrite_success;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, void* data_in, size_t data_len_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, const void* data_in, size_t data_len_in)
 {
     pal_file_handle_t* file_handle = nullptr;
     if (!pal_fs_fopen(filename, mode_in, &file_handle))
@@ -1391,7 +1573,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* str)
 {
-    if(str == nullptr)
+    if (str == nullptr)
     {
         return TRUE;
     }

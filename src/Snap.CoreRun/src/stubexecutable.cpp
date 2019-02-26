@@ -1,5 +1,4 @@
 #include "stubexecutable.hpp"
-#include "vendor/semver/semver200.h"
 
 using std::string;
 
@@ -15,77 +14,62 @@ inline std::string join(const std::vector<std::string>& strings, const char* del
 
 int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
 {
-    auto app_name(find_own_executable_name());
-    if (app_name.empty())
-    {
-        std::cerr << "Error: Unable to find own executable name" << std::endl;
-        return 1;
-    }
-
-    auto working_dir(find_latest_app_dir());
-    if (working_dir.empty())
-    {
-        std::cerr << "Error: Unable to find latest app dir" << std::endl;
-        return 1;
-    }
-
-    std::cout << "Working directory: " << working_dir << std::endl;
-
-    const auto executable_full_path(working_dir + PAL_DIRECTORY_SEPARATOR_C + app_name);
-    arguments.insert(arguments.begin(), executable_full_path);
-
     const auto argc = static_cast<int>(arguments.size());
     const auto argv = new char*[argc];
+    int exit_code = 1;
+    std::string executable_full_path;
+    std::string app_name_str;
+    std::string app_dir_str;
 
-    std::cout << "Executable: " << executable_full_path << std::endl;
-    std::cout << "Arguments: " << join(arguments, " ") << std::endl;
+    char* app_name = nullptr;
+    if (!pal_fs_get_own_executable_name(&app_name))
+    {
+        std::cerr << "Error: Unable to find own executable name" << std::endl;
+        goto done;
+    }
+
+    app_dir_str = find_current_app_dir();
+    if (app_dir_str.empty())
+    {
+        std::cerr << "Error: Unable to find latest app dir" << std::endl;
+        goto done;
+    }
+
+    app_name_str = std::string(app_name);
+    executable_full_path = app_dir_str + PAL_DIRECTORY_SEPARATOR_C + app_name_str;
 
     for (auto i = 0; i < argc; i++)
     {
-        argv[i] = strdup(arguments[i].c_str());
+        argv[i] = _strdup(arguments[i].c_str());
     }
 
     pal_pid_t process_pid;
-    if(!pal_process_daemonize(executable_full_path.c_str(), working_dir.c_str(), argc, argv, cmd_show, &process_pid)
-        || process_pid <= 0)
+    if (pal_process_daemonize(executable_full_path.c_str(), app_dir_str.c_str(), argc, argv, cmd_show, &process_pid)
+        && process_pid > 0)
     {
-        delete[] argv;
-        return 1;
+        exit_code = 0;
     }
 
+done:
+    if (app_name != nullptr)
+    {
+        delete app_name;
+    }
     delete[] argv;
-    return 0;
+    return exit_code;
 }
 
-std::string snap::stubexecutable::find_app_dir()
+std::string snap::stubexecutable::find_current_app_dir()
 {
-    char* current_directory = nullptr;
-    if (!pal_fs_get_cwd(&current_directory))
+    char* cwd = nullptr;
+    if (!pal_fs_get_cwd(&cwd))
     {
         return std::string();
     }
 
-    return std::string(current_directory);
-}
-
-std::string snap::stubexecutable::find_own_executable_name()
-{
-    char* own_executable_name = nullptr;
-    if (!pal_fs_get_own_executable_name(&own_executable_name))
-    {
-        return std::string();
-    }
-
-    return std::string(own_executable_name);
-}
-
-std::string snap::stubexecutable::find_latest_app_dir()
-{
-    auto app_dir(find_app_dir());
-    if (app_dir.empty())
-    {
-        return std::string();
-    }
+    std::string app_dir(cwd);
+    delete cwd;
+    cwd = nullptr;
 
     char** paths_out = nullptr;
     size_t paths_out_len = 0;
@@ -96,13 +80,15 @@ std::string snap::stubexecutable::find_latest_app_dir()
 
     std::vector<char*> paths(paths_out, paths_out + paths_out_len);
     delete[] paths_out;
+    paths_out = nullptr;
 
     if (paths.empty())
     {
         return std::string();
     }
 
-    version::Semver200_version most_recent_semver("0.0.0");
+    std::string most_recent_semver_str("0.0.0");
+    version::Semver200_version most_recent_semver(most_recent_semver_str);
 
     for (const auto &directory : paths)
     {
@@ -117,30 +103,33 @@ std::string snap::stubexecutable::find_latest_app_dir()
             continue;
         }
 
-        auto current_app_ver = std::string(directory_name).substr(4); // Skip 'app-'
-
+        auto current_app_ver_str = std::string(directory_name).substr(4); // Skip 'app-'
         version::Semver200_version current_app_semver;
 
         try
         {
-            current_app_semver = version::Semver200_version(current_app_ver);
+            current_app_semver = version::Semver200_version(current_app_ver_str);
         }
         catch (const version::Parse_error&)
         {
             continue;
         }
 
-        if (current_app_semver <= most_recent_semver)
+        if (current_app_semver > most_recent_semver)
         {
+            most_recent_semver = current_app_semver;
+            most_recent_semver_str = current_app_ver_str;
             continue;
         }
-
-        most_recent_semver = current_app_semver;
     }
 
-    app_dir.assign(find_app_dir());
-    std::stringstream ret;
-    ret << app_dir << PAL_DIRECTORY_SEPARATOR_STR << "app-" << most_recent_semver;
+    char* final_dir = nullptr;
+    if (!pal_fs_path_combine(app_dir.c_str(), ("app-" + most_recent_semver_str).c_str(), &final_dir))
+    {
+        return std::string();
+    }
 
-    return ret.str();
+    std::string final_dir_str(final_dir);
+    delete final_dir;
+    return final_dir_str;
 }

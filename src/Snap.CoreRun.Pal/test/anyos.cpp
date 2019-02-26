@@ -1,9 +1,77 @@
 #include "gtest/gtest.h"
 #include "pal/pal.hpp"
+#include "crossguid/Guid.hpp"
+
+inline char* mkdir_random(const char* working_dir, uint32_t mode = 0777u)
+{
+    if (working_dir == nullptr
+        || mode <= 0)
+    {
+        return nullptr;
+    }
+
+    char* random_dir = nullptr;
+    pal_fs_path_combine(working_dir, xg::newGuid().str().c_str(), &random_dir);
+    if (!pal_fs_mkdir(random_dir, mode))
+    {
+        return nullptr;
+    }
+
+    return random_dir;
+}
+
+inline char* mkdir(const char* working_dir, const char* directory_name, uint32_t mode = 0777u)
+{
+    if(working_dir == nullptr || directory_name == nullptr)
+    {
+        return nullptr;
+    }
+
+    char* dst_directory = nullptr;
+    pal_fs_path_combine(working_dir, directory_name, &dst_directory);
+    if (!pal_fs_mkdir(dst_directory, mode))
+    {
+        return nullptr;
+    }
+    
+    return dst_directory;
+}
+
+inline char* mkfile_random(const char* working_dir, const char* filename)
+{
+    if (!pal_fs_directory_exists(working_dir)
+        || filename == nullptr)
+    {
+        return nullptr;
+    }
+
+    char* dst_filename = nullptr;
+    if (!pal_fs_path_combine(working_dir, filename, &dst_filename))
+    {
+        return nullptr;
+    }
+
+    const auto text = "Hello World";
+    if(!pal_fs_write(dst_filename, "wb", reinterpret_cast<void*>(const_cast<char*>(text)), strlen(text)))
+    {
+        return nullptr;
+    }
+
+    return dst_filename;
+}
+
+std::string build_random_str()
+{
+    return xg::newGuid().str();
+}
+
+std::string build_random_filename(std::string ext = ".txt")
+{
+    return build_random_str() + ext;
+}
 
 namespace
 {
-
     TEST(PAL_GENERIC, pal_isdebuggerpresent_DoesNotSegfault)
     {
         pal_isdebuggerpresent();
@@ -11,12 +79,11 @@ namespace
 
     TEST(PAL_GENERIC, pal_wait_for_debugger_DoesNotSegfault)
     {
-        if (!pal_isdebuggerpresent())
+        if(!pal_isdebuggerpresent())
         {
             return;
         }
-
-        pal_wait_for_debugger();
+        EXPECT_TRUE(pal_wait_for_debugger());
     }
 
     TEST(PAL_GENERIC, pal_load_library_DoesNotSegFault)
@@ -74,16 +141,49 @@ namespace
         EXPECT_FALSE(pal_is_unknown_os());
     }
 
+    TEST(PAL_ENV, pal_env_set_DoesNotSegfault)
+    {
+        EXPECT_FALSE(pal_env_set(nullptr, nullptr));
+    }
+
+    TEST(PAL_ENV, pal_env_set_NullptrDeletesVariable)
+    {
+        const auto random_variable = build_random_str();
+        EXPECT_TRUE(pal_env_set(random_variable.c_str(), nullptr));
+        char* value = nullptr;
+        EXPECT_FALSE(pal_env_get(random_variable.c_str(), &value));
+    }
+
+    TEST(PAL_ENV, pal_env_set_Overwrite)
+    {
+        const auto random_variable = build_random_str();
+        EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST"));
+        EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST2"));
+        char* value = nullptr;
+        EXPECT_TRUE(pal_env_get(random_variable.c_str(), &value));
+        EXPECT_STREQ(value, "TEST2");
+    }
+
+    TEST(PAL_ENV, pal_env_set)
+    {
+        const auto random_variable = build_random_str();
+        const auto random_text = build_random_str();
+        EXPECT_TRUE(pal_env_set(random_variable.c_str(), random_text.c_str()));
+        char* value = nullptr;
+        EXPECT_TRUE(pal_env_get(random_variable.c_str(), &value));
+        EXPECT_STREQ(value, random_text.c_str());
+    }
+
     TEST(PAL_ENV, pal_env_get_variable_DoesNotSegFault)
     {
         char** value = nullptr;
-        EXPECT_FALSE(pal_env_get_variable(nullptr, value));
+        EXPECT_FALSE(pal_env_get(nullptr, value));
         EXPECT_EQ(value, nullptr);
     }
 
-    TEST(PAL_ENV, pal_env_get_variable_bool_DoesNotSegFault)
+    TEST(PAL_ENV, pal_env_get_bool_DoesNotSegFault)
     {
-        EXPECT_FALSE(pal_env_get_variable_bool(nullptr));
+        EXPECT_FALSE(pal_env_get_bool(nullptr));
     }
 
     TEST(PAL_ENV, pal_env_expand_str_DoesNotSegfault)
@@ -133,7 +233,7 @@ namespace
         EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
         EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
-    }    
+    }
 
     TEST(PAL_FS, pal_fs_list_directories_DoesNotSegfault)
     {
@@ -263,6 +363,104 @@ namespace
     TEST(PAL_FS, pal_fs_mkdir_DoesNotSegfault)
     {
         EXPECT_FALSE(pal_fs_mkdir(nullptr, 0));
+    }
+
+    TEST(PAL_FS, pal_pal_fs_rmdir_DoesNotSegfault)
+    {
+        EXPECT_FALSE(pal_fs_rmdir(nullptr, FALSE));
+        EXPECT_FALSE(pal_fs_rmdir(nullptr, TRUE));
+    }
+
+    TEST(PAL_FS, pal_pal_fs_rmdir_RemovesEmptyDirectory)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+
+        auto empty_dir = mkdir_random(working_dir);
+        EXPECT_TRUE(pal_fs_directory_exists(empty_dir));
+        EXPECT_TRUE(pal_fs_rmdir(empty_dir, FALSE));
+        EXPECT_FALSE(pal_fs_directory_exists(empty_dir));
+    }
+
+    TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithASingleFile)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+
+        auto directory = mkdir_random(working_dir);
+        auto file1 = mkfile_random(directory, build_random_filename().c_str());
+
+        EXPECT_TRUE(pal_fs_directory_exists(directory));
+        EXPECT_TRUE(pal_fs_rmdir(directory, TRUE));
+        EXPECT_FALSE(pal_fs_directory_exists(directory));
+    }
+    
+    TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleFiles)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+
+        auto directory = mkdir_random(working_dir);
+        auto file1 = mkfile_random(directory, build_random_filename().c_str());
+        auto file2 = mkfile_random(directory, build_random_filename().c_str());
+
+        EXPECT_TRUE(pal_fs_directory_exists(directory));
+        EXPECT_TRUE(pal_fs_rmdir(directory, TRUE));
+        EXPECT_FALSE(pal_fs_directory_exists(directory));
+    }
+
+    TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithEmptySubDirectory)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+
+        auto parent_dir = mkdir_random(working_dir);
+        auto sub_dir = mkdir(parent_dir, "subdirectory");
+
+        EXPECT_TRUE(pal_fs_directory_exists(parent_dir));
+        EXPECT_TRUE(pal_fs_rmdir(parent_dir, TRUE));
+        EXPECT_FALSE(pal_fs_directory_exists(parent_dir));
+    }
+
+     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleSubDirectories)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+
+        auto parent_dir = mkdir_random(working_dir);
+        auto parent_dir_file1 = mkfile_random(parent_dir, build_random_filename().c_str());
+
+        const auto sub_dir_name = "subdirectory";
+        auto sub_dir1 = mkdir(parent_dir, sub_dir_name);
+        auto sub_dir1_file1 = mkfile_random(sub_dir1, build_random_filename().c_str());
+
+        auto sub_dir2 = mkdir(sub_dir1, sub_dir_name);
+        auto sub_dir2_file1 = mkfile_random(sub_dir2, build_random_filename().c_str());
+
+        EXPECT_TRUE(pal_fs_directory_exists(parent_dir));
+        EXPECT_TRUE(pal_fs_rmdir(parent_dir, TRUE));
+        EXPECT_FALSE(pal_fs_directory_exists(parent_dir));
+    }
+
+    TEST(PAL_FS, pal_fs_rmfile_DoesNotSegFault)
+    {
+        EXPECT_FALSE(pal_fs_rmfile(nullptr));
+    }
+
+    TEST(PAL_FS, pal_fs_rmfile_ThatDoesNotExist)
+    {
+        const auto random_filename = build_random_filename();
+        EXPECT_FALSE(pal_fs_rmfile(random_filename.c_str()));
+    }
+
+    TEST(PAL_FS, pal_fs_rmfile)
+    {
+        const auto random_filename = build_random_filename();
+        const auto text = build_random_str();
+        EXPECT_TRUE(pal_fs_write(random_filename.c_str(), "w", text.c_str(), text.size()));
+        EXPECT_TRUE(pal_fs_file_exists(random_filename.c_str()));
+        EXPECT_TRUE(pal_fs_rmfile(random_filename.c_str()));
+        EXPECT_FALSE(pal_fs_file_exists(random_filename.c_str()));
     }
 
     TEST(PAL_FS, pal_fs_fopen_DoesNotSegfault)

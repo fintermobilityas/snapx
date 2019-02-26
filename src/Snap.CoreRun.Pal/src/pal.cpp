@@ -730,11 +730,17 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
 #if PAL_PLATFORM_WINDOWS
     pal_utf16_string file_path_in_utf16_string(file_path_in);
     auto file_attributes = GetFileAttributes(file_path_in_utf16_string.data());
-    if (file_attributes != INVALID_FILE_ATTRIBUTES
-        && !(file_attributes & FILE_ATTRIBUTE_DIRECTORY))
+
+    if (file_attributes == INVALID_FILE_ATTRIBUTES
+        || file_attributes & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        file_exists = FALSE;
+    }
+    else 
     {
         file_exists = PathFileExists(file_path_in_utf16_string.data()) == TRUE ? TRUE : FALSE;
     }
+
     return file_exists;
 #elif PAL_PLATFORM_LINUX
     struct stat st = { 0 };

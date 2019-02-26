@@ -41,6 +41,12 @@ namespace
         path_combine_test_case(nullptr, nullptr, nullptr)
     };
 
+    TEST(PAL_ENV_UNIX, pal_env_get_variable_Reads_PWD_Variable)
+    {
+        char *environment_variable = nullptr;
+        EXPECT_TRUE(pal_env_get_variable("PWD", &environment_variable));
+        EXPECT_NE(environment_variable, nullptr);
+    }
     TEST(PAL_FS_UNIX, pal_fs_path_combine)
     {
         EXPECT_GT(path_combine_test_cases.size(), 0u);

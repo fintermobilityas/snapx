@@ -113,6 +113,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char* src, const char* str);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_startswith(const char* src, const char* str);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char* rhs);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* str);
 
 #ifdef __cplusplus
 }

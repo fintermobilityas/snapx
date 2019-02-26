@@ -40,6 +40,7 @@ class pal_string
     virtual bool ends_with(const TStdString& string) = 0;
     virtual bool equals(const TStdString& string) = 0;
     virtual bool empty() = 0;
+    virtual bool empty_or_whitespace() = 0;
 };
 
 class pal_utf8_string : public pal_string<pal_utf8_string, char*, std::string>
@@ -144,6 +145,11 @@ public:
         return m_value.empty();
     }
 
+    virtual bool empty_or_whitespace() override
+    {
+        return empty() || m_value.find_first_not_of(' ') == m_value.npos;
+    }
+
 };
 
 #if PAL_PLATFORM_WINDOWS
@@ -236,6 +242,11 @@ public:
     virtual bool empty() override
     {
         return m_value.empty();
+    }
+
+    virtual bool empty_or_whitespace() override
+    {        
+        return empty() || m_value.find_first_not_of(' ') == m_value.npos;
     }
 
     static wchar_t* from_utf8(char* string)

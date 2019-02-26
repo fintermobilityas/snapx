@@ -302,4 +302,12 @@ namespace
         EXPECT_FALSE(pal_str_iequals(".nupkg", nullptr));
         EXPECT_TRUE(pal_str_iequals(nullptr, nullptr));
     }
+
+    TEST(PAL_STRING, pal_str_is_null_or_whitespace)
+    {
+        EXPECT_TRUE(pal_str_is_null_or_whitespace(nullptr));
+        EXPECT_TRUE(pal_str_is_null_or_whitespace(""));
+        EXPECT_TRUE(pal_str_is_null_or_whitespace("          "));
+        EXPECT_FALSE(pal_str_is_null_or_whitespace("          s"));
+    }
 }

@@ -397,6 +397,29 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows()
+{
+#if PAL_PLATFORM_WINDOWS
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux()
+{
+#if PAL_PLATFORM_LINUX
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os()
+{
+    return pal_is_linux() 
+        || pal_is_windows() ? FALSE : TRUE;
+}
 
 // - Environment
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get_variable(const char * environment_variable_in, char ** environment_variable_value_out)

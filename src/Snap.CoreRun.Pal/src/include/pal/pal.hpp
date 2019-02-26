@@ -77,6 +77,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
                                                           int cmd_show_in /* Only applicable on Windows */,
                                                           pal_pid_t *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
 
 // - Environment
 

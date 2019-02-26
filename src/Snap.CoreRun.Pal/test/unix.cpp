@@ -41,6 +41,12 @@ namespace
         path_combine_test_case(nullptr, nullptr, nullptr)
     };
 
+    TEST(PAL_GENERIC, pal_is_linux)
+    {
+        EXPECT_FALSE(pal_is_windows());
+        EXPECT_TRUE(pal_is_linux()); 
+    }
+
     TEST(PAL_ENV_UNIX, pal_env_get_variable_Reads_PWD_Variable)
     {
         char *environment_variable = nullptr;

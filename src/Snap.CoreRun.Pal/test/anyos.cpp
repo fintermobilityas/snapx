@@ -69,6 +69,11 @@ namespace
         pal_usleep(1);
     }
 
+    TEST(PAL_GENERIC, pal_is_unknown_os)
+    {
+        EXPECT_FALSE(pal_is_unknown_os());
+    }
+
     TEST(PAL_ENV, pal_env_get_variable_DoesNotSegFault)
     {
         char** value = nullptr;

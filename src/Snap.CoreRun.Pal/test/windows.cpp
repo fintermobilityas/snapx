@@ -3,6 +3,12 @@
 
 namespace
 {
+    TEST(PAL_GENERIC, pal_is_windows)
+    {
+        EXPECT_TRUE(pal_is_windows());
+        EXPECT_FALSE(pal_is_linux());
+    }
+
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
         char* working_dir = nullptr;

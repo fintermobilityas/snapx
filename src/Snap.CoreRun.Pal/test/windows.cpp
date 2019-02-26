@@ -23,8 +23,7 @@ namespace
     {
         char* exe_name = nullptr;
         EXPECT_TRUE(pal_fs_get_own_executable_name(&exe_name));
-        EXPECT_NE(exe_name, nullptr);
-        EXPECT_EQ(std::string(exe_name), "Snap.Tests.exe");
+        ASSERT_STREQ(exe_name, "Snap.Tests.exe");
     }
 
     TEST(PAL_ENV_WINDOWS, pal_env_get_variable_Reads_PATH_Variable)

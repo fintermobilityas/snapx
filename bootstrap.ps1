@@ -90,9 +90,11 @@ function Die {
         [string] $Message
     )
 
-    Write-Host
-    Write-Host $Message -ForegroundColor Red
-    Write-Host
+    $MessageDashes = "-" * [math]::min($Message.Length, [console]::BufferWidth)
+
+    Write-Output-Colored $MessageDashes -ForegroundColor White
+    Write-Output-Colored $Message -ForegroundColor Red
+    Write-Output-Colored $MessageDashes -ForegroundColor White
 
     $exitCode = $LASTEXITCODE
     if(0 -eq $exitCode)
@@ -373,7 +375,7 @@ function Build-Native {
         Pop-Location 
         if(0 -ne $LASTEXITCODE)
         {
-            Die "One or multiple unit tests failed"
+            exit $LASTEXITCODE
         }
     }
 }
@@ -564,10 +566,10 @@ switch ($Target) {
                     Pop-Location 
                     if(0 -ne $LASTEXITCODE)
                     {
-                        Die "One or multiple unit tests failed"
-                    }                   
+                        exit $LASTEXITCODE
+                    }
                 }
-
+                
             }
             default {
                 Die "Unsupported os platform: $OSPlatform"

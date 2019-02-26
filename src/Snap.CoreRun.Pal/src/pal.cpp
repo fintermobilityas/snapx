@@ -63,7 +63,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
         tracer_pid = strstr(buf, TracerPid);
         if (tracer_pid)
         {
-            debugger_present = atoi(tracer_pid + sizeof(TracerPid) - 1) != 0;
+            debugger_present = std::stoi(tracer_pid + sizeof(TracerPid) - 1) != 0;
         }
     }
 
@@ -702,14 +702,14 @@ inline int unix_path_combine_cleanup(char *path)
     }
 
     /* resolve parent dir */
-    while (1) {
+    while (TRUE) {
         str = strstr(path, "/../");
-        if (NULL == str) {
+        if (nullptr == str) {
             break;
         }
 
         *str = 0;
-        if (NULL == strchr(path, '/')) {
+        if (nullptr == strchr(path, '/')) {
             return 1;
         }
         parent_dir = strrchr(path, '/') + 1;
@@ -721,9 +721,9 @@ inline int unix_path_combine_cleanup(char *path)
     }
 
     /* resolve current dir */
-    while (1) {
+    while (TRUE) {
         str = strstr(path, "/./");
-        if (NULL == str) {
+        if (nullptr == str) {
             break;
         }
 
@@ -764,7 +764,7 @@ inline char* unix_path_combine(const char *path1, const char *path2, char *buffe
     if ('/' == path2[0]) {
         strcpy(buffer, path2);
         goto EXIT;
-}
+    }
 
     strcpy(buffer, path1);
 
@@ -1405,7 +1405,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     if (pal_fs_list_files(directory_in, nullptr, nullptr, &files_array, &files_array_len))
     {
         std::vector<std::string> files(files_array, files_array + files_array_len);
-        for (const auto filename : files)
+        for (const auto &filename : files)
         {
             pal_fs_rmfile(filename.c_str());
         }
@@ -1429,7 +1429,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     directories_array = nullptr;
     directories_array_len = 0;
 
-    for (auto directory : directories)
+    for (const auto &directory : directories)
     {
         if (!pal_fs_rmdir(directory.c_str(), TRUE))
         {

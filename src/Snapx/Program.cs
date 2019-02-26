@@ -55,13 +55,14 @@ namespace snapx
             }
             catch (YamlException yamlException)
             {
-                SnapLogger.ErrorException($"Yaml exception trapped. What: {yamlException.InnerException?.Message ?? yamlException.Message}.", yamlException);                
+                SnapLogger.ErrorException($"Yaml exception trapped. What: {yamlException.InnerException?.Message ?? yamlException.Message}.", yamlException);
             }
             catch (Exception e)
             {
                 SnapLogger.ErrorException("Exception thrown during main.", e);
             }
-            return -1;
+
+            return 1;
         }
 
         static int MainImplAsync([NotNull] string[] args)

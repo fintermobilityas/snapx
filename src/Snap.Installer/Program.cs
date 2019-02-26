@@ -68,7 +68,7 @@ namespace Snap.Installer
             catch (Exception e)
             {
                 Console.Error.WriteLine($"Exception thrown during installation: {e.Message}");
-                exitCode = -1;
+                exitCode = 1;
             }
 
             try

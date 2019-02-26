@@ -19,7 +19,7 @@ namespace snapx
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
-            var exitCode = -1;
+            var exitCode = 1;
 
             if (!snapFilesystem.FileExists(opts.Filename))
             {

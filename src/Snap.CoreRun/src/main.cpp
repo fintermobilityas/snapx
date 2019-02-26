@@ -40,7 +40,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
 {
     if(pal_is_elevated())
     {
-        return -1;
+        return 1;
     }
 
     snapx_maybe_wait_for_debugger();
@@ -75,7 +75,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
             char* working_dir = nullptr;
             if(!pal_fs_get_directory_name_absolute_path(this_executable_full_path.c_str(), &working_dir))
             {
-                exit(-1);
+                exit(1);
             }
 
             // The reason why we have to fork is that we want to daemonize (background)
@@ -91,7 +91,7 @@ int main_impl(int argc, char **argv, const int cmd_show_windows)
                 // to change the working directory to the real stub executable working directory
                 if (0 != chdir(working_dir))
                 {
-                    exit(-1);
+                    exit(1);
                 }
 
                 return snap::stubexecutable::run(stubexecutable_arguments, -1);
@@ -138,11 +138,12 @@ int APIENTRY wWinMain(
     {
         return main_impl(argc, argv, n_cmd_show);
     }
-    catch (std::exception)
+    catch (const std::exception& e)
     {
+        std::cerr << "Unknown error: " << e.what() << std::endl;
     }
 
-    return -1;
+    return 1;
 }
 #else
 int main(const int argc, char *argv[])
@@ -151,9 +152,10 @@ int main(const int argc, char *argv[])
     {
         return main_impl(argc, argv, -1);
     }
-    catch (const std::exception&)
+    catch (const std::exception& e)
     {
+        std::cerr << "Unknown error: " << e.what() << std::endl;
     }
-    return -1;
+    return 1;
 }
 #endif

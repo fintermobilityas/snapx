@@ -61,13 +61,13 @@ namespace snapx
                     logger.Error($"Snap with id {packOptions.AppId} was not found in manifest: {snapsManifestAbsoluteFilename}");
                 }
 
-                return -1;
+                return 1;
             }
 
             if (!SemanticVersion.TryParse(packOptions.Version, out var semanticVersion))
             {
                 logger.Error($"Unable to parse semantic version (v2): {packOptions.Version}");
-                return -1;
+                return 1;
             }
 
             snapApp.Version = semanticVersion;
@@ -86,7 +86,7 @@ namespace snapx
             if (nuspecFilename == null || !filesystem.FileExists(nuspecFilename))
             {
                 logger.Error($"Nuspec does not exist: {nuspecFilename}");
-                return -1;
+                return 1;
             }
 
             var snapAppChannel = snapApp.Channels.First();
@@ -128,7 +128,7 @@ namespace snapx
                                             "NB! The package may not yet be visible to due to upstream caching. [y/n]", infoOnly: packOptions.YesToAllPrompts)
                 )
                 {
-                    return -1;
+                    return 1;
                 }
 
                 snapReleases = new SnapReleases();
@@ -144,7 +144,7 @@ namespace snapx
                     if (snapReleases == null)
                     {
                         logger.Error("Unknown error unpacking releases nupkg.");
-                        return -1;
+                        return 1;
                     }
                 }
 
@@ -155,7 +155,7 @@ namespace snapx
                     snapCryptoProvider, snapPack, snapReleases, snapApps, snapAppChannel,
                     pushFeed, cancellationToken))
                 {
-                    return -1;
+                    return 1;
                 }
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 
@@ -165,7 +165,7 @@ namespace snapx
                     if (snapAppMostRecentRelease.Version == snapApp.Version)
                     {
                         logger.Error($"Version {snapApp.Version} is already published to feed: {pushFeed.Name}.");
-                        return -1;
+                        return 1;
                     }
 
                     logger.Info($"Most recent release is: {snapAppMostRecentRelease.Version}");
@@ -189,7 +189,7 @@ namespace snapx
                                      "If you have recently published a new release than this may because of upstream caching. " +
                                      "You should wait at least one minute before publishing a new version. " +
                                      "Aborting!");
-                        return -1;
+                        return 1;
                     }
 
                     logger.Info($"Attempting to read release information from: {snapAppMostRecentRelease.FullFilename}.");
@@ -209,7 +209,7 @@ namespace snapx
                         infoOnly: packOptions.YesToAllPrompts)
                     )
                     {
-                        return -1;
+                        return 1;
                     }
                 }
 
@@ -296,7 +296,7 @@ namespace snapx
             {
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 logger.Error("Unknown error building installer.");
-                return -1;
+                return 1;
             }
 
             var installerExeStat = snapOs.Filesystem.FileStat(installerExeAbsolutePath);

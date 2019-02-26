@@ -34,14 +34,14 @@ namespace snapx
             if (error)
             {
                 logger.Error($"Snap with id {opts.AppId} was not found in manifest: {snapsManifestAbsoluteFilename}");
-                return -1;
+                return 1;
             }
 
             var remainingChannels = snapApp.Channels.Skip(1).Select(x => x.Name).ToList();
             if (!remainingChannels.Any())
             {
                 logger.Error($"Unable to promote snap with id: {opts.AppId} because it only has one channel: {snapApps.Channels.First().Name}");
-                return -1;
+                return 1;
             }
 
             if (opts.Channel != null)
@@ -50,7 +50,7 @@ namespace snapx
                 if (!remainingChannels.Any())
                 {
                     logger.Info($"Unable to promote snap with id: {opts.AppId}. Channel name was not found: {opts.Channel}");
-                    return -1;
+                    return 1;
                 }
             }
 
@@ -77,14 +77,14 @@ namespace snapx
                 if (mostRecentMedatadata != null)
                 {
                     logger.Error($"Nupkg is already published: {upstreamPackageId}");
-                    return -1;
+                    return 1;
                 }
 
                 logger.Info($"Upstream version: {mostRecentMedatadata.Identity.Version}.");
                 logger.Info("Downloading nupkg...");
             }
 
-            return -1;
+            return 0;
         }
 
     }

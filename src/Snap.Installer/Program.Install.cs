@@ -43,7 +43,7 @@ namespace Snap.Installer
 
             var installerProgressSource = new SnapProgressSource();
             var onFirstAnimationRenderedEvent = new ManualResetEventSlim(false);
-            var exitCode = -1;
+            var exitCode = 1;
 
             void InstallInBackground(MainWindowViewModel mainWindowViewModel)
             {
@@ -121,7 +121,6 @@ namespace Snap.Installer
 
                         if (snapAppInstalled == null)
                         {
-                            exitCode = -1;
                             goto done;
                         }
 
@@ -132,7 +131,6 @@ namespace Snap.Installer
                     catch (Exception e)
                     {
                         mainWindowLogger.ErrorException("Unknown error during install. Please check logs.", e);
-                        exitCode = -1;
                     }
                 }
 

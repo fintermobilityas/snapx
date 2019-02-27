@@ -37,7 +37,7 @@ $CommandUpx = $null
 $CommandPacker = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
-$CommandGTestsDefaultArguments = @("--gtest_break_on_failure", "--gtest_repeat=3")
+$CommandGTestsDefaultArguments = @("--gtest_break_on_failure", "--gtest_repeat=3", "--gtest_shuffle")
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {

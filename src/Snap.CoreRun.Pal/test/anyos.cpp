@@ -78,6 +78,33 @@ std::string build_random_dirname()
     return build_random_str();
 }
 
+inline std::string build_working_dir_filename(const char* filename)
+{
+    if (filename == nullptr)
+    {
+        return nullptr;
+    }
+
+    char* working_dir;
+    if(!pal_process_get_cwd(&working_dir))
+    {
+        return nullptr;
+    }
+
+    char* dst_filename = nullptr;
+    if (!pal_fs_path_combine(working_dir, filename, &dst_filename))
+    {
+        delete working_dir;
+        return nullptr;
+    }
+
+    std::string dst_filename_str(dst_filename);
+    delete dst_filename;
+    delete working_dir;
+
+    return dst_filename_str;
+}
+
 namespace
 {
 
@@ -395,7 +422,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_read_file_Json)
     {
-        auto json_filename = build_random_filename(".json");
+        auto json_filename = build_working_dir_filename(".json");
 
         json doc = {
             {"pi", 3.141},

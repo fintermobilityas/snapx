@@ -1,6 +1,9 @@
 #include "gtest/gtest.h"
 #include "pal/pal.hpp"
 #include "crossguid/Guid.hpp"
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 inline char* mkdir_random(const char* working_dir, uint32_t mode = 0777u)
 {
@@ -358,6 +361,38 @@ namespace
         {
             EXPECT_NE(&bytes[i], nullptr);
         }
+    }
+
+    TEST(PAL_FS, pal_fs_read_file_Json)
+    {
+        auto json_filename = build_random_filename(".json");
+
+        json doc = {
+            {"pi", 3.141},
+            {"happy", true},
+            {"name", "Niels"},
+            {"nothing", nullptr},
+            {"answer", {
+                {"everything", 42}
+            }},
+            {"list", {1, 0, 2}},
+            {"object", {
+               {"currency", "USD"},
+               {"value", 42.99}
+            }}
+        };
+
+        const auto json_str_before = doc.dump();
+
+        EXPECT_TRUE(pal_fs_write(json_filename.c_str(), "w", json_str_before.c_str(), json_str_before.size()));
+
+        char* json_after = nullptr;
+        size_t json_after_len = 0u;
+        EXPECT_TRUE(pal_fs_read_file(json_filename.c_str(), "r", &json_after, &json_after_len));
+        EXPECT_STREQ(json_str_before.c_str(), json_after);
+
+        auto doc_after = json::parse(json_after);
+        ASSERT_EQ(doc["pi"], doc_after["pi"]);
     }
 
     TEST(PAL_FS, pal_fs_mkdir_DoesNotSegfault)

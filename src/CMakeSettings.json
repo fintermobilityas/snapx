@@ -25,7 +25,7 @@
             "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": [
                 {
-                    "name": "ENABLE_LTO",
+                    "name": "BUILD_ENABLE_LTO",
                     "value": "1"
                 }
             ],

@@ -1195,7 +1195,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    char cwd[PATH_MAX];
+    char cwd[PAL_PATH_MAX];
     const auto status = getcwd(cwd, sizeof(cwd));
     if (status != nullptr)
     {
@@ -1230,7 +1230,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    char real_path[PATH_MAX];
+    char real_path[PAL_PATH_MAX];
     if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
     {
         std::string real_path_str(real_path);

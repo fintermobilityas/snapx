@@ -69,7 +69,11 @@ if (BUILD_ENABLE_TESTS)
 				  corerun_static
 				  gtest
                   gtest_main)
-                
+
+  add_custom_command(TARGET Snap.Tests POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E echo
+          "Tests directory = $<TARGET_FILE_DIR:Snap.Tests>")
+
   add_custom_command(TARGET Snap.Tests PRE_BUILD 
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:Snap.Tests>"
     COMMENT "Copying corerun_demoapp to tests directory"

@@ -1264,7 +1264,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, size_t* bytes_read_out)
 {
     if (filename_in == nullptr
         || mode_in == nullptr)
@@ -1294,7 +1294,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         return FALSE;
     }
 
-    int read_offset = 0;
+    size_t read_offset = 0;
     DWORD read_buffer_bytes_read = 0;
     const auto read_buffer_size = 4096;
     char read_buffer[read_buffer_size];
@@ -1344,7 +1344,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
         return FALSE;
     }
     *bytes_out = buffer;
-    *bytes_read_out = static_cast<int>(total_bytes_read);
+    *bytes_read_out = total_bytes_read;
     return TRUE;
 #else
     return FALSE;

@@ -349,7 +349,7 @@ namespace
         EXPECT_GT(expected_file_size, 0u);
 
         char* bytes = nullptr;
-        int bytes_len = 0;
+        size_t bytes_len = 0;
         EXPECT_TRUE(pal_fs_read_file(exe_abs_path, "rb", &bytes, &bytes_len));
         EXPECT_NE(bytes, nullptr);
         EXPECT_GT(bytes_len, 0);

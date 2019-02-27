@@ -107,7 +107,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char** own_ex
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, int* bytes_read_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, size_t* bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint32_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in);

@@ -1183,17 +1183,34 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char * path_in, cons
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out)
 {
 #if PAL_PLATFORM_WINDOWS
+    #if PAL_PLATFORM_MINGW
     wchar_t* buffer = nullptr;
     if ((buffer = _wgetcwd(nullptr, 0)) == nullptr)
     {
         return FALSE;
     }
-
+    
     *working_directory_out = pal_utf8_string(buffer).dup();
-
     delete buffer;
+    return TRUE;
+    #else
+    wchar_t buffer[PAL_MAX_PATH];
+    if(0 == GetModuleFileName(nullptr, buffer, PAL_MAX_PATH))
+    {
+        return FALSE;
+    }
+
+    auto pos = std::wstring(buffer).find_last_of(PAL_DIRECTORY_SEPARATOR_WIDE_STR);
+    if(pos == std::wstring::npos)
+    {
+        return FALSE;
+    }
+
+    auto working_dir_wstr = std::wstring(buffer).substr(0, pos);
+    *working_directory_out = pal_utf8_string(working_dir_wstr.c_str()).dup();
 
     return TRUE;
+    #endif
 #elif PAL_PLATFORM_LINUX
     char cwd[PAL_PATH_MAX];
     const auto status = getcwd(cwd, sizeof(cwd));

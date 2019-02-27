@@ -51,7 +51,11 @@ int corerun_demoapp_main_impl(int argc, char **argv)
 
     auto data_len = output_str.size() + 1;
     auto data = new char[data_len];
+#if PAL_PLATFORM_WINDOWS
+    strcpy_s(data, data_len, output_str.c_str());
+#else
     strcpy(data, output_str.c_str());
+#endif
     data[data_len] = '\0';
 
     pal_fs_write(log_filename_str.c_str(), "w", data, data_len);

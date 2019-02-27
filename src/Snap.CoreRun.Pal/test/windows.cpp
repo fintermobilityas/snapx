@@ -13,9 +13,13 @@ namespace
     {
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
+
+        char* corerun_exe = nullptr;
+        EXPECT_TRUE(pal_fs_path_combine(working_dir, "corerun_demoapp.exe", &corerun_exe));
+
         int exit_code = -1;
-        EXPECT_TRUE(pal_process_exec("dir", working_dir, -1, nullptr, &exit_code));
-        EXPECT_EQ(exit_code, 0);
+        EXPECT_TRUE(pal_process_exec(corerun_exe, working_dir, -1, nullptr, &exit_code));
+        EXPECT_EQ(exit_code, 127 /* default exit code for demo app */);
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsFalseIfDirectory)

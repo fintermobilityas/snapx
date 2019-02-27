@@ -3,6 +3,19 @@
 
 #include <vector>
 
+inline std::string get_process_cwd() {
+    char* working_dir = nullptr;
+    if(!pal_process_get_cwd(&working_dir))
+    {
+        return nullptr;
+    }
+
+    std::string working_dir_str(working_dir);
+    delete working_dir;
+
+    return working_dir_str;
+}
+
 namespace
 {
 
@@ -43,45 +56,53 @@ namespace
 
     TEST(PAL_GENERIC, pal_is_linux)
     {
-        EXPECT_FALSE(pal_is_windows());
-        EXPECT_TRUE(pal_is_linux()); 
+        ASSERT_FALSE(pal_is_windows());
+        ASSERT_TRUE(pal_is_linux()); 
     }
 
     TEST(PAL_GENERIC, pal_process_exec)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
+        ASSERT_TRUE(pal_process_get_cwd(&working_dir));
         int exit_code = -1;
-        EXPECT_TRUE(pal_process_exec("ls", working_dir, -1, nullptr, &exit_code));
-        EXPECT_EQ(exit_code, 0);
+        ASSERT_TRUE(pal_process_exec("ls", working_dir, -1, nullptr, &exit_code));
+        ASSERT_EQ(exit_code, 0);
     }
 
     TEST(PAL_ENV_UNIX, pal_env_get_variable_Reads_PWD_Variable)
     {
         char *environment_variable = nullptr;
-        EXPECT_TRUE(pal_env_get("PWD", &environment_variable));
-        EXPECT_NE(environment_variable, nullptr);
+        ASSERT_TRUE(pal_env_get("PWD", &environment_variable));
+        ASSERT_NE(environment_variable, nullptr);
     }
 
     TEST(PAL_FS_UNIX, pal_process_get_name_ReturnsThisProcessExeName)
     {
         char *exe_name = nullptr;
-        EXPECT_TRUE(pal_process_get_name(&exe_name));
-        EXPECT_NE(exe_name, nullptr);
+        ASSERT_TRUE(pal_process_get_name(&exe_name));
+        ASSERT_NE(exe_name, nullptr);
         ASSERT_STREQ(exe_name, "Snap.Tests");
     }
 
     TEST(PAL_FS_UNIX, pal_fs_path_combine)
     {
-        EXPECT_GT(path_combine_test_cases.size(), 0u);
+        ASSERT_GT(path_combine_test_cases.size(), 0u);
 
         for (const auto &test_case : path_combine_test_cases)
         {
             char* path_combined = nullptr;
-            const auto expect_success = test_case.combined == nullptr ? FALSE : TRUE;
-            EXPECT_EQ(pal_fs_path_combine(test_case.path1, test_case.path2, &path_combined), expect_success);
+            const auto ASSERT_success = test_case.combined == nullptr ? FALSE : TRUE;
+            ASSERT_EQ(pal_fs_path_combine(test_case.path1, test_case.path2, &path_combined), ASSERT_success);
             ASSERT_STREQ(path_combined, test_case.combined);
         }
     }
+/*
+    TEST(PAL_FS_UNIX, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
+    {
+        char* working_dir = nullptr;
+        ASSERT_TRUE(pal_fs_get_cwd(&working_dir));
+        ASSERT_TRUE(pal_fs_directory_exists(working_dir));
+    }
+*/
 
 }

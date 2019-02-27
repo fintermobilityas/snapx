@@ -1,5 +1,5 @@
-const int unit_default_exit_code = 127;
-const int unit_default_error_exit_code = 128;
+const int unit_test_success_exit_code = 127;
+const int unit_test_error_exit_code = 128;
 
 #include <iostream>
 #include <vector>
@@ -14,13 +14,13 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     char* app_name = nullptr;
     if (!pal_process_get_name(&app_name))
     {
-        return unit_default_error_exit_code;
+        return unit_test_error_exit_code;
     }
 
     char* this_working_dir = nullptr;
     if(!pal_process_get_cwd(&this_working_dir))
     {
-        return unit_default_error_exit_code;
+        return unit_test_error_exit_code;
     }
 
     std::vector<std::string> arguments(argv, argv + argc);
@@ -30,7 +30,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     json output;
     output["arguments"] = arguments;
     output["working_dir"] = this_working_dir;
-    output["exit_code"] = unit_default_exit_code;
+    output["exit_code"] = unit_test_success_exit_code;
     output["command"] = std::string();
     
     for (const auto &value : arguments)

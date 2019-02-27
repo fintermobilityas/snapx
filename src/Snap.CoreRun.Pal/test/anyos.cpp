@@ -5,6 +5,19 @@
 
 using json = nlohmann::json;
 
+inline std::string get_process_cwd() {
+    char* working_dir = nullptr;
+    if(!pal_process_get_cwd(&working_dir))
+    {
+        return nullptr;
+    }
+
+    std::string working_dir_str(working_dir);
+    delete working_dir;
+
+    return working_dir_str;
+}
+
 inline char* mkdir_random(const char* working_dir, uint32_t mode = 0777u)
 {
     if (working_dir == nullptr
@@ -40,7 +53,7 @@ inline char* mkdir(const char* working_dir, const char* directory_name, uint32_t
     return dst_directory;
 }
 
-inline char* mkfile_random(const char* working_dir, const char* filename)
+inline std::string mkfile_random(const char* working_dir, const char* filename)
 {
     if (!pal_fs_directory_exists(working_dir)
         || filename == nullptr)
@@ -60,7 +73,10 @@ inline char* mkfile_random(const char* working_dir, const char* filename)
         return nullptr;
     }
 
-    return dst_filename;
+    auto dst_filename_str = std::string(dst_filename);
+    delete dst_filename;
+
+    return dst_filename_str;
 }
 
 std::string build_random_str()
@@ -320,13 +336,6 @@ namespace
         }
     }
 
-    TEST(PAL_FS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
-    {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
-        EXPECT_TRUE(pal_fs_directory_exists(working_dir));
-    }
-
     TEST(PAL_FS, pal_process_get_real_path)
     {
         char* this_process_real_path = nullptr;
@@ -399,7 +408,9 @@ namespace
 
     TEST(PAL_FS, pal_fs_read_file_Json)
     {
-        auto json_filename = build_random_filename(".json");
+        const auto random_filename = build_random_filename();
+        const auto working_dir = get_process_cwd();
+        const auto dst_json_filename = mkfile_random(working_dir.c_str(), random_filename.c_str());
 
         json doc = {
             {"pi", 3.141},
@@ -418,14 +429,14 @@ namespace
 
         const auto json_str_before = doc.dump();
 
-        EXPECT_TRUE(pal_fs_write(json_filename.c_str(), "wb", json_str_before.c_str(), json_str_before.size()));
+        EXPECT_TRUE(pal_fs_write(dst_json_filename.c_str(), "wb", json_str_before.c_str(), json_str_before.size()));
 
         char* json_after = nullptr;
         size_t json_after_len = 0u;
-        ASSERT_TRUE(pal_fs_read_binary_file(json_filename.c_str(), &json_after, &json_after_len));
+        ASSERT_TRUE(pal_fs_read_binary_file(dst_json_filename.c_str(), &json_after, &json_after_len));
 
         json_after[json_after_len] = '\0';
-        EXPECT_STREQ(json_str_before.c_str(), json_after) << "Json documents are not equal: " << json_filename.c_str();
+        EXPECT_STREQ(json_str_before.c_str(), json_after) << "Json documents are not equal: " << dst_json_filename.c_str();
 
         auto doc_after = json::parse(json_after);
         ASSERT_EQ(doc["pi"], doc_after["pi"]);
@@ -434,9 +445,9 @@ namespace
         // Todo: Investigate why assert fails only in Release mode when targeting MSVS.
         // Process explorer cannot find any processes with
         // open file descriptions on the file we are attempting to remove :(
-        pal_fs_rmfile(json_filename.c_str());
+        pal_fs_rmfile(dst_json_filename.c_str());
 #else
-        EXPECT_TRUE(pal_fs_rmfile(json_filename.c_str()));
+        EXPECT_TRUE(pal_fs_rmfile(dst_json_filename.c_str()));
 #endif
     }
 
@@ -468,7 +479,7 @@ namespace
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto directory = mkdir_random(working_dir);
-        auto file1 = mkfile_random(directory, build_random_filename().c_str());
+        mkfile_random(directory, build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(directory));
         EXPECT_TRUE(pal_fs_rmdir(directory, TRUE));
@@ -481,8 +492,8 @@ namespace
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto directory = mkdir_random(working_dir);
-        auto file1 = mkfile_random(directory, build_random_filename().c_str());
-        auto file2 = mkfile_random(directory, build_random_filename().c_str());
+        mkfile_random(directory, build_random_filename().c_str());
+        mkfile_random(directory, build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(directory));
         EXPECT_TRUE(pal_fs_rmdir(directory, TRUE));
@@ -508,14 +519,14 @@ namespace
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto parent_dir = mkdir_random(working_dir);
-        auto parent_dir_file1 = mkfile_random(parent_dir, build_random_filename().c_str());
+        mkfile_random(parent_dir, build_random_filename().c_str());
 
         const auto sub_dir_name = "subdirectory";
         auto sub_dir1 = mkdir(parent_dir, sub_dir_name);
-        auto sub_dir1_file1 = mkfile_random(sub_dir1, build_random_filename().c_str());
+        mkfile_random(sub_dir1, build_random_filename().c_str());
 
         auto sub_dir2 = mkdir(sub_dir1, sub_dir_name);
-        auto sub_dir2_file1 = mkfile_random(sub_dir2, build_random_filename().c_str());
+        mkfile_random(sub_dir2, build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(parent_dir));
         EXPECT_TRUE(pal_fs_rmdir(parent_dir, TRUE));
@@ -536,11 +547,11 @@ namespace
     TEST(PAL_FS, pal_fs_rmfile)
     {
         const auto random_filename = build_random_filename();
-        const auto text = build_random_str();
-        EXPECT_TRUE(pal_fs_write(random_filename.c_str(), "w", text.c_str(), text.size()));
-        EXPECT_TRUE(pal_fs_file_exists(random_filename.c_str()));
-        EXPECT_TRUE(pal_fs_rmfile(random_filename.c_str()));
-        EXPECT_FALSE(pal_fs_file_exists(random_filename.c_str()));
+        const auto working_dir = get_process_cwd();
+        const auto dst_filename = mkfile_random(working_dir.c_str(), random_filename.c_str());
+        EXPECT_TRUE(pal_fs_file_exists(dst_filename.c_str()));
+        EXPECT_TRUE(pal_fs_rmfile(dst_filename.c_str()));
+        EXPECT_FALSE(pal_fs_file_exists(dst_filename.c_str()));
     }
 
     TEST(PAL_FS, pal_fs_fopen_DoesNotSegfault)
@@ -552,8 +563,12 @@ namespace
 
     TEST(PAL_FS, pal_fs_fopen_OpenAndClosesAFile)
     {
+        const auto random_filename = build_random_filename(".txt");
+        const auto working_dir = get_process_cwd();
+        const auto dst_filename = mkfile_random(working_dir.c_str(), random_filename.c_str());
+
         pal_file_handle_t* file_handle = nullptr;
-        EXPECT_TRUE(pal_fs_fopen("test.txt", "wb", &file_handle));
+        EXPECT_TRUE(pal_fs_fopen(dst_filename.c_str(), "wb", &file_handle));
         EXPECT_NE(file_handle, nullptr);
         EXPECT_TRUE(pal_fs_fclose(file_handle));
         EXPECT_EQ(file_handle, nullptr);

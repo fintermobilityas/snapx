@@ -620,11 +620,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char*
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
     pal_utf16_string name_in_utf16_string(name_in);
     pal_utf16_string value_in_utf16_string(value_in == nullptr ? "" : value_in);
     const auto success = SetEnvironmentVariable(name_in_utf16_string.data(), value_in_utf16_string.empty() ? nullptr : value_in_utf16_string.data());
-    return success == TRUE;
+    return success != 0 ? TRUE : FALSE;
 #elif PAL_PLATFORM_LINUX
     const auto success = value_in == nullptr ? unsetenv(name_in) : setenv(name_in, value_in, 1 /* overwrite */);
     return success == 0;
@@ -640,18 +640,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
-
-#if PAL_PLATFORM_MINGW
-    auto w_env = _wgetenv(environment_variable_in_utf16_string.data());
-    if (w_env != nullptr)
-    {
-        *environment_variable_value_out = pal_utf8_string(w_env).dup();
-        return TRUE;
-    }
-    return FALSE;
-#else
     const int buffer_size = 65535;
     wchar_t buffer[buffer_size];
     auto actual_len = GetEnvironmentVariable(environment_variable_in_utf16_string.data(), buffer, buffer_size);
@@ -663,8 +653,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
     *environment_variable_value_out = pal_utf8_string(buffer + '\0').dup();
 
     return TRUE;
-#endif
-#else
+#elif PLATFORM_LINUX 
     const auto value = ::getenv(environment_variable_in);
     if (value == nullptr)
     {
@@ -673,6 +662,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
 
     *environment_variable_value_out = strdup(value);
     return TRUE;
+#else
+    return FALSE;
 #endif
 }
 
@@ -1212,8 +1203,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
     return TRUE;
     #endif
 #elif PAL_PLATFORM_LINUX
-    char cwd[PAL_PATH_MAX];
-    const auto status = getcwd(cwd, sizeof(cwd));
+    char cwd[PAL_MAX_PATH];
+    auto status = getcwd(cwd, sizeof(cwd));
     if (status != nullptr)
     {
         *working_directory_out = strdup(cwd);
@@ -1247,7 +1238,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    char real_path[PAL_PATH_MAX];
+    char real_path[PAL_MAX_PATH];
     if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
     {
         std::string real_path_str(real_path);

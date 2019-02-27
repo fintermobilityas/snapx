@@ -64,6 +64,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     char* cwd = nullptr;
     if (!pal_fs_get_cwd(&cwd))
     {
+        std::cerr << "Failed to get current working directory" << std::endl;
         return std::string();
     }
 

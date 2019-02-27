@@ -361,6 +361,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
+    if(argc_in <= 0)
+    {
+        return FALSE;
+    }
+
     if (0 != chdir(working_dir_in))
     {
         return -1;
@@ -425,6 +430,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
+    if(argc_in <= 0)
+    {
+        return FALSE;
+    }
+
     PAL_UNUSED(cmd_show_in);
 
     if (0 != chdir(working_dir_in))

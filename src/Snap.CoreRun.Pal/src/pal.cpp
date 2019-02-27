@@ -1441,7 +1441,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
 #if PAL_PLATFORM_WINDOWS
     pal_utf16_string filename_in_utf16_string(filename_in);
     const auto success = DeleteFile(filename_in_utf16_string.data());
-    return success == TRUE;
+    return success != 0;
 #elif PAL_PLATFORM_LINUX
     const auto success = remove(filename_in);
     return success == 0 ? TRUE : FALSE;

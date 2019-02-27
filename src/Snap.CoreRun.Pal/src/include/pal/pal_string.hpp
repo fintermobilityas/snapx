@@ -13,9 +13,12 @@ wchar_t* pal_str_widen(const char* utf8_str);
 char* pal_str_narrow(const wchar_t* utf16_str);
 
 #if defined(PAL_PLATFORM_MINGW)
+#include <string.h>
 #ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0x0080
 #endif
+#define _strdup strdup
+#define _wcsdup wcsdup
 #endif
 
 template<class TStringClass, class TStorageClass, class TStdString>

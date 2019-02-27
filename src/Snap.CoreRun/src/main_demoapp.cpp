@@ -24,7 +24,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     }
 
     std::vector<std::string> arguments(argv, argv + argc);
-
+    const auto log_filename_str = std::string(this_exe_name) + ".json";
     const auto command_expected_exit_code_str = std::string("--expected-version=");
 
     json output;
@@ -48,7 +48,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     }
 
     auto output_str = output.dump();
-    const auto log_filename_str = std::string(this_exe_name) + ".json";
+
     pal_fs_write(log_filename_str.c_str(), "w", output_str.c_str(), output_str.size());
 
     return output["exit_code"].get<int>();

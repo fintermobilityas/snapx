@@ -70,39 +70,12 @@ std::string build_random_str()
 
 std::string build_random_filename(std::string ext = ".txt")
 {
-    return build_random_str() + ext;
+    return build_random_str().c_str() + ext;
 }
 
 std::string build_random_dirname()
 {
-    return build_random_str();
-}
-
-inline std::string build_working_dir_filename(const char* filename)
-{
-    if (filename == nullptr)
-    {
-        return nullptr;
-    }
-
-    char* working_dir;
-    if(!pal_process_get_cwd(&working_dir))
-    {
-        return nullptr;
-    }
-
-    char* dst_filename = nullptr;
-    if (!pal_fs_path_combine(working_dir, filename, &dst_filename))
-    {
-        delete working_dir;
-        return nullptr;
-    }
-
-    std::string dst_filename_str(dst_filename);
-    delete dst_filename;
-    delete working_dir;
-
-    return dst_filename_str;
+    return build_random_str().c_str();
 }
 
 namespace
@@ -294,6 +267,8 @@ namespace
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_NE(working_dir, nullptr);
 
+        EXPECT_TRUE(mkdir_random(working_dir));
+
         char** directories_array = nullptr;
         size_t directories_len = 0u;
         EXPECT_TRUE(pal_fs_list_directories(working_dir, nullptr, nullptr, &directories_array, &directories_len));
@@ -325,6 +300,8 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_NE(working_dir, nullptr);
+
+        mkfile_random(working_dir, build_random_filename().c_str());
 
         char** files_array = nullptr;
         size_t files_len = 0u;
@@ -422,7 +399,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_read_file_Json)
     {
-        auto json_filename = build_working_dir_filename(".json");
+        auto json_filename = build_random_filename(".json");
 
         json doc = {
             {"pi", 3.141},

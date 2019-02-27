@@ -6,11 +6,13 @@
 #include <string>
 #include <algorithm>
 #include <exception>
+#include <random>
 
 using json = nlohmann::json;
 
 const int demoapp_default_exit_code = 127;
 const uint32_t default_permissions = 0777;
+static auto rng = std::default_random_engine {};
 
 inline std::string get_process_cwd() {
     char* working_dir = nullptr;
@@ -452,7 +454,8 @@ namespace {
               expected_app_version = std::to_string(major_version) + ".0.0";
               app_versions.emplace_back(expected_app_version);
           }
-          std::random_shuffle ( app_versions.begin(), app_versions.end() );
+         
+          std::shuffle(std::begin(app_versions), std::end(app_versions), rng);
 
           for(auto const &app_version : app_versions)
           {

@@ -70,19 +70,15 @@ if (BUILD_ENABLE_TESTS)
 				  gtest
                   gtest_main)
 
-  add_custom_command(TARGET Snap.Tests POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E echo
-          "Tests directory = $<TARGET_FILE_DIR:Snap.Tests>")
-
-  add_custom_command(TARGET Snap.Tests PRE_BUILD 
-    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:Snap.Tests>"
-    COMMENT "Copying corerun_demoapp to tests directory"
+  add_custom_target(always_copy_test_dependencies ALL
+          COMMAND ${CMAKE_COMMAND} -E echo "Copying corerun, corerun_demoapp tests directory: $<TARGET_FILE_DIR:Snap.Tests>"
+          COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:Snap.Tests>"
+          COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun>" "$<TARGET_FILE_DIR:Snap.Tests>"
   )
 
-  add_custom_command(TARGET Snap.Tests PRE_BUILD 
-    COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun>" "$<TARGET_FILE_DIR:Snap.Tests>"
-    COMMENT "Copying corerun to tests directory"
-  )
+  add_custom_command(TARGET Snap.Tests PRE_BUILD
+          DEPENDS always_copy_test_dependencies
+          COMMAND ${CMAKE_COMMAND} -E echo )
 
   set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD 17)
   set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD_REQUIRED ON)

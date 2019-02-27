@@ -11,20 +11,20 @@ using json = nlohmann::json;
 
 int corerun_demoapp_main_impl(int argc, char **argv)
 {
-    char* this_exe_name = nullptr;
-    if (!pal_fs_get_own_executable_name(&this_exe_name))
+    char* app_name = nullptr;
+    if (!pal_process_get_name(&app_name))
     {
         return unit_default_error_exit_code;
     }
 
     char* this_working_dir = nullptr;
-    if(!pal_fs_get_cwd(&this_working_dir))
+    if(!pal_process_get_cwd(&this_working_dir))
     {
         return unit_default_error_exit_code;
     }
 
     std::vector<std::string> arguments(argv, argv + argc);
-    const auto log_filename_str = std::string(this_exe_name) + ".json";
+    const auto log_filename_str = std::string(app_name) + ".json";
     const auto command_expected_exit_code_str = std::string("--expected-version=");
 
     json output;
@@ -49,9 +49,15 @@ int corerun_demoapp_main_impl(int argc, char **argv)
 
     auto output_str = output.dump();
 
-    pal_fs_write(log_filename_str.c_str(), "w", output_str.c_str(), output_str.size());
+    auto data_len = output_str.size() + 1;
+    auto data = new char[data_len];
+    strcpy(data, output_str.c_str());
+    data[data_len] = '\0';
 
-    return output["exit_code"].get<int>();
+    pal_fs_write(log_filename_str.c_str(), "w", data, data_len);
+
+    auto exit_code = output["exit_code"].get<int>();
+    return exit_code;
 }
 
 #if WIN32

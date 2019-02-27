@@ -1,5 +1,8 @@
 #include "stubexecutable.hpp"
 
+#include <string>
+#include <iostream>
+
 using std::string;
 
 inline std::string join(const std::vector<std::string>& strings, const char* delimiter = " ")
@@ -22,7 +25,7 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     std::string app_dir_str;
 
     char* app_name = nullptr;
-    if (!pal_fs_get_own_executable_name(&app_name))
+    if (!pal_process_get_name(&app_name))
     {
         std::cerr << "Error: Unable to find own executable name" << std::endl;
         goto done;
@@ -31,7 +34,7 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     app_dir_str = find_current_app_dir();
     if (app_dir_str.empty())
     {
-        std::cerr << "Error: Unable to find latest app dir" << std::endl;
+        std::cerr << "Error: Unable to find current app dir" << std::endl;
         goto done;
     }
 
@@ -62,7 +65,7 @@ done:
 std::string snap::stubexecutable::find_current_app_dir()
 {
     char* cwd = nullptr;
-    if (!pal_fs_get_cwd(&cwd))
+    if (!pal_process_get_cwd(&cwd))
     {
         std::cerr << "Failed to get current working directory" << std::endl;
         return std::string();
@@ -76,6 +79,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     size_t paths_out_len = 0;
     if (!pal_fs_list_directories(app_dir.c_str(), nullptr, nullptr, &paths_out, &paths_out_len))
     {
+        std::cerr << "Failed to list directories inside app dir: " << app_dir << std::endl;
         return std::string();
     }
 

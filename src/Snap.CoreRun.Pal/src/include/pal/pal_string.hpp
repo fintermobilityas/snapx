@@ -1,32 +1,20 @@
 #pragma once
 
+#if defined(PAL_PLATFORM_LINUX) || defined(PAL_PLATFORM_MINGW)
+#include <string.h>
+#define _strdup strdup
+#define _wcsdup wcsdup
+#endif
+
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
 #include <string>
 #include <iostream>
-
 // - String internal
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
 wchar_t* pal_str_widen(const char* utf8_str);
 char* pal_str_narrow(const wchar_t* utf16_str);
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
 #if defined(PAL_PLATFORM_MINGW)
-#include <string.h>
 #ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0x0080
-#define _strdup strdup
-#define _wcsdup wcsdup
-#endif
-#endif
-#elif defined(PAL_PLATFORM_LINUX)
-#include <string.h>
-#define _strdup strdup
-#define _wcsdup wcsdup
-#else
-#error "Unsupported platform"
 #endif
 
 template<class TStringClass, class TStorageClass, class TStdString>
@@ -152,7 +140,6 @@ public:
 
 };
 
-#if PAL_PLATFORM_WINDOWS
 class pal_utf16_string : public pal_string<pal_utf16_string, wchar_t*, std::wstring>
 {
     wchar_t* m_ptr;
@@ -254,4 +241,5 @@ public:
         return pal_utf16_string(string).dup();
     }
 };
+#endif
 #endif

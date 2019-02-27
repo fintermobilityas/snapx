@@ -5,6 +5,8 @@
 #include "unistd.h" // fork
 #endif
 
+#include <iostream>
+
 inline void main_wait_for_pid(pal_pid_t pid)
 {
     if (pid < 0)
@@ -20,7 +22,7 @@ inline void main_wait_for_pid(pal_pid_t pid)
 
     while (TRUE == pal_process_is_running(pid))
     {
-        pal_usleep(250);
+        pal_sleep_ms(250);
     }
 }
 

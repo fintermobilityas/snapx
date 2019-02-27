@@ -47,6 +47,15 @@ namespace
         EXPECT_TRUE(pal_is_linux()); 
     }
 
+    TEST(PAL_GENERIC, pal_process_exec)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
+        int exit_code = -1;
+        EXPECT_TRUE(pal_process_exec("ls", working_dir, -1, nullptr, &exit_code));
+        EXPECT_EQ(exit_code, 0);
+    }
+
     TEST(PAL_ENV_UNIX, pal_env_get_variable_Reads_PWD_Variable)
     {
         char *environment_variable = nullptr;
@@ -54,10 +63,10 @@ namespace
         EXPECT_NE(environment_variable, nullptr);
     }
 
-    TEST(PAL_FS_UNIX, pal_fs_get_own_executable_name_ReturnsThisProcessExeName)
+    TEST(PAL_FS_UNIX, pal_process_get_name_ReturnsThisProcessExeName)
     {
         char *exe_name = nullptr;
-        EXPECT_TRUE(pal_fs_get_own_executable_name(&exe_name));
+        EXPECT_TRUE(pal_process_get_name(&exe_name));
         EXPECT_NE(exe_name, nullptr);
         ASSERT_STREQ(exe_name, "Snap.Tests");
     }

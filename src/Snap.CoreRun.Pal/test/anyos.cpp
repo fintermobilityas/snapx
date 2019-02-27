@@ -55,7 +55,7 @@ inline char* mkfile_random(const char* working_dir, const char* filename)
     }
 
     const auto text = "Hello World";
-    if(!pal_fs_write(dst_filename, "wb", reinterpret_cast<void*>(const_cast<char*>(text)), strlen(text)))
+    if(!pal_fs_write(dst_filename, "wb", text, strlen(text)))
     {
         return nullptr;
     }
@@ -73,8 +73,22 @@ std::string build_random_filename(std::string ext = ".txt")
     return build_random_str() + ext;
 }
 
+std::string build_random_dirname()
+{
+    return build_random_str();
+}
+
 namespace
 {
+
+    TEST(PAL_GENERIC, pal_process_get_name_ReturnsThisProcessExeName)
+    {
+        char* exe_name = nullptr;
+        EXPECT_TRUE(pal_process_get_name(&exe_name));
+        EXPECT_NE(exe_name, nullptr);
+        EXPECT_TRUE(pal_str_startswith(exe_name, "Snap.Tests"));
+    }
+
     TEST(PAL_GENERIC, pal_isdebuggerpresent_DoesNotSegfault)
     {
         pal_isdebuggerpresent();
@@ -133,10 +147,10 @@ namespace
         EXPECT_TRUE(pal_process_is_running(pid));
     }
 
-    TEST(PAL_GENERIC, pal_usleep_DoesNotSegFault)
+    TEST(PAL_GENERIC, pal_sleep_ms_DoesNotSegFault)
     {
-        pal_usleep(0);
-        pal_usleep(1);
+        pal_sleep_ms(0);
+        pal_sleep_ms(1);
     }
 
     TEST(PAL_GENERIC, pal_is_unknown_os)
@@ -225,7 +239,7 @@ namespace
     TEST(PAL_FS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_NE(working_dir, nullptr);
         ASSERT_FALSE(pal_fs_file_exists(working_dir));
     }
@@ -233,7 +247,7 @@ namespace
     TEST(PAL_FS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
         char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
+        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
         EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
     }
@@ -250,7 +264,7 @@ namespace
     TEST(PAL_FS, pal_fs_list_directories_ReturnsDirectoriesInCurrentWorkingDirectory)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_NE(working_dir, nullptr);
 
         char** directories_array = nullptr;
@@ -282,7 +296,7 @@ namespace
     TEST(PAL_FS, pal_fs_list_files_ReturnsAListOfFilesInCurrentWorkingDirectory)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_NE(working_dir, nullptr);
 
         char** files_array = nullptr;
@@ -309,10 +323,10 @@ namespace
         EXPECT_TRUE(pal_fs_directory_exists(working_dir));
     }
 
-    TEST(PAL_FS, pal_fs_get_process_real_path)
+    TEST(PAL_FS, pal_process_get_real_path)
     {
         char* this_process_real_path = nullptr;
-        EXPECT_TRUE(pal_fs_get_process_real_path(&this_process_real_path));
+        EXPECT_TRUE(pal_process_get_real_path(&this_process_real_path));
         EXPECT_NE(this_process_real_path, nullptr);
     }
 
@@ -326,14 +340,30 @@ namespace
     TEST(PAL_FS, pal_fs_directory_exists_ReturnsTrueThatThisWorkingDirectoryExists)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
         EXPECT_TRUE(pal_fs_directory_exists(working_dir));
+    }
+
+    TEST(PAL_FS, pal_fs_get_file_size_ReturnsFalseWhenFileDoesNotExist)
+    {
+        auto filename = build_random_filename();
+        size_t file_size = 0;
+        EXPECT_FALSE(pal_fs_get_file_size(filename.c_str(), &file_size));
+        EXPECT_EQ(file_size, 0u);
+    }
+
+    TEST(PAL_FS, pal_fs_get_file_size_ReturnsFalseWhenDirectoryDoesNotExist)
+    {
+        auto dir_name = build_random_dirname();
+        size_t file_size = 0;
+        EXPECT_FALSE(pal_fs_get_file_size(dir_name.c_str(), &file_size));
+        EXPECT_EQ(file_size, 0u);
     }
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsAValueGreaterThanZero)
     {
         char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
+        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
 
         size_t file_size = 0;
@@ -344,7 +374,7 @@ namespace
     TEST(PAL_FS, pal_fs_read_file_ReadsCurrentProcessBinaryData)
     {
         char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
+        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
 
         size_t expected_file_size = 0;
@@ -353,7 +383,7 @@ namespace
 
         char* bytes = nullptr;
         size_t bytes_len = 0;
-        EXPECT_TRUE(pal_fs_read_file(exe_abs_path, "rb", &bytes, &bytes_len));
+        EXPECT_TRUE(pal_fs_read_binary_file(exe_abs_path, &bytes, &bytes_len));
         EXPECT_NE(bytes, nullptr);
         EXPECT_GT(bytes_len, 0);
 
@@ -384,15 +414,19 @@ namespace
 
         const auto json_str_before = doc.dump();
 
-        EXPECT_TRUE(pal_fs_write(json_filename.c_str(), "w", json_str_before.c_str(), json_str_before.size()));
+        EXPECT_TRUE(pal_fs_write(json_filename.c_str(), "wb", json_str_before.c_str(), json_str_before.size()));
 
         char* json_after = nullptr;
         size_t json_after_len = 0u;
-        EXPECT_TRUE(pal_fs_read_file(json_filename.c_str(), "r", &json_after, &json_after_len));
-        EXPECT_STREQ(json_str_before.c_str(), json_after);
+        ASSERT_TRUE(pal_fs_read_binary_file(json_filename.c_str(), &json_after, &json_after_len));
+
+        json_after[json_after_len] = '\0';
+        EXPECT_STREQ(json_str_before.c_str(), json_after) << "Json documents are not equal: " << json_filename.c_str();
 
         auto doc_after = json::parse(json_after);
         ASSERT_EQ(doc["pi"], doc_after["pi"]);
+
+        EXPECT_TRUE(pal_fs_rmfile(json_filename.c_str()));
     }
 
     TEST(PAL_FS, pal_fs_mkdir_DoesNotSegfault)
@@ -409,7 +443,7 @@ namespace
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesEmptyDirectory)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto empty_dir = mkdir_random(working_dir);
         EXPECT_TRUE(pal_fs_directory_exists(empty_dir));
@@ -420,7 +454,7 @@ namespace
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithASingleFile)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto directory = mkdir_random(working_dir);
         auto file1 = mkfile_random(directory, build_random_filename().c_str());
@@ -433,7 +467,7 @@ namespace
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleFiles)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto directory = mkdir_random(working_dir);
         auto file1 = mkfile_random(directory, build_random_filename().c_str());
@@ -447,7 +481,7 @@ namespace
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithEmptySubDirectory)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto parent_dir = mkdir_random(working_dir);
         auto sub_dir = mkdir(parent_dir, "subdirectory");
@@ -460,7 +494,7 @@ namespace
      TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleSubDirectories)
     {
         char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
         auto parent_dir = mkdir_random(working_dir);
         auto parent_dir_file1 = mkfile_random(parent_dir, build_random_filename().c_str());
@@ -517,14 +551,6 @@ namespace
     TEST(PAL_FS, pal_fs_fwrite_DoesNotSegfault)
     {
         EXPECT_FALSE(pal_fs_fwrite(nullptr, nullptr, 0));
-    }
-
-    TEST(PAL_FS, pal_fs_get_own_executable_name_ReturnsThisProcessExeName)
-    {
-        char* exe_name = nullptr;
-        EXPECT_TRUE(pal_fs_get_own_executable_name(&exe_name));
-        EXPECT_NE(exe_name, nullptr);
-        EXPECT_TRUE(pal_str_startswith(exe_name, "Snap.Tests"));
     }
 
     // - String

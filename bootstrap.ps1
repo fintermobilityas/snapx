@@ -37,6 +37,7 @@ $CommandUpx = $null
 $CommandPacker = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
+$CommandGTestsDefaultArguments = @("--gtest_break_on_failure", "--gtest_repeat=3")
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
@@ -370,7 +371,7 @@ function Build-Native {
 
     try {
         Push-Location $SnapCoreRunBuildOutputDir
-        Command-Exec $CommandGTests @()		
+        Command-Exec $CommandGTests $CommandGTestsDefaultArguments
     } finally {
         Pop-Location 
         if(0 -ne $LASTEXITCODE)
@@ -561,7 +562,7 @@ switch ($Target) {
                 try 
                 {
                     Push-Location $SnapCoreRunMingwBuildOutputDir
-                    Command-Exec $CommandGTests @()		
+                    Command-Exec $CommandGTests $CommandGTestsDefaultArguments		
                 } finally {             
                     Pop-Location 
                     if(0 -ne $LASTEXITCODE)

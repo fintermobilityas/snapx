@@ -25,13 +25,14 @@
 #elif PAL_PLATFORM_LINUX
 #include <sys/stat.h> // stat
 #include <sys/types.h> // O_RDONLY
+#include <sys/wait.h> // wait
 #include <unistd.h> // getcwd
 #include <fcntl.h> // open
 #include <dirent.h> // opendir
 #include <libgen.h> // dirname
 #include <dlfcn.h> // dlopen
 #include <signal.h> // kill
-
+#include <time.h> // nanosleep
 static const char* symlink_entrypoint_executable = "/proc/self/exe";
 #endif
 
@@ -79,7 +80,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void)
 {
     while (!pal_isdebuggerpresent())
     {
-        pal_usleep(100);
+        pal_sleep_ms(100);
     }
 
     return TRUE;
@@ -242,6 +243,51 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_cwd(char **cwd_out)
+{
+    char* real_path = nullptr;
+    if(!pal_process_get_real_path(&real_path))
+    {
+        return FALSE;
+    }
+
+    char* real_path_cwd = nullptr;
+    if(!pal_fs_get_directory_name_absolute_path(real_path, &real_path_cwd))
+    {
+        delete real_path;
+        return FALSE;
+    }
+
+    delete real_path;
+
+    *cwd_out = real_path_cwd;
+
+    return TRUE;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_out)
+{
+#if PAL_PLATFORM_WINDOWS
+    wchar_t buffer[PAL_MAX_PATH];
+    if (0 == GetModuleFileName(nullptr, buffer, PAL_MAX_PATH))
+    {
+        return FALSE;
+    }
+    *real_path_out = pal_utf8_string(buffer).dup();
+    return TRUE;
+#elif PAL_PLATFORM_LINUX
+    char* real_path = nullptr;
+    if (pal_fs_get_absolute_path(symlink_entrypoint_executable, &real_path))
+    {
+        *real_path_out = real_path;
+        return TRUE;
+    }
+    return FALSE;
+#else
+    return FALSE;
+#endif
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 {
     if (pid < 0)
@@ -306,26 +352,57 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
     return has_pid;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in, 
-    const int argc_in, char **argv_in, int *exit_code_out)
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_name(char **exe_name_out)
 {
-    if (filename_in == nullptr
-        || working_dir_in == nullptr)
+    char* real_path = nullptr;
+    if (!pal_process_get_real_path(&real_path))
+    {
+        return FALSE;
+    }
+
+    std::string real_path_str(real_path);
+    delete real_path;
+
+    const auto directory_separator_pos = real_path_str.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+    if (std::string::npos == directory_separator_pos)
+    {
+        return FALSE;
+    }
+
+    const auto exe_name = real_path_str.substr(directory_separator_pos + 1);
+    *exe_name_out = _strdup(exe_name.c_str());
+
+    return TRUE;
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in,
+                                                     const int argc_in, char **argv_in, int *exit_code_out)
+{
+    if (filename_in == nullptr)
     {
         return FALSE;
     }
 
 #if PAL_PLATFORM_WINDOWS
+    if(working_dir_in == nullptr)
+    {
+        return FALSE;
+    }
+
     auto cmd_line = std::string("\"");
     cmd_line += filename_in;
     cmd_line += "\" ";
 
-    for (auto i = 0; i < argc_in; i++)
+    if(argv_in != nullptr && argc_in > 0)
     {
-        cmd_line += argv_in[i];
-        if (i + 1 < argc_in)
+        for (auto i = 0; i < argc_in; i++)
         {
-            cmd_line += " ";
+            cmd_line += argv_in[i];
+            if (i + 1 < argc_in)
+            {
+                cmd_line += " ";
+            }
         }
     }
 
@@ -335,7 +412,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     STARTUPINFO si = { 0 };
     PROCESS_INFORMATION pi = { nullptr };
 
-    const auto create_process_result = CreateProcess(nullptr, 
+    const auto create_process_result = CreateProcess(nullptr,
         lp_command_line_utf16_string.data(),
         nullptr, nullptr, true,
         0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
@@ -361,19 +438,41 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    if(argc_in <= 0)
+
+    if (working_dir_in != nullptr
+        && 0 != chdir(working_dir_in))
     {
         return FALSE;
     }
 
-    if (0 != chdir(working_dir_in))
+    auto exec_args_len = std::max(1, argc_in + 1);
+    auto exec_args_tmp = new char*[exec_args_len];
+    exec_args_tmp[0] = _strdup(filename_in);
+
+    for(auto i = 0; i < argc_in; i++)
     {
-        return -1;
+        exec_args_tmp[i + 1] = argv_in[i];
     }
 
-    *exit_code_out = execvp(filename_in, argv_in);
+    exec_args_tmp[exec_args_len] = nullptr;
 
-    return TRUE;
+    auto exit_status = 0;
+    auto child_pid = fork();
+    if(child_pid == 0)
+    {
+        if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
+        {
+            char errmsg[64];
+            snprintf( errmsg, sizeof(errmsg), "exec '%s' failed", exec_args_tmp[0] );
+            perror( errmsg );
+            return FALSE;
+        }
+    } else if(child_pid > 0) {
+        wait(&exit_status);
+        *exit_code_out = WEXITSTATUS(exit_status);
+        return *exit_code_out == -1 ? FALSE : TRUE;
+    }
+    return FALSE;
 #else
     return FALSE;
 #endif
@@ -430,24 +529,36 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    if(argc_in <= 0)
+    PAL_UNUSED(cmd_show_in);
+
+    if (working_dir_in != nullptr
+        && 0 != chdir(working_dir_in))
     {
         return FALSE;
     }
 
-    PAL_UNUSED(cmd_show_in);
+    auto exec_argc = std::max(1, argc_in + 1);
+    auto exec_args_tmp = new char*[exec_argc];
+    exec_args_tmp[0] = _strdup(filename_in);
 
-    if (0 != chdir(working_dir_in))
+    for(auto i = 0; i < argc_in; i++)
     {
-        return -1;
+        exec_args_tmp[i + 1] = argv_in[i];
     }
+
+    exec_args_tmp[exec_argc] = nullptr;
 
     auto child_pid = fork();
-    if (child_pid == 0)
+    if(child_pid == 0)
     {
-        execvp(filename_in, argv_in);
-    }
-    else {
+        if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
+        {
+            char errmsg[64];
+            snprintf(errmsg, sizeof(errmsg), "exec '%s' failed", exec_args_tmp[0]);
+            perror(errmsg);
+            return FALSE;
+        }
+    } else if(child_pid > 0) {
         *pid_out = child_pid;
     }
 
@@ -457,7 +568,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds)
 {
     if (milliseconds < 0)
     {
@@ -468,7 +579,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_usleep(unsigned int milliseconds)
     ::Sleep(milliseconds);
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    usleep(milliseconds);
+    struct timespec ts = {0};
+    ts.tv_sec = milliseconds / 1000;
+    ts.tv_nsec = (milliseconds % 1000) * 1000000;
+    nanosleep(&ts, nullptr);
     return TRUE;
 #else
     return FALSE;
@@ -1082,7 +1196,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
     return TRUE;
 #elif PAL_PLATFORM_LINUX
     char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+    const auto status = getcwd(cwd, sizeof(cwd));
+    if (status != nullptr)
     {
         *working_directory_out = strdup(cwd);
         return TRUE;
@@ -1091,51 +1206,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
 #else
     return FALSE;
 #endif
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_process_real_path(char** real_path_out)
-{
-#if PAL_PLATFORM_WINDOWS
-
-    wchar_t buffer[PAL_MAX_PATH];
-    if (0 == GetModuleFileName(nullptr, buffer, PAL_MAX_PATH))
-    {
-        return FALSE;
-    }
-    *real_path_out = pal_utf8_string(buffer).dup();
-    return TRUE;
-#elif PAL_PLATFORM_LINUX
-    char* real_path = nullptr;
-    if (pal_fs_get_absolute_path(symlink_entrypoint_executable, &real_path))
-    {
-        *real_path_out = real_path;
-        return TRUE;
-    }
-    return FALSE;
-#else
-    return FALSE;
-#endif
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_own_executable_name(char ** own_executable_name_out)
-{
-    char* real_path = nullptr;
-    if (!pal_fs_get_process_real_path(&real_path))
-    {
-        return FALSE;
-    }
-
-    std::string real_path_str(real_path);
-    const auto directory_separator_pos = real_path_str.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
-    if (std::string::npos == directory_separator_pos)
-    {
-        return FALSE;
-    }
-
-    const auto exe_name = real_path_str.substr(directory_separator_pos + 1);
-    *own_executable_name_out = _strdup(exe_name.c_str());
-
-    return TRUE;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
@@ -1248,32 +1318,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    auto h_file = fopen(filename_in, "rb");
-    if (h_file == nullptr)
+    struct stat st = {0};
+    if(stat(filename_in, &st) == 0)
     {
-        return FALSE;
+        *file_size_out = st.st_size;
+        return TRUE;
     }
-
-    fseek(h_file, 0, SEEK_END);
-    *file_size_out = static_cast<size_t>(ftell(h_file));
-    assert(0 == fclose(h_file));
-
-    return TRUE;
+    return FALSE;
 #else
     return FALSE;
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, const char* mode_in, char** bytes_out, size_t* bytes_read_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out)
 {
-    if (filename_in == nullptr
-        || mode_in == nullptr)
-    {
-        return FALSE;
-    }
-
-    size_t total_bytes_to_read;
-    if (!pal_fs_get_file_size(filename_in, &total_bytes_to_read) || total_bytes_to_read <= 0)
+    if (filename_in == nullptr)
     {
         return FALSE;
     }
@@ -1293,6 +1352,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
     {
         return FALSE;
     }
+
+    auto total_bytes_to_read = GetFileSize(h_file, nullptr);
 
     size_t read_offset = 0;
     DWORD read_buffer_bytes_read = 0;
@@ -1330,22 +1391,25 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char* filename_in, co
 
     return TRUE;
 #elif PAL_PLATFORM_LINUX
-    auto h_file = fopen(filename_in, mode_in);
-    if (h_file == nullptr)
+    auto fp = fopen(filename_in, "rb");
+    if (fp == nullptr)
     {
         return FALSE;
     }
-    auto buffer = new char[total_bytes_to_read];
-    auto total_bytes_read = fread(buffer, 1, total_bytes_to_read, h_file);
-    assert(0 == fclose(h_file));
-    if (total_bytes_read != total_bytes_to_read)
-    {
-        delete[] buffer;
-        return FALSE;
-    }
+
+    fseek(fp, 0 , SEEK_END);
+    auto total_size = ftell(fp);
+    rewind(fp);
+
+    auto buffer = new char[total_size];
+    auto bytes_read = fread(buffer, sizeof(char), total_size, fp);
+
     *bytes_out = buffer;
-    *bytes_read_out = total_bytes_read;
-    return TRUE;
+    *bytes_read_out = bytes_read;
+
+    assert(0 == fclose(fp));
+
+    return bytes_read == total_size;
 #else
     return FALSE;
 #endif
@@ -1480,7 +1544,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
     return fopen_success;
     }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const void* data_in, size_t data_len_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const char* data_in, size_t data_len_in)
 {
     if (pal_file_handle_in == nullptr
         || data_in == nullptr
@@ -1491,7 +1555,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
 
     BOOL fwrite_success = FALSE;
 #if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_LINUX
-    auto bytes_written = fwrite(data_in, 1, data_len_in, pal_file_handle_in);
+    auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, pal_file_handle_in);
     if (bytes_written == data_len_in)
     {
         fwrite_success = TRUE;
@@ -1500,25 +1564,19 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
     return fwrite_success;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, const void* data_in, size_t data_len_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, const char* data_in, size_t data_len_in)
 {
     pal_file_handle_t* file_handle = nullptr;
     if (!pal_fs_fopen(filename, mode_in, &file_handle))
     {
         return FALSE;
     }
-
     if (!pal_fs_fwrite(file_handle, data_in, data_len_in))
     {
+        pal_fs_fclose(file_handle);
         return FALSE;
     }
-
-    if (!pal_fs_fclose(file_handle))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
+    return pal_fs_fclose(file_handle);
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in)
@@ -1592,8 +1650,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* st
     pal_utf16_string value(str);
     return value.empty_or_whitespace() ? TRUE : FALSE;
 #elif PAL_PLATFORM_LINUX
-    pal_utf8_string value(str);
-    return value.empty_or_whitespace() ? TRUE : FALSE;
+    std::string value(str);
+    const auto empty_or_whitespace = value.empty() || value.find_first_not_of(' ') == value.npos;
+    return empty_or_whitespace ? TRUE : FALSE;
 #else
     return FALSE;
 #endif

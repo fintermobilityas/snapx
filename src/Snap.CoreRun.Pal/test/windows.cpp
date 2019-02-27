@@ -9,6 +9,15 @@ namespace
         EXPECT_FALSE(pal_is_linux());
     }
 
+    TEST(PAL_GENERIC, pal_process_exec)
+    {
+        char* working_dir = nullptr;
+        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
+        int exit_code = -1;
+        EXPECT_TRUE(pal_process_exec("dir", working_dir, -1, nullptr, &exit_code));
+        EXPECT_EQ(exit_code, 0);
+    }
+
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
         char* working_dir = nullptr;
@@ -20,15 +29,15 @@ namespace
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
         char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_fs_get_process_real_path(&exe_abs_path));
+        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
         EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
     }    
 
-    TEST(PAL_FS_WINDOWS, pal_fs_get_own_executable_name_ReturnsThisProcessExeName)
+    TEST(PAL_FS_WINDOWS, pal_process_get_name_ReturnsThisProcessExeName)
     {
         char* exe_name = nullptr;
-        EXPECT_TRUE(pal_fs_get_own_executable_name(&exe_name));
+        EXPECT_TRUE(pal_process_get_name(&exe_name));
         ASSERT_STREQ(exe_name, "Snap.Tests.exe");
     }
 

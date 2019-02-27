@@ -1,20 +1,21 @@
 #pragma once
 
-#if defined(PAL_PLATFORM_LINUX) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_LINUX)
 #include <string.h>
 #define _strdup strdup
 #define _wcsdup wcsdup
-#endif
-
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#elif defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
 #include <string>
 #include <iostream>
+
 // - String internal
 wchar_t* pal_str_widen(const char* utf8_str);
 char* pal_str_narrow(const wchar_t* utf16_str);
+
 #if defined(PAL_PLATFORM_MINGW)
 #ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0x0080
+#endif
 #endif
 
 template<class TStringClass, class TStorageClass, class TStdString>
@@ -65,7 +66,6 @@ public:
 
     }
 
-#if PAL_PLATFORM_WINDOWS
     pal_utf8_string(wchar_t* utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string), true)
     {
 
@@ -75,7 +75,6 @@ public:
     {
 
     }
-#endif
 
     ~pal_utf8_string()
     {
@@ -241,5 +240,4 @@ public:
         return pal_utf16_string(string).dup();
     }
 };
-#endif
 #endif

@@ -653,7 +653,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
     *environment_variable_value_out = pal_utf8_string(buffer + '\0').dup();
 
     return TRUE;
-#elif PLATFORM_LINUX 
+#elif PAL_PLATFORM_LINUX
     const auto value = ::getenv(environment_variable_in);
     if (value == nullptr)
     {

@@ -23,8 +23,7 @@ esac
 echo "Installing build dependencies"
 echo "Distro: Ubuntu $UBUNTU_VERSION"
 
-sudo apt-get update
-sudo apt-get install -y --no-install-recommends build-essential pkg-config software-properties-common gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
+sudo apt-get update && apt-get install -y --no-install-recommends build-essential pkg-config software-properties-common gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
 
 if [ $INSTALL_CMAKE -eq 1 ]
 then
@@ -44,8 +43,7 @@ echo "Installing powershell"
 
 wget -q https://packages.microsoft.com/config/ubuntu/${DISTRO_VERSION}/packages-microsoft-prod.deb
 sudo dpkg -i packages-microsoft-prod.deb
-sudo apt-get update
-sudo apt-get install -y powershell
+sudo apt-get update && apt-get install -y --no-install-recommends powershell
 
 echo "Installing .net core"
 

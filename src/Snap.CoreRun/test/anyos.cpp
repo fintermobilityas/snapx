@@ -12,11 +12,11 @@ using json = nlohmann::json;
 
 const int demoapp_default_exit_code = 127;
 const uint32_t default_permissions = 0777;
-static auto rng = std::default_random_engine {};
+static auto rng = std::default_random_engine{};
 
 inline std::string get_process_cwd() {
     char* working_dir = nullptr;
-    if(!pal_process_get_cwd(&working_dir))
+    if (!pal_process_get_cwd(&working_dir))
     {
         return nullptr;
     }
@@ -41,7 +41,7 @@ namespace {
         corerun_app_details() = default;
 
         corerun_app_details(std::string working_dir, std::string exe_name_absolute_path,
-                          std::string exe_name_relative_path,
+            std::string exe_name_relative_path,
             const std::string& version, bool version_invalid) :
             working_dir(std::move(working_dir)),
             exe_name_absolute_path(std::move(exe_name_absolute_path)),
@@ -89,7 +89,7 @@ namespace {
         }
     };
 
-    class snapx 
+    class snapx
     {
     private:
         std::string m_unique_id;
@@ -121,13 +121,13 @@ namespace {
             ASSERT_TRUE(file_copy(this->working_dir_demoapp_exe.c_str(), app_dir_demoapp_exe.c_str())) << "Failed copy demoapp" << this->working_dir_demoapp_exe;
 
             this->m_apps.emplace_back(corerun_app_details(app_dir, app_dir_demoapp_exe,
-                    this->app_name + this->os_file_ext, version, version_invalid));
+                this->app_name + this->os_file_ext, version, version_invalid));
         }
 
         static std::string path_combine(const std::string& path1, const std::string& path2)
         {
             char* path_combined = nullptr;
-            if(!pal_fs_path_combine(path1.c_str(), path2.c_str(), &path_combined))
+            if (!pal_fs_path_combine(path1.c_str(), path2.c_str(), &path_combined))
             {
                 return std::string();
             }
@@ -140,7 +140,7 @@ namespace {
 
         static bool file_copy(const char* src_filename, const char* dest_filename)
         {
-            if(src_filename == nullptr
+            if (src_filename == nullptr
                 || dest_filename == nullptr)
             {
                 return false;
@@ -148,17 +148,17 @@ namespace {
 
             char* bytes = nullptr;
             size_t bytes_len = 0;
-            if(!pal_fs_read_binary_file(src_filename, &bytes, &bytes_len))
+            if (!pal_fs_read_binary_file(src_filename, &bytes, &bytes_len))
             {
                 return false;
             }
 
-            if(!pal_fs_write(dest_filename, "wb", bytes, bytes_len))
+            if (!pal_fs_write(dest_filename, "wb", bytes, bytes_len))
             {
                 return false;
             }
 
-            if(!pal_fs_chmod(dest_filename, default_permissions))
+            if (!pal_fs_chmod(dest_filename, default_permissions))
             {
                 return false;
             }
@@ -183,14 +183,14 @@ namespace {
                 run_details->stub_arguments.emplace_back(value);
             }
 
-            if(!pal_fs_directory_exists(this->install_dir.c_str()))
+            if (!pal_fs_directory_exists(this->install_dir.c_str()))
             {
                 throw std::runtime_error("Fatal error! Install directory does not exist: " + this->install_dir);
             }
 
             int stub_executable_exit_code = 0;
             if (!pal_process_exec(this->install_dir_corerun_exe.c_str(), this->install_dir.c_str(), argc, argv,
-                                  &stub_executable_exit_code))
+                &stub_executable_exit_code))
             {
                 throw std::runtime_error("Failed to start stub executable: " + this->install_dir_corerun_exe + ". Install dir: " + this->install_dir);
             }
@@ -204,7 +204,7 @@ namespace {
             pal_sleep_ms(300);
 
             auto log_output = try_read_log_output();
-            if(log_output.empty())
+            if (log_output.empty())
             {
                 return run_details;
             }
@@ -213,7 +213,8 @@ namespace {
 
             try {
                 json_log_output = json::parse(log_output);
-            } catch(const json::exception& ex)
+            }
+            catch (const json::exception& ex)
             {
                 std::cout << "Failed to parse json output log. What: " << ex.what() << std::endl;
                 std::cout << log_output << std::endl;
@@ -280,7 +281,7 @@ namespace {
         std::string try_read_log_output()
         {
             const auto most_recent_app = find_current_app_details();
-            if(most_recent_app.working_dir.empty()
+            if (most_recent_app.working_dir.empty()
                 || most_recent_app.exe_name_relative_path.empty())
             {
                 return std::string();
@@ -289,7 +290,7 @@ namespace {
             const auto log_filename = most_recent_app.exe_name_relative_path + ".json";
 
             const auto log_filename_absolute_path = path_combine(most_recent_app.working_dir, log_filename);
-            if(log_filename_absolute_path.empty())
+            if (log_filename_absolute_path.empty())
             {
                 return std::string();
             }
@@ -325,168 +326,168 @@ namespace {
     }
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidPrefix)
-      {
-          auto working_dir = get_process_cwd();
+    {
+        auto working_dir = get_process_cwd();
 
-          snapx snapx("demoapp", working_dir);
-          snapx.install("1.0.0", "notanapp-");
-          snapx.install("2.0.0");
-          snapx.install("3.0.0", "notanapp-");
-          snapx.install("4.0.0");
+        snapx snapx("demoapp", working_dir);
+        snapx.install("1.0.0", "notanapp-");
+        snapx.install("2.0.0");
+        snapx.install("3.0.0", "notanapp-");
+        snapx.install("4.0.0");
 
-          const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
-              "--expected-version=4.0.0"
-          });
+        const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
+            "--expected-version=4.0.0"
+        });
 
-          ASSERT_EQ(run_details->stub_exit_code, 0);
-          ASSERT_EQ(run_details->stub_arguments.size(), 1u);
-          ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
-          ASSERT_EQ(run_details->app_arguments.size(), 2u);
-          ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
+        ASSERT_EQ(run_details->stub_exit_code, 0);
+        ASSERT_EQ(run_details->stub_arguments.size(), 1u);
+        ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
+        ASSERT_EQ(run_details->app_arguments.size(), 2u);
+        ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
 
-          const auto expected_arguments = std::vector<std::string>{
-              run_details->app_details.exe_name_absolute_path,
-              run_details->stub_arguments[0]
-          };
+        const auto expected_arguments = std::vector<std::string>{
+            run_details->app_details.exe_name_absolute_path,
+            run_details->stub_arguments[0]
+        };
 
-          for (auto i = 0; i < expected_arguments.size(); i++)
-          {
-              ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
-          }
-      }
+        for (auto i = 0; i < expected_arguments.size(); i++)
+        {
+            ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
+        }
+    }
 
-      TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidSemver)
-      {
-          auto working_dir = get_process_cwd();
+    TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidSemver)
+    {
+        auto working_dir = get_process_cwd();
 
-          snapx snapx("demoapp", working_dir);
-          snapx.install("1.0.0");
-          snapx.install("2..0.0", "app-", true);
-          snapx.install("3.0...0", "app", true);
-          snapx.install("4.0.0");
+        snapx snapx("demoapp", working_dir);
+        snapx.install("1.0.0");
+        snapx.install("2..0.0", "app-", true);
+        snapx.install("3.0...0", "app", true);
+        snapx.install("4.0.0");
 
-          const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
-              "--expected-version=4.0.0"
-          });
+        const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
+            "--expected-version=4.0.0"
+        });
 
-          ASSERT_EQ(run_details->stub_exit_code, 0);
-          ASSERT_EQ(run_details->stub_arguments.size(), 1u);
-          ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
-          ASSERT_EQ(run_details->app_arguments.size(), 2u);
-          ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
+        ASSERT_EQ(run_details->stub_exit_code, 0);
+        ASSERT_EQ(run_details->stub_arguments.size(), 1u);
+        ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
+        ASSERT_EQ(run_details->app_arguments.size(), 2u);
+        ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
 
-          const auto expected_arguments = std::vector<std::string>{
-              run_details->app_details.exe_name_absolute_path,
-              run_details->stub_arguments[0]
-          };
+        const auto expected_arguments = std::vector<std::string>{
+            run_details->app_details.exe_name_absolute_path,
+            run_details->stub_arguments[0]
+        };
 
-          for (auto i = 0; i < expected_arguments.size(); i++)
-          {
-              ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
-          }
-      }
+        for (auto i = 0; i < expected_arguments.size(); i++)
+        {
+            ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
+        }
+    }
 
-      TEST(MAIN, corerun_StartsInitialVersion)
-      {
-          auto working_dir = get_process_cwd();
+    TEST(MAIN, corerun_StartsInitialVersion)
+    {
+        auto working_dir = get_process_cwd();
 
-          snapx snapx("demoapp", working_dir);
-          snapx.install("1.0.0");
+        snapx snapx("demoapp", working_dir);
+        snapx.install("1.0.0");
 
-          const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
-              "--expected-version=1.0.0"
-          });
+        const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
+            "--expected-version=1.0.0"
+        });
 
-          ASSERT_EQ(run_details->stub_exit_code, 0);
-          ASSERT_EQ(run_details->stub_arguments.size(), 1u);
-          ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
-          ASSERT_EQ(run_details->app_arguments.size(), 2u);
-          ASSERT_EQ(run_details->app_details.version_str, "1.0.0");
+        ASSERT_EQ(run_details->stub_exit_code, 0);
+        ASSERT_EQ(run_details->stub_arguments.size(), 1u);
+        ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
+        ASSERT_EQ(run_details->app_arguments.size(), 2u);
+        ASSERT_EQ(run_details->app_details.version_str, "1.0.0");
 
-          const auto expected_arguments = std::vector<std::string>{
-              run_details->app_details.exe_name_absolute_path,
-              run_details->stub_arguments[0]
-          };
+        const auto expected_arguments = std::vector<std::string>{
+            run_details->app_details.exe_name_absolute_path,
+            run_details->stub_arguments[0]
+        };
 
-          for (auto i = 0; i < expected_arguments.size(); i++)
-          {
-              ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
-          }
-      }
+        for (auto i = 0; i < expected_arguments.size(); i++)
+        {
+            ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
+        }
+    }
 
-      TEST(MAIN, corerun_StartsMostRecentVersion)
-      {
-          auto working_dir = get_process_cwd();
+    TEST(MAIN, corerun_StartsMostRecentVersion)
+    {
+        auto working_dir = get_process_cwd();
 
-          snapx snapx("demoapp", working_dir);
-          snapx.install("1.0.0");
-          snapx.install("2.0.0");
+        snapx snapx("demoapp", working_dir);
+        snapx.install("1.0.0");
+        snapx.install("2.0.0");
 
-          const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
-              "--expected-version=2.0.0"
-          });
+        const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
+            "--expected-version=2.0.0"
+        });
 
-          ASSERT_EQ(run_details->stub_exit_code, 0);
-          ASSERT_EQ(run_details->stub_arguments.size(), 1u);
-          ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
-          ASSERT_EQ(run_details->app_arguments.size(), 2u);
-          ASSERT_EQ(run_details->app_details.version_str, "2.0.0");
+        ASSERT_EQ(run_details->stub_exit_code, 0);
+        ASSERT_EQ(run_details->stub_arguments.size(), 1u);
+        ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
+        ASSERT_EQ(run_details->app_arguments.size(), 2u);
+        ASSERT_EQ(run_details->app_details.version_str, "2.0.0");
 
-          const auto expected_arguments = std::vector<std::string>{
-              run_details->app_details.exe_name_absolute_path,
-              run_details->stub_arguments[0]
-          };
+        const auto expected_arguments = std::vector<std::string>{
+            run_details->app_details.exe_name_absolute_path,
+            run_details->stub_arguments[0]
+        };
 
-          for (auto i = 0; i < expected_arguments.size(); i++)
-          {
-              ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
-          }
-      }
+        for (auto i = 0; i < expected_arguments.size(); i++)
+        {
+            ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
+        }
+    }
 
-      TEST(MAIN, corerun_StartsMostRecentVersionWhenThereAreLotsOfVersionsInRandomOrderInstalled)
-      {
-          auto working_dir = get_process_cwd();
+    TEST(MAIN, corerun_StartsMostRecentVersionWhenThereAreLotsOfVersionsInRandomOrderInstalled)
+    {
+        auto working_dir = get_process_cwd();
 
-          snapx snapx("demoapp", working_dir);
+        snapx snapx("demoapp", working_dir);
 
-          int app_count = 25;
+        int app_count = 25;
 
-          std::string expected_app_version;
-          std::vector<std::string> app_versions;
-          for(auto major_version = 0; major_version <= app_count; major_version++)
-          {
-              expected_app_version = std::to_string(major_version) + ".0.0";
-              app_versions.emplace_back(expected_app_version);
-          }
-         
-          std::shuffle(std::begin(app_versions), std::end(app_versions), rng);
+        std::string expected_app_version;
+        std::vector<std::string> app_versions;
+        for (auto major_version = 0; major_version <= app_count; major_version++)
+        {
+            expected_app_version = std::to_string(major_version) + ".0.0";
+            app_versions.emplace_back(expected_app_version);
+        }
 
-          for(auto const &app_version : app_versions)
-          {
-              snapx.install(app_version);
-          }
+        std::shuffle(std::begin(app_versions), std::end(app_versions), rng);
 
-          ASSERT_EQ(expected_app_version, std::to_string(app_count) + ".0.0");
+        for (auto const &app_version : app_versions)
+        {
+            snapx.install(app_version);
+        }
 
-          const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
-              "--expected-version=" + expected_app_version
-          });
+        ASSERT_EQ(expected_app_version, std::to_string(app_count) + ".0.0");
 
-          ASSERT_EQ(run_details->stub_exit_code, 0);
-          ASSERT_EQ(run_details->stub_arguments.size(), 1u);
-          ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
-          ASSERT_EQ(run_details->app_arguments.size(), 2u);
-          ASSERT_EQ(run_details->app_details.version_str, expected_app_version);
+        const auto run_details = snapx.run_stubexecutable_with_args(std::vector<std::string> {
+            "--expected-version=" + expected_app_version
+        });
 
-          const auto expected_arguments = std::vector<std::string>{
-              run_details->app_details.exe_name_absolute_path,
-              run_details->stub_arguments[0]
-          };
+        ASSERT_EQ(run_details->stub_exit_code, 0);
+        ASSERT_EQ(run_details->stub_arguments.size(), 1u);
+        ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
+        ASSERT_EQ(run_details->app_arguments.size(), 2u);
+        ASSERT_EQ(run_details->app_details.version_str, expected_app_version);
 
-          for (auto i = 0; i < expected_arguments.size(); i++)
-          {
-              ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
-          }
-      }
+        const auto expected_arguments = std::vector<std::string>{
+            run_details->app_details.exe_name_absolute_path,
+            run_details->stub_arguments[0]
+        };
+
+        for (auto i = 0; i < expected_arguments.size(); i++)
+        {
+            ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
+        }
+    }
 
 }

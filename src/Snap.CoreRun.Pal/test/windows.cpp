@@ -3,7 +3,7 @@
 
 inline std::string get_process_cwd() {
     char* working_dir = nullptr;
-    if(!pal_process_get_cwd(&working_dir))
+    if (!pal_process_get_cwd(&working_dir))
     {
         return nullptr;
     }
@@ -46,7 +46,7 @@ namespace
         EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
         EXPECT_NE(exe_abs_path, nullptr);
         EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
-    }    
+    }
 
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {

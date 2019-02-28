@@ -7,7 +7,7 @@ using json = nlohmann::json;
 
 inline std::string get_process_cwd() {
     char* working_dir = nullptr;
-    if(!pal_process_get_cwd(&working_dir))
+    if (!pal_process_get_cwd(&working_dir))
     {
         return nullptr;
     }
@@ -38,7 +38,7 @@ inline char* mkdir_random(const char* working_dir, uint32_t mode = 0777u)
 
 inline char* mkdir(const char* working_dir, const char* directory_name, uint32_t mode = 0777u)
 {
-    if(working_dir == nullptr || directory_name == nullptr)
+    if (working_dir == nullptr || directory_name == nullptr)
     {
         return nullptr;
     }
@@ -49,7 +49,7 @@ inline char* mkdir(const char* working_dir, const char* directory_name, uint32_t
     {
         return nullptr;
     }
-    
+
     return dst_directory;
 }
 
@@ -68,7 +68,7 @@ inline std::string mkfile_random(const char* working_dir, const char* filename)
     }
 
     const auto text = "Hello World";
-    if(!pal_fs_write(dst_filename, "wb", text, strlen(text)))
+    if (!pal_fs_write(dst_filename, "wb", text, strlen(text)))
     {
         return nullptr;
     }
@@ -112,7 +112,7 @@ namespace
 
     TEST(PAL_GENERIC, pal_wait_for_debugger_DoesNotSegfault)
     {
-        if(!pal_isdebuggerpresent())
+        if (!pal_isdebuggerpresent())
         {
             return;
         }
@@ -485,7 +485,7 @@ namespace
         EXPECT_TRUE(pal_fs_rmdir(directory, TRUE));
         EXPECT_FALSE(pal_fs_directory_exists(directory));
     }
-    
+
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleFiles)
     {
         char* working_dir = nullptr;
@@ -513,7 +513,7 @@ namespace
         EXPECT_FALSE(pal_fs_directory_exists(parent_dir));
     }
 
-     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleSubDirectories)
+    TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleSubDirectories)
     {
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));

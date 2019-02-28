@@ -65,6 +65,12 @@ switch -regex ($OSVersion) {
         $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
+
+        $CommandCmakeMaybe = Join-Path $WorkingDir cmake\cmake-x-xx\bin\cmake
+        if(Test-Path $CommandCmakeMaybe)
+        {
+            $CommandCmake = $CommandCmakeMaybe
+        }
     }	
     default {
         Die "Unsupported os: $OSVersion"

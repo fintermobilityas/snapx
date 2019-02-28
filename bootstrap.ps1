@@ -18,7 +18,7 @@ $ConfirmPreference = "None";
 
 # Global Variables
 
-$BuildUsingDocker = $env:SNAPX_DOCKER_BUILD -eq $true
+$BuildUsingDocker = $env:SNAPX_DOCKER_BUILD -gt 0
 if($BuildUsingDocker)
 {
     $WorkingDir = "/build/snapx"

@@ -37,9 +37,18 @@ $BuildTime = $StopWatch::StartNew()
 
 function Build-Native {
     if ($OSVersion -match "^Microsoft Windows") {
-        # NB! Install from Microsoft Store. Afterwards run install.sh
-        Ubuntu1804 run pwsh -f build.ps1 -Target Native
 
+        $UbuntuExe = @("Ubuntu1804.exe", "Ubuntu1604.exe") | 
+                        ForEach-Object { Get-Command $_ } | 
+                        Select-Object -First 1 | 
+                        Select-Object -ExpandProperty Source
+		if($UbuntuExe)
+		{
+            . $UbuntuExe run pwsh -f build.ps1 -Target Native
+		} else {
+			Die "Unable to find a working ubuntu installation on this computer. Please install Ubuntu 1804 LTS in the Microsoft Store"
+        }
+		
         if ($LASTEXITCODE -ne 0) {
             exit 0
         }

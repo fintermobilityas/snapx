@@ -12,6 +12,7 @@ $WorkingDir = Split-Path $MyInvocation.MyCommand.Path -Parent
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
 $env:NUGET_XMLDOC_MODE = "skip"
+$env:SNAPX_WAIT_DEBUGGER=0 
 
 # Global variables
 

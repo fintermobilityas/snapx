@@ -21,6 +21,7 @@
 #include <cctype> // toupper
 #include <direct.h> // mkdir
 #include <wchar.h>
+#include <tlhelp32.h> // CreateToolhelp32Snapshot 
 #include "vendor/rcedit/rcedit.hpp"
 #elif PAL_PLATFORM_LINUX
 #include <sys/stat.h> // stat
@@ -297,12 +298,28 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 
     BOOL process_exists = FALSE;
 #if PAL_PLATFORM_WINDOWS
-    auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
-    if (process != nullptr)
-    {
-        assert(0 != CloseHandle(process));
-        process_exists = TRUE;
+    auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
+
+    if(pss != INVALID_HANDLE_VALUE)
+    {    
+        PROCESSENTRY32 pe = { 0 };
+        pe.dwSize = sizeof(pe);
+
+        if (Process32First(pss, &pe))
+        {
+            while(Process32Next(pss, &pe))
+            {
+                if(pe.th32ProcessID != pid)
+                {
+                    continue;
+                }
+                process_exists = TRUE;
+                break;
+            }
+        }
+        assert(0 != CloseHandle(pss));
     }
+
 #elif PAL_PLATFORM_LINUX
     struct stat dontcare = { 0 };
     std::string proc_path("/proc/" + std::to_string(pid));

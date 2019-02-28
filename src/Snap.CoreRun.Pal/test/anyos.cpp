@@ -105,6 +105,29 @@ namespace
         EXPECT_TRUE(pal_str_startswith(exe_name, "Snap.Tests"));
     }
 
+    TEST(PAL_GENERIC, pal_process_is_running)
+    {
+        pal_pid_t pid;
+        EXPECT_TRUE(pal_process_get_pid(&pid));
+        EXPECT_TRUE(pal_process_is_running(pid));
+
+        auto next_pid = 1000;
+        auto process_is_running = TRUE;
+
+        while(process_is_running)
+        {
+            if(next_pid > 25000)
+            {
+                break;
+            }
+
+            process_is_running = pal_process_is_running(next_pid);
+            ++next_pid;
+        }
+
+        ASSERT_EQ(process_is_running, FALSE);
+    }
+
     TEST(PAL_GENERIC, pal_isdebuggerpresent_DoesNotSegfault)
     {
         pal_isdebuggerpresent();

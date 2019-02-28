@@ -62,6 +62,7 @@ if(WIN32)
 	list(APPEND pal_LIBS
 		shlwapi
 		shell32
+        kernel32
 	)
 	
 	list(APPEND pal_DEFINES		

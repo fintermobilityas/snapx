@@ -193,9 +193,11 @@ namespace Snap.Core
                 _logger?.Error("Exception thrown while checking for updates", e);
                 return null;
             }
-            
+
+            var currentChannel = _snapApp.Channels.Single(x => x.Current);
+
             var deltaUpdates = snapReleases.Apps
-                .Where(x => x.IsDelta && x.Version > _snapApp.Version)
+                .Where(x => x.IsDelta && x.ChannelName == currentChannel.Name && x.Version > _snapApp.Version)
                 .OrderBy(x => x.Version)
                 .ToList();
 
@@ -248,13 +250,13 @@ namespace Snap.Core
 
             var deltaSnaps = new List<(SnapApp app, string nupkg)>();
 
-            var index = 0;
+            var deltaNb = 1;
             var total = deltas.Count;
             foreach (var deltaNupkg in deltas)
             {
                 if (!_snapOs.Filesystem.FileExists(deltaNupkg))
                 {
-                    _logger?.Error($"Failed to apply delta update {index} of {total}. Nupkg does not exist: {deltaNupkg}. ");
+                    _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Nupkg does not exist: {deltaNupkg}. ");
                     return null;
                 }
 
@@ -263,25 +265,24 @@ namespace Snap.Core
                     var snapApp = await _snapPack.GetSnapAppAsync(asyncCoreReader, cancellationToken);
                     if (snapApp == null)
                     {
-                        _logger?.Error($"Failed to apply delta update {index} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. ");
+                        _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. ");
                         return null;
                     }
 
                     if (!snapApp.Delta)
                     {
-                        _logger?.Error($"Unable to apply delta {index} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
+                        _logger?.Error($"Unable to apply delta {deltaNb} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
                         return null;
                     }
 
                     deltaSnaps.Add((snapApp, deltaNupkg));
                 }
 
-                index++;
+                deltaNb++;
             }
 
             snapProgressSource?.Raise(50);
 
-            index = 0;
 
             // Todo: A significant speedup could be achieved by applying the updates in memory. 
             // One could also avoid creating a full nupkg per delta and simply write the final reassembled
@@ -289,16 +290,17 @@ namespace Snap.Core
             
             var nextFullNupkg = baseFullNupkg;
             SnapApp updatedSnapApp = null;
+            deltaNb = 1;
 
             foreach (var (_, deltaNupkgFilename) in deltaSnaps)
             {
                 if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
                 {
-                    _logger?.Error($"Failed to apply delta update {index} of {total}. Full nupkg was not found: {nextFullNupkg}.");
+                    _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Full nupkg was not found: {nextFullNupkg}.");
                     return null;
                 }
 
-                _logger?.Info($"Reassembling delta update {index} of {total}. Full nupkg: {nextFullNupkg}. Delta nupkg: {deltaNupkgFilename}");
+                _logger?.Info($"Reassembling delta update {deltaNb} of {total}. Full nupkg: {nextFullNupkg}. Delta nupkg: {deltaNupkgFilename}");
 
                 try
                 {
@@ -308,17 +310,15 @@ namespace Snap.Core
                     updatedSnapApp = snapApp;
                     nextFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, updatedSnapApp.BuildNugetFullLocalFilename());
 
-                    _logger?.Info($"Successfully reassembled delta update {index} of {total}. Writing full nupkg to disk: {nextFullNupkg}");
+                    _logger?.Info($"Successfully reassembled delta update {deltaNb} of {total}. Writing full nupkg to disk: {nextFullNupkg}");
 
                     await _snapOs.Filesystem.FileWriteAsync(nupkgStream, nextFullNupkg, cancellationToken);
                 }
                 catch (Exception e)
                 {
-                    _logger?.ErrorException($"Unknown error while reassembling delta update at index {index}.", e);
+                    _logger?.ErrorException($"Unknown error while reassembling delta update at index {deltaNb}.", e);
                     return null;
                 }
-
-                index++;
             }
 
             snapProgressSource?.Raise(70);

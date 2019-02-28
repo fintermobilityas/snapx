@@ -176,8 +176,7 @@ namespace snapx
                         .Where(x => x.nupkg.valid
                                     && x.nupkg.fullOrDelta == "full"
                                     && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCulture)
-                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCulture)
-                                    && string.Equals(x.nupkg.channelName, snapAppChannel.Name, StringComparison.InvariantCulture))
+                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCulture))
                         .OrderByDescending(x => x.nupkg.semanticVersion)
                         .FirstOrDefault();
 

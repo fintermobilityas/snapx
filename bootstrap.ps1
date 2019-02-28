@@ -18,7 +18,14 @@ $ConfirmPreference = "None";
 
 # Global Variables
 
-$WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+$BuildUsingDocker = $env:SNAPX_DOCKER_BUILD -eq $true
+if($BuildUsingDocker)
+{
+    $WorkingDir = "/build/snapx"
+} else {
+    $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+}
+
 $ToolsDir = Join-Path $WorkingDir tools
 
 $OSPlatform = $null
@@ -66,11 +73,15 @@ switch -regex ($OSVersion) {
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
 
-        $CommandCmakeMaybe = Join-Path $WorkingDir cmake\cmake-x-xx\bin\cmake
-        if(Test-Path $CommandCmakeMaybe)
+        if($BuildUsingDocker -eq $false)
         {
-            $CommandCmake = $CommandCmakeMaybe
+            $CommandCmakeMaybe = Join-Path $WorkingDir cmake\cmake-x-xx\bin\cmake
+            if(Test-Path $CommandCmakeMaybe)
+            {
+                $CommandCmake = $CommandCmakeMaybe
+            }    
         }
+        
     }	
     default {
         Die "Unsupported os: $OSVersion"

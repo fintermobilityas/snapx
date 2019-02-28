@@ -4,6 +4,14 @@ param(
     [string] $Target = "Bootstrap"
 )
 
+$BuildUsingDocker = $env:SNAPX_DOCKER_BUILD -eq $true
+if($BuildUsingDocker)
+{
+    $WorkingDir = "/build/snapx"
+} else {
+    $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+}
+
 # Configuration
 $ErrorActionPreference = "Stop"; 
 $ConfirmPreference = "None"; 

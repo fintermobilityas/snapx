@@ -515,6 +515,7 @@ Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
+Write-Output "Docker: $BuildUsingDocker" 
 
 if ($Cross) {
     Write-Output "Native target arch: $ArchCross"		

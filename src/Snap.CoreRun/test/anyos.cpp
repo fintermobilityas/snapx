@@ -452,7 +452,7 @@ namespace {
 
         int app_count = 25;
 
-        std::string expected_app_version;
+        std::string expected_app_version = std::string();
         std::vector<std::string> app_versions;
         for (auto major_version = 0; major_version <= app_count; major_version++)
         {

@@ -27,9 +27,9 @@ RUN \
 FROM builder as runner
 WORKDIR /build/snapx
 
-COPY src .
-COPY tools .
-COPY cmake .
+COPY src ./src
+COPY tools ./tools
+COPY cmake ./cmake
 COPY nuget.config .
 COPY Directory.Build.props .
 COPY Directory.Build.targets .
@@ -37,6 +37,7 @@ COPY Version.props .
 COPY global.json .
 COPY bootstrap.ps1 .
 COPY build.ps1 .
+COPY install_snapx.ps1 .
 
 RUN \
   /usr/bin/pwsh -f build.ps1

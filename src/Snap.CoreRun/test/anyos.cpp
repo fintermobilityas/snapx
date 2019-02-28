@@ -297,7 +297,7 @@ namespace {
 
             char* log_output = nullptr;
             size_t log_output_len = 0;
-            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), &log_output, &log_output_len))
+            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), &log_output, &log_output_len) || log_output_len <= 0)
             {
                 return std::string();
             }

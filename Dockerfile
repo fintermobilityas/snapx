@@ -24,7 +24,7 @@ RUN \
 RUN \
   apt-get update && apt-get install -y dotnet-sdk-2.2
 
-FROM ubuntu:18.04 as runner
+FROM builder as runner
 WORKDIR /build/snapx
 
 COPY src .
@@ -39,6 +39,6 @@ COPY bootstrap.ps1 .
 COPY build.ps1 .
 
 RUN \
-  pwsh -f build.ps1
+  /usr/bin/pwsh -f build.ps1
 
 CMD ["snapx"]

@@ -1,7 +1,9 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
     [ValidateSet("Bootstrap", "Bootstrap-Docker", "Bootstrap-Docker-After", "Native", "Native-Docker", "Snap", "Snap-Installer", "Run-Native-UnitTests")]
-    [string] $Target = "Bootstrap"
+    [string] $Target = "Bootstrap",
+    [Parameter(Position = 1, ValueFromPipeline = $true)]
+    [string] $DockerAzureImageName
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -129,7 +131,7 @@ function Build-Docker {
 
     Resolve-Shell-Dependency $CommandDocker
 
-    $DockerContainerName = "snapx"
+    $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
     
     Invoke-Command-Colored $CommandDocker @(
         "build -t $DockerContainerName {0}" -f (Join-Path $WorkingDir docker)

@@ -39,7 +39,9 @@ COPY bootstrap.ps1 .
 COPY build.ps1 .
 COPY install_snapx.ps1 .
 
+SHELL [ "/usr/bin/pwsh" ]
+
 RUN \
-  /usr/bin/pwsh -f build.ps1
+  ./build.ps1
 
 CMD ["snapx"]

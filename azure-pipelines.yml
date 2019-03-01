@@ -1,19 +1,16 @@
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
-trigger:
-- master
+strategy:
+  matrix:
+    linux:
+      imageName: 'ubuntu-16.04'
+    windows:
+      imageName: 'vs2017-win2016'
 
 pool:
-  vmImage: 'Ubuntu-16.04'
+  vmImage: $(imageName)
 
 variables:
-  buildConfiguration: 'Release'
+  imageName: 'snapx-$(imageName):$(build.buildId)'
 
 steps:
-- script: install_ubuntu_build_dependencies.sh
-  displayName: "install_ubuntu_build_dependencies"
-- script: build.ps1
-  displayName: "build.ps1"
+- script: .\build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
+  displayName: 'docker build'

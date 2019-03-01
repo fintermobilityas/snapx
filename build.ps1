@@ -3,7 +3,9 @@ param(
     [ValidateSet("Bootstrap", "Bootstrap-Docker", "Bootstrap-Docker-After", "Native", "Native-Docker", "Snap", "Snap-Installer", "Run-Native-UnitTests")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
-    [string] $DockerAzureImageName
+    [string] $DockerAzureImageName,
+    [Parameter(Position = 2, ValueFromPipeline = $true)]
+    [bool] $DockerImageNoCache
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -132,9 +134,15 @@ function Build-Docker {
     Resolve-Shell-Dependency $CommandDocker
 
     $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
+    $DockerBuildNoCache = ""
+
+    if($DockerImageNoCache)
+    {
+        $DockerBuildNoCache = "--no-cache"
+    }
     
     Invoke-Command-Colored $CommandDocker @(
-        "build -t $DockerContainerName {0}" -f (Join-Path $WorkingDir docker)
+        "build $DockerBuildNoCache -t $DockerContainerName {0}" -f (Join-Path $WorkingDir docker)
     )
 
     Invoke-Command-Colored $CommandDocker @( 

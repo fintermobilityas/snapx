@@ -1,0 +1,42 @@
+FROM ubuntu:18.04 as builder
+  
+ENV DEBIAN_FRONTEND noninteractive
+ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE 1
+ENV DOTNET_CLI_TELEMETRY_OPTOUT 1
+ENV NUGET_XMLDOC_MODE "skip"
+ENV SNAPX_DOCKER_BUILD 1
+
+# Base image
+
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    coreutils wget apt-utils apt-transport-https ca-certificates software-properties-common cmake \
+    make gcc g++ \
+    mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 upx-ucl
+
+# c++ build dependencies
+
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    uuid-dev
+
+RUN \
+  wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+RUN \
+  dpkg -i packages-microsoft-prod.deb 
+
+# Powershell
+
+RUN \
+  apt-get update && apt-get install -y --no-install-recommends powershell
+
+# dotnet-sdk
+
+RUN \
+  add-apt-repository universe
+RUN \
+  apt-get update && apt-get install -y --no-install-recommends dotnet-sdk-2.2
+
+CMD ["/build/snapx/docker/entry.sh"]

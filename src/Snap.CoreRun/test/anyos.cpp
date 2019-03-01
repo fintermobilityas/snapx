@@ -292,6 +292,7 @@ namespace {
             const auto log_filename_absolute_path = path_combine(most_recent_app.working_dir, log_filename);
             if (log_filename_absolute_path.empty())
             {
+                std::cerr << "Log file not found: " << log_filename_absolute_path << std::endl;
                 return std::string();
             }
 
@@ -299,6 +300,7 @@ namespace {
             size_t log_output_len = 0;
             if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), &log_output, &log_output_len) || log_output_len <= 0)
             {
+                std::cerr << "Failed to read log file: " << log_filename_absolute_path << ". Size: " << log_output_len << std::endl;
                 return std::string();
             }
 

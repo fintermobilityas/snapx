@@ -83,9 +83,11 @@ $SnapNetSrcDir = Join-Path $WorkingDir src\Snap
 $SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
 
 function Build-Native {	
-    $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
-
     Write-Output-Header "Building native dependencies"
+
+    Resolve-Shell-Dependency $CommandCmake
+
+    $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
 
     $CmakeArguments = @(
         "-G""$CmakeGenerator"""
@@ -142,6 +144,7 @@ function Build-Native {
 function Build-Snap {
     Write-Output-Header "Building Snap"
 
+    Resolve-Shell-Dependency $CommandDotnet
     Resolve-Shell-Dependency $CommandSnapx
 
     Invoke-Command-Colored $CommandDotnet @(
@@ -162,6 +165,7 @@ function Build-Snap-Installer {
     )
     Write-Output-Header "Building Snap.Installer"
 
+    Resolve-Shell-Dependency $CommandDotnet
     Resolve-Shell-Dependency $CommandSnapx
 
     $PackerArch = $null
@@ -268,10 +272,6 @@ switch ($OSPlatform) {
     }
 }
 			
-Resolve-Shell-Dependency $CommandCmake
-Resolve-Shell-Dependency $CommandPacker
-Resolve-Shell-Dependency $CommandDotnet
-
 switch ($Target) {
     "Native" {
         switch ($OSPlatform) {

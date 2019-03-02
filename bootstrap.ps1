@@ -35,7 +35,6 @@ $CommandCmake = $null
 $CommandDotnet = $null
 $CommandMsBuild = $null
 $CommandMake = $null
-$CommandUpx = $null
 $CommandPacker = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
@@ -50,7 +49,6 @@ switch -regex ($OSVersion) {
         $CmakeGenerator = "Visual Studio 15 Win64"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
-        $CommandUpx = Join-Path $ToolsDir upx-win-x64.exe
         $CommandPacker = Join-Path $ToolsDir warp-packer-win-x64.exe
         $CommandSnapx = "snapx.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
@@ -63,7 +61,6 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake"
         $CommandDotnet = "dotnet"
         $CommandMake = "make"
-        $CommandUpx = "upx"
         $CommandPacker = Join-Path $ToolsDir warp-packer-linux-x64.exe
         $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
@@ -294,7 +291,6 @@ switch ($OSPlatform) {
 }
 			
 Resolve-Shell-Dependency $CommandCmake
-Resolve-Shell-Dependency $CommandUpx
 Resolve-Shell-Dependency $CommandPacker
 Resolve-Shell-Dependency $CommandDotnet
 

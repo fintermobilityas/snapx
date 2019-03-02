@@ -9,6 +9,6 @@ jobs:
   - script: pwsh $(buildScript)
 - job: Windows
   pool:
-    vmImage: 'default'
+    vmImage: 'windows-2019'
   steps:
   - script: powershell -f $(buildScript)

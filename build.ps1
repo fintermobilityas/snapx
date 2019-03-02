@@ -24,6 +24,10 @@ $Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 $DockerAzurePipelineBuild = $DockerAzurePipelineBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+if($DockerAzurePipelineBuild)
+{
+    $DockerImageNoCache = $true
+}
 
 $CommandDocker = $null
 

@@ -1,9 +1,3 @@
-resources:
-  containers:
-  - container: build_container
-    image: youpark.azurecr.io/snapx:latest
-    endpoint: youpark
-
 strategy:
   matrix:
     linux:
@@ -12,4 +6,9 @@ strategy:
 pool:
   vmImage: $(imageName)
 
-container: build_container
+variables:
+  imageName: 'snapx:$(build.buildId)'
+
+steps:
+- script: /usr/bin/pwsh -f build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
+  displayName: 'docker build'

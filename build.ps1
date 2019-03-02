@@ -5,7 +5,9 @@ param(
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerAzureImageName,
     [Parameter(Position = 2, ValueFromPipeline = $true)]
-    [bool] $DockerImageNoCache
+    [bool] $DockerImageNoCache,
+    [Parameter(Position = 3, ValueFromPipeline = $true)]
+    [bool] $DockerAzurePipelineBuild
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -135,10 +137,15 @@ function Build-Docker {
 
     $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
     $DockerBuildNoCache = ""
+    $DockerRunFlags = "-it"
 
     if($DockerImageNoCache)
     {
         $DockerBuildNoCache = "--no-cache"
+    }
+
+    if($DockerAzurePipelineBuild) {
+        $DockerRunFlags = "-i"
     }
     
     Invoke-Command-Colored $CommandDocker @(
@@ -147,7 +154,7 @@ function Build-Docker {
 
     Invoke-Command-Colored $CommandDocker @( 
         "run"
-        "--rm -it --name $DockerContainerName"
+        "--rm $DockerRunFlags --name $DockerContainerName"
         "-e ""SNAPX_DOCKER_USERNAME=${env:SNAPX_DOCKER_USERNAME}"""
         "-e ""SNAPX_DOCKER_USER_ID=${env:SNAPX_DOCKER_USER_ID}"""
         "-e ""SNAPX_DOCKER_GROUP_ID=${env:SNAPX_DOCKER_GROUP_ID}"""

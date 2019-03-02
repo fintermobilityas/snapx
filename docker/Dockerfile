@@ -1,15 +1,9 @@
-FROM mcr.microsoft.com/powershell:latest as builder
+FROM mcr.microsoft.com/powershell:latest as env-build
 LABEL version "1.0"
 LABEL VENDOR YouPark AS
 LABEL description "A docker image for building snapx"
   
 ENV DEBIAN_FRONTEND noninteractive
-ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE 1
-ENV DOTNET_CLI_TELEMETRY_OPTOUT 1
-ENV NUGET_XMLDOC_MODE "skip"
-ENV SNAPX_DOCKER_BUILD 1
-
-# Base image
 
 RUN \
   apt-get update && \
@@ -17,7 +11,7 @@ RUN \
     coreutils wget apt-utils apt-transport-https ca-certificates software-properties-common cmake \
     make gcc g++ \
     mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 upx-ucl \
-    # c++ build dependencies
+    # native c++ build dependencies
     uuid-dev
 
 RUN \

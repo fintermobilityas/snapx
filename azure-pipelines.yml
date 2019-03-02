@@ -2,15 +2,20 @@ strategy:
   matrix:
     linux:
       imageName: 'ubuntu-16.04'
-    windows:
-      imageName: 'vs2017-win2016'
 
 pool:
   vmImage: $(imageName)
 
 variables:
-  imageName: 'snapx-$(imageName):$(build.buildId)'
+  azureSubscriptionEndpoint: youpark
+  azureContainerRegistry: youpark.azurecr.io
+  cachedSnapxContainerName: 'snapx:latest'
 
 steps:
-- script: .\build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
-  displayName: 'docker build'
+- task: Docker@1
+  displayName: Build using cached docker image
+  inputs:
+    command: run
+    azureSubscriptionEndpoint: $(azureSubscriptionEndpoint)
+    azureContainerRegistry: $(azureContainerRegistry)
+    imageName: $(cachedSnapxContainerName)

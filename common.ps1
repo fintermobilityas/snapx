@@ -80,12 +80,17 @@ function Invoke-Command-Colored {
         $DashsesRepeatCount = $CommandStr.Length
     }
 
-    Write-Output $CommandStr
-
-    if([console]::BufferWidth -gt 0)
+    if($env:SNAPX_CI_BUILD -ne $true)
     {
-        $DashsesRepeatCount = [console]::BufferWidth
+        if([console]::BufferWidth -gt 0)
+        {
+            $DashsesRepeatCount = [console]::BufferWidth
+        }    
+    } else {
+        $DashsesRepeatCount = 80
     }
+
+    Write-Output $CommandStr
 
     $DashesStr = "-" * $DashsesRepeatCount
 

@@ -20,8 +20,6 @@ $ConfirmPreference = "None";
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 . $WorkingDir\common.ps1
 
-$BuildUsingDocker = $env:SNAPX_DOCKER_BUILD -gt 0
-
 $ToolsDir = Join-Path $WorkingDir tools
 
 $OSPlatform = $null
@@ -247,7 +245,8 @@ Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
-Write-Output "Docker: $BuildUsingDocker" 
+Write-Output "Docker: ${env:SNAPX_DOCKER_BUILD}" 
+Write-Output "CI Build: ${env:SNAPX_CI_BUILD}"
 
 if ($Cross) {
     Write-Output "Native target arch: $ArchCross"		
@@ -303,7 +302,8 @@ switch ($Target) {
                 $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
                 $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Release\Snap.CoreRun\Release)
 
-                Write-Output "Running native windows unit tests. Test runner count: {0}" -f ($Projects.Length)
+                $TestRunnerCount = $Projects.Length
+                Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
 
                 foreach ($GoogleTestsDir in $Projects) {
                     Invoke-Google-Tests $GoogleTestsDir Snap.Tests.exe $CommandGTestsDefaultArguments
@@ -315,7 +315,8 @@ switch ($Target) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
                 
-                Write-Output "Running native unix unit tests. Test runner count: {0}" -f ($Projects.Length)
+                $TestRunnerCount = $Projects.Length
+                Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
 
                 foreach ($GoogleTestsDir in $Projects) {
                     Invoke-Google-Tests $GoogleTestsDir Snap.Tests $CommandGTestsDefaultArguments

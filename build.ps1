@@ -23,11 +23,7 @@ $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
-$DockerAzurePipelineBuild = $DockerAzurePipelineBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
-if($DockerAzurePipelineBuild)
-{
-    $DockerImageNoCache = $true
-}
+$env:SNAPX_CI_BUILD = $DockerAzurePipelineBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 $CommandDocker = $null
 
@@ -174,14 +170,14 @@ function Invoke-Docker
     $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
     $DockerRunFlags = "-it"
 
-    if($DockerAzurePipelineBuild) {
+    if($env:SNAPX_CI_BUILD) {
         $DockerRunFlags = "-i"
     }
     
     if($Entrypoint -eq "Native")
     {
         $DockerBuildNoCache = ""
-        if($DockerImageNoCache)
+        if($DockerImageNoCache -or $env:SNAPX_CI_BUILD)
         {
             $DockerBuildNoCache = "--no-cache"
         }

@@ -82,6 +82,8 @@ function Invoke-Command-Colored {
 
     if($env:SNAPX_CI_BUILD -ne $true)
     {
+        # NB! Accessing this property during a CI build will throw.
+        # Ref issue: https://github.com/Microsoft/azure-pipelines-tasks/issues/9719
         if([console]::BufferWidth -gt 0)
         {
             $DashsesRepeatCount = [console]::BufferWidth
@@ -89,8 +91,6 @@ function Invoke-Command-Colored {
     } else {
         $DashsesRepeatCount = 80
     }
-
-    Write-Output $CommandStr
 
     $DashesStr = "-" * $DashsesRepeatCount
 

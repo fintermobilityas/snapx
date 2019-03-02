@@ -1,16 +1,15 @@
+resources:
+  containers:
+  - container: build_container
+    image: youpark.azurecr.io/snapx:latest
+    endpoint: youpark
+
 strategy:
   matrix:
     linux:
       imageName: 'ubuntu-16.04'
-    windows:
-      imageName: 'vs2017-win2016'
 
 pool:
   vmImage: $(imageName)
 
-variables:
-  imageName: 'snapx-$(imageName):$(build.buildId)'
-
-steps:
-- script: .\build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
-  displayName: 'docker build'
+container: build_container

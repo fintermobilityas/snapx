@@ -9,6 +9,6 @@ jobs:
   - script: pwsh $(buildScript)
 - job: Windows
   pool:
-    vmImage: 'win1803'
+    vmImage: 'default'
   steps:
   - script: powershell -f $(buildScript)

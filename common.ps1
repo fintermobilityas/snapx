@@ -70,50 +70,46 @@ function Invoke-Command-Colored {
         [Parameter(Position = 1, ValueFromPipeline = $true)]
         [string[]] $Arguments
     )
-    begin {
-        $CommandStr = $Filename
-        $DashsesRepeatCount = $Filename.Length
+    $CommandStr = $Filename
+    $DashsesRepeatCount = $Filename.Length
 
-        if($Arguments.Length -gt 0)
-        {
-            $ArgumentsStr = $Arguments -join " "
-            $CommandStr = "$Filename $ArgumentsStr"
-            $DashsesRepeatCount = $CommandStr.Length
-        }
-
-        if([console]::BufferWidth -gt 0)
-        {
-            $DashsesRepeatCount = [console]::BufferWidth
-        }
-
-        $DashesStr = "-" * $DashsesRepeatCount
-    }   
-    process {
-
-        Write-Output-Colored -Message $DashesStr -ForegroundColor White
-        Write-Output-Colored -Message $CommandStr -ForegroundColor Green
-        Write-Output-Colored -Message $DashesStr -ForegroundColor White
-
-        $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
-        $StartInfo.FileName = $Filename
-        $StartInfo.Arguments = $Arguments
-
-        $StartInfo.EnvironmentVariables.Clear()
-
-        Get-ChildItem -Path env:* | ForEach-Object {
-            $StartInfo.EnvironmentVariables.Add($_.Name, $_.Value)
-        }
-
-        $StartInfo.UseShellExecute = $false
-        $StartInfo.CreateNoWindow = $false
-
-        $Process = New-Object System.Diagnostics.Process
-        $Process.StartInfo = $startInfo
-        $Process.Start() | Out-Null
-        $Process.WaitForExit()
-
-        $global:LASTEXITCODE = $Process.ExitCode
+    if($Arguments.Length -gt 0)
+    {
+        $ArgumentsStr = $Arguments -join " "
+        $CommandStr = "$Filename $ArgumentsStr"
+        $DashsesRepeatCount = $CommandStr.Length
     }
+
+    if([console]::BufferWidth -gt 0)
+    {
+        $DashsesRepeatCount = [console]::BufferWidth
+    }
+
+    $DashesStr = "-" * $DashsesRepeatCount
+
+    Write-Output-Colored -Message $DashesStr -ForegroundColor White
+    Write-Output-Colored -Message $CommandStr -ForegroundColor Green
+    Write-Output-Colored -Message $DashesStr -ForegroundColor White
+
+    $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $StartInfo.FileName = $Filename
+    $StartInfo.Arguments = $Arguments
+
+    $StartInfo.EnvironmentVariables.Clear()
+
+    Get-ChildItem -Path env:* | ForEach-Object {
+        $StartInfo.EnvironmentVariables.Add($_.Name, $_.Value)
+    }
+
+    $StartInfo.UseShellExecute = $false
+    $StartInfo.CreateNoWindow = $false
+
+    $Process = New-Object System.Diagnostics.Process
+    $Process.StartInfo = $startInfo
+    $Process.Start() | Out-Null
+    $Process.WaitForExit()
+
+    $global:LASTEXITCODE = $Process.ExitCode
 }
 function Invoke-BatchFile {
     param(

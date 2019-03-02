@@ -10,5 +10,5 @@ variables:
   imageName: 'snapx:$(build.buildId)'
 
 steps:
-- script: .\build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
+- script: build.ps1 -Target Bootstrap -DockerAzureImageName $(imageName)
   displayName: 'docker build'

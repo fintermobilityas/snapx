@@ -11,4 +11,4 @@ jobs:
   pool:
     vmImage: 'win1803'
   steps:
-  - script: powershell $(buildScript)
+  - script: powershell -f $(buildScript)

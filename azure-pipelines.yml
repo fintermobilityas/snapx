@@ -6,9 +6,9 @@ jobs:
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
-  - powershell: $(buildScript)
+  - script: pwsh $(buildScript)
 - job: Windows
   pool:
     vmImage: 'win1803'
   steps:
-  - powershell: $(buildScript)
+  - script: powershell $(buildScript)

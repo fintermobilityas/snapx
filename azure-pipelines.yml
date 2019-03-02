@@ -8,7 +8,7 @@ jobs:
   steps:
   - script: pwsh $(buildScript)
 - job: Windows
-  pool:
-    vmImage: 'windows-2019'
+  pool: youpark
+    vmImage: 'vs2017-win2016'
   steps:
   - script: powershell -f $(buildScript)

@@ -74,7 +74,7 @@ function Invoke-Command-Colored {
         $CommandStr = $Filename
         $DashsesRepeatCount = $Filename.Length
 
-        if($Arguments.Length -gt 1)
+        if($Arguments.Length -gt 0)
         {
             $ArgumentsStr = $Arguments -join " "
             $CommandStr = "$Filename $ArgumentsStr"

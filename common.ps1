@@ -111,6 +111,8 @@ function Invoke-Command-Colored {
         $Process.StartInfo = $startInfo
         $Process.Start() | Out-Null
         $Process.WaitForExit()
+
+        $global:LASTEXITCODE = $Process.ExitCode
     }
 }
 function Invoke-BatchFile {
@@ -186,12 +188,8 @@ function Invoke-Google-Tests
     {
         Push-Location $GTestsDirectory
         $GTestsExe = Join-Path $GTestsDirectory $GTestsExe
-        Invoke-Command-Colored $GTestsExe $GTestsArguments
+        $global:LASTEXITCODE = Invoke-Command-Colored $GTestsExe $GTestsArguments
     } finally {             
         Pop-Location 
-        if(0 -ne $LASTEXITCODE)
-        {
-            exit $LASTEXITCODE
-        }
     }
 }

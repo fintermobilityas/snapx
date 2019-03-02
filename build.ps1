@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Docker", "Bootstrap-Docker-After", "Native", "Native-Docker", "Snap", "Snap-Installer", "Run-Native-UnitTests")]
+    [ValidateSet("Bootstrap", "Bootstrap-Docker", "Native", "Snap", "Snap-Installer", "Snapx")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerAzureImageName,
@@ -124,7 +124,16 @@ function Invoke-Native-UnitTests
     .\bootstrap.ps1 -Target Run-Native-UnitTests
 }
 
-function Build-Docker {
+function Invoke-Docker 
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [ValidateSet("Native")]
+        [string] $Entrypoint
+    )
+
+    Write-Output-Header "Docker entrypoint: $Entrypoint"
+    
     $env:SNAPX_DOCKER_USERNAME = (whoami | Out-String) -replace [System.Environment]::NewLine, ""
     $env:SNAPX_DOCKER_WORKING_DIR = "/build/snapx"
 
@@ -139,21 +148,24 @@ function Build-Docker {
     Resolve-Shell-Dependency $CommandDocker
 
     $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
-    $DockerBuildNoCache = ""
     $DockerRunFlags = "-it"
-
-    if($DockerImageNoCache)
-    {
-        $DockerBuildNoCache = "--no-cache"
-    }
 
     if($DockerAzurePipelineBuild) {
         $DockerRunFlags = "-i"
     }
     
-    Invoke-Command-Colored $CommandDocker @(
-        "build $DockerBuildNoCache -t $DockerContainerName {0}" -f (Join-Path $WorkingDir docker)
-    )
+    if($Entrypoint -eq "Native")
+    {
+        $DockerBuildNoCache = ""
+        if($DockerImageNoCache)
+        {
+            $DockerBuildNoCache = "--no-cache"
+        }
+
+        Invoke-Command-Colored $CommandDocker @(
+            "build $DockerBuildNoCache -t $DockerContainerName {0}" -f (Join-Path $WorkingDir docker)
+        )    
+    }
 
     Invoke-Command-Colored $CommandDocker @( 
         "run"
@@ -161,15 +173,22 @@ function Build-Docker {
         "-e ""SNAPX_DOCKER_USERNAME=${env:SNAPX_DOCKER_USERNAME}"""
         "-e ""SNAPX_DOCKER_USER_ID=${env:SNAPX_DOCKER_USER_ID}"""
         "-e ""SNAPX_DOCKER_GROUP_ID=${env:SNAPX_DOCKER_GROUP_ID}"""
-        "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""
+        "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""               
+        "-e ""SNAPX_DOCKER_ENTRYPOINT=$Entrypoint"""               
         "-v ${WorkingDir}:${env:SNAPX_DOCKER_WORKING_DIR}"
         "$DockerContainerName"
     )
 
-    Write-Output-Header "Docker build finished"
+    Write-Output-Header "Docker container entrypoint ($Entrypoint) finished"
+
+    if($LASTEXITCODE -ne 0)
+    {
+        Write-Error "Docker entrypoint finished with errors. Exit code: $LASTEXITCODE"
+        exit $DockerRunExitCode
+    }
 }
 
-function Build-Docker-Native-Dependencies
+function Build-Native-And-Run-Native-UnitTests
 {
     Build-Native
     if(0 -ne $LASTEXITCODE) {
@@ -182,7 +201,16 @@ function Build-Docker-Native-Dependencies
     }
 }
 
-function Build-Docker-Snapx
+function Build-Docker-Entrypoint
+{
+    Build-Native  
+    if(0 -ne $LASTEXITCODE) {
+        Write-Error "Failed to build native dependencies inside docker"
+        return
+    }
+}
+
+function Build-Snapx
 {
     .\install_snapx.ps1 -Bootstrap $true
     if(0 -ne $LASTEXITCODE) {
@@ -206,53 +234,32 @@ function Build-Docker-Snapx
 }
 
 switch ($Target) {
-    "Bootstrap" {        
-        if(0 -eq $env:SNAPX_DOCKER_BUILD) {
+    "Bootstrap-Docker"{
+        if(1 -eq $env:SNAPX_DOCKER_BUILD) {
+            Write-Error "$Target should not be invoked by the docker container instance. This is entrypoint is for developers only"
+            exit 1
+        }
 
-            Build-Docker
-            if(0 -ne $LASTEXITCODE) {
-                Write-Error "Docker build failed unexpectedly"
-                exit 1
-            }
+        Invoke-Docker -Entrypoint "Native"
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }
 
-            if($OSPlatform -eq "Windows") {
-                Build-Docker-Native-Dependencies
-                if(0 -ne $LASTEXITCODE) {
-                    Write-Error "Unknown error bootstrapping msvs build"
-                    exit 1
-                }
+        Invoke-Native-UnitTests    
 
-                Build-Docker-Snapx
-                if(0 -ne $LASTEXITCODE) {
-                    Write-Error "Unknown error bootstrapping snapx after native build"
-                    exit 1
-                }
-            }
-            
-            Build-Summary
-            exit 0 
+        Build-Snapx
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
         }        
-
-        Write-Output-Header "Building using docker"
-
-        if($OSPlatform -eq "Windows")
-        {
-            Write-Error "Fatal error! Expected to be 'inside' docker container by now."
+    }    
+    "Bootstrap" {        
+        if(1 -eq $env:SNAPX_DOCKER_BUILD) {
+            Write-Error "$Target should not be invoked by the docker container instance. This is entrypoint is for developers only"
             exit 1
         }
 
-        Build-Docker-Native-Dependencies
-        if(0 -ne $LASTEXITCODE) {
-            Write-Error "Docker bootstrap failed unexpectedly"
-            exit 1
-        }
-
-        Build-Docker-Snapx
-        if(0 -ne $LASTEXITCODE) {
-            Write-Error "Unknown error bootstrapping snapx after native build"
-            exit 1
-        }
-
+        Build-Native-And-Run-Native-UnitTests
+        Build-Snapx
         Build-Summary
         exit 0 
     }
@@ -260,7 +267,7 @@ switch ($Target) {
         Build-Native
         Build-Summary
     }
-    "Run-Native-UnitTests"
+    "Native-UnitTests"
     {
         Invoke-Native-UnitTests
         Build-Summary
@@ -271,6 +278,10 @@ switch ($Target) {
     }
     "Snap-Installer" {        
         Build-Snap-Installer
+        Build-Summary
+    }
+    "Snapx" {
+        Build-Snapx
         Build-Summary
     }
 }

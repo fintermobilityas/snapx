@@ -1,3 +1,9 @@
+resources:
+  containers:
+  - container: build_container
+    image: youpark.azurecr.io/snapx:latest
+    endpoint: youpark
+
 strategy:
   matrix:
     linux:
@@ -6,16 +12,4 @@ strategy:
 pool:
   vmImage: $(imageName)
 
-variables:
-  azureSubscriptionEndpoint: youpark
-  azureContainerRegistry: youpark.azurecr.io
-  cachedSnapxContainerName: 'snapx:latest'
-
-steps:
-- task: Docker@1
-  displayName: Build using cached docker image
-  inputs:
-    command: run
-    azureSubscriptionEndpoint: $(azureSubscriptionEndpoint)
-    azureContainerRegistry: $(azureContainerRegistry)
-    imageName: $(cachedSnapxContainerName)
+container: build_container

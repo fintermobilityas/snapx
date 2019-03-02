@@ -1,5 +1,5 @@
 variables:
-  buildScript: build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(vmImage)-$(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+  buildScript: build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(imageName)-$(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 jobs:
 - job: Linux

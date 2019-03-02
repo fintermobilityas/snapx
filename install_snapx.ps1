@@ -70,5 +70,3 @@ Exec "& dotnet clean src/Snapx"
 Exec "& dotnet build -c $Configuration src/Snapx -f netcoreapp2.2 $Properties"
 Exec "& dotnet pack -c $Configuration src/Snapx --no-build"
 Exec "& dotnet tool install --global --add-source ./nupkgs snapx"
-
-. snapx 

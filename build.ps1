@@ -182,7 +182,7 @@ function Invoke-Docker
     if($Entrypoint -eq "Native")
     {
         $DockerBuildNoCache = ""
-        if($DockerImageNoCache -or ($env:SNAPX_CI_BUILD -eq $true))
+        if($DockerImageNoCache)
         {
             $DockerBuildNoCache = "--no-cache"
         }

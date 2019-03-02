@@ -4,7 +4,9 @@ strategy:
       imageName: 'ubuntu-16.04'
     windows:
       imageName: 'vs2017-win2016'
-
+    windows-future:
+      imageName: 'vs2019-win2019'
+      
 pool:
   vmImage: $(imageName)
 

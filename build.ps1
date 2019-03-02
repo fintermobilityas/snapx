@@ -73,31 +73,7 @@ $BuildTime = $StopWatch::StartNew()
 
 function Build-Native {
     if ($OSPlatform -eq "Windows") {
-
-        $UbuntuExe = @("Ubuntu1804.exe", "Ubuntu1604.exe") | 
-                        ForEach-Object { Get-Command $_ } | 
-                        Select-Object -First 1 | 
-                        Select-Object -ExpandProperty Source
-		if($UbuntuExe)
-		{
-            . $UbuntuExe run pwsh -f build.ps1 -Target Native
-		} else {
-            Write-Error "Unable to find a working ubuntu installation on this computer. Please install Ubuntu 1804 LTS in the Microsoft Store"
-            exit 1
-        }
-		
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "$UbuntuExe exited with exit code: $LASTEXITCODE"
-            exit $LASTEXITCODE
-        }
-
-        Invoke-Native-UnitTests
-        if($LASTEXITCODE -ne 0)
-        {
-            Write-Error "Native unit tests failed"
-            exit $LASTEXITCODE
-        }
-    
+            
         .\bootstrap.ps1 -Target Native -Configuration Debug 
         if($LASTEXITCODE -ne 0)
         {
@@ -105,7 +81,7 @@ function Build-Native {
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 	
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -117,28 +93,28 @@ function Build-Native {
     
     if ($OSPlatform -eq "Unix") {
 
-        .\bootstrap.ps1 -Target Native -Configuration Debug
+        .\bootstrap.ps1 -Target Native -Configuration Debug 
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1
+        .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1 
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1		
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 	 	
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1	
+        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1 
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -181,7 +157,7 @@ function Invoke-Docker
 
     Write-Output-Header "Docker entrypoint: $Entrypoint"
     
-    $env:SNAPX_DOCKER_USERNAME = (whoami | Out-String) -replace [System.Environment]::NewLine, ""
+    $env:SNAPX_DOCKER_USERNAME = [Environment]::UserName
     $env:SNAPX_DOCKER_WORKING_DIR = "/build/snapx"
     $env:SNAPX_DOCKER_BUILD=1
 
@@ -223,6 +199,7 @@ function Invoke-Docker
         "-e ""SNAPX_DOCKER_GROUP_ID=${env:SNAPX_DOCKER_GROUP_ID}"""
         "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""               
         "-e ""SNAPX_DOCKER_ENTRYPOINT=$Entrypoint"""               
+        "-e ""SNAPX_DOCKER_HOST_OS=$OSPlatform"""               
         "-v ${WorkingDir}:${env:SNAPX_DOCKER_WORKING_DIR}"
         "$DockerContainerName"
     )
@@ -240,7 +217,7 @@ function Invoke-Docker
 
 function Build-Native-And-Run-Native-UnitTests
 {
-    Build-Native
+    Build-Native 
     if(0 -ne $LASTEXITCODE) {
         return
     }
@@ -292,6 +269,11 @@ switch ($Target) {
         Invoke-Docker -Entrypoint "Native"
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
+        }
+
+        if($OSPlatform -eq "Windows")
+        {
+            Build-Native 
         }
 
         Invoke-Native-UnitTests    

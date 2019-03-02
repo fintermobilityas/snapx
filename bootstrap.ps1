@@ -119,16 +119,9 @@ function Build-Native {
     
     Invoke-Command-Colored $CommandCmake $CmakeArguments
 
-    $RunUnitTests = $BuildUsingDocker -ne $true
-
     switch ($OSPlatform) {
         "Unix" {
             sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
-
-            if($Cross)
-            {
-                $RunUnitTests = $false
-            }
         }
         "Windows" {
             Invoke-Command-Colored $CommandCmake @(                
@@ -137,21 +130,13 @@ function Build-Native {
         
             $SnapTestsExePath = Join-Path $SnapCoreRunBuildOutputDir $Configuration\Snap.Tests.exe
             $CoreRunExePath = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration
-            Copy-Item $SnapTestsExePath $CoreRunExePath | Out-Null            
+            Copy-Item $SnapTestsExePath $CoreRunExePath | Out-Null        
         }
         default {
             Write-Error "Unsupported os platform: $OSPlatform"
         }
     }
 
-    if($RunUnitTests -eq $false)
-    {
-        return
-    }
-
-    Write-Output-Header "Running unit tests"
-
-    Invoke-Google-Tests $SnapCoreRunBuildOutputDir Snap.Tests $CommandGTestsDefaultArguments
 }
 
 function Build-Snap {
@@ -316,7 +301,7 @@ switch ($Target) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
                 $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Release)
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Release\Snap.CoreRun\Release)
 
                 Write-Output "Running native windows unit tests. Test runner count: {0}" -f ($Projects.Length)
 

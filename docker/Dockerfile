@@ -13,7 +13,7 @@ RUN \
   apt-get install -y --no-install-recommends \
     coreutils wget apt-utils apt-transport-https ca-certificates software-properties-common cmake \
     make gcc g++ \
-    mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 upx-ucl \
+    mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 \
     # native c++ build dependencies
     uuid-dev
 

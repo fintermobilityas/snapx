@@ -35,12 +35,6 @@ function Write-Output-Colored {
         [string] $ForegroundColor = "Green"
     )
 
-    if([console]::BufferWidth -eq 0)
-    {
-        Write-Output $Message
-        return
-    }
-    
     $fc = $host.UI.RawUI.ForegroundColor
 
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
@@ -91,31 +85,15 @@ function Invoke-Command-Colored {
         $DashsesRepeatCount = [console]::BufferWidth
     }
 
+    Write-Output $CommandStr
+
     $DashesStr = "-" * $DashsesRepeatCount
 
     Write-Output-Colored -Message $DashesStr -ForegroundColor White
     Write-Output-Colored -Message $CommandStr -ForegroundColor Green
     Write-Output-Colored -Message $DashesStr -ForegroundColor White
 
-    $StartInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $StartInfo.FileName = $Filename
-    $StartInfo.Arguments = $Arguments
-
-    $StartInfo.EnvironmentVariables.Clear()
-
-    Get-ChildItem -Path env:* | ForEach-Object {
-        $StartInfo.EnvironmentVariables.Add($_.Name, $_.Value)
-    }
-
-    $StartInfo.UseShellExecute = $false
-    $StartInfo.CreateNoWindow = $false
-
-    $Process = New-Object System.Diagnostics.Process
-    $Process.StartInfo = $startInfo
-    $Process.Start() | Out-Null
-    $Process.WaitForExit()
-
-    $global:LASTEXITCODE = $Process.ExitCode
+    Invoke-Expression $CommandStr
 }
 function Invoke-BatchFile {
     param(

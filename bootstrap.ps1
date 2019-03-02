@@ -33,7 +33,6 @@ $CommandCmake = $null
 $CommandDotnet = $null
 $CommandMsBuild = $null
 $CommandMake = $null
-$CommandPacker = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
 $CommandGTestsDefaultArguments = @(
@@ -47,11 +46,14 @@ switch -regex ($OSVersion) {
         $CmakeGenerator = "Visual Studio 15 Win64"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
-        $CommandPacker = Join-Path $ToolsDir warp-packer-win-x64.exe
         $CommandSnapx = "snapx.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
         $Arch = "win-x64"
         $ArchCross = "x86_64-win64-gcc"
+
+        if($env:SNAPX_CI_BUILD -eq $true) {
+            $CommandSnapx = Join-Path $WorkingDir snapx_ci_install\snapx.exe
+        }
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -59,10 +61,13 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake"
         $CommandDotnet = "dotnet"
         $CommandMake = "make"
-        $CommandPacker = Join-Path $ToolsDir warp-packer-linux-x64.exe
         $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"    
+
+        if($env:SNAPX_CI_BUILD -eq $true) {
+            $CommandSnapx = Join-Path $WorkingDir snapx_ci_install\snapx
+        }
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"

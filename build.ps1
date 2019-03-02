@@ -3,11 +3,11 @@ param(
     [ValidateSet("Bootstrap", "Bootstrap-Docker", "Native", "Snap", "Snap-Installer", "Snapx")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
-    [string] $DockerAzureImageName,
+    [string] $DockerImagePrefix,
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [bool] $DockerImageNoCache,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [string] $DockerAzurePipelineBuildStr
+    [string] $CIBuildStr
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -23,7 +23,7 @@ $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
-$env:SNAPX_CI_BUILD = $DockerAzurePipelineBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+$env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 $CommandDocker = $null
 
@@ -167,17 +167,22 @@ function Invoke-Docker
 
     Resolve-Shell-Dependency $CommandDocker
 
-    $DockerContainerName = "snapx{0}" -f $DockerAzureImageName
+    $DockerContainerName = "snapx"
+    if($DockerImagePrefix)
+    {
+        $DockerContainerName += "-$DockerImagePrefix"
+    }
+
     $DockerRunFlags = "-it"
 
-    if($env:SNAPX_CI_BUILD) {
+    if($env:SNAPX_CI_BUILD -eq $true) {
         $DockerRunFlags = "-i"
     }
     
     if($Entrypoint -eq "Native")
     {
         $DockerBuildNoCache = ""
-        if($DockerImageNoCache -or $env:SNAPX_CI_BUILD)
+        if($DockerImageNoCache -or ($env:SNAPX_CI_BUILD -eq $true))
         {
             $DockerBuildNoCache = "--no-cache"
         }
@@ -281,6 +286,9 @@ switch ($Target) {
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
         }        
+
+        Build-Summary
+        exit 0 
     }    
     "Bootstrap" {        
         if(1 -eq $env:SNAPX_DOCKER_BUILD) {

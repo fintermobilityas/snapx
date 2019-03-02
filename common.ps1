@@ -178,3 +178,15 @@ function Invoke-Google-Tests
         Pop-Location 
     }
 }
+
+function Convert-Boolean-MSBuild {
+    param(
+        [boolean] $Value
+    )
+    
+    if ($true -eq $Value) {
+        return "true"
+    }
+    
+    return "false"
+}

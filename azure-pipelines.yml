@@ -9,8 +9,8 @@ pool:
   vmImage: $(imageName)
 
 variables:
-  imageName: 'snapx:$(build.buildId)'
+  dockerImageName: '$(imageName)-$(build.buildId)'
 
 steps:
-- script: pwsh -f build.ps1 -Target Bootstrap-Docker -DockerAzureImageName $(imageName) -DockerAzurePipelineBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
-  displayName: 'docker build'
+- script: pwsh -f build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(dockerImageName) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+  displayName: 'Docker build'

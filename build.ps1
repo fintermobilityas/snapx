@@ -159,55 +159,92 @@ function Build-Docker {
     Write-Output-Header "Docker build finished"
 }
 
+function Build-Docker-Native-Dependencies
+{
+    Build-Native
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+      
+    Invoke-Native-UnitTests
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+}
+
+function Build-Docker-Snapx
+{
+    .\install_snapx.ps1 -Bootstrap $true
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+
+    Build-Snap-Installer
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+
+    .\install_snapx.ps1 -Bootstrap $false
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+
+    Build-Snap
+    if(0 -ne $LASTEXITCODE) {
+        return
+    }
+}
+
 switch ($Target) {
     "Bootstrap" {        
         if(0 -eq $env:SNAPX_DOCKER_BUILD) {
-            Build-Docker
 
+            Build-Docker
             if(0 -ne $LASTEXITCODE) {
                 Write-Error "Docker build failed unexpectedly"
-                return
+                exit 1
             }
 
-            if($OSPlatform -eq "Windows")
-            {                
-                Build-Native
-                Invoke-Native-UnitTests
-            } elseif($OSPlatform -eq "Unix") {
-                Invoke-Native-UnitTests
+            if($OSPlatform -eq "Windows") {
+                Build-Docker-Native-Dependencies
+                if(0 -ne $LASTEXITCODE) {
+                    Write-Error "Unknown error bootstrapping msvs build"
+                    exit 1
+                }
+
+                Build-Docker-Snapx
+                if(0 -ne $LASTEXITCODE) {
+                    Write-Error "Unknown error bootstrapping snapx after native build"
+                    exit 1
+                }
             }
             
-            if(0 -ne $LASTEXITCODE) {
-                return
-            }
-
-            .\install_snapx.ps1 -Bootstrap $true
-            if(0 -ne $LASTEXITCODE) {
-                return
-            }
-
-            Build-Snap-Installer
-            if(0 -ne $LASTEXITCODE) {
-                return
-            }
-
-            .\install_snapx.ps1 -Bootstrap $false
-            if(0 -ne $LASTEXITCODE) {
-                return
-            }
-
-            Build-Snap
-            if(0 -ne $LASTEXITCODE) {
-                return
-            }
-
             Build-Summary
             exit 0 
         }        
 
-        Write-Output-Header "Building native dependencies in docker"
+        Write-Output-Header "Building using docker"
 
-        Build-Native  
+        if($OSPlatform -eq "Windows")
+        {
+            Write-Error "Fatal error! Expected to be 'inside' docker container by now."
+            exit 1
+        }
+
+        Build-Docker-Native-Dependencies
+        if(0 -ne $LASTEXITCODE) {
+            Write-Error "Docker bootstrap failed unexpectedly"
+            exit 1
+        }
+
+        Build-Docker-Snapx
+        if(0 -ne $LASTEXITCODE) {
+            Write-Error "Unknown error bootstrapping snapx after native build"
+            exit 1
+        }
+
+        Build-Summary
+        exit 0 
     }
     "Native" {
         Build-Native

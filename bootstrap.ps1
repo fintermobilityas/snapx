@@ -168,13 +168,6 @@ function Build-Snap {
         "/p:SnapNupkg=true",
         "--configuration $Configuration"
     )
-
-    Invoke-Command-Colored $CommandDotnet @(
-        ("pack {0}" -f (Join-Path $SnapNetSrcDir Snap.csproj))
-        "--configuration $Configuration",
-        "--no-build",
-        "--no-dependencies"
-    )
 }
 function Build-Snap-Installer {
     param(

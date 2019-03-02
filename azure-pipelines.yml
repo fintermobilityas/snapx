@@ -12,5 +12,5 @@ variables:
   imageName: 'snapx:$(build.buildId)'
 
 steps:
-- script: /usr/bin/pwsh -f build.ps1 -Target Bootstrap-Docker -DockerAzureImageName $(imageName) -DockerAzurePipelineBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+- script: pwsh -f build.ps1 -Target Bootstrap-Docker -DockerAzureImageName $(imageName) -DockerAzurePipelineBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
   displayName: 'docker build'

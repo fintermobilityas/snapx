@@ -122,9 +122,16 @@ function Build-Native {
     
     Invoke-Command-Colored $CommandCmake $CmakeArguments
 
+    $RunUnitTests = $BuildUsingDocker -ne $true
+
     switch ($OSPlatform) {
         "Unix" {
             sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
+
+            if($Cross)
+            {
+                $RunUnitTests = $false
+            }
         }
         "Windows" {
             Invoke-Command-Colored $CommandCmake @(                
@@ -140,7 +147,7 @@ function Build-Native {
         }
     }
 
-    if($BuildUsingDocker -eq $true)
+    if($RunUnitTests -eq $false)
     {
         return
     }
@@ -313,26 +320,29 @@ switch ($Target) {
     "Run-Native-UnitTests" {
         switch($OSPlatform)
         {
-            "Windows" {                
-                $Projects = @(
-                    # mingw
-                    "{0}" -f (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
-                    "{0}" -f (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
-                    # msvs
-                    "{0}" -f (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
-                    "{0}" -f (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Release)
-                ) 
+            "Windows" {          
+
+                $Projects = @() 
+
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Release)
+
+                Write-Output "Running native windows unit tests. Test runner count: {0}" -f ($Projects.Length)
 
                 foreach ($GoogleTestsDir in $Projects) {
                     Invoke-Google-Tests $GoogleTestsDir Snap.Tests.exe $CommandGTestsDefaultArguments
                 }                
             }
             "Unix" {                
-                $Projects = @(
-                    "{0}" -f (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
-                    "{0}" -f (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
-                )
+                $Projects = @()
+
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
                 
+                Write-Output "Running native unix unit tests. Test runner count: {0}" -f ($Projects.Length)
+
                 foreach ($GoogleTestsDir in $Projects) {
                     Invoke-Google-Tests $GoogleTestsDir Snap.Tests $CommandGTestsDefaultArguments
                 }                

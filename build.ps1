@@ -78,26 +78,69 @@ function Build-Native {
 		{
             . $UbuntuExe run pwsh -f build.ps1 -Target Native
 		} else {
-			Write-Error "Unable to find a working ubuntu installation on this computer. Please install Ubuntu 1804 LTS in the Microsoft Store"
+            Write-Error "Unable to find a working ubuntu installation on this computer. Please install Ubuntu 1804 LTS in the Microsoft Store"
+            exit 1
         }
 		
         if ($LASTEXITCODE -ne 0) {
-            exit 0
+            Write-Error "$UbuntuExe exited with exit code: $LASTEXITCODE"
+            exit $LASTEXITCODE
         }
 
         Invoke-Native-UnitTests
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native unit tests failed"
+            exit $LASTEXITCODE
+        }
     
         .\bootstrap.ps1 -Target Native -Configuration Debug 
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
+
         .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 	
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
 
         return
     }
     
     if ($OSPlatform -eq "Unix") {
+
         .\bootstrap.ps1 -Target Native -Configuration Debug
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
+
         .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
+
         .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1		
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
+
         .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1	
+        if($LASTEXITCODE -ne 0)
+        {
+            Write-Error "Native build failed"
+            exit $LASTEXITCODE
+        }
+
         return	
     }	
 
@@ -136,6 +179,7 @@ function Invoke-Docker
     
     $env:SNAPX_DOCKER_USERNAME = (whoami | Out-String) -replace [System.Environment]::NewLine, ""
     $env:SNAPX_DOCKER_WORKING_DIR = "/build/snapx"
+    $env:SNAPX_DOCKER_BUILD=1
 
     if ($OSPlatform -eq "Unix") {
         $env:SNAPX_DOCKER_USER_ID = (id -u $Username | Out-String) -replace [System.Environment]::NewLine, ""
@@ -179,6 +223,8 @@ function Invoke-Docker
         "$DockerContainerName"
     )
 
+    $env:SNAPX_DOCKER_BUILD=0
+
     Write-Output-Header "Docker container entrypoint ($Entrypoint) finished"
 
     if($LASTEXITCODE -ne 0)
@@ -205,7 +251,6 @@ function Build-Docker-Entrypoint
 {
     Build-Native  
     if(0 -ne $LASTEXITCODE) {
-        Write-Error "Failed to build native dependencies inside docker"
         return
     }
 }
@@ -246,6 +291,9 @@ switch ($Target) {
         }
 
         Invoke-Native-UnitTests    
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }        
 
         Build-Snapx
         if(0 -ne $LASTEXITCODE) {

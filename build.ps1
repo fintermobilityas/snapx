@@ -181,7 +181,7 @@ function Invoke-Docker
 
     Write-Output-Header "Docker entrypoint: $Entrypoint"
     
-    $env:SNAPX_DOCKER_USERNAME = (whoami | Out-String) -replace [System.Environment]::NewLine, ""
+    $env:SNAPX_DOCKER_USERNAME = [Environment]::UserName
     $env:SNAPX_DOCKER_WORKING_DIR = "/build/snapx"
     $env:SNAPX_DOCKER_BUILD=1
 
@@ -223,6 +223,7 @@ function Invoke-Docker
         "-e ""SNAPX_DOCKER_GROUP_ID=${env:SNAPX_DOCKER_GROUP_ID}"""
         "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""               
         "-e ""SNAPX_DOCKER_ENTRYPOINT=$Entrypoint"""               
+        "-e ""SNAPX_DOCKER_HOST_OS=$OSPlatform"""               
         "-v ${WorkingDir}:${env:SNAPX_DOCKER_WORKING_DIR}"
         "$DockerContainerName"
     )

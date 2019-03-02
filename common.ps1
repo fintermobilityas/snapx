@@ -34,6 +34,12 @@ function Write-Output-Colored {
         [Parameter(Position = 1, ValueFromPipeline = $true)]
         [string] $ForegroundColor = "Green"
     )
+
+    if([console]::BufferWidth -eq 0)
+    {
+        Write-Output $Message
+        return
+    }
     
     $fc = $host.UI.RawUI.ForegroundColor
 

@@ -1,4 +1,7 @@
 FROM ubuntu:18.04 as builder
+LABEL version "1.0"
+LABEL VENDOR YouPark AS
+LABEL description "A docker image for building snapx"
   
 ENV DEBIAN_FRONTEND noninteractive
 ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE 1

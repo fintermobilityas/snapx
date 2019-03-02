@@ -7,7 +7,7 @@ pool:
   vmImage: $(imageName)
 
 variables:
-  azureSubscriptionEndpoint: youpark-azure-container
+  azureSubscriptionEndpoint: youpark
   azureContainerRegistry: youpark.azurecr.io
   cachedSnapxContainerName: 'snapx:latest'
 

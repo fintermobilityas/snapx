@@ -1,16 +1,14 @@
-strategy:
-  matrix:
-    linux:
-      imageName: 'ubuntu-16.04'
-    windows:
-      imageName: 'win1803'
-
-pool:
-  vmImage: $(imageName)
-
 variables:
-  dockerImageName: '$(imageName)-$(build.buildId)'
+  buildScript: build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(vmImage)-$(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
-steps:
-- script: pwsh -f build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(dockerImageName) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
-  displayName: 'Docker build'
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - powershell: $(buildScript)
+- job: Windows
+  pool:
+    vmImage: 'win1803'
+  steps:
+  - powershell: $(buildScript)

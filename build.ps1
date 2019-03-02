@@ -7,7 +7,7 @@ param(
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [bool] $DockerImageNoCache,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [bool] $DockerAzurePipelineBuild
+    [string] $DockerAzurePipelineBuildStr
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -21,6 +21,9 @@ $ConfirmPreference = "None";
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
+
+# Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
+$DockerAzurePipelineBuild = $DockerAzurePipelineBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 $CommandDocker = $null
 

@@ -188,7 +188,7 @@ function Invoke-Google-Tests
     {
         Push-Location $GTestsDirectory
         $GTestsExe = Join-Path $GTestsDirectory $GTestsExe
-        $global:LASTEXITCODE = Invoke-Command-Colored $GTestsExe $GTestsArguments
+        Invoke-Command-Colored $GTestsExe $GTestsArguments
     } finally {             
         Pop-Location 
     }

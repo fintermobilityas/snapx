@@ -80,12 +80,12 @@ function Invoke-Command-Colored {
         $DashsesRepeatCount = $CommandStr.Length
     }
 
+    Write-Output $CommandStr
+
     if([console]::BufferWidth -gt 0)
     {
         $DashsesRepeatCount = [console]::BufferWidth
     }
-
-    Write-Output $CommandStr
 
     $DashesStr = "-" * $DashsesRepeatCount
 

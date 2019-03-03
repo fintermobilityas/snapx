@@ -49,6 +49,10 @@ if(WIN32)
         target_compile_definitions(pal_static PUBLIC 
 		    PAL_PLATFORM_MINGW
 	    )	
+		target_link_libraries(pal_static PUBLIC
+			-static-libgcc 
+			-static-libstdc++
+		)
 	endif()
 
     target_compile_definitions(pal PUBLIC 

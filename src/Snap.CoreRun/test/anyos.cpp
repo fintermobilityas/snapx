@@ -312,6 +312,11 @@ namespace {
 
     };
 
+    TEST(MAIN, TestsCannotRunInElevatedContext)
+    {
+        ASSERT_FALSE(pal_is_elevated()) << "Unit tests cannot run elevated because corerun will exit if current user is root / Administrator.";
+    }
+    
     TEST(MAIN, corerun_StartsWhenThereAreZeroAppsInstalled)
     {
         auto working_dir = get_process_cwd();

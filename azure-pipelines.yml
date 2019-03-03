@@ -9,6 +9,7 @@ jobs:
   - script: pwsh $(buildScript)
 - job: Windows
   pool: 
+    name: Youpark
     vmImage: 'vs2017-win2016'
   steps:
   - script: powershell -f $(buildScript)

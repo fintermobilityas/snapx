@@ -149,6 +149,8 @@ function Use-Msvs-Toolchain
 
     Write-Output-Header "Configuring msvs toolchain"
 
+    $script:CommandMsBuild = $null
+
     $Instance = Get-Msvs-Toolchain-Instance $VisualStudioVersion
     if ($null -eq $Instance) {
         if($VisualStudioVersion -eq 16)
@@ -173,7 +175,15 @@ function Use-Msvs-Toolchain
     }
 		
     $VXXCommonTools = Join-Path $Instance.installationPath VC\Auxiliary\Build
-    $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
+    if($VisualStudioVersion -ge 16)
+    {
+        $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\Current\Bin\msbuild.exe
+    } elseif($VisualStudioVersion -eq 15) {
+        $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
+    } else {
+        Write-Error "Unknown Visual Studio version: $VisualStudioVersion"
+        exit 1
+    }
 
     if ($null -eq $VXXCommonTools -or (-not (Test-Path($VXXCommonTools)))) {
         Write-Error "PlatformToolset $PlatformToolset is not installed."

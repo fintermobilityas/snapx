@@ -18,7 +18,7 @@ jobs:
     name: Youpark
     vmImage: 'win1803'
   steps:
-  - script: powershell -f $(buildScript) -VisualStudioVersion 16
+  - script: powershell -f $(buildScript) -VisualStudioVersion "16"
   - task: PublishTestResults@2
     inputs:
       testRunner: VSTest

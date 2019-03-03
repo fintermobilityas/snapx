@@ -7,7 +7,9 @@ param(
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [bool] $DockerImageNoCache,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [string] $CIBuildStr
+    [string] $CIBuildStr,
+    [Parameter(Position = 4, ValueFromPipeline = $true)]
+    [string] $VisualStudioVersionStr = "16"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -24,6 +26,14 @@ $Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 $env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+
+# Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
+$VisualStudioVersion = 0
+if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersion))
+{
+    Write-Error "Invalid Visual Studio Version: $VisualStudioVersionStr"
+    exit 1
+}
 
 $CommandDocker = $null
 $CommandDotnet = $null
@@ -73,14 +83,14 @@ $BuildTime = $StopWatch::StartNew()
 function Build-Native {
     if ($OSPlatform -eq "Windows") {
             
-        .\bootstrap.ps1 -Target Native -Configuration Debug 
+        .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -VisualStudioVersion $VisualStudioVersion
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -99,21 +109,21 @@ function Build-Native {
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1 
+        .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 	 	
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1 
+        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -304,7 +314,7 @@ switch ($Target) {
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
         }    
-        
+
         Build-Summary
         exit 0 
     }    

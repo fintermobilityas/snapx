@@ -10,7 +10,9 @@ param(
     [Parameter(Position = 3, ValueFromPipeline = $true)]
     [boolean] $Lto = $FALSE,
     [Parameter(Position = 4, ValueFromPipeline = $true)]
-    [string] $DotNetRid = $null
+    [string] $DotNetRid = $null,
+    [Parameter(Position = 5, ValueFromPipeline = $true)]
+    [int] $VisualStudioVersion = 16
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -264,7 +266,7 @@ switch ($OSPlatform) {
     "Windows" {
         Resolve-Windows $OSPlatform 			
         Resolve-Shell-Dependency $CommandVsWhere				
-        Use-Msvs-Toolchain
+        Use-Msvs-Toolchain -VisualStudioVersion $VisualStudioVersion
         Resolve-Shell-Dependency $CommandMsBuild
     }
     "Unix" {

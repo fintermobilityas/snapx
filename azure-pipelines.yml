@@ -13,12 +13,12 @@ jobs:
       testResultsFiles: '**/*.trx'
       testRunTitle: Linux
       mergeTestResults: true
-- job: Windows
+- job: Windows (Visual Studio 2019)
   pool: 
     name: Youpark
-    vmImage: 'vs2017-win2016'
+    vmImage: 'win1803'
   steps:
-  - script: powershell -f $(buildScript)
+  - script: powershell -f $(buildScript) -VisualStudioVersion 16
   - task: PublishTestResults@2
     inputs:
       testRunner: VSTest

@@ -122,25 +122,58 @@ function Invoke-BatchFile {
    
     Remove-Item $tempFile | Out-Null
 }
-function Use-Msvs-Toolchain {
-    Write-Output-Header "Configuring msvs toolchain"
+function Get-Msvs-Toolchain-Instance
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [ValidateSet(15, 16)]
+        [int] $VisualStudioVersion
+    )
 
-    # https://github.com/Microsoft/vswhere/commit/a8c90e3218d6c4774f196d0400a8805038aa13b1 (Release mode / VS 2015 Update 3)
-    # SHA512: 06FAE35E3A5B74A5B0971FB19EE0987E15E413558C620AB66FB3188F6BF1C790919E8B163596744D126B3716D0E91C65F7C1325F5752614078E6B63E7C81D681
     $wswhere = $CommandVsWhere
-    $VxxCommonTools = $null
-	
-    $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | foreach { 'Microsoft.VisualStudio.Product.' + $_ }
-    $Instance = & $wswhere -version 15 -products $ids -requires 'Microsoft.Component.MSBuild' -format json `
+
+    $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | ForEach-Object { 'Microsoft.VisualStudio.Product.' + $_ }
+    $Instance = & $wswhere -version $VisualStudioVersion -products $ids -requires 'Microsoft.Component.MSBuild' -format json `
         | convertfrom-json `
         | select-object -first 1
-						
+
+    return $Instance
+}
+function Use-Msvs-Toolchain 
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [ValidateSet(15, 16)]
+        [int] $VisualStudioVersion
+    )
+
+    Write-Output-Header "Configuring msvs toolchain"
+
+    $Instance = Get-Msvs-Toolchain-Instance $VisualStudioVersion
     if ($null -eq $Instance) {
-        Write-Error "Visual Studio 2017 was not found"
+        if($VisualStudioVersion -eq 16)
+        {
+            Write-Error "Visual Studio 2019 was not found"
+            exit 1
+        } elseif($VisualStudioVersion -eq 15)
+        {
+            Write-Error "Visual Studio 2017 was not found"
+            exit 1
+        }
+    } else {
+        if($VisualStudioVersion -eq 16)
+        {
+            Write-Output "Found Visual Studio 2019"
+        } elseif($VisualStudioVersion -eq 15) {
+            Write-Output "Found Visual Studio 2017"
+        } else {
+            Write-Error "Unknown Visual Studio version: $VisualStudioVersion"
+            exit 1
+        }
     }
 		
     $VXXCommonTools = Join-Path $Instance.installationPath VC\Auxiliary\Build
-    $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
+    $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\$VisualStudioVersion.0\Bin\msbuild.exe
 
     if ($null -eq $VXXCommonTools -or (-not (Test-Path($VXXCommonTools)))) {
         Write-Error "PlatformToolset $PlatformToolset is not installed."

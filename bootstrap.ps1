@@ -45,7 +45,7 @@ $CommandGTestsDefaultArguments = @(
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
-        $CmakeGenerator = "Visual Studio $VisualStudioVersion Win64"
+        $CmakeGenerator = "Visual Studio $VisualStudioVersion"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
         $CommandSnapx = "snapx.exe"
@@ -94,12 +94,24 @@ function Build-Native {
 
     $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
 
+    $ArchCmakeGenerator = $CmakeGenerator
+    
+    if($OSPlatform -eq "Windows" -and ($VisualStudioVersion -le 15))
+    {
+        $ArchCmakeGenerator += " Win64"
+    }
+
     $CmakeArguments = @(
-        "-G""$CmakeGenerator"""
+        "-G""$ArchCmakeGenerator"""
         "-H""$SnapCoreRunSrcDir"""
         "-B""$SnapCoreRunBuildOutputDir"""
     )
-	
+    
+    if($OSPlatform -eq "Windows" -and ($VisualStudioVersion -ge 16))
+    {
+        $CmakeArguments += "-A Win64"
+    }
+    
     if ($Lto) {
         $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"
     }

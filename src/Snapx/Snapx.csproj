@@ -11,6 +11,7 @@
         <PackageId>snapx</PackageId>
         <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
         <IsPackable>true</IsPackable>
+        <IsTestProject>false</IsTestProject>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

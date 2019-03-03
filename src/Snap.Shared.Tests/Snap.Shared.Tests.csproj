@@ -6,7 +6,7 @@
         <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>
         <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.2</TargetFrameworks>
         <IsPackable>false</IsPackable>
-        <IsTestProject>true</IsTestProject>
+        <IsTestProject>false</IsTestProject>
     </PropertyGroup>
 
     <ItemGroup>

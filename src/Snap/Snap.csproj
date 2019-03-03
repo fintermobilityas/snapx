@@ -13,6 +13,7 @@
         <DefineConstants>$(DefineConstants);LIBLOG_PUBLIC;</DefineConstants>
         <GeneratePackageOnBuild Condition="$(SnapNupkg)">true</GeneratePackageOnBuild>
         <IsPackable Condition="$(SnapNupkg)">true</IsPackable>
+        <IsTestProject>false</IsTestProject>
     </PropertyGroup>
     
     <PropertyGroup>

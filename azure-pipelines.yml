@@ -8,6 +8,7 @@ jobs:
   steps:
   - script: pwsh $(buildScript)
   - task: PublishTestResults@2
+    displayName: Publish test results
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
@@ -20,8 +21,16 @@ jobs:
   steps:
   - script: powershell -f $(buildScript) -VisualStudioVersion "15"
   - task: PublishTestResults@2
+    displayName: Publish test results
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
       testRunTitle: Windows_Visual_Studio_2017
       mergeTestResults: true
+  - task: NuGetCommand@2
+    displayName: Publish nuget packages to snapx myget feed
+    inputs:
+      command: push
+      nuGetFeedType: external
+      publishFeedCredentials: 'snapx-myget-feed'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg' 

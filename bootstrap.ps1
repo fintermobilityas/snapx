@@ -12,6 +12,7 @@ param(
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $DotNetRid = $null,
     [Parameter(Position = 5, ValueFromPipeline = $true)]
+    [Validateset(15, 16)]
     [int] $VisualStudioVersion = 16
 )
 
@@ -274,6 +275,10 @@ if ($Cross) {
 }
 else {
     Write-Output "Native target arch: $Arch"				
+    if($OSPlatform -eq "Windows")
+    {
+        Write-Output "Visual Studio Version: $VisualStudioVersion"
+    }
 }
 
 switch ($OSPlatform) {

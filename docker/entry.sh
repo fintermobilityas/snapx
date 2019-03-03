@@ -22,12 +22,14 @@ case $SNAPX_DOCKER_ENTRYPOINT in
     exit 1
 esac
 
+SCRIPT_ARGUMENTS="-Target $SNAPX_DOCKER_ENTRYPOINT -VisualStudioVersionStr $SNAPX_DOCKER_VISUAL_STUDIO_VERSION"
+
 case $SNAPX_DOCKER_HOST_OS in
     Unix)
-        exec su -m $SNAPX_DOCKER_USERNAME -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 -Target $SNAPX_DOCKER_ENTRYPOINT)"
+        exec su -m $SNAPX_DOCKER_USERNAME -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
     ;;
     *)
-    sh -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 -Target $SNAPX_DOCKER_ENTRYPOINT)"
+        sh -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
     ;;
 esac
 

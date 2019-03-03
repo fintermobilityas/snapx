@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Docker", "Native", "Snap", "Snap-Installer", "Snapx")]
+    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer", "Snapx")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerImagePrefix,
@@ -28,7 +28,7 @@ $Stopwatch = [System.Diagnostics.Stopwatch]
 $env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
-$VisualStudioVersion = 0
+[int] $VisualStudioVersion = 0
 if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersion))
 {
     Write-Error "Invalid Visual Studio Version: $VisualStudioVersionStr"
@@ -137,12 +137,12 @@ function Build-Native {
 }
 
 function Build-Snap-Installer {
-    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64
-    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion
 }
 
 function Build-Snap {
-    .\bootstrap.ps1 -Target Snap
+    .\bootstrap.ps1 -Target Snap -VisualStudioVersion $VisualStudioVersion
 }
 
 function Build-Summary {
@@ -153,7 +153,7 @@ function Build-Summary {
 
 function Invoke-Native-UnitTests
 {
-    .\bootstrap.ps1 -Target Run-Native-UnitTests
+    .\bootstrap.ps1 -Target Run-Native-UnitTests -VisualStudioVersion $VisualStudioVersion
 }
 
 function Invoke-Docker 
@@ -214,6 +214,7 @@ function Invoke-Docker
         "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""               
         "-e ""SNAPX_DOCKER_ENTRYPOINT=$Entrypoint"""               
         "-e ""SNAPX_DOCKER_HOST_OS=$OSPlatform"""               
+        "-e ""SNAPX_DOCKER_VISUAL_STUDIO_VERSION=$VisualStudioVersion"""               
         "-v ${WorkingDir}:${env:SNAPX_DOCKER_WORKING_DIR}"
         "$DockerContainerName"
     )
@@ -284,12 +285,7 @@ function Invoke-Dotnet-Unit-Tests
 }
 
 switch ($Target) {
-    "Bootstrap-Docker"{
-        if(1 -eq $env:SNAPX_DOCKER_BUILD) {
-            Write-Error "$Target should not be invoked by the docker container instance. This is entrypoint is for developers only"
-            exit 1
-        }
-
+    "Bootstrap"{
         Invoke-Docker -Entrypoint "Native"
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
@@ -318,18 +314,6 @@ switch ($Target) {
         Build-Summary
         exit 0 
     }    
-    "Bootstrap" {        
-        if(1 -eq $env:SNAPX_DOCKER_BUILD) {
-            Write-Error "$Target should not be invoked by the docker container instance. This is entrypoint is for developers only"
-            exit 1
-        }
-
-        Build-Native-And-Run-Native-UnitTests
-        Build-Snapx
-        Invoke-Dotnet-Unit-Tests
-        Build-Summary
-        exit 0 
-    }
     "Native" {
         Build-Native
         Build-Summary

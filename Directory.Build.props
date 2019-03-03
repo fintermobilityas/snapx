@@ -35,6 +35,8 @@
         <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
         <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
         <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
+        <IsCIBuild Condition="$(SNAPX_CI_BUILD.ToUpper()) == 'TRUE' OR $(SNAPX_CI_BUILD) == '1'">true</IsCIBuild>
+        <IsCIBuild Condition="$(IsCIBuild) == ''">false</IsCIBuild>
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
 		<SnapCorePackageRelease Condition="$(SnapNupkg) AND $(TargetFramework) != ''">true</SnapCorePackageRelease>
@@ -72,6 +74,10 @@
 
     <PropertyGroup Condition="$(IsNetFullFramework)">
         <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(IsCIBuild)">
+        <DefineConstants>$(DefineConstants);CI_BUILD;</DefineConstants>
     </PropertyGroup>
 
 </Project>

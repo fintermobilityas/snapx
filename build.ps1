@@ -253,6 +253,8 @@ function Build-Docker-Entrypoint
 
 function Build-Snapx
 {
+    Write-Output-Header "Building snapx"
+
     .\install_snapx.ps1 -Bootstrap $true
     if(0 -ne $LASTEXITCODE) {
         return

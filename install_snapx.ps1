@@ -22,15 +22,18 @@ $Properties = $Properties -join " "
 $ToolInstallDir = Join-Path $WorkingDir snapx_ci_install
 
 $CommandSnapx = $null
+$CommandDotnet = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandSnapx = "snapx.exe"
+        $CommandDotnet = "dotnet.exe"
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandSnapx = "snapx"
+        $CommandDotnet = "dotnet"
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -44,22 +47,22 @@ if($Bootstrap)
 
 if($env:SNAPX_CI_BUILD -eq $true) {
     if(Test-Path $ToolInstallDir) {
-        Invoke-Command-Colored dotnet @("tool uninstall --tool-path $ToolInstallDir snapx")
+        Invoke-Command-Colored $CommandDotnet @("tool uninstall --tool-path $ToolInstallDir snapx")
     }
 } else {
-    Invoke-Command-Colored dotnet @("tool uninstall -g snapx")
+    Invoke-Command-Colored $CommandDotnet @("tool uninstall -g snapx")
 }
 
-Invoke-Command-Colored dotnet @("clean src/Snapx")
-Invoke-Command-Colored dotnet @("build -c $Configuration src/Snapx -f netcoreapp2.2 $Properties")
-Invoke-Command-Colored dotnet @("pack -c $Configuration src/Snapx --no-build")
+Invoke-Command-Colored $CommandDotnet @("clean src/Snapx")
+Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f netcoreapp2.2 $Properties")
+Invoke-Command-Colored $CommandDotnet @("pack -c $Configuration src/Snapx --no-build")
 
 $CommandSnapx = $CommandSnapx
 if($env:SNAPX_CI_BUILD -eq $true) {
-    Invoke-Command-Colored dotnet @("tool install --tool-path $ToolInstallDir --add-source ./nupkgs snapx")
+    Invoke-Command-Colored $CommandDotnet @("tool install --tool-path $ToolInstallDir --add-source ./nupkgs snapx")
     $CommandSnapx = Join-Path $ToolInstallDir $CommandSnapx
 } else {
-    Invoke-Command-Colored dotnet @("tool install --global --add-source ./nupkgs snapx")
+    Invoke-Command-Colored $CommandDotnet @("tool install --global --add-source ./nupkgs snapx")
 }
 
 # Prove that executable is working and able to start. 

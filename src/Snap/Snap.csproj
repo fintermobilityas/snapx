@@ -18,7 +18,7 @@
     
     <PropertyGroup>
         <PackageId>Snapx.Core</PackageId>
-        <Description>A cross platform application updater for .NET applications targeting either Windows or Unix.</Description>
+        <Description>Core package for the Snapx project.</Description>
     </PropertyGroup>
 
     <ItemGroup>

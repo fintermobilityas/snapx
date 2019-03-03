@@ -9,7 +9,7 @@
         <RootNamespace>snapx</RootNamespace>
         <AssemblyName>snapx</AssemblyName>
         <PackageId>snapx</PackageId>
-        <Description>A portable .NET core tool for installing applications on Windows or Unix using nupkgs.</Description>
+        <Description>Snapx is a powerful .NET cross-platform tool with built-in support for delta updates, release channels (test, staging, production etc.) and staged rollouts via nuget.</Description>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
         <PackAsTool>true</PackAsTool>

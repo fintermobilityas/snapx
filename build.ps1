@@ -282,8 +282,16 @@ function Invoke-Dotnet-Unit-Tests
 
     Push-Location $WorkingDir
 
+    $UnitTestsDir = Join-Path $WorkingDir src
+
     Resolve-Shell-Dependency $CommandDotnet
-    Invoke-Command-Colored $CommandDotnet @("test src --logger trx")
+    Invoke-Command-Colored $CommandDotnet @(
+        "test"
+        "$UnitTestsDir",  
+        "--logger trx", 
+        "--", # RunSettings
+        "RunConfiguration.TestSessionTimeout=40000"
+    )
 }
 
 switch ($Target) {

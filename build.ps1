@@ -26,15 +26,18 @@ $Stopwatch = [System.Diagnostics.Stopwatch]
 $env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 $CommandDocker = $null
+$CommandDotnet = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandDocker = "docker.exe"
+        $CommandDotnet = "dotnet.exe"
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandDocker = "docker"
+        $CommandDotnet = "dotnet"
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -260,6 +263,16 @@ function Build-Snapx
     }
 }
 
+function Invoke-Dotnet-Unit-Tests
+{
+    Write-Output-Header "Running dotnet tests"
+
+    Push-Location $WorkingDir
+
+    Resolve-Shell-Dependency $CommandDotnet
+    Invoke-Command-Colored $CommandDotnet @("test src --logger trx")
+}
+
 switch ($Target) {
     "Bootstrap-Docker"{
         if(1 -eq $env:SNAPX_DOCKER_BUILD) {
@@ -287,6 +300,11 @@ switch ($Target) {
             exit $LASTEXITCODE
         }        
 
+        Invoke-Dotnet-Unit-Tests
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }    
+        
         Build-Summary
         exit 0 
     }    
@@ -298,6 +316,7 @@ switch ($Target) {
 
         Build-Native-And-Run-Native-UnitTests
         Build-Snapx
+        Invoke-Dotnet-Unit-Tests
         Build-Summary
         exit 0 
     }

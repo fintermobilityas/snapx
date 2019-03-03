@@ -6,6 +6,7 @@ cmake/cmake-x-xx/
 cmake-build-debug/
 cmake-build-release/
 snapx_ci_install/
+TestResults/
 
 .vs/
 .snap

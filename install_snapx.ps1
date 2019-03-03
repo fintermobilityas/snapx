@@ -25,7 +25,7 @@ $ToolInstallDir = Join-Path $WorkingDir snapx_ci_install
 $NupkgsDir = Join-Path $WorkingDir nupkgs
 if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
 {
-    $NupkgsDir = BUILD_ARTIFACTSTAGINGDIRECTORY
+    $NupkgsDir = $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 
 # Commands

@@ -13,7 +13,7 @@ param(
     [string] $DotNetRid = $null,
     [Parameter(Position = 5, ValueFromPipeline = $true)]
     [Validateset(15, 16)]
-    [int] $VisualStudioVersion = 16
+    [int] $VisualStudioVersion = 15
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -34,7 +34,6 @@ $ArchCross = $null
 $CmakeGenerator = $null
 $CommandCmake = $null
 $CommandDotnet = $null
-$CommandMsBuild = $null
 $CommandMake = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
@@ -286,7 +285,6 @@ switch ($OSPlatform) {
         Resolve-Windows $OSPlatform 			
         Resolve-Shell-Dependency $CommandVsWhere				
         Use-Msvs-Toolchain -VisualStudioVersion $VisualStudioVersion
-        Resolve-Shell-Dependency $CommandMsBuild
     }
     "Unix" {
         Resolve-Unix $OSPlatform

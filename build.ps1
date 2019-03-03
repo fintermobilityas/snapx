@@ -9,7 +9,7 @@ param(
     [Parameter(Position = 3, ValueFromPipeline = $true)]
     [string] $CIBuildStr,
     [Parameter(Position = 4, ValueFromPipeline = $true)]
-    [string] $VisualStudioVersionStr = "16"
+    [string] $VisualStudioVersionStr = "15"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition

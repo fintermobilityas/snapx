@@ -39,7 +39,6 @@ $CommandSnapx = $null
 $CommandVsWhere = $null
 $CommandGTestsDefaultArguments = @(
     "--gtest_break_on_failure"
-    "--gtest_shuffle"
 )
 
 switch -regex ($OSVersion) {

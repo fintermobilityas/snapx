@@ -2,7 +2,7 @@ variables:
   buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 jobs:
-- job: Linux
+- job: Ubuntu_1604
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
@@ -12,8 +12,15 @@ jobs:
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
-      testRunTitle: Linux
+      testRunTitle: Dotnet_Ubuntu
       mergeTestResults: true
+  - task: PublishTestResults@2
+    displayName: Publish google test results
+    inputs:
+      testRunner: JUnit
+      testResultsFiles: '**/*.xml'
+      testRunTitle: GoogleTest_Ubuntu_1604
+      mergeTestResults: false
 - job: Windows_Visual_Studio_2017
   pool: 
     name: Youpark
@@ -21,12 +28,19 @@ jobs:
   steps:
   - script: powershell -f $(buildScript) -VisualStudioVersion "15"
   - task: PublishTestResults@2
-    displayName: Publish test results
+    displayName: Publish .NET test results
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
-      testRunTitle: Windows_Visual_Studio_2017
-      mergeTestResults: true
+      testRunTitle: Dotnet_Windows_Visual_Studio_2017
+      mergeTestResults: false
+  - task: PublishTestResults@2
+    displayName: Publish google test results
+    inputs:
+      testRunner: JUnit
+      testResultsFiles: '**/*.xml'
+      testRunTitle: GoogleTest_Windows_Visual_Studio_2017
+      mergeTestResults: false
   - task: NuGetCommand@2
     displayName: Publish nuget packages to snapx myget feed
     inputs:

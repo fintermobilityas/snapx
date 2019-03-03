@@ -166,6 +166,7 @@ function Invoke-Google-Tests
     {
         Push-Location $GTestsDirectory
         $GTestsExe = Join-Path $GTestsDirectory $GTestsExe
+        $GTestsArguments += "--gtest_output=""xml:./testsummary.xml"""        
         Invoke-Command-Colored $GTestsExe $GTestsArguments
     } finally {             
         Pop-Location 

@@ -13,7 +13,7 @@ jobs:
       testResultsFiles: '**/*.trx'
       testRunTitle: Linux
       mergeTestResults: true
-- job: Windows (Visual Studio 2019)
+- job: Windows_Visual_Studio_2019
   pool: 
     name: Youpark
     vmImage: 'win1803'

@@ -2,15 +2,26 @@ variables:
   buildScript: build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 jobs:
-- template: templates/jobs.yml
 - job: Linux
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
   - script: pwsh $(buildScript)
+  - task: PublishTestResults@2
+    inputs:
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+      testRunTitle: Linux
+      mergeTestResults: true
 - job: Windows
   pool: 
     name: Youpark
     vmImage: 'vs2017-win2016'
   steps:
   - script: powershell -f $(buildScript)
+  - task: PublishTestResults@2
+    inputs:
+      testRunner: VSTest
+      testResultsFiles: '**/*.trx'
+      testRunTitle: Windows
+      mergeTestResults: true

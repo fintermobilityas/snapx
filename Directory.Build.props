@@ -7,6 +7,21 @@
         <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
     </PropertyGroup>
 
+   <PropertyGroup>
+        <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
+        <OsPlatform Condition="'$(OsPlatform)' == '' AND !$([MSBuild]::IsOsPlatform('Windows'))">Unix</OsPlatform>
+        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
+        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
+        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
+        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
+        <IsCIBuild Condition="$(SNAPX_CI_BUILD.ToUpper()) == 'TRUE' OR $(SNAPX_CI_BUILD) == '1'">true</IsCIBuild>
+        <IsCIBuild Condition="$(IsCIBuild) == ''">false</IsCIBuild>
+        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
+        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+		<SnapCorePackageRelease Condition="$(SnapNupkg) AND $(TargetFramework) != ''">true</SnapCorePackageRelease>
+        <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
+    </PropertyGroup>
+
     <PropertyGroup>
         <Authors>Peter Rekdal Sunde</Authors>
         <Product>Snap</Product>
@@ -28,20 +43,6 @@
         <LangVersion>7.3</LangVersion>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
-        <OsPlatform Condition="'$(OsPlatform)' == '' AND !$([MSBuild]::IsOsPlatform('Windows'))">Unix</OsPlatform>
-        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
-        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
-        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
-        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
-        <IsCIBuild Condition="$(SNAPX_CI_BUILD.ToUpper()) == 'TRUE' OR $(SNAPX_CI_BUILD) == '1'">true</IsCIBuild>
-        <IsCIBuild Condition="$(IsCIBuild) == ''">false</IsCIBuild>
-        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
-        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
-		<SnapCorePackageRelease Condition="$(SnapNupkg) AND $(TargetFramework) != ''">true</SnapCorePackageRelease>
-        <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
-    </PropertyGroup>
 
     <PropertyGroup>
         <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>

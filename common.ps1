@@ -99,29 +99,6 @@ function Invoke-Command-Colored {
 
     Invoke-Expression $CommandStr
 }
-function Invoke-BatchFile {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$Path, 
-        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
-        [string]$Parameters
-    )
-
-    $tempFile = [IO.Path]::GetTempFileName()
-    $batFile = [IO.Path]::GetTempFileName() + ".cmd"
-
-    Set-Content -Path $batFile -Value "`"$Path`" $Parameters && set > `"$tempFile`"" | Out-Null
-
-    $batFile | Out-Null
-
-    Get-Content $tempFile | Foreach-Object {   
-        if ($_ -match "^(.*?)=(.*)$") { 
-            Set-Content "env:\$($matches[1])" $matches[2] | Out-Null
-        }	
-    }
-   
-    Remove-Item $tempFile | Out-Null
-}
 function Get-Msvs-Toolchain-Instance
 {
     param(
@@ -171,30 +148,6 @@ function Use-Msvs-Toolchain
             exit 1
         }
     }
-		
-    $VXXCommonTools = Join-Path $Instance.installationPath VC\Auxiliary\Build
-    if($VisualStudioVersion -ge 16)
-    {
-        $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\Current\Bin\msbuild.exe
-    } elseif($VisualStudioVersion -eq 15) {
-        $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
-    } else {
-        Write-Error "Unknown Visual Studio version: $VisualStudioVersion"
-        exit 1
-    }
-
-    if ($null -eq $VXXCommonTools -or (-not (Test-Path($VXXCommonTools)))) {
-        Write-Error "PlatformToolset $PlatformToolset is not installed."
-    }
-    
-    $script:VCVarsAll = Join-Path $VXXCommonTools vcvarsall.bat
-    if (-not (Test-Path $VCVarsAll)) {
-        Write-Error "Unable to find $VCVarsAll"
-    }
-        
-    Invoke-BatchFile $VXXCommonTools x64
-	
-    Write-Output "Successfully configured msvs"
 }
 
 # Build targets

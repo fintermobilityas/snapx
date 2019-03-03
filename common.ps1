@@ -173,7 +173,7 @@ function Use-Msvs-Toolchain
     }
 		
     $VXXCommonTools = Join-Path $Instance.installationPath VC\Auxiliary\Build
-    $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\$VisualStudioVersion.0\Bin\msbuild.exe
+    $script:CommandMsBuild = Join-Path $Instance.installationPath MSBuild\15.0\Bin\msbuild.exe
 
     if ($null -eq $VXXCommonTools -or (-not (Test-Path($VXXCommonTools)))) {
         Write-Error "PlatformToolset $PlatformToolset is not installed."

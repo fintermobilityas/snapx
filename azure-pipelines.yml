@@ -7,7 +7,11 @@ jobs:
     vmImage: 'ubuntu-16.04'
   steps:
   - script: pwsh $(buildScript)
-  - script: dotnet test src --logger trx
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: test
+      projects: '**/*Tests/*.csproj'
+      arguments: '--configuration $(buildConfiguration)'
   - task: PublishTestResults@2
     inputs:
       testRunner: VSTest
@@ -20,7 +24,11 @@ jobs:
     vmImage: 'vs2017-win2016'
   steps:
   - script: powershell -f $(buildScript)
-  - script: dotnet test src --logger trx
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: test
+      projects: '**/*Tests/*.csproj'
+      arguments: '--configuration $(buildConfiguration)'
   - task: PublishTestResults@2
     inputs:
       testRunner: VSTest

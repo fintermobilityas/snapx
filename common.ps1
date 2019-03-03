@@ -130,10 +130,8 @@ function Get-Msvs-Toolchain-Instance
         [int] $VisualStudioVersion
     )
 
-    $wswhere = $CommandVsWhere
-
     $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | ForEach-Object { 'Microsoft.VisualStudio.Product.' + $_ }
-    $Instance = & $wswhere -version $VisualStudioVersion -products $ids -requires 'Microsoft.Component.MSBuild' -format json `
+    $Instance = & $CommandVsWhere -version $VisualStudioVersion $PreRelease -products $ids -requires 'Microsoft.Component.MSBuild' -format json `
         | convertfrom-json `
         | select-object -first 1
 

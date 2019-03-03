@@ -13,18 +13,6 @@ jobs:
       testResultsFiles: '**/*.trx'
       testRunTitle: Linux
       mergeTestResults: true
-- job: Windows_Visual_Studio_2019
-  pool: 
-    name: Youpark
-    vmImage: 'win1803'
-  steps:
-  - script: powershell -f $(buildScript) -VisualStudioVersion "16"
-  - task: PublishTestResults@2
-    inputs:
-      testRunner: VSTest
-      testResultsFiles: '**/*.trx'
-      testRunTitle: Windows
-      mergeTestResults: true
 - job: Windows_Visual_Studio_2017
   pool: 
     name: Youpark
@@ -35,5 +23,5 @@ jobs:
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
-      testRunTitle: Windows
+      testRunTitle: Windows_Visual_Studio_2017
       mergeTestResults: true

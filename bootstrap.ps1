@@ -94,23 +94,25 @@ function Build-Native {
 
     $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
 
-    $ArchCmakeGenerator = $CmakeGenerator
-    
-    if($OSPlatform -eq "Windows" -and ($VisualStudioVersion -le 15))
+    $CmakeArchNewSyntaxPrefix = ""
+    $CmakeGenerator = $CmakeGenerator
+
+    if($OSPlatform -eq "Windows")
     {
-        $ArchCmakeGenerator += " Win64"
+        if($VisualStudioVersion -ge 16) {
+            $CmakeGenerator += " 2019"
+            $CmakeArchNewSyntaxPrefix = "-A x64"
+        } else {
+            $CmakeGenerator += " 2017 Win64"
+        }
     }
 
     $CmakeArguments = @(
-        "-G""$ArchCmakeGenerator"""
+        "-G""$CmakeGenerator"""
+        "$CmakeArchNewSyntaxPrefix"
         "-H""$SnapCoreRunSrcDir"""
         "-B""$SnapCoreRunBuildOutputDir"""
     )
-    
-    if($OSPlatform -eq "Windows" -and ($VisualStudioVersion -ge 16))
-    {
-        $CmakeArguments += "-A Win64"
-    }
     
     if ($Lto) {
         $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"

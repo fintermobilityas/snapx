@@ -1,7 +1,10 @@
+# File: azure-pipelines.yml
+
 variables:
   buildScript: build.ps1 -Target Bootstrap-Docker -DockerImagePrefix $(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
 
 jobs:
+- template: templates/jobs.yml
 - job: Linux
   pool:
     vmImage: 'ubuntu-16.04'

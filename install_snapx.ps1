@@ -19,7 +19,16 @@ $OSVersion = [Environment]::OSVersion
 
 $Properties = @()
 $Properties = $Properties -join " "
+
 $ToolInstallDir = Join-Path $WorkingDir snapx_ci_install
+
+$NupkgsDir = Join-Path $WorkingDir nupkgs
+if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
+{
+    $NupkgsDir = BUILD_ARTIFACTSTAGINGDIRECTORY
+}
+
+# Commands
 
 $CommandSnapx = $null
 $CommandDotnet = $null
@@ -59,10 +68,10 @@ Invoke-Command-Colored $CommandDotnet @("pack -c $Configuration src/Snapx --no-b
 
 $CommandSnapx = $CommandSnapx
 if($env:SNAPX_CI_BUILD -eq $true) {
-    Invoke-Command-Colored $CommandDotnet @("tool install --tool-path $ToolInstallDir --add-source ./nupkgs snapx")
+    Invoke-Command-Colored $CommandDotnet @("tool install --tool-path $ToolInstallDir --add-source $NupkgsDir snapx")
     $CommandSnapx = Join-Path $ToolInstallDir $CommandSnapx
 } else {
-    Invoke-Command-Colored $CommandDotnet @("tool install --global --add-source ./nupkgs snapx")
+    Invoke-Command-Colored $CommandDotnet @("tool install --global --add-source $NupkgsDir snapx")
 }
 
 # Prove that executable is working and able to start. 

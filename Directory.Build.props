@@ -35,7 +35,8 @@
         <RepositoryType>git</RepositoryType>
         <IsPackable>false</IsPackable>
         <NoPackageAnalysis>true</NoPackageAnalysis>
-        <PackageOutputPath>$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
+        <PackageOutputPath Condition="$(PackageOutputPath) == '' AND $(IsCIBuild)">$(BUILD_ARTIFACTSTAGINGDIRECTORY)</PackageOutputPath>
+        <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     </PropertyGroup>
 

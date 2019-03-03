@@ -1,6 +1,6 @@
 #include "main.hpp"
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 #include <shellapi.h>
 
 // ReSharper disable all

@@ -15,7 +15,7 @@
 #pragma warning( pop )
 #endif
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 #include <shlwapi.h> // PathIsDirectory, PathFileExists
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
@@ -23,7 +23,7 @@
 #include <wchar.h>
 #include <tlhelp32.h> // CreateToolhelp32Snapshot 
 #include "vendor/rcedit/rcedit.hpp"
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
 #include <sys/stat.h> // stat
 #include <sys/types.h> // O_RDONLY
 #include <sys/wait.h> // wait
@@ -42,9 +42,9 @@ static const char* symlink_entrypoint_executable = "/proc/self/exe";
 // - Generic
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     return ::IsDebuggerPresent() ? TRUE : FALSE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     // https://github.com/dotnet/coreclr/blob/4a6753dcacf44df6a8e91b91029e4b7a4f12d917/src/pal/src/init/pal.cpp#L821
     BOOL debugger_present = FALSE;
     char buf[2048];
@@ -94,7 +94,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string name_in_utf16_string(name_in);
 
     auto h_module = LoadLibraryEx(name_in_utf16_string.data(), nullptr, 0);
@@ -116,7 +116,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
 
     return TRUE;
 
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     PAL_UNUSED(pinning_required);
 
     auto instance = dlopen(name_in, RTLD_NOW | RTLD_LOCAL);
@@ -138,14 +138,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in)
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     auto free_library_result = FreeLibrary(static_cast<HMODULE>(instance_in));
     if (free_library_result == 0)
     {
         return TRUE;
     }
     return FALSE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     return 0 == dlclose(instance_in) ? TRUE : FALSE;
 #else
     return FALSE;
@@ -159,7 +159,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const 
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 
     auto h_module = static_cast<HMODULE>(instance_in);
     auto h_module_ptr_out = ::GetProcAddress(h_module, name_in);
@@ -170,7 +170,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const 
 
     *ptr_out = reinterpret_cast<void*>(h_module_ptr_out);
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     auto dlsym_ptr_out = dlsym(instance_in, name_in);
     if (dlerror() != nullptr)
     {
@@ -187,7 +187,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const 
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated() {
     BOOL is_elevated;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     // https://docs.microsoft.com/en-us/windows/desktop/api/securitybaseapi/nf-securitybaseapi-checktokenmembership
     SID_IDENTIFIER_AUTHORITY nt_authority = SECURITY_NT_AUTHORITY;
     PSID administrators_group;
@@ -206,7 +206,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated() {
         }
         FreeSid(administrators_group);
     }
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     auto uid = getuid();
     const auto euid = geteuid();
     is_elevated = uid < 0 || uid != euid ? TRUE : FALSE;
@@ -222,7 +222,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
     pal_utf16_string filename_in_utf16_string(filename_in);
     pal_utf16_string icon_filename_in_utf16_string(icon_filename_in);
     snap::rcedit::ResourceUpdater resourceUpdater;
@@ -268,7 +268,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_cwd(char **cwd_out)
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_out)
 {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     wchar_t buffer[PAL_MAX_PATH];
     if (0 == GetModuleFileName(nullptr, buffer, PAL_MAX_PATH))
     {
@@ -276,7 +276,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_o
     }
     *real_path_out = pal_utf8_string(buffer).dup();
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     char* real_path = nullptr;
     if (pal_fs_get_absolute_path(symlink_entrypoint_executable, &real_path))
     {
@@ -297,7 +297,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
     }
 
     BOOL process_exists = FALSE;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
 
     if(pss != INVALID_HANDLE_VALUE)
@@ -320,7 +320,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
         assert(0 != CloseHandle(pss));
     }
 
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     struct stat dontcare = { 0 };
     std::string proc_path("/proc/" + std::to_string(pid));
     if (stat(proc_path.c_str(), &dontcare) != -1)
@@ -339,7 +339,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
     }
 
     BOOL process_killed;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
     if (process != nullptr)
     {
@@ -347,7 +347,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
         assert(0 != CloseHandle(process));
     }
     return process_killed;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     auto result = kill(pid, SIGTERM);
     process_killed = result == 0;
     return process_killed;
@@ -359,10 +359,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
 {
     BOOL has_pid;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     has_pid = TRUE;
     *pid_out = GetCurrentProcessId();
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     has_pid = TRUE;
     *pid_out = getpid();
 #endif
@@ -401,7 +401,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     if(working_dir_in == nullptr)
     {
         return FALSE;
@@ -454,7 +454,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     *exit_code_out = exit_code;
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
 
     if (working_dir_in != nullptr
         && 0 != chdir(working_dir_in))
@@ -506,7 +506,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     auto cmd_line = std::string("\"");
     cmd_line += filename_in;
     cmd_line += "\" ";
@@ -545,7 +545,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     WaitForInputIdle(pi.hProcess, 5 * 1000);
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     PAL_UNUSED(cmd_show_in);
 
     if (working_dir_in != nullptr
@@ -592,10 +592,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds)
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     ::Sleep(milliseconds);
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     struct timespec ts = {0};
     ts.tv_sec = milliseconds / 1000;
     ts.tv_nsec = (milliseconds % 1000) * 1000000;
@@ -608,7 +608,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds)
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows()
 {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     return TRUE;
 #else
     return FALSE;
@@ -617,7 +617,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows()
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux()
 {
-#if PAL_PLATFORM_LINUX
+#if defined(PAL_PLATFORM_LINUX)
     return TRUE;
 #else
     return FALSE;
@@ -637,12 +637,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char*
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
     pal_utf16_string name_in_utf16_string(name_in);
     pal_utf16_string value_in_utf16_string(value_in == nullptr ? "" : value_in);
     const auto success = SetEnvironmentVariable(name_in_utf16_string.data(), value_in_utf16_string.empty() ? nullptr : value_in_utf16_string.data());
     return success != 0 ? TRUE : FALSE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     const auto success = value_in == nullptr ? unsetenv(name_in) : setenv(name_in, value_in, 1 /* overwrite */);
     return success == 0;
 #else
@@ -657,7 +657,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
     const int buffer_size = 65535;
     wchar_t buffer[buffer_size];
@@ -670,7 +670,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
     *environment_variable_value_out = pal_utf8_string(buffer + '\0').dup();
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     const auto value = ::getenv(environment_variable_in);
     if (value == nullptr)
     {
@@ -713,7 +713,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char * environment_
 
     std::string environment_in_str(environment_in);
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     static std::regex expression(R"(%([0-9A-Za-z\\/\(\)]*)%)", std::regex_constants::icase);
 #else
     static std::regex expression(R"(\$\{([^}]+)\})", std::regex_constants::icase);
@@ -755,10 +755,10 @@ BOOL pal_fs_chmod(const char *path_in, uint32_t mode) {
     }
 
     BOOL is_success;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string path_in_utf16_string(path_in);
     is_success = 0 == _wchmod(path_in_utf16_string.data(), mode) ? TRUE : FALSE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     is_success = 0 == chmod(path_in, mode) ? TRUE : FALSE;
 #endif
     return is_success;
@@ -770,7 +770,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(cons
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 
     pal_utf16_string path_in_utf16_string(path_in);
     wchar_t path_in_without_filespec[PAL_MAX_PATH];
@@ -818,7 +818,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char * path_
     return TRUE;
 }
 
-#if PAL_PLATFORM_LINUX
+#if defined(PAL_PLATFORM_LINUX)
 
 // https://github.com/qpalzmqaz123/path_combine/blob/master/path_combine.c
 
@@ -918,7 +918,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, cons
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 
     pal_utf16_string path_in_lhs_utf16_string(path1);
     pal_utf16_string path_in_rhs_utf16_string(path2);
@@ -932,7 +932,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, cons
     *path_out = pal_utf8_string(path_combined).dup();
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     char buffer[1024];
     if (nullptr == unix_path_combine(path1, path2, buffer))
     {
@@ -955,7 +955,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
     }
 
     BOOL file_exists;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string file_path_in_utf16_string(file_path_in);
     auto file_attributes = GetFileAttributes(file_path_in_utf16_string.data());
 
@@ -970,7 +970,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in
     }
 
     return file_exists;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     struct stat st = { 0 };
     file_exists = stat(file_path_in, &st) == 0 && (st.st_mode & S_IFDIR) == 0;
     return file_exists;
@@ -990,7 +990,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
     std::vector<char*> paths;
     BOOL paths_success;
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 
     const pal_utf16_string extension_filter_in_utf16_string(
         filter_extension_in != nullptr ? filter_extension_in : "*");
@@ -1059,7 +1059,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 
     paths_success = TRUE;
 
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     std::string filter_extension_s(filter_extension_in == nullptr ? std::string() : filter_extension_in);
 
     DIR* dir = opendir(path_in);
@@ -1190,8 +1190,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char * path_in, cons
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out)
 {
-#if PAL_PLATFORM_WINDOWS
-    #if PAL_PLATFORM_MINGW
+#if defined(PAL_PLATFORM_WINDOWS)
+    #if defined(PAL_PLATFORM_MINGW)
     wchar_t* buffer = nullptr;
     if ((buffer = _wgetcwd(nullptr, 0)) == nullptr)
     {
@@ -1219,7 +1219,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out
 
     return TRUE;
     #endif
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     char cwd[PAL_MAX_PATH];
     auto status = getcwd(cwd, sizeof(cwd));
     if (status != nullptr)
@@ -1240,7 +1240,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 
     pal_utf16_string path_in_utf16_string(path_in);
     pal_utf16_string path_absolute_out_utf16_string(PAL_MAX_PATH);
@@ -1254,7 +1254,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_i
     *path_absolute_out = pal_utf8_string(path_absolute_out_utf16_string.data()).dup();
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     char real_path[PAL_MAX_PATH];
     if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
     {
@@ -1281,7 +1281,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
     }
 
     BOOL directory_exists = FALSE;
-#if PAL_PLATFORM_WINDOWS    
+#if defined(PAL_PLATFORM_WINDOWS)    
 
     pal_utf16_string path_in_utf16_string(path_in);
 
@@ -1303,7 +1303,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
         directory_exists = TRUE;
     }
 
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     auto directory = opendir(path_in);
     if (directory)
     {
@@ -1321,7 +1321,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string path_in_utf16_string(filename_in);
 
     auto h_file = CreateFile(path_in_utf16_string.data(),
@@ -1342,7 +1342,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
     assert(0 != CloseHandle(h_file));
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     struct stat st = {0};
     if(stat(filename_in, &st) == 0)
     {
@@ -1362,7 +1362,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string path_in_utf16_string(filename_in);
 
     auto h_file = CreateFile(path_in_utf16_string.data(),
@@ -1415,7 +1415,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
     *bytes_read_out = read_offset;
 
     return TRUE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     auto fp = fopen(filename_in, "rb");
     if (fp == nullptr)
     {
@@ -1447,7 +1447,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint3
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string directory_in_utf16_string(directory_in);
     const auto status = _wmkdir(directory_in_utf16_string.data());
     return status == 0 ? TRUE : FALSE;
@@ -1463,11 +1463,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
     {
         return FALSE;
     }
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
     const auto success = DeleteFile(filename_in_utf16_string.data());
     return success != 0;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     const auto success = remove(filename_in);
     return success == 0 ? TRUE : FALSE;
 #else 
@@ -1482,14 +1482,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
         return FALSE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string directory_in_utf16_string(directory_in);
     if (!recursive)
     {
         const auto status = _wrmdir(directory_in_utf16_string.data());
         return status == 0 ? TRUE : FALSE;
     }
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     if(!recursive)
     {
         const auto status = rmdir(directory_in);
@@ -1548,7 +1548,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
     }
 
     BOOL fopen_success = FALSE;
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
     pal_utf16_string mode_in_utf16_string(mode_in);
     FILE* p_file = nullptr;
@@ -1558,7 +1558,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
         *file_handle_out = p_file;
         fopen_success = TRUE;
     }
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     FILE* h_file = fopen(filename_in, mode_in);
     if (h_file != nullptr)
     {
@@ -1579,7 +1579,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
     }
 
     BOOL fwrite_success = FALSE;
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_LINUX
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_LINUX)
     auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, pal_file_handle_in);
     if (bytes_written == data_len_in)
     {
@@ -1611,7 +1611,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_h
         return FALSE;
     }
     BOOL fclose_success;
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_LINUX
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_LINUX)
     fclose_success = fclose(pal_file_handle_in) == 0 ? TRUE : FALSE;
     if (fclose_success)
     {
@@ -1671,10 +1671,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* st
         return TRUE;
     }
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string value(str);
     return value.empty_or_whitespace() ? TRUE : FALSE;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
     std::string value(str);
     const auto empty_or_whitespace = value.empty() || value.find_first_not_of(' ') == value.npos;
     return empty_or_whitespace ? TRUE : FALSE;

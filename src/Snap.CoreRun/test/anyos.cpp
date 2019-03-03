@@ -66,7 +66,7 @@ namespace {
         }
 
         ~corerun_run_details() {
-#if PAL_PLATFORM_WINDOWS || PAL_PLATFORM_MINGW
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
             pal_fs_rmdir(this->install_dir.c_str(), TRUE);
 #else
             EXPECT_TRUE(pal_fs_rmdir(this->install_dir.c_str(), TRUE));

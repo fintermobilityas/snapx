@@ -54,7 +54,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     auto json_str = ss.str();
     auto data_len = json_str.size() + 1;
     auto data = new char[data_len];
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
     strcpy_s(data, data_len, json_str.c_str());
 #else
     strcpy(data, json_str.c_str());

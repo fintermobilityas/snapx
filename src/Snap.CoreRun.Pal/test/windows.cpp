@@ -51,7 +51,7 @@ namespace
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {
         auto process_working_dir = get_process_cwd();
-#if PAL_PLATFORM_WINDOWS && !defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
         EXPECT_STRNE(process_working_dir.c_str(), nullptr);
         EXPECT_GT(SetCurrentDirectory(process_working_dir.c_str()), 0);
 #endif

@@ -1,6 +1,6 @@
 #include "pal/pal_string.hpp"
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
 #include <shlwapi.h> // MultiByteToWideChar
 #include <strsafe.h> // StringCchLengthA
 #include <stdexcept>

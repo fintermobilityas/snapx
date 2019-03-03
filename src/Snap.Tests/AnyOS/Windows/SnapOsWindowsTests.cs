@@ -31,9 +31,13 @@ namespace Snap.Tests.AnyOS.Windows
             Assert.NotEmpty(_snapOs.SpecialFolders.ApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.LocalApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.DesktopDirectory);
-            #if !PLATFORM_WINDOWS || CI_BUILD
-            Assert.Empty(_snapOs.SpecialFolders.StartupDirectory);
-            Assert.Empty(_snapOs.SpecialFolders.StartMenu);
+            #if PLATFORM_UNIX || CI_BUILD
+                Assert.Empty(_snapOs.SpecialFolders.StartupDirectory);
+                #if !PLATFORM_WINDOWS
+                Assert.Empty(_snapOs.SpecialFolders.StartMenu);
+                #else
+                Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);
+                #endif
             #else
             Assert.NotEmpty(_snapOs.SpecialFolders.StartupDirectory);
             Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);

@@ -45,7 +45,7 @@ $CommandGTestsDefaultArguments = @(
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
-        $CmakeGenerator = "Visual Studio 15 Win64"
+        $CmakeGenerator = "Visual Studio $VisualStudioVersion Win64"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
         $CommandSnapx = "snapx.exe"

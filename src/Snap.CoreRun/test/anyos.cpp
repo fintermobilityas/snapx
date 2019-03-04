@@ -91,6 +91,8 @@ namespace {
         corerun_app_details app_details;
         int app_exit_code{};
         std::vector<std::string> app_arguments;
+        std::string run_working_dir;
+        std::string run_command;
 
         explicit stubexecutable_run_details(std::string install_dir) :
             corerun_run_details(std::move(install_dir)),
@@ -98,7 +100,9 @@ namespace {
             stub_exit_code(-1),
             app_details(corerun_app_details()),
             app_exit_code(-1),
-            app_arguments(std::vector<std::string>())
+            app_arguments(std::vector<std::string>()),
+            run_working_dir(std::string()),
+            run_command(std::string())
         {
 
         }
@@ -254,10 +258,9 @@ namespace {
 
             run_details->app_arguments = json_log_output["arguments"].get<std::vector<std::string>>();
             run_details->app_exit_code = json_log_output["exit_code"].get<int>();
-
-            const auto run_working_dir = json_log_output["working_dir"].get<std::string>();
-            const auto run_command = json_log_output["command"].get<std::string>();
-
+            run_details->run_working_dir = json_log_output["working_dir"].get<std::string>();
+            run_details->run_command = json_log_output["command"].get<std::string>(); 
+            
             auto expected_command = std::string();
             if(arguments.size() > 0)
             {
@@ -266,8 +269,8 @@ namespace {
 
             for (const auto &app : this->m_apps)
             {
-                if (expected_command == run_command 
-                    && app.working_dir == run_working_dir)
+                if (expected_command == run_details->run_command 
+                    && app.working_dir == run_details->run_working_dir)
                 {
                     run_details->app_details = app;
                     break;
@@ -351,9 +354,11 @@ namespace {
 
         ASSERT_EQ(run_details->stub_exit_code, 1);
         ASSERT_EQ(run_details->stub_arguments.size(), 0u);
-        ASSERT_EQ(run_details->app_exit_code, 0);
+        ASSERT_EQ(run_details->app_exit_code, -1);
         ASSERT_EQ(run_details->app_arguments.size(), 0);
         ASSERT_EQ(run_details->app_details.version_str, "");
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), "");
+        ASSERT_STREQ(run_details->run_command.c_str(), "");
     }
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidPrefix)
@@ -375,6 +380,8 @@ namespace {
         ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
         ASSERT_EQ(run_details->app_arguments.size(), 2u);
         ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), run_details->app_details.working_dir.c_str());
+        ASSERT_STREQ(run_details->run_command.c_str(), run_details->stub_arguments[0].c_str());
 
         const auto expected_arguments = std::vector<std::string>{
             run_details->app_details.exe_name_absolute_path,
@@ -406,6 +413,8 @@ namespace {
         ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
         ASSERT_EQ(run_details->app_arguments.size(), 2u);
         ASSERT_EQ(run_details->app_details.version_str, "4.0.0");
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), run_details->app_details.working_dir.c_str());
+        ASSERT_STREQ(run_details->run_command.c_str(), run_details->stub_arguments[0].c_str());
 
         const auto expected_arguments = std::vector<std::string>{
             run_details->app_details.exe_name_absolute_path,
@@ -434,6 +443,8 @@ namespace {
         ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
         ASSERT_EQ(run_details->app_arguments.size(), 2u);
         ASSERT_EQ(run_details->app_details.version_str, "1.0.0");
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), run_details->app_details.working_dir.c_str());
+        ASSERT_STREQ(run_details->run_command.c_str(), run_details->stub_arguments[0].c_str());
 
         const auto expected_arguments = std::vector<std::string>{
             run_details->app_details.exe_name_absolute_path,
@@ -463,6 +474,8 @@ namespace {
         ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
         ASSERT_EQ(run_details->app_arguments.size(), 2u);
         ASSERT_EQ(run_details->app_details.version_str, "2.0.0");
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), run_details->app_details.working_dir.c_str());
+        ASSERT_STREQ(run_details->run_command.c_str(), run_details->stub_arguments[0].c_str());
 
         const auto expected_arguments = std::vector<std::string>{
             run_details->app_details.exe_name_absolute_path,
@@ -509,6 +522,8 @@ namespace {
         ASSERT_EQ(run_details->app_exit_code, demoapp_default_exit_code);
         ASSERT_EQ(run_details->app_arguments.size(), 2u);
         ASSERT_EQ(run_details->app_details.version_str, expected_app_version);
+        ASSERT_STREQ(run_details->run_working_dir.c_str(), run_details->app_details.working_dir.c_str());
+        ASSERT_STREQ(run_details->run_command.c_str(), run_details->stub_arguments[0].c_str());
 
         const auto expected_arguments = std::vector<std::string>{
             run_details->app_details.exe_name_absolute_path,

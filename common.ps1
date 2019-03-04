@@ -171,19 +171,19 @@ function Use-Msvs-Toolchain
     if ($null -eq $Instance) {
         if($VisualStudioVersion -eq 16)
         {
-            Write-Error "Visual Studio 2019 was not found"
+            Write-Error "Visual Studio 2019 was not found on this computer"
             exit 1
         } elseif($VisualStudioVersion -eq 15)
         {
-            Write-Error "Visual Studio 2017 was not found"
+            Write-Error "Visual Studio 2017 was not found on this computer"
             exit 1
         }
     } else {
         if($VisualStudioVersion -eq 16)
         {
-            Write-Output "Found Visual Studio 2019"
+            Write-Output "Using Visual Studio 2019 msvs toolset"
         } elseif($VisualStudioVersion -eq 15) {
-            Write-Output "Found Visual Studio 2017"
+            Write-Output "Using Visual Studio 2017 msvs toolset"
         } else {
             Write-Error "Unknown Visual Studio version: $VisualStudioVersion"
             exit 1

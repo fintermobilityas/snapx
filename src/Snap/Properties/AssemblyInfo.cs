@@ -1,13 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#if !SNAP_NUPKG
 [assembly: InternalsVisibleTo("Snap.NetCoreApp.Tests")]
 [assembly: InternalsVisibleTo("Snap.Shared.Tests")]
 [assembly: InternalsVisibleTo("Snap.Tests")]
 [assembly: InternalsVisibleTo("Snapx.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // Moq
-#endif
 
 [assembly: InternalsVisibleTo("Snap.Installer")]
 [assembly: InternalsVisibleTo("Snapx")]

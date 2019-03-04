@@ -261,7 +261,7 @@ function Invoke-Build-Snapx
 {
     Write-Output-Header "Building snapx"
 
-    .\install_snapx.ps1 -Bootstrap $true
+    .\install_snapx.ps1 -Bootstrap $true -VisualStudioVersion $VisualStudioVersion
     if(0 -ne $LASTEXITCODE) {
         return
     }

@@ -3,7 +3,10 @@ param(
     $Bootstrap = $false,
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
-    $Configuration = "Release"
+    $Configuration = "Release",
+    [Parameter(Position = 2, ValueFromPipeline = $true)]
+    [Validateset(15, 16)]
+    [int] $VisualStudioVersion = 15
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -18,7 +21,6 @@ $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 
 $Properties = @()
-$Properties = $Properties -join " "
 
 $ToolInstallDir = Join-Path $WorkingDir tools\snapx
 
@@ -38,6 +40,8 @@ switch -regex ($OSVersion) {
         $OSPlatform = "Windows"
         $CommandSnapx = "snapx.exe"
         $CommandDotnet = "dotnet.exe"
+
+        $Properties += "/p:SnapMsvsToolsetVersion=${VisualStudioVersion}"
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -63,7 +67,7 @@ if($env:SNAPX_CI_BUILD -eq $true) {
 }
 
 Invoke-Command-Colored $CommandDotnet @("clean src/Snapx")
-Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f netcoreapp2.2 $Properties")
+Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f netcoreapp2.2 {0}" -f ($Properties -join " "))
 Invoke-Command-Colored $CommandDotnet @("pack -c $Configuration src/Snapx --no-build")
 
 $CommandSnapx = $CommandSnapx

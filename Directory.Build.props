@@ -20,6 +20,11 @@
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
 		<SnapCorePackageRelease Condition="$(SnapNupkg) AND $(TargetFramework) != ''">true</SnapCorePackageRelease>
         <SnapCorePackageRelease Condition="'$(SnapCorePackageRelease)' == ''">false</SnapCorePackageRelease>
+        <SnapNativeConfiguration Condition="$(IsCIBuild)">Release</SnapNativeConfiguration>
+        <SnapNativeConfiguration Condition="$(SnapNativeConfiguration) == ''">$(Configuration)</SnapNativeConfiguration>
+        <!-- TODO: FIX ME WHEN CMAKE BUG IS FIXED -->
+        <!-- <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> -->
+        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">15</SnapMsvsToolsetVersion> 
     </PropertyGroup>
 
     <PropertyGroup>

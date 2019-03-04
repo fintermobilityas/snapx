@@ -50,7 +50,7 @@ switch -regex ($OSVersion) {
         $CommandDotnet = "dotnet.exe"
         $CommandSnapx = "snapx.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
-        $Arch = "win-x64"
+        $Arch = "win-msvs-$($VisualStudioVersion)-x64"
         $ArchCross = "x86_64-win64-gcc"
 
         if($env:SNAPX_CI_BUILD -eq $true) {
@@ -173,6 +173,7 @@ function Invoke-Build-Snap {
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapNetSrcDir Snap.csproj))
         "/p:SnapNupkg=true",
+        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
     )
 }
@@ -232,6 +233,8 @@ function Invoke-Build-Snap-Installer {
         ("publish {0}" -f (Join-Path $SnapInstallerNetSrcDir Snap.Installer.csproj))
         "/p:ShowLinkerSizeComparison=true"
         "/p:CrossGenDuringPublish=$MonoLinkerCrossGenEnabled"
+        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
+        "/p:SnapNativeConfiguration=$Configuration"
         "--runtime $Rid"
         "--framework $TargetArchDotNet"
         "--self-contained true"
@@ -277,9 +280,9 @@ function INvoke-Native-Unit-Tests
             
             # MSVS
             if($env:SNAPX_CI_BUILD -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun\Debug)
             }
-            $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Release\Snap.CoreRun\Release)
+            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun\Release)
 
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
@@ -333,8 +336,9 @@ function Invoke-Dotnet-Unit-Tests
             "$Project",  
             "--logger trx", 
             "--verbosity=normal",
-            "--", # RunSettings
-            "RunConfiguration.TestSessionTimeout=40000" # Todo: REMOVE ME
+            "--configuration=$Configuration"
+            # "--", # RunSettings
+            # "RunConfiguration.TestSessionTimeout=60000"
         )    
     }
 
@@ -400,7 +404,7 @@ switch ($Target) {
         Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
-        
+        INvoke-Native-Unit-Tests   
     }
     "Run-Dotnet-UnitTests" {
         Invoke-Dotnet-Unit-Tests

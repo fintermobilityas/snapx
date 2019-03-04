@@ -4,17 +4,24 @@
             "name": "msvs-x64-Debug",
             "generator": "Ninja",
             "configurationType": "Debug",
-            "buildRoot": "c:\\CMakeBuilds\\snapx\\build\\${name}",
-            "installRoot": "c:\\CMakeBuilds\\snapx\\install\\${name}",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
             "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [],
             "intelliSenseMode": "windows-msvc-x64"
         },
         {
             "name": "msvs-x64-Release",
             "generator": "Ninja",
             "configurationType": "Release",
-            "buildRoot": "c:\\CMakeBuilds\\snapx\\build\\${name}",
-            "installRoot": "c:\\CMakeBuilds\\snapx\\install\\${name}",
+            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
             "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": [
                 {

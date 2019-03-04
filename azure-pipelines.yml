@@ -1,5 +1,5 @@
 variables:
-  buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuildStr "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+  buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuild "$true"
 
 jobs:
 - job: Ubuntu_1604

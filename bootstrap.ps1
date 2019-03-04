@@ -54,7 +54,7 @@ switch -regex ($OSVersion) {
         $ArchCross = "x86_64-win64-gcc"
 
         if($env:SNAPX_CI_BUILD -eq $true) {
-            $CommandSnapx = Join-Path $WorkingDir snapx_ci_install\snapx.exe
+            $CommandSnapx = Join-Path $ToolsDir snapx\snapx.exe
         }
     }
     "^Unix" {
@@ -68,7 +68,7 @@ switch -regex ($OSVersion) {
         $ArchCross = "x86_64-w64-mingw32-gcc"    
 
         if($env:SNAPX_CI_BUILD -eq $true) {
-            $CommandSnapx = Join-Path $WorkingDir snapx_ci_install\snapx
+            $CommandSnapx = Join-Path $ToolsDir snapx\snapx
         }
     }	
     default {
@@ -261,6 +261,56 @@ function Invoke-Build-Snap-Installer {
         -DestinationPath $SnapInstallerExeZipAbsolutePath
 }
 
+function INvoke-Native-Unit-Tests
+{
+    switch($OSPlatform)
+    {
+        "Windows" {          
+
+            $Projects = @() 
+
+            # MINGW
+            if($env:SNAPX_CI_BUILD -eq $false) {
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
+            }
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
+            
+            # MSVS
+            if($env:SNAPX_CI_BUILD -eq $false) {
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
+            }
+            $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Release\Snap.CoreRun\Release)
+
+            $TestRunnerCount = $Projects.Length
+            Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
+
+            foreach ($GoogleTestsDir in $Projects) {
+                Invoke-Google-Tests $GoogleTestsDir Snap.Tests.exe $CommandGTestsDefaultArguments
+            }                
+        }
+        "Unix" {                
+            $Projects = @()
+
+            # GCC
+            if($env:SNAPX_CI_BUILD -eq $false) {
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
+            }            
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
+            
+            $TestRunnerCount = $Projects.Length
+            Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
+
+            foreach ($GoogleTestsDir in $Projects) {
+                Invoke-Google-Tests $GoogleTestsDir Snap.Tests $CommandGTestsDefaultArguments
+            }                
+
+        }
+        default {
+            Write-Error "Unsupported os platform: $OSPlatform"
+        }
+    }
+}
+
 function Invoke-Dotnet-Unit-Tests
 {
     Push-Location $WorkingDir
@@ -350,42 +400,7 @@ switch ($Target) {
         Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
-        switch($OSPlatform)
-        {
-            "Windows" {          
-
-                $Projects = @() 
-
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Debug\Snap.CoreRun\Debug)
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-x64\Release\Snap.CoreRun\Release)
-
-                $TestRunnerCount = $Projects.Length
-                Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
-
-                foreach ($GoogleTestsDir in $Projects) {
-                    Invoke-Google-Tests $GoogleTestsDir Snap.Tests.exe $CommandGTestsDefaultArguments
-                }                
-            }
-            "Unix" {                
-                $Projects = @()
-
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
-                
-                $TestRunnerCount = $Projects.Length
-                Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
-
-                foreach ($GoogleTestsDir in $Projects) {
-                    Invoke-Google-Tests $GoogleTestsDir Snap.Tests $CommandGTestsDefaultArguments
-                }                
-
-            }
-            default {
-                Write-Error "Unsupported os platform: $OSPlatform"
-            }
-        }
+        
     }
     "Run-Dotnet-UnitTests" {
         Invoke-Dotnet-Unit-Tests

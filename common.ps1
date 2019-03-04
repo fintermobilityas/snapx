@@ -114,6 +114,47 @@ function Get-Msvs-Toolchain-Instance
 
     return $Instance
 }
+
+function Get-Is-String-True
+{
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        $Value
+    )
+
+    if($Value -ieq "true" -or ($Value -ieq "$true"))
+    {
+        return $true
+    }
+
+    if($Value -eq "1")
+    {
+        return $true
+    }
+
+    return $false
+}
+
+function Get-Is-String-False
+{
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        $Value
+    )
+
+    if($Value -ieq "false" -or ($Value -ieq "$false"))
+    {
+        return $true
+    }
+
+    if($Value -eq "0")
+    {
+        return $true
+    }
+
+    return $false
+}
+
 function Use-Msvs-Toolchain 
 {
     param(

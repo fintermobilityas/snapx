@@ -7,7 +7,7 @@ param(
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [bool] $DockerImageNoCache,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [string] $CIBuildStr,
+    [string] $CIBuild,
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $VisualStudioVersionStr = "15"
 )
@@ -22,10 +22,10 @@ $ConfirmPreference = "None";
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
-$SummaryStopwatch = [System.Diagnostics.Stopwatch]
+$Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
-$env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
+$env:SNAPX_CI_BUILD = Get-Is-String-True $CIBuild
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 [int] $VisualStudioVersion = 0
@@ -75,16 +75,19 @@ if($false -eq (Test-Path 'env:SNAPX_DOCKER_BUILD'))
 
 # Actions
 
-$SummaryStopwatch = $SummaryStopwatch::StartNew()
+$SummaryStopwatch = $Stopwatch::StartNew()
+$SummaryStopwatch.Restart()
 
 function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
             
-        .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion
-        if($LASTEXITCODE -ne 0)
-        {
-            Write-Error "Native build failed"
-            exit $LASTEXITCODE
+        if($env:SNAPX_CI_BUILD -ne $false) {
+            .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion
+            if($LASTEXITCODE -ne 0)
+            {
+                Write-Error "Native build failed"
+                exit $LASTEXITCODE
+            }
         }
 
         .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -VisualStudioVersion $VisualStudioVersion
@@ -99,18 +102,20 @@ function Invoke-Build-Native {
     
     if ($OSPlatform -eq "Unix") {
 
-        .\bootstrap.ps1 -Target Native -Configuration Debug 
-        if($LASTEXITCODE -ne 0)
-        {
-            Write-Error "Native build failed"
-            exit $LASTEXITCODE
-        }
+        if($env:SNAPX_CI_BUILD -eq $false) {
+            .\bootstrap.ps1 -Target Native -Configuration Debug 
+            if($LASTEXITCODE -ne 0)
+            {
+                Write-Error "Native build failed"
+                exit $LASTEXITCODE
+            }
 
-        .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1
-        if($LASTEXITCODE -ne 0)
-        {
-            Write-Error "Native build failed"
-            exit $LASTEXITCODE
+            .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1
+            if($LASTEXITCODE -ne 0)
+            {
+                Write-Error "Native build failed"
+                exit $LASTEXITCODE
+            }
         }
 
         .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 
@@ -144,7 +149,7 @@ function Invoke-Build-Snap {
 
 function Invoke-Summary {
     $SummaryStopwatch.Stop()		
-    $Elapsed = $BuildTime.Elapsed
+    $Elapsed = $SummaryStopwatch.Elapsed
     Write-Output-Header "Operation completed in: $Elapsed ($OSVersion)"
 }
 
@@ -216,6 +221,7 @@ function Invoke-Docker
         "-e ""SNAPX_DOCKER_WORKING_DIR=${env:SNAPX_DOCKER_WORKING_DIR}"""               
         "-e ""SNAPX_DOCKER_ENTRYPOINT=$Entrypoint"""               
         "-e ""SNAPX_DOCKER_HOST_OS=$OSPlatform"""               
+        "-e ""SNAPX_DOCKER_CI_BUILD=${env:SNAPX_CI_BUILD}"""               
         "-e ""SNAPX_DOCKER_VISUAL_STUDIO_VERSION=$VisualStudioVersion"""               
         "-v ${WorkingDir}:${env:SNAPX_DOCKER_WORKING_DIR}"
         "$DockerContainerName"

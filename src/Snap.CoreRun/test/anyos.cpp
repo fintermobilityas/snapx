@@ -10,7 +10,8 @@
 
 using json = nlohmann::json;
 
-const int demoapp_default_exit_code = 127;
+const int demoapp_default_exit_code = 0;
+
 const uint32_t default_permissions = 0777;
 static auto rng = std::default_random_engine{};
 

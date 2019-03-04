@@ -1,5 +1,5 @@
-const int unit_test_success_exit_code = 127;
-const int unit_test_error_exit_code = 128;
+const int unit_test_success_exit_code = 0;
+const int unit_test_error_exit_code = 1;
 
 #include <iostream>
 #include <vector>

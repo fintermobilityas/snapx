@@ -292,9 +292,9 @@ switch ($Target) {
         if($OSPlatform -eq "Windows")
         {
             Invoke-Build-Native 
+            Invoke-Native-UnitTests
         }
 
-        Invoke-Native-UnitTests    
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
         }        
@@ -314,6 +314,7 @@ switch ($Target) {
     }    
     "Native" {
         Invoke-Build-Native
+        Invoke-Native-UnitTests
         Invoke-Summary
     }
     "Snap" {

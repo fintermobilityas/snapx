@@ -2,10 +2,6 @@
 
 project(corerun CXX)
 
-list(APPEND corerun_INCLUDE_DIRS
-   vendor
-)
-
 set(corerun_SOURCES
    src/corerun.hpp
    src/stubexecutable.cpp
@@ -13,8 +9,8 @@ set(corerun_SOURCES
    src/vendor/semver/semver200_parser.cpp
 )
 
-include_directories(
-   ${corerun_INCLUDE_DIRS}
+include_directories(SYSTEM
+   vendor
 )
 
 add_executable(corerun 
@@ -30,7 +26,7 @@ add_library(corerun_static
 	${corerun_SOURCES}
 )
 
-target_include_directories(corerun_demoapp PUBLIC
+target_include_directories(corerun_demoapp SYSTEM PUBLIC
 	../Vendor/json/include
 )
 
@@ -38,8 +34,11 @@ target_link_libraries(corerun_demoapp PUBLIC
 	pal_static
 )
 
-target_include_directories(corerun_static PUBLIC 
+target_include_directories(corerun_static SYSTEM PUBLIC 
     vendor
+)
+
+target_include_directories(corerun_static PUBLIC 
     src
 )
 

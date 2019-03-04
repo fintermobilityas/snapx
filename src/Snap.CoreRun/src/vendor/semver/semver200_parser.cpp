@@ -40,7 +40,7 @@ namespace version {
 			major, minor, patch, prerelease, build
 		};
 
-		using Validator = function<void(const string&, const char)>;
+		using Validator = function<void(const string&, char)>;
 		using State_transition_hook = function<void(string&)>;
 		/// State transition is described by a character that triggers it, a state to transition to and
 		/// optional hook to be invoked on transition.

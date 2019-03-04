@@ -45,19 +45,18 @@ namespace version {
 		}
 
 		// Compare alphanumeric prerelease identifiers.
-		inline int cmp_alnum_prerel_ids(const string& l, const string& r) {
-			auto cmp = l.compare(r);
+        int cmp_alnum_prerel_ids(const string& l, const string& r) {
+            const auto cmp = l.compare(r);
 			if (cmp == 0) {
 				return cmp;
-			} else {
-				return cmp > 0 ? 1 : -1;
 			}
-		}
+            return cmp > 0 ? 1 : -1;
+        }
 
 		// Compare numeric prerelease identifiers.
-		inline int cmp_num_prerel_ids(const string& l, const string& r) {
-			long long li = stoll(l);
-			long long ri = stoll(r);
+        int cmp_num_prerel_ids(const string& l, const string& r) {
+            const auto li = stoll(l);
+            const auto ri = stoll(r);
 			if (li == ri) return 0;
 			return li > ri ? 1 : -1;
 		}

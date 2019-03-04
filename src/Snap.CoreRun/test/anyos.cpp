@@ -38,16 +38,24 @@ namespace {
         std::string exe_name_absolute_path;
         std::string exe_name_relative_path;
 
-        corerun_app_details() = default;
+        corerun_app_details() : 
+            working_dir(std::string()),
+            version_str(std::string()),
+            version(version::Semver200_version()),
+            exe_name_absolute_path(std::string()),
+            exe_name_relative_path(std::string())
+        {
+            
+        }
 
         corerun_app_details(std::string working_dir, std::string exe_name_absolute_path,
             std::string exe_name_relative_path,
-            const std::string& version, bool version_invalid) :
+            const std::string& version, bool version_invalid) : 
             working_dir(std::move(working_dir)),
-            exe_name_absolute_path(std::move(exe_name_absolute_path)),
-            exe_name_relative_path(std::move(exe_name_relative_path)),
             version_str(version),
-            version(version::Semver200_version(version_invalid ? "0.0.0" : version))
+            version(version::Semver200_version(version_invalid ? "0.0.0" : version)),
+            exe_name_absolute_path(std::move(exe_name_absolute_path)),
+            exe_name_relative_path(std::move(exe_name_relative_path))
         {
 
         }
@@ -83,7 +91,13 @@ namespace {
         int app_exit_code{};
         std::vector<std::string> app_arguments;
 
-        explicit stubexecutable_run_details(std::string install_dir) : corerun_run_details(std::move(install_dir))
+        explicit stubexecutable_run_details(std::string install_dir) :
+            corerun_run_details(std::move(install_dir)),
+            stub_arguments(std::vector<std::string>()),
+            stub_exit_code(-1),
+            app_details(corerun_app_details()),
+            app_exit_code(-1),
+            app_arguments(std::vector<std::string>())
         {
 
         }
@@ -104,6 +118,22 @@ namespace {
         std::string install_dir_corerun_exe;
         std::string os_file_ext;
 
+    private:
+        snapx(const std::string& app_name, const std::string& working_dir, const std::string& os_file_ext) :
+            m_unique_id(xg::newGuid()),
+            m_apps(std::vector<corerun_app_details>()),
+            app_name(app_name),
+            working_dir(working_dir),
+            working_dir_demoapp_exe(path_combine(working_dir, "corerun_demoapp" + os_file_ext)),
+            working_dir_corerun_exe(path_combine(working_dir, "corerun" + os_file_ext)),
+            install_dir(path_combine(working_dir, m_unique_id)),
+            install_dir_corerun_exe(path_combine(install_dir, app_name + os_file_ext)),
+            os_file_ext(os_file_ext)
+        {
+            init();
+        }
+
+    public:
         snapx() = delete;
 
         snapx(const std::string& app_name, const std::string& working_dir) :
@@ -168,10 +198,10 @@ namespace {
 
         std::unique_ptr<stubexecutable_run_details> run_stubexecutable_with_args(const std::vector<std::string>& arguments)
         {
-            const auto argc = static_cast<int>(arguments.size());
+            const auto argc = arguments.size();
             const auto argv = new char*[argc] {};
 
-            for (auto i = 0; i < argc; i++)
+            for (auto i = 0u; i < argc; i++)
             {
                 argv[i] = _strdup(arguments[i].c_str());
             }
@@ -189,7 +219,7 @@ namespace {
             }
 
             int stub_executable_exit_code = 0;
-            if (!pal_process_exec(this->install_dir_corerun_exe.c_str(), this->install_dir.c_str(), argc, argv,
+            if (!pal_process_exec(this->install_dir_corerun_exe.c_str(), this->install_dir.c_str(), static_cast<int>(argc), argv,
                 &stub_executable_exit_code))
             {
                 throw std::runtime_error("Failed to start stub executable: " + this->install_dir_corerun_exe + ". Install dir: " + this->install_dir);
@@ -244,20 +274,6 @@ namespace {
             }
 
             return run_details;
-        }
-
-    private:
-        snapx(const std::string& app_name, const std::string& working_dir, const std::string& os_file_ext) :
-            m_unique_id(xg::newGuid()),
-            app_name(app_name),
-            working_dir(working_dir),
-            working_dir_corerun_exe(path_combine(working_dir, "corerun" + os_file_ext)),
-            working_dir_demoapp_exe(path_combine(working_dir, "corerun_demoapp" + os_file_ext)),
-            install_dir(path_combine(working_dir, m_unique_id)),
-            install_dir_corerun_exe(path_combine(install_dir, app_name + os_file_ext)),
-            os_file_ext(os_file_ext)
-        {
-            init();
         }
 
     private:
@@ -334,7 +350,7 @@ namespace {
 
         ASSERT_EQ(run_details->stub_exit_code, 1);
         ASSERT_EQ(run_details->stub_arguments.size(), 0u);
-        ASSERT_EQ(run_details->app_exit_code, 0);
+        ASSERT_EQ(run_details->app_exit_code, -1);
         ASSERT_EQ(run_details->app_arguments.size(), 0);
         ASSERT_EQ(run_details->app_details.version_str, "");
     }
@@ -364,7 +380,7 @@ namespace {
             run_details->stub_arguments[0]
         };
 
-        for (auto i = 0; i < expected_arguments.size(); i++)
+        for (auto i = 0u; i < expected_arguments.size(); i++)
         {
             ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
         }
@@ -395,7 +411,7 @@ namespace {
             run_details->stub_arguments[0]
         };
 
-        for (auto i = 0; i < expected_arguments.size(); i++)
+        for (auto i = 0u; i < expected_arguments.size(); i++)
         {
             ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
         }
@@ -423,7 +439,7 @@ namespace {
             run_details->stub_arguments[0]
         };
 
-        for (auto i = 0; i < expected_arguments.size(); i++)
+        for (auto i = 0u; i < expected_arguments.size(); i++)
         {
             ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
         }
@@ -452,7 +468,7 @@ namespace {
             run_details->stub_arguments[0]
         };
 
-        for (auto i = 0; i < expected_arguments.size(); i++)
+        for (auto i = 0u; i < expected_arguments.size(); i++)
         {
             ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
         }
@@ -498,7 +514,7 @@ namespace {
             run_details->stub_arguments[0]
         };
 
-        for (auto i = 0; i < expected_arguments.size(); i++)
+        for (auto i = 0u; i < expected_arguments.size(); i++)
         {
             ASSERT_EQ(expected_arguments[i], run_details->app_arguments[i]);
         }

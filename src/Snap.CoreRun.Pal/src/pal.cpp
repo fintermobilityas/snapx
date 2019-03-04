@@ -1001,7 +1001,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
         path_root_utf16_string.append(PAL_DIRECTORY_SEPARATOR_WIDE_STR);
     }
 
-    path_root_utf16_string.append(extension_filter_in_utf16_string.str());
+    path_root_utf16_string.append(extension_filter_in_utf16_string);
 
     WIN32_FIND_DATA file;
     const auto h_file = FindFirstFile(path_root_utf16_string.data(), &file);

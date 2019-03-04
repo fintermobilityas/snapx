@@ -111,7 +111,7 @@ namespace
         EXPECT_TRUE(pal_process_get_pid(&pid));
         EXPECT_TRUE(pal_process_is_running(pid));
 
-        auto next_pid = 1000;
+        pal_pid_t next_pid = 1000;
         auto process_is_running = TRUE;
 
         while(process_is_running)
@@ -423,7 +423,7 @@ namespace
         EXPECT_NE(bytes, nullptr);
         EXPECT_GT(bytes_len, 0);
 
-        for (auto i = 0; i < bytes_len; i++)
+        for (auto i = 0u; i < bytes_len; i++)
         {
             EXPECT_NE(&bytes[i], nullptr);
         }
@@ -490,7 +490,7 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto empty_dir = mkdir_random(working_dir);
+        const auto empty_dir = mkdir_random(working_dir);
         EXPECT_TRUE(pal_fs_directory_exists(empty_dir));
         EXPECT_TRUE(pal_fs_rmdir(empty_dir, FALSE));
         EXPECT_FALSE(pal_fs_directory_exists(empty_dir));
@@ -501,7 +501,7 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto directory = mkdir_random(working_dir);
+        const auto directory = mkdir_random(working_dir);
         mkfile_random(directory, build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(directory));
@@ -514,7 +514,7 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto directory = mkdir_random(working_dir);
+        const auto directory = mkdir_random(working_dir);
         mkfile_random(directory, build_random_filename().c_str());
         mkfile_random(directory, build_random_filename().c_str());
 
@@ -528,8 +528,8 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto parent_dir = mkdir_random(working_dir);
-        auto sub_dir = mkdir(parent_dir, "subdirectory");
+        const auto parent_dir = mkdir_random(working_dir);
+        const auto sub_dir = mkdir(parent_dir, "subdirectory");
 
         EXPECT_TRUE(pal_fs_directory_exists(parent_dir));
         EXPECT_TRUE(pal_fs_directory_exists(sub_dir));
@@ -542,14 +542,14 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto parent_dir = mkdir_random(working_dir);
+        const auto parent_dir = mkdir_random(working_dir);
         mkfile_random(parent_dir, build_random_filename().c_str());
 
         const auto sub_dir_name = "subdirectory";
-        auto sub_dir1 = mkdir(parent_dir, sub_dir_name);
+        const auto sub_dir1 = mkdir(parent_dir, sub_dir_name);
         mkfile_random(sub_dir1, build_random_filename().c_str());
 
-        auto sub_dir2 = mkdir(sub_dir1, sub_dir_name);
+        const auto sub_dir2 = mkdir(sub_dir1, sub_dir_name);
         mkfile_random(sub_dir2, build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(parent_dir));

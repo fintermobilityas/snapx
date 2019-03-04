@@ -29,7 +29,7 @@ SOFTWARE.
 
 namespace version {
 
-	namespace {
+	namespace utility {
 
 		/// Utility function to splice all vector elements to output stream, using designated separator 
 		/// between elements and function object for getting values from vector elements.
@@ -76,21 +76,21 @@ namespace version {
 	}
 
 	template<typename Parser, typename Comparator>
-	const std::string Basic_version<Parser, Comparator>::get_prerelease() const {
+    std::string Basic_version<Parser, Comparator>::get_prerelease() const {
 		std::stringstream ss;
 		splice(ss, ver_.prerelease_ids, ".", [](const auto& id) { return id.first;});
 		return ss.str();
 	}
 
 	template<typename Parser, typename Comparator>
-	const std::string Basic_version<Parser, Comparator>::get_build() const {
+    std::string Basic_version<Parser, Comparator>::get_build() const {
 		std::stringstream ss;
 		splice(ss, ver_.build_ids, ".", [](const auto& id) { return id;});
 		return ss.str();
 	}
 
 	template<typename Parser, typename Comparator>
-	inline const bool Basic_version<Parser, Comparator>::empty() const
+    bool Basic_version<Parser, Comparator>::empty() const
 	{
 		return ver_.major == 0 && ver_.minor == 0 && ver_.patch == 0;
 	}

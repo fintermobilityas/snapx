@@ -1,3 +1,5 @@
+#pragma once
+
 #include "corerun.hpp"
 #include "stubexecutable.hpp"
 
@@ -7,13 +9,8 @@
 
 #include <iostream>
 
-inline void main_wait_for_pid(pal_pid_t pid)
+inline void main_wait_for_pid(const pal_pid_t pid)
 {
-    if (pid < 0)
-    {
-        return;
-    }
-
     pal_pid_t this_pid;
     if (!pal_process_get_pid(&this_pid) || this_pid == pid)
     {
@@ -38,7 +35,7 @@ inline void snapx_maybe_wait_for_debugger()
     std::cout << "Debugger attached." << std::endl;
 }
 
-int corerun_main_impl(int argc, char **argv, const int cmd_show_windows)
+inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_windows)
 {
     if (pal_is_elevated())
     {
@@ -64,7 +61,7 @@ int corerun_main_impl(int argc, char **argv, const int cmd_show_windows)
             const auto wait_pid_pos = value.find_last_of(command_wait_pid_str);
             const auto pid_fragment = value.substr(wait_pid_pos + 1);
 
-            const auto wait_for_this_pid = std::stoi(pid_fragment);
+            const pal_pid_t wait_for_this_pid = std::stoul(pid_fragment);
             if (wait_for_this_pid <= 0)
             {
                 continue;

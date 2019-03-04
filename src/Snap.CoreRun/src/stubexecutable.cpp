@@ -17,29 +17,31 @@ inline std::string join(const std::vector<std::string>& strings, const char* del
 
 int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
 {
-    const auto argc = static_cast<int>(arguments.size());
-    const auto argv = new char*[argc];
     int exit_code = 1;
     std::string executable_full_path;
-    std::string app_name_str;
     std::string app_dir_str;
 
     char* app_name = nullptr;
     if (!pal_process_get_name(&app_name))
     {
         std::cerr << "Error: Unable to find own executable name" << std::endl;
-        goto done;
+        return exit_code;
     }
+
+    const auto app_name_str = std::string(app_name);
+    delete app_name;
 
     app_dir_str = find_current_app_dir();
     if (app_dir_str.empty())
     {
         std::cerr << "Error: Unable to find current app dir" << std::endl;
-        goto done;
+        return exit_code;
     }
 
-    app_name_str = std::string(app_name);
     executable_full_path = app_dir_str + PAL_DIRECTORY_SEPARATOR_C + app_name_str;
+
+    const auto argc = static_cast<int>(arguments.size());
+    const auto argv = new char* [argc];
 
     for (auto i = 0; i < argc; i++)
     {
@@ -53,12 +55,6 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         exit_code = 0;
     }
 
-done:
-    if (app_name != nullptr)
-    {
-        delete app_name;
-    }
-    delete[] argv;
     return exit_code;
 }
 

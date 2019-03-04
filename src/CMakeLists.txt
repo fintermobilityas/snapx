@@ -11,6 +11,9 @@ endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 
+set(GNU_CXX_WARNING_FLAGS "-Wall -Weffc++ -Wextra -Wsign-conversion")
+set(MSVS_CXX_WARNING_FLAGS "/W4")
+
 option(BUILD_ENABLE_LTO "Enable lto support" OFF)
 option(BUILD_ENABLE_TESTS "Build with tests enabled" ON)
 
@@ -35,6 +38,8 @@ if (BUILD_ENABLE_TESTS)
     Snap.CoreRun.Pal/test/anyos.cpp
   	Snap.CoreRun/test/anyos.cpp
   )
+
+  set_source_files_properties(Vendor/crossguid/Guid.cpp PROPERTIES COMPILE_FLAGS -w)
 
   if(WIN32)
     list(APPEND tests_SOURCES
@@ -86,9 +91,11 @@ if (BUILD_ENABLE_TESTS)
 endif()
 
 if(WIN32)
-	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-		set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG} /MP -DDEBUG -D_DEBUG")
-		set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /MP -DNDEBUG")
+  set(GNU_CXX_LTO_FLAGS_RELEASE "-s -flto -fwhole-program -ffunction-sections -fdata-sections -Wl,--gc-sections -ffast-math")
+
+  if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+		set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG} /MP -DDEBUG -D_DEBUG ${MSVS_CXX_WARNING_FLAGS}")
+		set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /MP -DNDEBUG ${MSVS_CXX_WARNING_FLAGS}")
 
 		if(BUILD_ENABLE_LTO)
 		    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O1 /GL")
@@ -96,16 +103,19 @@ if(WIN32)
 		endif()	
 
 	elseif (CMAKE_COMPILER_IS_GNUCXX)
-		set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")	
-		set(CMAKE_CXX_FLAGS_RELEASE "-O -DNDEBUG")	
+		set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${GNU_CXX_WARNING_FLAGS}")	
+		set(CMAKE_CXX_FLAGS_RELEASE "-O -DNDEBUG ${GNU_CXX_WARNING_FLAGS}")	
 		if(BUILD_ENABLE_LTO)
-			set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -s -flto -fwhole-program -ffunction-sections -fdata-sections -Wl,--gc-sections -ffast-math")			
+			set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${GNU_CXX_LTO_FLAGS_RELEASE}")			
 		endif()
 	endif()
 elseif(UNIX)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O -DNDEBUG")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG ${GNU_CXX_WARNING_FLAGS}")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O -DNDEBUG ${GNU_CXX_WARNING_FLAGS}")
+		if(BUILD_ENABLE_LTO)
+			set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} ${GNU_CXX_LTO_FLAGS_RELEASE}")			
+		endif()
 	endif()
 endif()
 

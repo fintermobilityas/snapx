@@ -21,226 +21,159 @@ char* pal_str_narrow(const wchar_t* utf16_str);
 #define _wcsdup wcsdup
 #endif
 
-template<class TStringClass, class TStorageClass, class TStdString>
+template<class TStorageClass, class TStdString>
 class pal_string
 {
-    virtual TStorageClass data() = 0;
-    virtual TStorageClass dup() = 0;
-    virtual TStorageClass slice(size_t start_pos) = 0;
-    virtual TStdString str() const = 0;
-    virtual TStdString& append(const TStdString& string) = 0;
-    virtual bool ends_with(const TStdString& string) = 0;
-    virtual bool equals(const TStdString& string) = 0;
-    virtual bool empty() = 0;
-    virtual bool empty_or_whitespace() = 0;
-};
-
-class pal_utf8_string : public pal_string<pal_utf8_string, char*, std::string>
-{
-    char* m_ptr;
-    std::string m_value;
-
-private:    
-    pal_utf8_string(char* utf8_string, bool free) : 
-        m_ptr(free ? utf8_string : nullptr),
-        m_value(utf8_string == nullptr ? std::string() : utf8_string)
-    {
-
-    }
+    TStorageClass* m_ptr;
+protected:
+    std::basic_string<TStorageClass> m_value;
 
 public:
-    explicit pal_utf8_string() : pal_utf8_string(nullptr, false)
+
+    virtual ~pal_string()
     {
-
-    }
-
-    pal_utf8_string(const size_t size) : pal_utf8_string(new char[size], true)
-    {
-
-    }
-
-    pal_utf8_string(pal_utf8_string& utf8_string) : pal_utf8_string(utf8_string.dup(), true)
-    {
-
-    }
-
-    pal_utf8_string(const std::string& utf8_string) : pal_utf8_string(_strdup(utf8_string.data()), true)
-    {
-
-    }
-
-    pal_utf8_string(wchar_t* utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string), true)
-    {
-
-    }
-
-    pal_utf8_string(const std::wstring& utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string.data()), true)
-    {
-
-    }
-
-    ~pal_utf8_string()
-    {
-        if(m_ptr != nullptr)
+        if (m_ptr != nullptr)
         {
             delete m_ptr;
             m_ptr = nullptr;
         }
+
+        m_value = TStdString();
     }
 
-    friend std::ostream& operator << (std::ostream &out, const pal_utf8_string& utf8_string)
+    pal_string(TStorageClass* str_ptr, const bool free) :
+        m_ptr(free ? str_ptr : nullptr),
+        m_value(str_ptr == nullptr ? TStdString() : str_ptr)
     {
-        out << utf8_string.m_value.data();
+        if (str_ptr == nullptr && !free)
+        {
+            throw std::runtime_error("str_ptr cannot be nullptr when free is false");
+        }
+    }
+
+    // Copy
+    pal_string(const pal_string&) noexcept = delete;
+    pal_string& operator=(const pal_string&) noexcept = delete;
+
+    // Move
+    pal_string(pal_string&&) noexcept = delete;
+    pal_string& operator=(pal_string&&) noexcept = delete;
+
+    friend std::ostream& operator << (std::ostream& out, const pal_string& pal_string)
+    {
+        out << pal_string.m_value.data();
         return out;
     }
 
-    virtual char* dup() override
+    virtual TStorageClass* dup() = 0;
+
+    TStorageClass* data()
+    {
+        return m_value.data();
+    }
+
+    TStdString& append(const TStdString& string)
+    {
+        return m_value.append(string);
+    }
+
+    void append(const pal_string& string)
+    {
+       m_value.append(string.m_value);
+    }
+
+    TStdString str()
+    {
+        return m_value;
+    }
+
+    bool ends_with(const TStdString& string)
+    {
+        if (string.size() > m_value.size()) return false;
+        return std::equal(string.rbegin(), string.rend(), m_value.rbegin());
+    }
+
+    bool empty()
+    {
+        return m_value.empty();
+    }
+
+    bool empty_or_whitespace()
+    {
+        return empty() || m_value.find_first_not_of(' ') == m_value.npos;
+    }
+
+};
+
+class pal_utf8_string final : public pal_string<char, std::string>
+{
+    pal_utf8_string(char* utf8_string, const bool free) : pal_string<char, std::basic_string<char>>(utf8_string, free)
+    {
+    }
+
+public:
+    pal_utf8_string() : pal_utf8_string(nullptr, false)
+    {
+
+    }
+
+    explicit pal_utf8_string(const size_t size) : pal_utf8_string(new char[size], true)
+    {
+
+    }
+
+    explicit pal_utf8_string(wchar_t* utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string), true)
+    {
+
+    }
+
+    explicit pal_utf8_string(const std::wstring& utf16_string) : pal_utf8_string(pal_str_narrow(utf16_string.data()), true)
+    {
+
+    }
+
+    char* dup() override
     {
         return _strdup(m_value.c_str());
     }
 
-    virtual char* slice(size_t start_pos) override
-    {
-        return _strdup(str().substr(start_pos).c_str());
-    }
-
-    virtual char* data() override
-    {
-        return m_value.data();
-    }
-
-    virtual std::string str() const override
-    {
-        return m_value;
-    }
-
-    virtual std::string& append(const std::string& string) override
-    {
-        return m_value.append(string);
-    }
-
-    virtual bool ends_with(const std::string& string) override
-    {
-        if (string.size() > m_value.size()) return false;
-        return std::equal(string.rbegin(), string.rend(), m_value.rbegin());
-    }
-
-    virtual bool equals(const std::string& string) override
-    {
-        return m_value.size() == string.size() && std::equal(m_value.begin(), m_value.end(), string.begin());
-    }
-
-    virtual bool empty() override
-    {
-        return m_value.empty();
-    }
-
-    virtual bool empty_or_whitespace() override
-    {
-        return empty() || m_value.find_first_not_of(' ') == m_value.npos;
-    }
-
 };
 
-class pal_utf16_string : public pal_string<pal_utf16_string, wchar_t*, std::wstring>
+class pal_utf16_string final : public pal_string<wchar_t, std::wstring>
 {
-    wchar_t* m_ptr;
-    std::wstring m_value;
+    pal_utf16_string(wchar_t* utf16_string, const bool free) : pal_string<wchar_t, std::basic_string<wchar_t>>(utf16_string, free)
+    {
+    }
 
 public:
-    explicit pal_utf16_string() : 
-        m_ptr(nullptr), 
-        m_value(std::wstring())
+    pal_utf16_string() : pal_utf16_string(nullptr, false)
     {
 
     }
 
-    pal_utf16_string(wchar_t* utf16_string, bool free) :
-        m_ptr(free ? utf16_string : nullptr),
-        m_value(utf16_string == nullptr ? std::wstring() : utf16_string)
+    explicit pal_utf16_string(const size_t size) : pal_utf16_string(new wchar_t[size], true)
     {
 
     }
 
-    pal_utf16_string(pal_utf16_string& utf8_string) : pal_utf16_string(utf8_string.dup(), true)
+    explicit pal_utf16_string(const std::wstring& utf16_string) : pal_utf16_string(_wcsdup(utf16_string.data()), true)
     {
 
     }
 
-    pal_utf16_string(const size_t size) : pal_utf16_string(new wchar_t[size], true)
+    explicit pal_utf16_string(char* utf8_string) : pal_utf16_string(pal_str_widen(utf8_string), true)
     {
 
     }
 
-    pal_utf16_string(const std::string& utf8_string) : pal_utf16_string(pal_str_widen(utf8_string.data()), true)
+    explicit pal_utf16_string(const std::string& utf8_string) : pal_utf16_string(pal_str_widen(utf8_string.data()), true)
     {
 
     }
 
-    ~pal_utf16_string()
-    {
-        if(m_ptr != nullptr)
-        {
-            delete m_ptr;
-            m_ptr = nullptr;
-        }
-    }
-
-    friend std::ostream& operator << (std::ostream &out, const pal_utf16_string &utf16_string)
-    {
-        out << utf16_string.m_value.data();
-        return out;
-    }
-
-    virtual wchar_t* dup() override
+    wchar_t* dup() override
     {
         return _wcsdup(m_value.c_str());
-    }
-
-    virtual wchar_t* data() override
-    {
-        return m_value.data();
-    }
-
-    virtual wchar_t* slice(size_t start_pos) override
-    {
-        return _wcsdup(str().substr(start_pos).c_str());
-    }
-
-    virtual std::wstring str() const override
-    {
-        return m_value;
-    }
-
-    virtual bool ends_with(const std::wstring& string) override
-    {
-        if (string.size() > m_value.size()) return false;
-        return std::equal(string.rbegin(), string.rend(), m_value.rbegin());
-    }
-
-    virtual bool equals(const std::wstring& string) override
-    {
-        return m_value.size() == string.size() && std::equal(m_value.begin(), m_value.end(), string.begin());
-    }
-
-    virtual std::wstring& append(const std::wstring& string) override
-    {
-        return m_value.append(string);
-    }
-
-    virtual bool empty() override
-    {
-        return m_value.empty();
-    }
-
-    virtual bool empty_or_whitespace() override
-    {        
-        return empty() || m_value.find_first_not_of(' ') == m_value.npos;
-    }
-
-    static wchar_t* from_utf8(char* string)
-    {
-        return pal_utf16_string(string).dup();
     }
 };
 #endif

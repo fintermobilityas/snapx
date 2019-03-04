@@ -23,7 +23,7 @@ if (BUILD_ENABLE_TESTS)
 
   enable_testing()
 
-  include_directories(
+  include_directories(SYSTEM
     ${gtest_SOURCE_DIR}/include
     ${gtest_SOURCE_DIR}
     Vendor

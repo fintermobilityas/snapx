@@ -58,9 +58,9 @@ extern "C" {
 typedef int BOOL;
 typedef FILE pal_file_handle_t;
 
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS) 
 typedef DWORD pal_pid_t;
-#elif PAL_PLATFORM_LINUX
+#elif defined(PAL_PLATFORM_LINUX)
 typedef pid_t pal_pid_t;
 #endif
 

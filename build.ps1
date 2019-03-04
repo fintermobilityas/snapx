@@ -26,8 +26,6 @@ $Stopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 $env:SNAPX_CI_BUILD = Get-Is-String-True $CIBuild
-
-# Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 [int] $VisualStudioVersion = 0
 if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersion))
 {
@@ -81,7 +79,7 @@ $SummaryStopwatch.Restart()
 function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
             
-        if($env:SNAPX_CI_BUILD -ne $false) {
+        if($env:SNAPX_CI_BUILD -eq $false) {
             .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion
             if($LASTEXITCODE -ne 0)
             {

@@ -44,10 +44,8 @@
         <LangVersion>7.3</LangVersion>
     </PropertyGroup>
 
-
     <PropertyGroup>
-        <NugetVersion Condition="$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>
-        <NugetVersion Condition="!$(IsNetFullFramework)">5.0.0-preview3.5800</NugetVersion>
+        <NugetVersion>5.0.0-rtm.5856</NugetVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(SnapBootstrap)">

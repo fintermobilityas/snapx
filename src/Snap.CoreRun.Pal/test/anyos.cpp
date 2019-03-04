@@ -532,6 +532,7 @@ namespace
         auto sub_dir = mkdir(parent_dir, "subdirectory");
 
         EXPECT_TRUE(pal_fs_directory_exists(parent_dir));
+        EXPECT_TRUE(pal_fs_directory_exists(sub_dir));
         EXPECT_TRUE(pal_fs_rmdir(parent_dir, TRUE));
         EXPECT_FALSE(pal_fs_directory_exists(parent_dir));
     }

@@ -22,7 +22,7 @@ $ConfirmPreference = "None";
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
-$Stopwatch = [System.Diagnostics.Stopwatch]
+$SummaryStopwatch = [System.Diagnostics.Stopwatch]
 
 # Ref: https://github.com/Microsoft/azure-pipelines-tasks/issues/836
 $env:SNAPX_CI_BUILD = $CIBuildStr -eq "YESIAMABOOLEANVALUEAZUREPIPELINEBUG"
@@ -75,7 +75,7 @@ if($false -eq (Test-Path 'env:SNAPX_DOCKER_BUILD'))
 
 # Actions
 
-$SummaryStopwatch = $StopWatch::StartNew()
+$SummaryStopwatch = $SummaryStopwatch::StartNew()
 
 function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {

@@ -8,17 +8,23 @@ fi
 export SNAPX_DOCKER_BUILD=1
 
 if [ ! $SNAPX_DOCKER_ENTRYPOINT ]; then
-    echo "Error: Entrypoint is not configured."
+    echo "[DOCKER - Error]: Entrypoint is not configured."
+    exit 1
 fi
 
-echo "[DOCKER]: Exeucting entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
+if [ ! -d $SNAPX_DOCKER_WORKING_DIR ]; then
+    echo "[DOCKER - Error]: Working directory does not exist: $SNAPX_DOCKER_WORKING_DIR"
+    exit 1
+fi
+
+echo "[DOCKER - Info]: Executing entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
 
 case $SNAPX_DOCKER_ENTRYPOINT in
     Native)
         # void
     ;;
     *)
-    echo "[DOCKER]: Unknown entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
+    echo "[DOCKER - Error]: Unknown entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
     exit 1
 esac
 
@@ -26,10 +32,10 @@ SCRIPT_ARGUMENTS="-Target $SNAPX_DOCKER_ENTRYPOINT -CIBuild $SNAPX_DOCKER_CI_BUI
 
 case $SNAPX_DOCKER_HOST_OS in
     Unix)
-        exec su -m $SNAPX_DOCKER_USERNAME -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
+        exec su -m $SNAPX_DOCKER_USERNAME -c "(cd $SNAPX_DOCKER_WORKING_DIR && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
     ;;
     *)
-        sh -c "(cd /build/snapx && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
+        sh -c "(cd $SNAPX_DOCKER_WORKING_DIR && /usr/bin/pwsh -f build.ps1 $SCRIPT_ARGUMENTS)"
     ;;
 esac
 

@@ -171,8 +171,14 @@ function Invoke-Docker
 
     Write-Output-Header "Docker entrypoint: $Entrypoint"
     
+    $DockerContainerName = "snapx"
+    if($DockerImagePrefix)
+    {
+        $DockerContainerName += "-$DockerImagePrefix"
+    }
+
     $env:SNAPX_DOCKER_USERNAME = [Environment]::UserName
-    $env:SNAPX_DOCKER_WORKING_DIR = "/build/snapx"
+    $env:SNAPX_DOCKER_WORKING_DIR = "/build/$DockerContainerName"
     $env:SNAPX_DOCKER_BUILD=1
 
     if ($OSPlatform -eq "Unix") {
@@ -184,12 +190,6 @@ function Invoke-Docker
     }
 
     Resolve-Shell-Dependency $CommandDocker
-
-    $DockerContainerName = "snapx"
-    if($DockerImagePrefix)
-    {
-        $DockerContainerName += "-$DockerImagePrefix"
-    }
 
     $DockerRunFlags = "-it"
 

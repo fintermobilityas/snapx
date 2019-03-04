@@ -224,12 +224,19 @@ namespace {
             run_details->app_arguments = json_log_output["arguments"].get<std::vector<std::string>>();
             run_details->app_exit_code = json_log_output["exit_code"].get<int>();
 
-            const auto working_dir = json_log_output["working_dir"].get<std::string>();
-            const auto command = json_log_output["command"].get<std::string>();
+            const auto run_working_dir = json_log_output["working_dir"].get<std::string>();
+            const auto run_command = json_log_output["command"].get<std::string>();
+
+            auto expected_command = std::string();
+            if(arguments.size() > 0)
+            {
+                expected_command = arguments[0];
+            }
 
             for (const auto &app : this->m_apps)
             {
-                if (app.working_dir == working_dir)
+                if (expected_command == run_command 
+                    && app.working_dir == run_working_dir)
                 {
                     run_details->app_details = app;
                     break;

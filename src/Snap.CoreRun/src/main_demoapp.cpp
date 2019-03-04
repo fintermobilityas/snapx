@@ -42,7 +42,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
             const auto version_start_pos = value.find_last_of(command_expected_exit_code_str);
             const auto version_str = value.substr(version_start_pos + 1);
 
-            output["command"] = command_expected_exit_code_str;
+            output["command"] = value;
             output["version"] = version_str;
             break;
         }

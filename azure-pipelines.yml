@@ -38,7 +38,7 @@ jobs:
     displayName: Publish google test results
     inputs:
       testRunner: JUnit
-      testResultsFiles: '**/*.xml'
+      testResultsFiles: '**/googletestsummary.xml'
       testRunTitle: GoogleTest_Windows_Visual_Studio_2017
       mergeTestResults: false
   - task: NuGetCommand@2

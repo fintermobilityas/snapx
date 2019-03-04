@@ -147,11 +147,7 @@ function Invoke-Build-Native {
         "Windows" {
             Invoke-Command-Colored $CommandCmake @(                
                 "--build `"$SnapCoreRunBuildOutputDir`" --config $Configuration"
-            )
-        
-            $SnapTestsExePath = Join-Path $SnapCoreRunBuildOutputDir $Configuration\Snap.Tests.exe
-            $CoreRunExePath = Join-Path $SnapCoreRunBuildOutputDir Snap.CoreRun\$Configuration
-            Copy-Item $SnapTestsExePath $CoreRunExePath | Out-Null        
+            )      
         }
         default {
             Write-Error "Unsupported os platform: $OSPlatform"
@@ -274,21 +270,21 @@ function INvoke-Native-Unit-Tests
 
             # MINGW
             if($env:SNAPX_CI_BUILD -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug\Snap.CoreRun.Tests)
             }
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release)
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)
             
             # MSVS
             if($env:SNAPX_CI_BUILD -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
             }
-            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun\Release)
+            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun.Tests\Release)
 
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
 
             foreach ($GoogleTestsDir in $Projects) {
-                Invoke-Google-Tests $GoogleTestsDir Snap.Tests.exe $CommandGTestsDefaultArguments
+                Invoke-Google-Tests $GoogleTestsDir corerun_tests.exe $CommandGTestsDefaultArguments
             }                
         }
         "Unix" {                
@@ -296,15 +292,15 @@ function INvoke-Native-Unit-Tests
 
             # GCC
             if($env:SNAPX_CI_BUILD -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug)
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
             }            
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release)
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release\Snap.CoreRun.Tests)
             
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
 
             foreach ($GoogleTestsDir in $Projects) {
-                Invoke-Google-Tests $GoogleTestsDir Snap.Tests $CommandGTestsDefaultArguments
+                Invoke-Google-Tests $GoogleTestsDir corerun_tests $CommandGTestsDefaultArguments
             }                
 
         }

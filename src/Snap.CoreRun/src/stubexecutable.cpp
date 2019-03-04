@@ -17,7 +17,7 @@ inline std::string join(const std::vector<std::string>& strings, const char* del
 
 int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
 {
-    int exit_code = 1;
+    auto exit_code = 1;
     std::string executable_full_path;
     std::string app_dir_str;
 

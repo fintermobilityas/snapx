@@ -19,15 +19,6 @@ fi
 
 echo "[DOCKER - Info]: Executing entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
 
-case $SNAPX_DOCKER_ENTRYPOINT in
-    Native)
-        # void
-    ;;
-    *)
-    echo "[DOCKER - Error]: Unknown entrypoint: $SNAPX_DOCKER_ENTRYPOINT"
-    exit 1
-esac
-
 SCRIPT_ARGUMENTS="-Target $SNAPX_DOCKER_ENTRYPOINT -CIBuild $SNAPX_DOCKER_CI_BUILD -VisualStudioVersionStr $SNAPX_DOCKER_VISUAL_STUDIO_VERSION"
 
 case $SNAPX_DOCKER_HOST_OS in

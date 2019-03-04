@@ -23,70 +23,9 @@ add_subdirectory(Snap.CoreRun)
 if (BUILD_ENABLE_TESTS)
 
   add_subdirectory(Vendor/gtest)
-
   enable_testing()
 
-  include_directories(SYSTEM
-    ${gtest_SOURCE_DIR}/include
-    ${gtest_SOURCE_DIR}
-    Vendor
-    Vendor/json/include
-  )
-
-  set(tests_SOURCES 
-    Vendor/crossguid/Guid.cpp
-    Snap.CoreRun.Pal/test/anyos.cpp
-  	Snap.CoreRun/test/anyos.cpp
-  )
-
-  set_source_files_properties(Vendor/crossguid/Guid.cpp PROPERTIES COMPILE_FLAGS -w)
-
-  if(WIN32)
-    list(APPEND tests_SOURCES
-        Snap.CoreRun.Pal/test/windows.cpp
-    )
-    list(APPEND tests_DEFINES		
-	    GUID_WINDOWS
-    )
-    list(APPEND tests_LIBS
-	    ole32
-    )
-  elseif(UNIX)
-    list(APPEND tests_SOURCES
-        Snap.CoreRun.Pal/test/unix.cpp
-    )
-    list(APPEND tests_DEFINES		
-	    GUID_LIBUUID
-    )
-    list(APPEND tests_LIBS
-	    uuid
-    )
-  endif()
-
-  add_executable(Snap.Tests ${tests_SOURCES})
-
-  target_compile_definitions(Snap.Tests PRIVATE 
-    ${tests_DEFINES}
-  )	
-
-  target_link_libraries(Snap.Tests PRIVATE
-                  ${tests_LIBS}
-				  corerun_static
-				  gtest
-                  gtest_main)
-
-  add_custom_target(always_copy_test_dependencies ALL
-          COMMAND ${CMAKE_COMMAND} -E echo "Copying corerun, corerun_demoapp tests directory: $<TARGET_FILE_DIR:Snap.Tests>"
-          COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:Snap.Tests>"
-          COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun>" "$<TARGET_FILE_DIR:Snap.Tests>"
-  )
-
-  add_custom_command(TARGET Snap.Tests PRE_BUILD
-          DEPENDS always_copy_test_dependencies
-          COMMAND ${CMAKE_COMMAND} -E echo )
-
-  set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD 17)
-  set_property(TARGET Snap.Tests PROPERTY CXX_STANDARD_REQUIRED ON)
+  add_subdirectory(Snap.CoreRun.Tests)
 
 endif()
 

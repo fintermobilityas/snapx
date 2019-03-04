@@ -3,6 +3,7 @@
 #ifdef PAL_PLATFORM_WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#define STRICT
 #include <windows.h>
 #endif
 #endif
@@ -70,8 +71,8 @@ typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
 // - Generic
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent(void);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);

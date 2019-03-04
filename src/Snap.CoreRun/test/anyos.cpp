@@ -2,6 +2,7 @@
 #include "main.hpp"
 #include "crossguid/Guid.hpp"
 #include "nlohmann/json.hpp"
+#include "tests/support/utils.hpp"
 
 #include <string>
 #include <algorithm>
@@ -9,24 +10,12 @@
 #include <random>
 
 using json = nlohmann::json;
+using testutils = corerun::support::util::test_utils;
 
 const int demoapp_default_exit_code = 0;
 
 const uint32_t default_permissions = 0777;
 static auto rng = std::default_random_engine{};
-
-inline std::string get_process_cwd() {
-    char* working_dir = nullptr;
-    if (!pal_process_get_cwd(&working_dir))
-    {
-        return nullptr;
-    }
-
-    std::string working_dir_str(working_dir);
-    delete working_dir;
-
-    return working_dir_str;
-}
 
 namespace {
 
@@ -211,7 +200,7 @@ namespace {
                 argv[i] = _strdup(arguments[i].c_str());
             }
 
-            auto run_details = std::unique_ptr<stubexecutable_run_details>(new stubexecutable_run_details(this->install_dir));
+            auto run_details = std::make_unique<stubexecutable_run_details>(this->install_dir);
 
             for (const auto &value : arguments)
             {
@@ -262,7 +251,7 @@ namespace {
             run_details->run_command = json_log_output["command"].get<std::string>(); 
             
             auto expected_command = std::string();
-            if(arguments.size() > 0)
+            if(!arguments.empty())
             {
                 expected_command = arguments[0];
             }
@@ -282,7 +271,7 @@ namespace {
 
     private:
 
-        void init()
+        void init() const
         {
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_corerun_exe.c_str()));
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_demoapp_exe.c_str()));
@@ -346,7 +335,7 @@ namespace {
     
     TEST(MAIN, corerun_StartsWhenThereAreZeroAppsInstalled)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
 
@@ -363,7 +352,7 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidPrefix)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
         snapx.install("1.0.0", "notanapp-");
@@ -396,7 +385,7 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidSemver)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
         snapx.install("1.0.0");
@@ -429,7 +418,7 @@ namespace {
 
     TEST(MAIN, corerun_StartsInitialVersion)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
         snapx.install("1.0.0");
@@ -459,7 +448,7 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersion)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
         snapx.install("1.0.0");
@@ -490,7 +479,7 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersionWhenThereAreLotsOfVersionsInRandomOrderInstalled)
     {
-        auto working_dir = get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
 

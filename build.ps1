@@ -165,7 +165,7 @@ function Invoke-Docker
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [ValidateSet("Native")]
+        [ValidateSet("Native", "Run-Native-UnitTests")]
         [string] $Entrypoint
     )
 
@@ -332,6 +332,10 @@ switch ($Target) {
     "Run-Native-UnitTests"
     {
         Invoke-Native-UnitTests
+        if($OSPlatform -eq "Windows")
+        {
+            Invoke-Docker -Entrypoint "Run-Native-UnitTests"
+        }
         Invoke-Summary
     }
     "Run-Dotnet-UnitTests"

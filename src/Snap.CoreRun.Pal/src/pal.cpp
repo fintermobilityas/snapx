@@ -20,7 +20,7 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
-#include <wchar.h>
+#include <cwchar>
 #include <tlhelp32.h> // CreateToolhelp32Snapshot 
 #include "vendor/rcedit/rcedit.hpp"
 #elif defined(PAL_PLATFORM_LINUX)
@@ -77,7 +77,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger(void)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger()
 {
     while (!pal_isdebuggerpresent())
     {
@@ -1448,9 +1448,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint3
     }
 
 #if defined(PAL_PLATFORM_WINDOWS)
+    PAL_UNUSED(mode_in);
     pal_utf16_string directory_in_utf16_string(directory_in);
-    const auto status = _wmkdir(directory_in_utf16_string.data());
-    return status == 0 ? TRUE : FALSE;
+    const auto status = CreateDirectory(directory_in_utf16_string.data(), nullptr);
+    return status != 0 ? TRUE : FALSE;
 #else
     const auto status = mkdir(directory_in, mode_in);
     return status == 0 ? TRUE : FALSE;
@@ -1486,8 +1487,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     pal_utf16_string directory_in_utf16_string(directory_in);
     if (!recursive)
     {
-        const auto status = _wrmdir(directory_in_utf16_string.data());
-        return status == 0 ? TRUE : FALSE;
+        const auto status = RemoveDirectory(directory_in_utf16_string.data());
+        return status != 0 ? TRUE : FALSE;
     }
 #elif defined(PAL_PLATFORM_LINUX)
     if(!recursive)

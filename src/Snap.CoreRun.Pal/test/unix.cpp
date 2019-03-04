@@ -64,7 +64,7 @@ namespace
     {
         char* working_dir = nullptr;
         ASSERT_TRUE(pal_process_get_cwd(&working_dir));
-        int exit_code = -1;
+        auto exit_code = 1;
         ASSERT_TRUE(pal_process_exec("ls", working_dir, -1, nullptr, &exit_code));
         ASSERT_EQ(exit_code, 0);
     }
@@ -81,7 +81,7 @@ namespace
         char *exe_name = nullptr;
         ASSERT_TRUE(pal_process_get_name(&exe_name));
         ASSERT_NE(exe_name, nullptr);
-        ASSERT_STREQ(exe_name, "Snap.Tests");
+        ASSERT_STREQ(exe_name, "corerun_tests");
     }
 
     TEST(PAL_FS_UNIX, pal_fs_path_combine)

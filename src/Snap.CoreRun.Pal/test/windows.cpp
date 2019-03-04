@@ -1,18 +1,8 @@
 #include "gtest/gtest.h"
 #include "pal/pal.hpp"
+#include "tests/support/utils.hpp"
 
-inline std::string get_process_cwd() {
-    char* working_dir = nullptr;
-    if (!pal_process_get_cwd(&working_dir))
-    {
-        return nullptr;
-    }
-
-    std::string working_dir_str(working_dir);
-    delete working_dir;
-
-    return working_dir_str;
-}
+using testutils = corerun::support::util::test_utils;
 
 namespace
 {
@@ -27,7 +17,7 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        int exit_code = -1;
+        auto exit_code = 1;
         EXPECT_TRUE(pal_process_exec("whoami", working_dir, -1, nullptr, &exit_code));
         EXPECT_EQ(exit_code, 0);
     }
@@ -50,7 +40,7 @@ namespace
 
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {
-        auto process_working_dir = get_process_cwd();
+        auto process_working_dir = testutils::get_process_cwd();
 #if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
         EXPECT_STRNE(process_working_dir.c_str(), nullptr);
         EXPECT_GT(SetCurrentDirectory(process_working_dir.c_str()), 0);
@@ -60,11 +50,46 @@ namespace
         EXPECT_TRUE(pal_fs_directory_exists(working_dir));
     }
 
+    TEST(PAL_FS_WINDOWS, pal_fs_mkdir_LongPath)
+    {
+        if(!testutils::is_windows10_or_greater())
+        {
+            GTEST_SKIP();
+            return;
+        }
+
+        const auto working_dir = testutils::get_process_cwd();
+
+        const auto long_path_base_dir = working_dir + PAL_DIRECTORY_SEPARATOR_STR + testutils::build_random_str();
+        ASSERT_TRUE(pal_fs_mkdir(long_path_base_dir.c_str(), 777));
+
+        const auto expected_directories_created = 10;
+        auto directories_remaining = expected_directories_created;
+        auto long_path_current_dir = long_path_base_dir;
+        while(directories_remaining > 0)
+        {
+            long_path_current_dir += PAL_DIRECTORY_SEPARATOR_STR + testutils::build_random_str();
+            if(!pal_fs_mkdir(long_path_current_dir.c_str(), 777))
+            {
+                break;
+            }
+
+            --directories_remaining;
+        }
+
+        ASSERT_EQ(directories_remaining, 0) 
+            << "Should have created " << expected_directories_created 
+            << " directories but only " << (expected_directories_created - directories_remaining) 
+            << " was created.";
+
+        ASSERT_TRUE(pal_fs_directory_exists(long_path_current_dir.c_str()));
+    }
+
     TEST(PAL_FS_WINDOWS, pal_process_get_name_ReturnsThisProcessExeName)
     {
         char* exe_name = nullptr;
         EXPECT_TRUE(pal_process_get_name(&exe_name));
-        ASSERT_STREQ(exe_name, "Snap.Tests.exe");
+        ASSERT_STREQ(exe_name, "corerun_tests.exe");
     }
 
     TEST(PAL_ENV_WINDOWS, pal_env_get_Reads_PATH_Variable)

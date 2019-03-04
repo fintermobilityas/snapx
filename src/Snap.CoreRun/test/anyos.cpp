@@ -351,7 +351,7 @@ namespace {
 
         ASSERT_EQ(run_details->stub_exit_code, 1);
         ASSERT_EQ(run_details->stub_arguments.size(), 0u);
-        ASSERT_EQ(run_details->app_exit_code, -1);
+        ASSERT_EQ(run_details->app_exit_code, 0);
         ASSERT_EQ(run_details->app_arguments.size(), 0);
         ASSERT_EQ(run_details->app_details.version_str, "");
     }

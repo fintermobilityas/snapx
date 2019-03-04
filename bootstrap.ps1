@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Native", "Snap", "Snap-Installer", "Run-Native-UnitTests")]
+    [ValidateSet("Native", "Snap", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Native",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
@@ -24,6 +24,7 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 . $WorkingDir\common.ps1
 
 $ToolsDir = Join-Path $WorkingDir tools
+$SrcDir = Join-Path $WorkingDir src
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
@@ -86,7 +87,7 @@ $SnapCoreRunSrcDir = Join-Path $WorkingDir src
 $SnapNetSrcDir = Join-Path $WorkingDir src\Snap
 $SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
 
-function Build-Native {	
+function Invoke-Build-Native {	
     Write-Output-Header "Building native dependencies"
 
     Resolve-Shell-Dependency $CommandCmake
@@ -159,7 +160,7 @@ function Build-Native {
 
 }
 
-function Build-Snap {
+function Invoke-Build-Snap {
     Write-Output-Header "Building Snap"
 
     Resolve-Shell-Dependency $CommandDotnet
@@ -175,7 +176,7 @@ function Build-Snap {
         "--configuration $Configuration"
     )
 }
-function Build-Snap-Installer {
+function Invoke-Build-Snap-Installer {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [ValidateSet("win-x64", "linux-x64")]
@@ -260,6 +261,35 @@ function Build-Snap-Installer {
         -DestinationPath $SnapInstallerExeZipAbsolutePath
 }
 
+function Invoke-Dotnet-Unit-Tests
+{
+    Push-Location $WorkingDir
+
+    Resolve-Shell-Dependency $CommandDotnet
+
+    $Projects = @()
+    $Projects += Join-Path $SrcDir Snap.Installer.Tests
+    $Projects += Join-Path $SrcDir Snap.Tests
+    $Projects += Join-Path $SrcDir Snapx.Tests
+
+    $ProjectsCount = $Projects.Length
+
+    Write-Output-Header "Running dotnet tests. Test project count: $ProjectsCount"
+
+    foreach($Project in $Projects)
+    {
+        Invoke-Command-Colored $CommandDotnet @(
+            "test"
+            "$Project",  
+            "--logger trx", 
+            "--verbosity=normal",
+            "--", # RunSettings
+            "RunConfiguration.TestSessionTimeout=40000" # Todo: REMOVE ME
+        )    
+    }
+
+}
+
 Write-Output-Header "----------------------- CONFIGURATION DETAILS ------------------------" 
 Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
@@ -299,19 +329,25 @@ switch ($Target) {
         switch ($OSPlatform) {
             "Windows" {		
                 if ($Cross -eq $FALSE) {
-                    Build-Native		
+                    Invoke-Build-Native		
                 }
                 else {
                     Write-Error "Cross compiling is not supported on Windows."
                 } 
             }
             "Unix" {
-                Build-Native		
+                Invoke-Build-Native		
             }
             default {
                 Write-Error "Unsupported os platform: $OSPlatform"
             }
         }
+    }
+    "Snap" {
+        Invoke-Build-Snap
+    }
+    "Snap-Installer" {
+        Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
         switch($OSPlatform)
@@ -351,10 +387,7 @@ switch ($Target) {
             }
         }
     }
-    "Snap" {
-        Build-Snap
-    }
-    "Snap-Installer" {
-        Build-Snap-Installer -Rid $DotNetRid
+    "Run-Dotnet-UnitTests" {
+        Invoke-Dotnet-Unit-Tests
     }
 }

@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer", "Snapx")]
+    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerImagePrefix,
@@ -36,18 +36,15 @@ if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersio
 }
 
 $CommandDocker = $null
-$CommandDotnet = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandDocker = "docker.exe"
-        $CommandDotnet = "dotnet.exe"
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandDocker = "docker"
-        $CommandDotnet = "dotnet"
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -78,9 +75,9 @@ if($false -eq (Test-Path 'env:SNAPX_DOCKER_BUILD'))
 
 # Actions
 
-$BuildTime = $StopWatch::StartNew()
+$SummaryStopwatch = $StopWatch::StartNew()
 
-function Build-Native {
+function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
             
         .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion
@@ -136,24 +133,29 @@ function Build-Native {
     Write-Error "Unsupported OS platform: $OSVersion"
 }
 
-function Build-Snap-Installer {
+function Invoke-Build-Snap-Installer {
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion
 }
 
-function Build-Snap {
+function Invoke-Build-Snap {
     .\bootstrap.ps1 -Target Snap -VisualStudioVersion $VisualStudioVersion
 }
 
-function Build-Summary {
-    $BuildTime.Stop()		
+function Invoke-Summary {
+    $SummaryStopwatch.Stop()		
     $Elapsed = $BuildTime.Elapsed
-    Write-Output-Header "Build elapsed: $Elapsed ($OSVersion)"
+    Write-Output-Header "Operation completed in: $Elapsed ($OSVersion)"
 }
 
 function Invoke-Native-UnitTests
 {
     .\bootstrap.ps1 -Target Run-Native-UnitTests -VisualStudioVersion $VisualStudioVersion
+}
+
+function Invoke-Dotnet-Unit-Tests
+{
+    .\bootstrap.ps1 -Target Run-Dotnet-UnitTests -VisualStudioVersion $VisualStudioVersion
 }
 
 function Invoke-Docker 
@@ -230,9 +232,9 @@ function Invoke-Docker
     }
 }
 
-function Build-Native-And-Run-Native-UnitTests
+function Invoke-Build-Native-And-Run-Native-UnitTests
 {
-    Build-Native 
+    Invoke-Build-Native 
     if(0 -ne $LASTEXITCODE) {
         return
     }
@@ -243,15 +245,15 @@ function Build-Native-And-Run-Native-UnitTests
     }
 }
 
-function Build-Docker-Entrypoint
+function Invoke-Build-Docker-Entrypoint
 {
-    Build-Native  
+    Invoke-Build-Native  
     if(0 -ne $LASTEXITCODE) {
         return
     }
 }
 
-function Build-Snapx
+function Invoke-Build-Snapx
 {
     Write-Output-Header "Building snapx"
 
@@ -260,7 +262,7 @@ function Build-Snapx
         return
     }
 
-    Build-Snap-Installer
+    Invoke-Build-Snap-Installer
     if(0 -ne $LASTEXITCODE) {
         return
     }
@@ -270,28 +272,10 @@ function Build-Snapx
         return
     }
 
-    Build-Snap
+    Invoke-Build-Snap
     if(0 -ne $LASTEXITCODE) {
         return
     }
-}
-
-function Invoke-Dotnet-Unit-Tests
-{
-    Write-Output-Header "Running dotnet tests"
-
-    Push-Location $WorkingDir
-
-    $UnitTestsDir = Join-Path $WorkingDir src
-
-    Resolve-Shell-Dependency $CommandDotnet
-    Invoke-Command-Colored $CommandDotnet @(
-        "test"
-        "$UnitTestsDir",  
-        "--logger trx", 
-        "--", # RunSettings
-        "RunConfiguration.TestSessionTimeout=40000"
-    )
 }
 
 switch ($Target) {
@@ -303,7 +287,7 @@ switch ($Target) {
 
         if($OSPlatform -eq "Windows")
         {
-            Build-Native 
+            Invoke-Build-Native 
         }
 
         Invoke-Native-UnitTests    
@@ -311,7 +295,7 @@ switch ($Target) {
             exit $LASTEXITCODE
         }        
 
-        Build-Snapx
+        Invoke-Build-Snapx
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
         }        
@@ -321,28 +305,33 @@ switch ($Target) {
             exit $LASTEXITCODE
         }    
 
-        Build-Summary
+        Invoke-Summary
         exit 0 
     }    
     "Native" {
-        Build-Native
-        Build-Summary
-    }
-    "Native-UnitTests"
-    {
-        Invoke-Native-UnitTests
-        Build-Summary
+        Invoke-Build-Native
+        Invoke-Summary
     }
     "Snap" {
-        Build-Snap
-        Build-Summary
+        Invoke-Build-Snap
+        Invoke-Summary
     }
     "Snap-Installer" {        
-        Build-Snap-Installer
-        Build-Summary
+        Invoke-Build-Snap-Installer
+        Invoke-Summary
     }
     "Snapx" {
-        Build-Snapx
-        Build-Summary
+        Invoke-Build-Snapx
+        Invoke-Summary
+    }
+    "Run-Native-UnitTests"
+    {
+        Invoke-Native-UnitTests
+        Invoke-Summary
+    }
+    "Run-Dotnet-UnitTests"
+    {
+        Invoke-Dotnet-Unit-Tests
+        Invoke-Summary
     }
 }

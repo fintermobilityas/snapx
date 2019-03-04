@@ -20,7 +20,7 @@ $OSVersion = [Environment]::OSVersion
 $Properties = @()
 $Properties = $Properties -join " "
 
-$ToolInstallDir = Join-Path $WorkingDir snapx_ci_install
+$ToolInstallDir = Join-Path $WorkingDir tools\snapx
 
 $NupkgsDir = Join-Path $WorkingDir nupkgs
 if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)

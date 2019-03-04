@@ -1,5 +1,5 @@
 variables:
-  buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuild "$true"
+  buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuild "1"
 
 jobs:
 - job: Ubuntu_1604

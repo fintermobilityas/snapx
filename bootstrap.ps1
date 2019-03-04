@@ -38,9 +38,12 @@ $CommandDotnet = $null
 $CommandMake = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
-$CommandGTestsDefaultArguments = @(
-    "--gtest_break_on_failure"
-)
+$CommandGTestsDefaultArguments = @()
+
+if($env:SNAPX_CI_BUILD -eq $false)
+{
+    $CommandGTestsDefaultArguments += "--gtest_break_on_failure"
+}
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {

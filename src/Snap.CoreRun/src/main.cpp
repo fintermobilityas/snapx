@@ -1,6 +1,8 @@
 #include "main.hpp"
 
-#if defined(PAL_PLATFORM_WINDOWS)
+// MSVS, MINGW ENTRYPOINT
+// -->
+#if defined(PAL_PLATFORM_WINDOWS) 
 #include <shellapi.h>
 
 // ReSharper disable all

@@ -472,8 +472,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     pal_utf16_string lp_current_directory_utf16_string(working_dir_in);
 
     STARTUPINFO si = {};
-    si.cb = 0;
-
     PROCESS_INFORMATION pi = {};
     pi.hProcess = nullptr;
 
@@ -572,13 +570,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     pal_utf16_string lp_current_directory_utf16_string(working_dir_in);
 
     STARTUPINFO si = {};
-    si.cb = 0;
-    PROCESS_INFORMATION pi = {};
-    pi.hProcess = nullptr;
-
     si.cb = sizeof si;
     si.dwFlags = STARTF_USESHOWWINDOW;
     si.wShowWindow = static_cast<WORD>(cmd_show_in);
+
+    PROCESS_INFORMATION pi = {};
+    pi.hProcess = nullptr;
 
     const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
         nullptr, nullptr, true,
@@ -712,7 +709,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
         return FALSE;
     }
 
-    *environment_variable_value_out = pal_utf8_string(&buffer['\0']).dup();
+    *environment_variable_value_out = pal_utf8_string(&buffer[L'\0']).dup();
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)

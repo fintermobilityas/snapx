@@ -77,6 +77,62 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 #endif
 }
 
+PAL_API BOOL pal_mitigate_dll_hijacking()
+{
+#if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
+
+    // https://github.com/Squirrel/Squirrel.Windows/pull/1444
+
+    // Some libraries are still loaded from the current directories.
+    // If we pre-load them with an absolute path then we are good.
+    const auto preload_libs = []() 
+    {
+	    wchar_t sys32_folder[MAX_PATH];
+	    GetSystemDirectory(sys32_folder, MAX_PATH);
+
+        // Todo: The PAL library does not actually load these files.
+        // The author of the PR mentions that he used Procmon to observe
+        // what files are loading from current working directory.
+        // So, the question is.. does it matter that we load these dlls anyway?
+        auto version = std::wstring(sys32_folder) + L"\\version.dll";
+        auto logoncli = std::wstring(sys32_folder) + L"\\logoncli.dll";
+        auto sspicli = std::wstring(sys32_folder) + L"\\sspicli.dll";
+
+	    LoadLibrary(version.c_str());
+	    LoadLibrary(logoncli.c_str());
+	    LoadLibrary(sspicli.c_str());
+    };
+
+    const auto mitigate_dll_hijacking = [preload_libs]()
+    {
+	    // Set the default DLL lookup directory to System32 for ourselves and kernel32.dll
+        // NB! This means that any subsequent LoadLibrary calls will only be able to load
+        // DLLS from the SYSTEM32 directory.
+	    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+        const auto h_kernel32 = LoadLibrary(L"kernel32.dll");
+	    assert(h_kernel32 != NULL);
+
+        const auto pfn = reinterpret_cast<win32_set_default_dll_directories_function>(
+            GetProcAddress(h_kernel32, "SetDefaultDllDirectories"));
+
+	    if (pfn)
+	    {
+	        (*pfn)(LOAD_LIBRARY_SEARCH_SYSTEM32);
+	    }
+
+	    preload_libs();
+    };
+
+    mitigate_dll_hijacking();
+
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger()
 {
     while (!pal_isdebuggerpresent())

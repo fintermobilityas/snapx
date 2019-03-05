@@ -12,6 +12,8 @@ using json = nlohmann::json;
 
 int corerun_demoapp_main_impl(int argc, char **argv)
 {
+    pal_mitigate_dll_hijacking();
+
     char* app_name = nullptr;
     if (!pal_process_get_name(&app_name))
     {

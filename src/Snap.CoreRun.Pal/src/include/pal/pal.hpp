@@ -69,9 +69,14 @@ typedef pid_t pal_pid_t;
 
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
+#if defined(PAL_PLATFORM_WINDOWS)
+typedef BOOL(WINAPI *win32_set_default_dll_directories_function)(DWORD directory_flags);
+#endif
+
 // - Generic
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_mitigate_dll_hijacking();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_wait_for_debugger();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL pinning_required, void** instance_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);

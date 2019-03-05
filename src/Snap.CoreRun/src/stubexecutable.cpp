@@ -40,16 +40,16 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
 
     executable_full_path = app_dir_str + PAL_DIRECTORY_SEPARATOR_C + app_name_str;
 
-    const auto argc = static_cast<int>(arguments.size());
+    const auto argc = static_cast<uint32_t>(arguments.size());
     const auto argv = new char* [argc];
 
-    for (auto i = 0; i < argc; i++)
+    for (auto i = 0u; i < argc; i++)
     {
         argv[i] = _strdup(arguments[i].c_str());
     }
 
     pal_pid_t process_pid;
-    if (pal_process_daemonize(executable_full_path.c_str(), app_dir_str.c_str(), argc, argv, cmd_show, &process_pid)
+    if (pal_process_daemonize(executable_full_path.c_str(), app_dir_str.c_str(), static_cast<int>(argc), argv, cmd_show, &process_pid)
         && process_pid > 0)
     {
         exit_code = 0;

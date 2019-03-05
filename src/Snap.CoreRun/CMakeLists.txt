@@ -67,6 +67,7 @@ if(WIN32)
 	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
 	endforeach()
 
+    pal_mitigate_dll_hijacking_for_targets(corerun corerun_demoapp)
 elseif(UNIX)
 
     target_link_libraries(corerun PUBLIC

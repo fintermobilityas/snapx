@@ -2,6 +2,21 @@ cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 
 project(pal CXX)
 
+# https://github.com/Squirrel/Squirrel.Windows/pull/1444/files
+function(pal_mitigate_dll_hijacking_for_targets targets)
+    if(WIN32)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+            set(PAL_WIN32_DELAYLOAD_DLLS "user32.dll;advapi32.dll;shell32.dll;ole32.dll;oleaut32.dll;urlmon.dll")
+            set_property(TARGET ${targets} PROPERTY LINK_FLAGS "/DELAYLOAD:${PAL_WIN32_DELAYLOAD_DLLS}")
+            message(STATUS "Dll mitigation enabled for targets: ${targets}")        
+        elseif (CMAKE_COMPILER_IS_GNUCXX)
+            message(WARNING "Dll mitigation disabled. Does anyone know how this could be achieved when targeting mingw? Then please submit a pull request on Github :)")
+        endif()
+    else()
+    message(FATAL_ERROR "Dll hijack mitigation is only supported on Windows")
+    endif()
+endfunction()
+
 list(APPEND pal_INCLUDE_DIRS
    src/include
 )
@@ -92,6 +107,7 @@ if(WIN32)
 
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		target_compile_options(pal_static PUBLIC "/MT$<$<CONFIG:Debug>:d>")
+        pal_mitigate_dll_hijacking_for_targets(pal)
 	endif()
 	
 elseif(UNIX)

@@ -11,6 +11,8 @@ int APIENTRY wWinMain(
     _In_ const int  n_cmd_show)
     // ReSharper enable all
 {
+    pal_mitigate_dll_hijacking();
+
     auto argc = 0;
     const auto argw = CommandLineToArgvW(GetCommandLineW(), &argc);
 

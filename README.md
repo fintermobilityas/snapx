@@ -1,4 +1,4 @@
-# Snapx
+# Snapx 
 
 | [docs](.) / README.md |
 |:---|
@@ -38,3 +38,11 @@ guidelines](CONTRIBUTING.md). This project adheres to Snapx's
 uphold this code.**
 
 ...
+
+## Sponsors
+<p align="center">
+<a href="https://www.youpark.no" target="_blank"><img src="https://cdn.youpark.no/cdn/frontend/27/static/apps/youpark/images/app/logo-black.png"></a>
+</p>
+
+## License
+Snapx is under the MIT license. See the [LICENSE](LICENSE.md) for more information.

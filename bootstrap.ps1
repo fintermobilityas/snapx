@@ -263,7 +263,7 @@ function Invoke-Build-Snap-Installer {
         -DestinationPath $SnapInstallerExeZipAbsolutePath
 }
 
-function INvoke-Native-Unit-Tests
+function Invoke-Native-Unit-Tests
 {
     switch($OSPlatform)
     {
@@ -403,7 +403,7 @@ switch ($Target) {
         Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
-        INvoke-Native-Unit-Tests   
+        Invoke-Native-Unit-Tests   
     }
     "Run-Dotnet-UnitTests" {
         Invoke-Dotnet-Unit-Tests

@@ -200,11 +200,15 @@ function Invoke-Google-Tests
         [string] $GTestsDirectory,
         [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $GTestsExe,
-        [Parameter(Position = 2, Mandatory = $true, ValueFromPipeline = $true)]
+        [Parameter(Position = 2, ValueFromPipeline = $true)]
         [string[]] $GTestsArguments 
     )
     try 
     {
+        if($null -eq $GTestsArguments) {
+            $GTestsArguments = @()
+        }
+        
         Push-Location $GTestsDirectory
         $GTestsExe = Join-Path $GTestsDirectory $GTestsExe
         $GTestsArguments += "--gtest_output=""xml:./googletestsummary.xml"""        

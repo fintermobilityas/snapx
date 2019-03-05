@@ -313,6 +313,12 @@ switch ($Target) {
         exit 0 
     }    
     "Native" {
+        if($env:SNAPX_DOCKER_BUILD -eq $false)
+        {
+            Invoke-Docker -Entrypoint Native
+            return
+        }
+
         Invoke-Build-Native
         Invoke-Native-UnitTests
         Invoke-Summary

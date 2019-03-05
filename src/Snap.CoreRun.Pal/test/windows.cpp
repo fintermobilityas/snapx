@@ -6,13 +6,22 @@ using testutils = corerun::support::util::test_utils;
 
 namespace
 {
-    TEST(PAL_GENERIC, pal_is_windows)
+    TEST(PAL_GENERIC_WINDOWS, pal_set_icon_DoesNotSegfault)
+    {
+        const auto exe_filename = "corerun_demoapp.exe";
+        const auto icon_filename = "test.ico";
+        ASSERT_FALSE(pal_has_icon(exe_filename));
+        ASSERT_TRUE(pal_set_icon(exe_filename, icon_filename));
+        ASSERT_TRUE(pal_has_icon(exe_filename));
+    }
+
+    TEST(PAL_GENERIC_WINDOWS, pal_is_windows)
     {
         EXPECT_TRUE(pal_is_windows());
         EXPECT_FALSE(pal_is_linux());
     }
 
-    TEST(PAL_GENERIC, pal_process_exec)
+    TEST(PAL_GENERIC_WINDOWS, pal_process_exec)
     {
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));

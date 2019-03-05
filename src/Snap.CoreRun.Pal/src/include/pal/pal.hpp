@@ -91,7 +91,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char* name_in, BOOL p
 PAL_API BOOL PAL_CALLING_CONVENTION pal_free_library(void* instance_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const char* name_in, void** ptr_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated();
-PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char* filename_in, char* icon_filename_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(const char* filename_in, const char* icon_filename_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_has_icon(const char * filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_cwd(char **cwd_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid);

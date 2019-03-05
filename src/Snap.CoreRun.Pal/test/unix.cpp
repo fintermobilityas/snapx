@@ -54,13 +54,13 @@ namespace
         path_combine_test_case(nullptr, nullptr, nullptr)
     };
 
-    TEST(PAL_GENERIC, pal_is_linux)
+    TEST(PAL_GENERIC_UNIX, pal_is_linux)
     {
         ASSERT_FALSE(pal_is_windows());
         ASSERT_TRUE(pal_is_linux()); 
     }
 
-    TEST(PAL_GENERIC, pal_process_exec)
+    TEST(PAL_GENERIC_UNIX, pal_process_exec)
     {
         char* working_dir = nullptr;
         ASSERT_TRUE(pal_process_get_cwd(&working_dir));
@@ -96,13 +96,12 @@ namespace
             ASSERT_STREQ(path_combined, test_case.combined);
         }
     }
-/*
-    TEST(PAL_FS_UNIX, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
+
+    TEST(Disable_PAL_FS_UNIX, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {
         char* working_dir = nullptr;
         ASSERT_TRUE(pal_fs_get_cwd(&working_dir));
         ASSERT_TRUE(pal_fs_directory_exists(working_dir));
     }
-*/
 
 }

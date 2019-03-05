@@ -60,6 +60,7 @@ namespace snap::rcedit
         bool SetIcon(const WCHAR* path, const LANGID& langId, UINT iconBundle);
         bool SetIcon(const WCHAR* path, const LANGID& langId);
         bool SetIcon(const WCHAR* path);
+        bool HasIcon();
         bool Commit();
 
         static BOOL CALLBACK OnEnumResourceName(HMODULE hModule, LPCWSTR lpszType, LPWSTR lpszName, LONG_PTR lParam);

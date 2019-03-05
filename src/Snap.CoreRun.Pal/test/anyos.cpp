@@ -8,6 +8,15 @@ using testutils = corerun::support::util::test_utils;
 
 namespace
 {
+    TEST(PAL_GENERIC, pal_set_icon_DoesNotSegfault)
+    {
+        pal_set_icon(nullptr, nullptr);
+    }
+
+    TEST(PAL_GENERIC, pal_has_icon_DoesNotSegfault)
+    {
+        pal_has_icon(nullptr);
+    }
 
     TEST(PAL_GENERIC, pal_process_get_name_ReturnsThisProcessExeName)
     {

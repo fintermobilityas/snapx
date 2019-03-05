@@ -190,6 +190,10 @@ namespace snap::rcedit
         return SetIcon(path, langId);
     }
 
+    bool ResourceUpdater::HasIcon() {
+        return !iconBundleMap_.empty();
+    }
+
     bool ResourceUpdater::Commit() {
         if (module_ == nullptr) {
             return false;

@@ -273,7 +273,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_elevated() {
     return is_elevated;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon_filename_in)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(const char * filename_in, const char * icon_filename_in)
 {
     if (!pal_fs_file_exists(filename_in)
         || !pal_fs_file_exists(icon_filename_in))
@@ -298,6 +298,26 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(char * filename_in, char * icon
         return FALSE;
     }
     return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_has_icon(const char * filename_in)
+{
+    if (!pal_fs_file_exists(filename_in))
+    {
+        return FALSE;
+    }
+
+#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+    pal_utf16_string filename_in_utf16_string(filename_in);
+    snap::rcedit::ResourceUpdater resourceUpdater;
+    if (!resourceUpdater.Load(filename_in_utf16_string.data()))
+    {
+        return FALSE;
+    }
+    return resourceUpdater.HasIcon() ? TRUE : FALSE;
 #else
     return FALSE;
 #endif

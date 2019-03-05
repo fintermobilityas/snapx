@@ -72,7 +72,8 @@ target_link_libraries(corerun_tests PRIVATE
     gtest_main)
 
 add_custom_target(always_copy_test_dependencies ALL
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying corerun, corerun_demoapp tests directory: $<TARGET_FILE_DIR:corerun_tests>"
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying tests assetst to directory: $<TARGET_FILE_DIR:corerun_tests>"
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/Snap.CoreRun/src/resources/CoreRun.ico" "$<TARGET_FILE_DIR:corerun_tests>/test.ico"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun_demoapp>" "$<TARGET_FILE_DIR:corerun_tests>"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:corerun>" "$<TARGET_FILE_DIR:corerun_tests>"
 )

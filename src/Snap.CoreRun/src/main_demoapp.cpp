@@ -1,6 +1,3 @@
-const int unit_test_success_exit_code = 0;
-const int unit_test_error_exit_code = 1;
-
 #include <iostream>
 #include <vector>
 #include <sstream>
@@ -9,6 +6,9 @@ const int unit_test_error_exit_code = 1;
 #include "nlohmann/json.hpp"
 
 using json = nlohmann::json;
+
+const pal_exit_code_t unit_test_success_exit_code = 0;
+const pal_exit_code_t unit_test_error_exit_code = 1;
 
 int corerun_demoapp_main_impl(int argc, char **argv)
 {
@@ -65,7 +65,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
 
     pal_fs_write(log_filename_str.c_str(), "wb", data, data_len);
 
-    auto exit_code = output["exit_code"].get<int>();
+    auto exit_code = output["exit_code"].get<pal_exit_code_t>();
     return exit_code;
 }
 

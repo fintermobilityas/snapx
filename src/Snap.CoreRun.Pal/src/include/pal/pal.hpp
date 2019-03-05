@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <wait.h>
 #include <cstdint>
+#include <sys/stat.h> // mode_t
 #define PAL_MAX_PATH PATH_MAX
 #define PAL_DIRECTORY_SEPARATOR_STR "/"
 #define PAL_DIRECTORY_SEPARATOR_C '/'
@@ -61,8 +62,12 @@ typedef FILE pal_file_handle_t;
 
 #if defined(PAL_PLATFORM_WINDOWS) 
 typedef DWORD pal_pid_t;
+typedef int pal_mode_t;
+typedef DWORD pal_exit_code_t;
 #elif defined(PAL_PLATFORM_LINUX)
 typedef pid_t pal_pid_t;
+typedef mode_t pal_mode_t;
+typedef int pal_exit_code_t;
 #endif
 
 // - Callbacks
@@ -90,12 +95,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_name(char **exe_name_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in,
-                                                     const int argc_in, char **argv_in, int *exit_code_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, const int argc_in,
+                                                     int argc_in, char **argv_in, pal_exit_code_t *exit_code_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in, int argc_in,
                                                           char **argv_in,
                                                           int cmd_show_in /* Only applicable on Windows */,
                                                           pal_pid_t *pid_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(unsigned int milliseconds);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(uint32_t milliseconds);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os();
@@ -109,7 +114,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_i
 
 // - Filesystem
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, uint32_t mode);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, pal_mode_t mode);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char* path_in, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char* path_in_lhs, const char* path_in_rhs, char** path_out);
@@ -123,7 +128,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, uint32_t mode_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_mode_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);

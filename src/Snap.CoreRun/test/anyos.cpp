@@ -76,9 +76,9 @@ namespace {
     {
     public:
         std::vector<std::string> stub_arguments;
-        int stub_exit_code{};
+        pal_exit_code_t stub_exit_code{};
         corerun_app_details app_details;
-        int app_exit_code{};
+        pal_exit_code_t app_exit_code{};
         std::vector<std::string> app_arguments;
         std::string run_working_dir;
         std::string run_command;
@@ -212,7 +212,7 @@ namespace {
                 throw std::runtime_error("Fatal error! Install directory does not exist: " + this->install_dir);
             }
 
-            int stub_executable_exit_code = 0;
+            pal_exit_code_t stub_executable_exit_code = 0;
             if (!pal_process_exec(this->install_dir_corerun_exe.c_str(), this->install_dir.c_str(), static_cast<int>(argc), argv,
                 &stub_executable_exit_code))
             {

@@ -17,7 +17,7 @@ namespace
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_process_get_cwd(&working_dir));
 
-        auto exit_code = 1;
+        pal_exit_code_t exit_code = 1;
         EXPECT_TRUE(pal_process_exec("whoami", working_dir, -1, nullptr, &exit_code));
         EXPECT_EQ(exit_code, 0);
     }

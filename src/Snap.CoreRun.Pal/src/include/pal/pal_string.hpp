@@ -59,9 +59,9 @@ public:
     pal_string(pal_string&&) noexcept = delete;
     pal_string& operator=(pal_string&&) noexcept = delete;
 
-    friend std::ostream& operator << (std::ostream& out, const pal_string& pal_string)
+    friend std::basic_ostream<TStorageClass>& operator<<(std::basic_ostream<TStorageClass>& out, const pal_string& pal_string)
     {
-        out << pal_string.m_value.data();
+        out << pal_string.m_value;
         return out;
     }
 

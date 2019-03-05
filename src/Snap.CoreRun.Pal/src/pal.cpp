@@ -80,6 +80,10 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
 {
 #if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
 
+#ifdef PAL_LOGGING_ENABLED
+    LOGV << "Dll mitigation enabled";
+#endif 
+
     // https://github.com/Squirrel/Squirrel.Windows/pull/1444
 
     // Some libraries are still loaded from the current directories.
@@ -482,22 +486,35 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     if (!create_process_result)
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "CreateProcess: " << cmd_line << ". Error code: " << GetLastError();
+#endif
         return FALSE;
     }
 
     const auto result = WaitForSingleObject(pi.hProcess, INFINITE);
     if (result != WAIT_OBJECT_0)
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "WaitForSingleObject: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError();
+#endif
         return FALSE;
     }
 
     DWORD exit_code;
     if (FALSE == GetExitCodeProcess(pi.hProcess, &exit_code))
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "GetExitCodeProcess: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError() << std::endl;
+#endif
         return FALSE;
     }
 
     *exit_code_out = exit_code;
+
+#ifdef PAL_LOGGING_ENABLED
+    LOGV << "Process exited. Filename: " << filename_in << ". Pid: " << pi.dwProcessId << ". Exit code: " << exit_code;
+#endif
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
@@ -505,6 +522,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     if (working_dir_in != nullptr
         && 0 != chdir(working_dir_in))
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+#endif
         return FALSE;
     }
 
@@ -525,14 +545,17 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     {
         if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
         {
-            char errmsg[64];
-            snprintf( errmsg, sizeof(errmsg), "exec '%s' failed", exec_args_tmp[0] );
-            perror( errmsg );
+#ifdef PAL_LOGGING_ENABLED
+            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+#endif
             return FALSE;
         }
     } else if(child_pid > 0) {
         wait(&exit_status);
         *exit_code_out = WEXITSTATUS(exit_status);
+#ifdef PAL_LOGGING_ENABLED
+        LOGV << "Process exited. Filename: " << exec_args_tmp[0] << ". Pid: " << child_pid << ". Exit code: " << *exit_code_out;
+#endif
         return *exit_code_out == -1 ? FALSE : TRUE;
     }
     return FALSE;
@@ -583,6 +606,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     if (!create_process_result)
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "CreateProcess: " << cmd_line << ". Error code: " << GetLastError();
+#endif
         return FALSE;
     }
 
@@ -598,6 +624,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     if (working_dir_in != nullptr
         && 0 != chdir(working_dir_in))
     {
+#ifdef PAL_LOGGING_ENABLED
+        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+#endif
         return FALSE;
     }
 
@@ -617,9 +646,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     {
         if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
         {
-            char errmsg[64];
-            snprintf(errmsg, sizeof(errmsg), "exec '%s' failed", exec_args_tmp[0]);
-            perror(errmsg);
+#ifdef PAL_LOGGING_ENABLED
+            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+#endif
             return FALSE;
         }
     } else if(child_pid > 0) {
@@ -1488,9 +1517,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_m
     PAL_UNUSED(mode_in);
     pal_utf16_string directory_in_utf16_string(directory_in);
     const auto status = CreateDirectory(directory_in_utf16_string.data(), nullptr);
+#ifdef PAL_LOGGING_ENABLED
+    if(status == 0)
+    {
+        LOGE << "Error creating directory: " << directory_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+    }
+#endif
     return status != 0 ? TRUE : FALSE;
 #else
     const auto status = mkdir(directory_in, mode_in);
+#ifdef PAL_LOGGING_ENABLED
+    if(status != 0)
+    {
+        LOGE << "Error creating directory: " << directory_in << ". Mode: " << mode_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+    }
+#endif
     return status == 0 ? TRUE : FALSE;
 #endif
 }
@@ -1503,10 +1544,22 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
     }
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
-    const auto success = DeleteFile(filename_in_utf16_string.data());
-    return success != 0;
+    const auto status = DeleteFile(filename_in_utf16_string.data());
+#ifdef PAL_LOGGING_ENABLED
+    if(status == 0)
+    {
+        LOGE << "Error removing file: " << filename_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+    }
+#endif
+    return status != 0 ? TRUE : FALSE;
 #elif defined(PAL_PLATFORM_LINUX)
     const auto success = remove(filename_in);
+#ifdef PAL_LOGGING_ENABLED
+    if(status != 0)
+    {
+        LOGE << "Error removing file: " << filename_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+    }
+#endif
     return success == 0 ? TRUE : FALSE;
 #else 
     return FALSE;
@@ -1525,12 +1578,24 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     if (!recursive)
     {
         const auto status = RemoveDirectory(directory_in_utf16_string.data());
+#ifdef PAL_LOGGING_ENABLED
+        if(status == 0)
+        {
+            LOGE << "Error removing directory: " << directory_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+        }
+#endif
         return status != 0 ? TRUE : FALSE;
     }
 #elif defined(PAL_PLATFORM_LINUX)
     if(!recursive)
     {
         const auto status = rmdir(directory_in);
+#ifdef PAL_LOGGING_ENABLED
+        if(status != 0)
+        {
+            LOGE << "Error removing directory: " << directory_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+        }
+#endif
         return status == 0 ? TRUE : FALSE;    
     }
 #else

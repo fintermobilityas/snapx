@@ -14,16 +14,22 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 set(GNU_CXX_WARNING_FLAGS "-Wall -Weffc++ -Wextra -Wsign-conversion")
 set(MSVS_CXX_WARNING_FLAGS "/W4")
 
-option(BUILD_ENABLE_LTO "Enable lto support" OFF)
+option(BUILD_ENABLE_LTO "Build with LINK TIME OPTIMIZATION enabled" OFF)
 option(BUILD_ENABLE_TESTS "Build with tests enabled" ON)
+option(BUILD_ENABLE_LOGGING "Build with logging enabled" ON)
 
 add_subdirectory(Snap.CoreRun.Pal)
 add_subdirectory(Snap.CoreRun)
 
 if (BUILD_ENABLE_TESTS)
 
+  message(STATUS "Unit tests enabled.")
+
   add_subdirectory(Vendor/gtest)
   enable_testing()
+  
+  set(GTEST_ALL_CPP_FILENAME ${PROJECT_SOURCE_DIR}/Vendor/gtest/googletest/src/gtest-all.cc)
+  set_source_files_properties(${GTEST_ALL_CPP_FILENAME} PROPERTIES LANGUAGE CXX)
 
   add_subdirectory(Snap.CoreRun.Tests)
 
@@ -69,6 +75,7 @@ message(STATUS "")
 message(STATUS "  Options:")
 message(STATUS "    Lto: "           ${BUILD_ENABLE_LTO})
 message(STATUS "    Tests: "		 ${BUILD_ENABLE_TESTS})
+message(STATUS "    Logging: "		 ${BUILD_ENABLE_LOGGING})
 
 message(STATUS "  C/C++:")
 message(STATUS "    C++ Compiler: "           ${SNAP_COMPILER_STR})

@@ -1,35 +1,57 @@
 ﻿{
-    "configurations": [
+  "configurations": [
+    {
+      "name": "msvs-x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
         {
-            "name": "msvs-x64-Debug",
-            "generator": "Ninja",
-            "configurationType": "Debug",
-            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
-            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-            "cmakeCommandArgs": "",
-            "buildCommandArgs": "",
-            "ctestCommandArgs": "",
-            "inheritEnvironments": [ "msvc_x64_x64" ],
-            "variables": [],
-            "intelliSenseMode": "windows-msvc-x64"
+          "name": "BUILD_PAL_ENABLE_LOGGING",
+          "value": "ON",
+          "type": "STRING"
         },
         {
-            "name": "msvs-x64-Release",
-            "generator": "Ninja",
-            "configurationType": "Release",
-            "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
-            "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-            "cmakeCommandArgs": "",
-            "buildCommandArgs": "",
-            "ctestCommandArgs": "",
-            "inheritEnvironments": [ "msvc_x64_x64" ],
-            "variables": [
-                {
-                    "name": "BUILD_ENABLE_LTO",
-                    "value": "1"
-                }
-            ],
-            "intelliSenseMode": "windows-msvc-x64"
+          "name": "BUILD_ENABLE_TESTS",
+          "value": "ON",
+          "type": "STRING"
         }
-    ]
+      ],
+      "intelliSenseMode": "windows-msvc-x64"
+    },
+    {
+      "name": "msvs-x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "BUILD_ENABLE_LTO",
+          "value": "ON",
+          "type": "STRING"
+        },
+        {
+          "name": "BUILD_PAL_ENABLE_LOGGING",
+          "value": "ON",
+          "type": "STRING"
+        },
+        {
+          "name": "BUILD_ENABLE_TESTS",
+          "value": "ON",
+          "type": "STRING"
+        }
+      ],
+      "intelliSenseMode": "windows-msvc-x64"
+    }
+  ]
 }

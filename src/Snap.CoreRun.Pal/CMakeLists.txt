@@ -26,6 +26,12 @@ list(APPEND pal_SOURCES
    src/pal.cpp
 )
 
+list(APPEND pal_DEFINES
+    UNICODE
+    _UNICODE
+)
+list(APPEND pal_static_LIBS)
+
 if(WIN32)
 	list(APPEND pal_INCLUDE_DIRS
 		src/vendor
@@ -35,10 +41,6 @@ if(WIN32)
 	)
 endif()
 
-include_directories(
-   ${pal_INCLUDE_DIRS}
-)
-
 add_library(pal_static 
 	${pal_SOURCES}
 )
@@ -46,106 +48,69 @@ add_library(pal_static
 add_library(pal SHARED 
 	${pal_SOURCES}
 )
-	
-target_include_directories(pal PUBLIC
-    src/include
-)
 
-target_include_directories(pal_static PUBLIC
-    src/include
-)
+if(BUILD_PAL_ENABLE_LOGGING)
+    list(APPEND pal_DEFINES
+        PAL_LOGGING_ENABLED
+    )
+    list(APPEND pal_INCLUDE_DIRS
+        ../Vendor/plog/include
+    )   
+    message(STATUS "Pal logging enabled.")
+endif()
 
 if(WIN32)
 	
 	if (CMAKE_COMPILER_IS_GNUCXX)
-        target_compile_definitions(pal PUBLIC 
-		    PAL_PLATFORM_MINGW
-	    )	
-        target_compile_definitions(pal_static PUBLIC 
-		    PAL_PLATFORM_MINGW
-	    )	
-		target_link_libraries(pal_static PUBLIC
-			-static-libgcc 
+        list(APPEND pal_DEFINES
+            PAL_PLATFORM_MINGW
+        )
+        list(APPEND pal_static_LIBS
+            -static-libgcc 
 			-static-libstdc++
-		)
+        )
 	endif()
 
-    target_compile_definitions(pal PUBLIC 
-		PAL_PLATFORM_WINDOWS
-	)	
+    list(APPEND pal_DEFINES
+        PAL_PLATFORM_WINDOWS
+        _UNICODE
+		UNICODE
+    )
 
-    target_compile_definitions(pal_static PUBLIC 
-		PAL_PLATFORM_WINDOWS
-	)	
-	
 	list(APPEND pal_LIBS
 		shlwapi
 		shell32
         kernel32
 	)
-	
-	list(APPEND pal_DEFINES		
-		_UNICODE
-		UNICODE
-	)
-
-	target_link_libraries(pal PUBLIC 
-		${pal_LIBS}
-	)
-
-	target_compile_definitions(pal PRIVATE 
-		${pal_DEFINES}
-	)	
-	
-	target_link_libraries(pal_static PUBLIC 
-		${pal_LIBS}
-	)
-	
-	target_compile_definitions(pal_static PRIVATE 
-		${pal_DEFINES}
-	)	
 
 	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		target_compile_options(pal_static PUBLIC "/MT$<$<CONFIG:Debug>:d>")
-        pal_mitigate_dll_hijacking_for_targets(pal)
 	endif()
+
+    pal_mitigate_dll_hijacking_for_targets(pal)
 	
 elseif(UNIX)
 
 	list(APPEND pal_LIBS
 		dl
 	)
+
+    list(APPEND pal_static_LIBS
+        libstdc++.a
+    )
 	
 	list(APPEND pal_DEFINES
-		
-	)
-	
-    target_compile_definitions(pal PUBLIC 
-	    PAL_PLATFORM_LINUX
-    )	
-
-	target_link_libraries(pal PUBLIC
-		${pal_LIBS}
-	)
-
-	target_compile_definitions(pal PRIVATE 
-		${pal_DEFINES}
-	)	
-	
-	target_link_libraries(pal_static PUBLIC
-		${pal_LIBS}
-        libstdc++.a
-	)
-
-    target_compile_definitions(pal_static PUBLIC 
 		PAL_PLATFORM_LINUX
-	)	
+	)
 
-	target_compile_definitions(pal_static PRIVATE 
-		${pal_DEFINES}
-	)	
-	
 endif()
 
-set_property(TARGET pal pal_static PROPERTY CXX_STANDARD 17)
-set_property(TARGET pal pal_static PROPERTY CXX_STANDARD_REQUIRED ON)
+foreach(cmake_target IN ITEMS pal pal_static)
+    target_include_directories(${cmake_target} PUBLIC ${pal_INCLUDE_DIRS})
+	target_compile_definitions(${cmake_target} PUBLIC ${pal_DEFINES})		
+    target_link_libraries(${cmake_target} PUBLIC ${pal_LIBS})
+    set_property(TARGET ${cmake_target} PROPERTY CXX_STANDARD 17)
+    set_property(TARGET ${cmake_target} PROPERTY CXX_STANDARD_REQUIRED ON)
+endforeach(cmake_target)
+
+target_link_libraries(pal_static PUBLIC ${pal_static_LIBS})

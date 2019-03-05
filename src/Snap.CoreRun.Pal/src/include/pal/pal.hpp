@@ -52,6 +52,10 @@
 
 #include "pal_string.hpp"
 
+#if defined(PAL_LOGGING_ENABLED)
+#include <plog/Log.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

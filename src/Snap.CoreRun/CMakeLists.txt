@@ -57,23 +57,7 @@ if(WIN32)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mwindows -municode -Wl,-subsystem,windows")	
 	endif()
 	
-	set(CompilerFlags
-		CMAKE_CXX_FLAGS
-		CMAKE_CXX_FLAGS_DEBUG
-		CMAKE_CXX_FLAGS_RELEASE
-	)
-		
-	foreach(CompilerFlag ${CompilerFlags})
-	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
-	endforeach()
-
     pal_mitigate_dll_hijacking_for_targets(corerun corerun_demoapp)
-elseif(UNIX)
-
-    target_link_libraries(corerun PUBLIC
-        libstdc++.a
-    )
-
 endif()
 
 set_property(TARGET corerun corerun_static corerun_demoapp PROPERTY CXX_STANDARD 17)

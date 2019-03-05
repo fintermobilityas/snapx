@@ -3,9 +3,18 @@ cmake_minimum_required (VERSION 3.10 FATAL_ERROR)
 project(corerun_tests CXX)
 
 set(corerun_tests_SOURCES 
+    ${GTEST_ALL_CPP_FILENAME}
     ../Vendor/crossguid/Guid.cpp
     ../Snap.CoreRun.Pal/test/anyos.cpp
     ../Snap.CoreRun/test/anyos.cpp
+    src/main.cpp
+)
+
+list(APPEND corerun_tests_INCLUDE_DIRS_VENDOR
+    ${gtest_SOURCE_DIR}/include
+    ${gtest_SOURCE_DIR}
+    ../Vendor
+    ../Vendor/json/include
 )
 
 set_source_files_properties(Vendor/crossguid/Guid.cpp PROPERTIES COMPILE_FLAGS -w)
@@ -44,14 +53,12 @@ endif()
 add_executable(corerun_tests ${corerun_tests_SOURCES})
   
 include_directories(corerun_tests SYSTEM
-    ${gtest_SOURCE_DIR}/include
-    ${gtest_SOURCE_DIR}
-    ../Vendor
-    ../Vendor/json/include
+    ${corerun_tests_INCLUDE_DIRS_VENDOR}
 )
 
 target_include_directories(corerun_tests PRIVATE
     src/include
+    ${corerun_tests_INCLUDE_DIRS_VENDOR}
 )
 
 target_compile_definitions(corerun_tests PRIVATE 

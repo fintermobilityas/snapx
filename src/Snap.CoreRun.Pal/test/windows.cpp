@@ -40,14 +40,16 @@ namespace
 
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {
-        auto process_working_dir = testutils::get_process_cwd();
+        const auto process_working_dir = testutils::get_process_cwd();
 #if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
-        EXPECT_STRNE(process_working_dir.c_str(), nullptr);
-        EXPECT_GT(SetCurrentDirectory(process_working_dir.c_str()), 0);
+        pal_utf16_string process_working_dir_utf16_str(process_working_dir);
+        EXPECT_STRNE(process_working_dir_utf16_str.data(), nullptr);
+        EXPECT_GT(SetCurrentDirectory(process_working_dir_utf16_str.data()), 0);
 #endif
         char* working_dir = nullptr;
         EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
         EXPECT_TRUE(pal_fs_directory_exists(working_dir));
+        delete working_dir;
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_mkdir_LongPath)

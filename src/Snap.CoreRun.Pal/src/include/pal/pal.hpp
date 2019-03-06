@@ -21,6 +21,7 @@
 
 #ifdef PAL_PLATFORM_WINDOWS
 #define PAL_MAX_PATH MAX_PATH 
+#define PAL_MAX_PATH_UNICODE (1 << 15) // https://docs.microsoft.com/en-gb/windows/desktop/FileIO/naming-a-file#maximum-path-length-limitation
 #define PAL_DIRECTORY_SEPARATOR_STR "\\"
 #define PAL_DIRECTORY_SEPARATOR_WIDE_STR L"\\"
 #define PAL_DIRECTORY_SEPARATOR_C '\\'
@@ -51,10 +52,9 @@
 #endif
 
 #include "pal_string.hpp"
+#include "pal_module.hpp"
 
-#if defined(PAL_LOGGING_ENABLED)
 #include <plog/Log.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,7 +103,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
                                                           pal_pid_t *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(uint32_t milliseconds);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
-PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_10_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_8_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_7_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
@@ -119,16 +118,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_expand_str(const char* environment_i
 // - Filesystem
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_chmod(const char* path_in, pal_mode_t mode);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char* path_in, char** path_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char* path_in_lhs, const char* path_in_rhs, char** path_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_directories(const char* path_in, pal_fs_list_filter_callback_t filter_callback_in,
         const char* filter_extension_in, char*** directories_out, size_t* directories_out_len);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char* path_in, pal_fs_list_filter_callback_t filter_callback_in,
         const char* filter_extension_in, char*** files_out, size_t* files_out_len);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char* path_in, char** path_absolute_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out);
@@ -140,6 +135,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const char* data_in, size_t data_len_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, const char* data_in, size_t data_len_in);
+
+// - Path
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char* path_in, char** path_normalized_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name(const char* path_in, char** path_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name_from_file_path(const char * path_in, char ** path_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_combine(const char* path1, const char* path2, char** path_out);
 
 // - String
 

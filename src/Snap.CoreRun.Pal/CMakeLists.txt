@@ -19,6 +19,7 @@ endfunction()
 
 list(APPEND pal_INCLUDE_DIRS
    src/include
+   ../Vendor/plog/include
 )
 
 list(APPEND pal_SOURCES
@@ -30,6 +31,7 @@ list(APPEND pal_SOURCES
 list(APPEND pal_DEFINES
     UNICODE
     _UNICODE
+    PAL_LOGGING_ENABLED
 )
 list(APPEND pal_static_LIBS)
 
@@ -49,16 +51,6 @@ add_library(pal_static
 add_library(pal SHARED 
 	${pal_SOURCES}
 )
-
-if(BUILD_PAL_ENABLE_LOGGING)
-    list(APPEND pal_DEFINES
-        PAL_LOGGING_ENABLED
-    )
-    list(APPEND pal_INCLUDE_DIRS
-        ../Vendor/plog/include
-    )   
-    message(STATUS "Pal logging enabled.")
-endif()
 
 if(WIN32)
 	

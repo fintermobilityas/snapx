@@ -121,8 +121,6 @@ function Invoke-Build-Native {
         $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"
     }
 
-    $CmakeArguments += "-DBUILD_ENABLE_LOGGING=ON"
-
     if ($Configuration -eq "Debug") {
         $CmakeArguments += "-DCMAKE_BUILD_TYPE=Debug"
     }

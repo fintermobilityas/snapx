@@ -14,33 +14,69 @@ namespace corerun
             {
             public:
 
-                static bool is_windows10_or_greater()
+                static bool file_copy(const std::string& src_filename, const std::string& dest_filename)
                 {
-                    return pal_is_windows_10_or_greater();
+                    auto bytes = std::make_unique<char*>(new char);
+                    size_t bytes_len = 0;
+                    if (!pal_fs_read_binary_file(src_filename.c_str(), bytes.get(), &bytes_len))
+                    {
+                        return false;
+                    }
+
+                    if (!pal_fs_write(dest_filename.c_str(), "wb", *bytes, bytes_len))
+                    {
+                        return false;
+                    }
+
+                    if (!pal_fs_chmod(dest_filename.c_str(), 0777))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                static std::string path_combine(std::string path1, std::string path2)
+                {
+                    auto path_combined = std::make_unique<char*>(new char);
+                    if (!pal_path_combine(path1.c_str(), path2.c_str(), path_combined.get()))
+                    {
+                        return std::string();
+                    }
+                    return std::string(*path_combined);
                 }
 
                 static std::string get_process_cwd()
                 {
-                    char* working_dir = nullptr;
-                    if (!pal_process_get_cwd(&working_dir))
+                    auto working_dir = std::make_unique<char*>(new char);
+                    if (!pal_process_get_cwd(working_dir.get()))
                     {
                         return std::string();
                     }
-
-                    std::string working_dir_str(working_dir);
-
-#if defined(PAL_PLATFORM_WINDOWS)
-                    // https://docs.microsoft.com/en-us/windows/desktop/fileio/naming-a-file#maximum-path-length-limitation
-                    working_dir_str = R"(\\?\)" + working_dir_str;
-#endif
-
-                    delete working_dir;
-
-                    return working_dir_str;
+                    return std::string(*working_dir);
                 }
 
+                static std::string get_directory_name(const std::string& full_path)
+                {
+                    const auto directory_name_start_pos = full_path.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
+                    if (directory_name_start_pos == std::string::npos)
+                    {
+                        return std::string();
+                    }
+                    return full_path.substr(directory_name_start_pos + 1);
+                }
 
-                static std::string mkdir_random(const std::string& working_dir, const pal_mode_t mode = 0777u)
+                static std::string get_process_real_path()
+                {
+                    auto exe_filename = std::make_unique<char*>(new char);
+                    if (!pal_process_get_real_path(exe_filename.get()))
+                    {
+                        return std::string();
+                    }
+                    return std::string(*exe_filename);
+                }
+
+                static std::string mkdir_random(const std::string& working_dir, const pal_mode_t mode = 0777)
                 {
                     if (mode <= 0)
                     {
@@ -48,7 +84,7 @@ namespace corerun
                     }
 
                     char* random_dir = nullptr;
-                    pal_fs_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), &random_dir);
+                    pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), &random_dir);
                     if (!pal_fs_mkdir(random_dir, mode))
                     {
                         return std::string();
@@ -60,7 +96,7 @@ namespace corerun
                     return random_dir_str;
                 }
 
-                static std::string mkdir(const std::string& working_dir, const char* directory_name, const pal_mode_t mode = 0777u)
+                static std::string mkdir(const std::string& working_dir, const char* directory_name, const pal_mode_t mode = 0777)
                 {
                     if (directory_name == nullptr)
                     {
@@ -68,7 +104,7 @@ namespace corerun
                     }
 
                     char* dst_directory = nullptr;
-                    pal_fs_path_combine(working_dir.c_str(), directory_name, &dst_directory);
+                    pal_path_combine(working_dir.c_str(), directory_name, &dst_directory);
                     if (!pal_fs_mkdir(dst_directory, mode))
                     {
                         return std::string();
@@ -89,7 +125,7 @@ namespace corerun
                     }
 
                     char* dst_filename = nullptr;
-                    if (!pal_fs_path_combine(working_dir.c_str(), filename, &dst_filename))
+                    if (!pal_path_combine(working_dir.c_str(), filename, &dst_filename))
                     {
                         return std::string();
                     }

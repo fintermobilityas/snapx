@@ -12,11 +12,6 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "variables": [
         {
-          "name": "BUILD_PAL_ENABLE_LOGGING",
-          "value": "ON",
-          "type": "STRING"
-        },
-        {
           "name": "BUILD_ENABLE_TESTS",
           "value": "ON",
           "type": "STRING"
@@ -37,11 +32,6 @@
       "variables": [
         {
           "name": "BUILD_ENABLE_LTO",
-          "value": "ON",
-          "type": "STRING"
-        },
-        {
-          "name": "BUILD_PAL_ENABLE_LOGGING",
           "value": "ON",
           "type": "STRING"
         },

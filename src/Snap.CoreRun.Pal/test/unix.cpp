@@ -1,20 +1,9 @@
 #include "gtest/gtest.h"
 #include "pal/pal.hpp"
-
+#include "tests/support/utils.hpp"
 #include <vector>
 
-inline std::string get_process_cwd() {
-    char* working_dir = nullptr;
-    if(!pal_process_get_cwd(&working_dir))
-    {
-        return nullptr;
-    }
-
-    std::string working_dir_str(working_dir);
-    delete working_dir;
-
-    return working_dir_str;
-}
+using testutils = corerun::support::util::test_utils;
 
 namespace
 {
@@ -64,11 +53,6 @@ namespace
         ASSERT_FALSE(pal_is_windows());
     }
 
-    TEST(PAL_GENERIC_UNIX, pal_is_windows_10_or_greater)
-    {
-        ASSERT_FALSE(pal_is_windows_10_or_greater());
-    }
-
     TEST(PAL_GENERIC_UNIX, pal_is_windows_8_or_greater)
     {
         ASSERT_FALSE(pal_is_windows_8_or_greater());
@@ -81,10 +65,9 @@ namespace
 
     TEST(PAL_GENERIC_UNIX, pal_process_exec)
     {
-        char* working_dir = nullptr;
-        ASSERT_TRUE(pal_process_get_cwd(&working_dir));
-        auto exit_code = 1;
-        ASSERT_TRUE(pal_process_exec("ls", working_dir, -1, nullptr, &exit_code));
+        auto exit_code = 1; 
+        const auto working_dir = testutils::get_process_cwd();
+        ASSERT_TRUE(pal_process_exec("ls", working_dir.c_str(), -1, nullptr, &exit_code));
         ASSERT_EQ(exit_code, 0);
     }
 
@@ -103,7 +86,14 @@ namespace
         ASSERT_STREQ(exe_name, "corerun_tests");
     }
 
-    TEST(PAL_FS_UNIX, pal_fs_path_combine)
+    TEST(Disable_PAL_FS_UNIX, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
+    {
+        char* working_dir = nullptr;
+        ASSERT_TRUE(pal_fs_get_cwd(&working_dir));
+        ASSERT_TRUE(pal_fs_directory_exists(working_dir));
+    }
+
+    TEST(PAL_PATH_UNIX, pal_path_combine)
     {
         ASSERT_GT(path_combine_test_cases.size(), 0u);
 
@@ -111,16 +101,9 @@ namespace
         {
             char* path_combined = nullptr;
             const auto ASSERT_success = test_case.combined == nullptr ? FALSE : TRUE;
-            ASSERT_EQ(pal_fs_path_combine(test_case.path1, test_case.path2, &path_combined), ASSERT_success);
+            ASSERT_EQ(pal_path_combine(test_case.path1, test_case.path2, &path_combined), ASSERT_success);
             ASSERT_STREQ(path_combined, test_case.combined);
         }
-    }
-
-    TEST(Disable_PAL_FS_UNIX, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
-    {
-        char* working_dir = nullptr;
-        ASSERT_TRUE(pal_fs_get_cwd(&working_dir));
-        ASSERT_TRUE(pal_fs_directory_exists(working_dir));
     }
 
 }

@@ -7,6 +7,8 @@
 #include "unistd.h" // fork
 #endif
 
+#include <plog/Log.h>
+
 #include <iostream>
 
 inline void main_wait_for_pid(const pal_pid_t pid)
@@ -30,15 +32,18 @@ inline void snapx_maybe_wait_for_debugger()
         return;
     }
 
-    std::cout << "Waiting for debugger to attach..." << std::endl;
+    LOGD << "Waiting for debugger to attach...";
     pal_wait_for_debugger();
-    std::cout << "Debugger attached." << std::endl;
+    LOGD << "Debugger attached.";
 }
 
 inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_windows)
 {
+    LOGD << "Process started. Arguments: " << this_exe::build_argv_str(argc, argv);
+
     if (pal_is_elevated())
     {
+        LOGE << "Current user account is elevated to either root / Administrator, exiting..";
         return 1;
     }
 
@@ -62,6 +67,7 @@ inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_win
             const auto pid_fragment = value.substr(wait_pid_pos + 1);
 
             const pal_pid_t wait_for_this_pid = std::stoul(pid_fragment);
+            LOGD << "Waiting for process with id to exit: " << wait_for_this_pid;
             if (wait_for_this_pid <= 0)
             {
                 continue;
@@ -72,24 +78,32 @@ inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_win
 #if PAL_PLATFORM_LINUX
             // We have to resolve stub executable working directory before fork
             char* working_dir = nullptr;
-            if (!pal_fs_get_directory_name_absolute_path(this_executable_full_path.c_str(), &working_dir))
+            if (!pal_path_get_directory_name_from_file_path(this_executable_full_path.c_str(), &working_dir))
             {
+                LOGE << "Failed to get directory name from path: " << this_executable_full_path;
                 exit(1);
             }
 
             // The reason why we have to fork is that we want to daemonize (background)
             // this process because when the parent process exits this process will be killed.
 
+            LOGD << "Forking";
+
             auto child_pid = fork();
             if (child_pid == 0)
             {
+                LOGD << "Inside child, wait for process to exit";
+
                 // Child process has to wait for the executable that signaled the restart
                 main_wait_for_pid(wait_for_this_pid);
+
+                LOGD << "Process exited: " << wait_for_this_pid << ". Startup arguemnts: " << this_exe::build_argv_str(stubexecutable_arguments);
 
                 // Since we are now inside "app-X.0.0/myawesomeprogram" we have
                 // to change the working directory to the real stub executable working directory
                 if (0 != chdir(working_dir))
                 {
+                    LOGE << "Unable to change working dir: " << working_dir;
                     exit(1);
                 }
 
@@ -102,8 +116,10 @@ inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_win
             }
 #else
             main_wait_for_pid(wait_for_this_pid);
-            break;
 #endif
+                        
+            LOGD << "Process exited: " << wait_for_this_pid << ". Startup arguments: " << this_exe::build_argv_str(stubexecutable_arguments);
+            break;
         }
 
         ++argv_index;

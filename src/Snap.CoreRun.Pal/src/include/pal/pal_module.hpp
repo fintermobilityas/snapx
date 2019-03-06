@@ -1,10 +1,6 @@
 #pragma once
 
-#include "pal.hpp"
-
-#ifdef PAL_LOGGING_ENABLED
-#include <plog/Log.h>
-#endif
+#include <string>
 
 class pal_module final
 {
@@ -19,30 +15,13 @@ public:
     pal_module& operator=(pal_module&&) noexcept = delete;
     ~pal_module();
 
-    bool is_loaded();
+    bool is_loaded() const;
     const std::string& get_filename() const;
     template<typename T>
-    T bind_fn(const std::string& fn);
+    T bind(const std::string& fn)
+    {
+        return reinterpret_cast<T>(bind(fn));
+    }
+private:
+    void* bind(const std::string& fn);
 };
-
-template<class T>
-T pal_module::bind_fn(const std::string& fn)
-{
-    if(!this->is_loaded())
-    {
-#ifdef PAL_LOGGING_ENABLED
-        LOGE << "Failed to load method because module is not loaded. Method: " << fn << ". Module: " << get_filename();
-#endif    
-        return false;
-    }
-
-    void* ptr_fn = nullptr;
-    if(!pal_getprocaddress(m_module, fn.c_str(), &ptr_fn))
-    {
-#ifdef PAL_LOGGING_ENABLED
-        LOGE << "Failed to load method: " << fn << ". Module: " << get_filename();
-#endif
-        return nullptr;
-    }
-    return reinterpret_cast<T>(ptr_fn);
-}

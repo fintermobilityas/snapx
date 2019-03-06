@@ -81,18 +81,16 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
 {
 #if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
 
-#ifdef PAL_LOGGING_ENABLED
     LOGV << "Dll mitigation enabled";
-#endif 
 
     // https://github.com/Squirrel/Squirrel.Windows/pull/1444
 
     // Some libraries are still loaded from the current directories.
     // If we pre-load them with an absolute path then we are good.
-    const auto preload_libs = []() 
+    const auto preload_libs = []()
     {
-	    wchar_t sys32_folder[MAX_PATH];
-	    GetSystemDirectory(sys32_folder, MAX_PATH);
+        wchar_t sys32_folder[MAX_PATH];
+        GetSystemDirectory(sys32_folder, MAX_PATH);
 
         // Todo: The PAL library does not actually load these files.
         // The author of the PR mentions that he used Procmon to observe
@@ -102,31 +100,37 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
         auto logoncli = std::wstring(sys32_folder) + L"\\logoncli.dll";
         auto sspicli = std::wstring(sys32_folder) + L"\\sspicli.dll";
 
-	    LoadLibrary(version.c_str());
-	    LoadLibrary(logoncli.c_str());
-	    LoadLibrary(sspicli.c_str());
+        LoadLibrary(version.c_str());
+        LoadLibrary(logoncli.c_str());
+        LoadLibrary(sspicli.c_str());
+
+        if (pal_is_windows_8_or_greater())
+        {
+            auto path_cch = std::wstring(sys32_folder) + L"\\api-ms-win-core-path-l1-1-0.dll";
+            LoadLibrary(path_cch.c_str());
+        }
     };
 
     const auto mitigate_dll_hijacking = [preload_libs]()
     {
-	    // Set the default DLL lookup directory to System32 for ourselves and kernel32.dll
+        // Set the default DLL lookup directory to System32 for ourselves and kernel32.dll
         // NB! This means that any subsequent LoadLibrary calls will only be able to load
         // DLLS from the SYSTEM32 directory.
-	    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
+        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
 
         const auto h_kernel32 = LoadLibrary(L"kernel32.dll");
-	    assert(h_kernel32 != NULL);
+        assert(h_kernel32 != NULL);
 
         using SetDefaultDllDirectoriesFN = BOOL(WINAPI*)(DWORD DirectoryFlags);
         const auto set_default_dll_directories_fn = reinterpret_cast<SetDefaultDllDirectoriesFN>(
             GetProcAddress(h_kernel32, "SetDefaultDllDirectories"));
 
-	    if (set_default_dll_directories_fn)
-	    {
-	        (*set_default_dll_directories_fn)(LOAD_LIBRARY_SEARCH_SYSTEM32);
-	    }
+        if (set_default_dll_directories_fn)
+        {
+            (*set_default_dll_directories_fn)(LOAD_LIBRARY_SEARCH_SYSTEM32);
+        }
 
-	    preload_libs();
+        preload_libs();
     };
 
     mitigate_dll_hijacking();
@@ -161,13 +165,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
     const auto h_module = LoadLibraryEx(name_in_utf16_string.data(), nullptr, 0);
     if (!h_module)
     {
+        LOGE << "Failed load dll: " << name_in_utf16_string << ". Error code: " << GetLastError();
         return FALSE;
     }
 
     if (pinning_required)
     {
         HMODULE dummy_module;
-        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, name_in_utf16_string.data(), &dummy_module)) {
+        if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, name_in_utf16_string.data(), &dummy_module))
+        {
+            LOGE << "Failed to pin dll: " << name_in_utf16_string << ". Error code: " << GetLastError();
             pal_free_library(h_module);
             return FALSE;
         }
@@ -183,6 +190,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
     auto instance = dlopen(name_in, RTLD_NOW | RTLD_LOCAL);
     if (!instance)
     {
+        LOGE << "Failed to load dynamic library: " << name_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
         return FALSE;
     }
 
@@ -328,13 +336,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_has_icon(const char * filename_in)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_cwd(char **cwd_out)
 {
     char* real_path = nullptr;
-    if(!pal_process_get_real_path(&real_path))
+    if (!pal_process_get_real_path(&real_path))
     {
         return FALSE;
     }
 
     char* real_path_cwd = nullptr;
-    if(!pal_fs_get_directory_name_absolute_path(real_path, &real_path_cwd))
+    if (!pal_path_get_directory_name_from_file_path(real_path, &real_path_cwd))
     {
         delete real_path;
         return FALSE;
@@ -359,7 +367,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_o
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
     char* real_path = nullptr;
-    if (pal_fs_get_absolute_path(symlink_entrypoint_executable, &real_path))
+    if (pal_path_normalize(symlink_entrypoint_executable, &real_path))
     {
         *real_path_out = real_path;
         return TRUE;
@@ -376,16 +384,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 #if defined(PAL_PLATFORM_WINDOWS)
     const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
 
-    if(pss != INVALID_HANDLE_VALUE)
-    {    
+    if (pss != INVALID_HANDLE_VALUE)
+    {
         PROCESSENTRY32 pe = {};
         pe.dwSize = sizeof pe;
 
         if (Process32First(pss, &pe))
         {
-            while(Process32Next(pss, &pe))
+            while (Process32Next(pss, &pe))
             {
-                if(pe.th32ProcessID != pid)
+                if (pe.th32ProcessID != pid)
                 {
                     continue;
                 }
@@ -464,7 +472,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_name(char **exe_name_out)
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, const char *working_dir_in,
-                                                     const int argc_in, char **argv_in, pal_exit_code_t *exit_code_out)
+    const int argc_in, char **argv_in, pal_exit_code_t *exit_code_out)
 {
     if (filename_in == nullptr)
     {
@@ -472,16 +480,26 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     }
 
 #if defined(PAL_PLATFORM_WINDOWS)
-    if(working_dir_in == nullptr)
+    if (working_dir_in == nullptr)
     {
         return FALSE;
     }
 
+    const auto filename_in_str = std::string(filename_in);
+    if (filename_in_str.size() > PAL_MAX_PATH)
+    {
+        // pCommandLine is limited to MAX_PATH characters.
+        LOGE << "Unable to start executable: " << filename_in_str << ". "
+            << "The path component (filename) exceeds " << PAL_MAX_PATH << " characters. "
+            << "This is a hard limit in the WIN32 API and there is nothing that can be done about it.";
+        return FALSE;
+    }
+
     auto cmd_line = std::string("\"");
-    cmd_line += filename_in;
+    cmd_line += filename_in_str;
     cmd_line += "\" ";
 
-    if(argv_in != nullptr && argc_in > 0)
+    if (argv_in != nullptr && argc_in > 0)
     {
         for (auto i = 0; i < argc_in; i++)
         {
@@ -507,35 +525,27 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     if (!create_process_result)
     {
-#ifdef PAL_LOGGING_ENABLED
         LOGE << "CreateProcess: " << cmd_line << ". Error code: " << GetLastError();
-#endif
         return FALSE;
     }
 
     const auto result = WaitForSingleObject(pi.hProcess, INFINITE);
     if (result != WAIT_OBJECT_0)
     {
-#ifdef PAL_LOGGING_ENABLED
         LOGE << "WaitForSingleObject: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError();
-#endif
         return FALSE;
     }
 
     DWORD exit_code;
     if (FALSE == GetExitCodeProcess(pi.hProcess, &exit_code))
     {
-#ifdef PAL_LOGGING_ENABLED
         LOGE << "GetExitCodeProcess: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError() << std::endl;
-#endif
         return FALSE;
     }
 
     *exit_code_out = exit_code;
 
-#ifdef PAL_LOGGING_ENABLED
     LOGV << "Process exited. Filename: " << filename_in << ". Pid: " << pi.dwProcessId << ". Exit code: " << exit_code;
-#endif
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
@@ -543,9 +553,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     if (working_dir_in != nullptr
         && 0 != chdir(working_dir_in))
     {
-#ifdef PAL_LOGGING_ENABLED
-        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
-#endif
+        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
         return FALSE;
     }
 
@@ -553,7 +561,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     auto exec_args_tmp = new char*[exec_args_len];
     exec_args_tmp[0] = _strdup(filename_in);
 
-    for(auto i = 0; i < argc_in; i++)
+    for (auto i = 0; i < argc_in; i++)
     {
         exec_args_tmp[i + 1] = argv_in[i];
     }
@@ -562,28 +570,25 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     auto exit_status = 0;
     auto child_pid = fork();
-    if(child_pid == 0)
+    if (child_pid == 0)
     {
-        if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
+        if (execvp(exec_args_tmp[0], exec_args_tmp) == -1)
         {
-#ifdef PAL_LOGGING_ENABLED
-            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
-#endif
+            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
             return FALSE;
         }
-    } else if(child_pid > 0) {
+    }
+    else if (child_pid > 0) {
         wait(&exit_status);
         *exit_code_out = WEXITSTATUS(exit_status);
-#ifdef PAL_LOGGING_ENABLED
         LOGV << "Process exited. Filename: " << exec_args_tmp[0] << ". Pid: " << child_pid << ". Exit code: " << *exit_code_out;
-#endif
         return *exit_code_out == -1 ? FALSE : TRUE;
     }
     return FALSE;
 #else
     return FALSE;
 #endif
-    }
+}
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_in, const char *working_dir_in,
     const int argc_in, char **argv_in,
@@ -597,8 +602,19 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     }
 
 #if defined(PAL_PLATFORM_WINDOWS)
+
+    const auto filename_in_str = std::string(filename_in);
+    if (filename_in_str.size() > PAL_MAX_PATH)
+    {
+        // pCommandLine is limited to MAX_PATH characters.
+        LOGE << "Unable to start executable: " << filename_in_str << ". "
+            << "The path component (filename) exceeds " << PAL_MAX_PATH << " characters. "
+            << "This is a hard limit in the WIN32 API and there is nothing that can be done about it.";
+        return FALSE;
+    }
+
     auto cmd_line = std::string("\"");
-    cmd_line += filename_in;
+    cmd_line += filename_in_str;
     cmd_line += "\" ";
 
     for (auto i = 0; i < argc_in; i++)
@@ -627,9 +643,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
 
     if (!create_process_result)
     {
-#ifdef PAL_LOGGING_ENABLED
         LOGE << "CreateProcess: " << cmd_line << ". Error code: " << GetLastError();
-#endif
         return FALSE;
     }
 
@@ -645,9 +659,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     if (working_dir_in != nullptr
         && 0 != chdir(working_dir_in))
     {
-#ifdef PAL_LOGGING_ENABLED
-        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
-#endif
+        LOGE << "Error changing working directory: " << working_dir_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
         return FALSE;
     }
 
@@ -655,7 +667,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     auto exec_args_tmp = new char*[exec_argc];
     exec_args_tmp[0] = _strdup(filename_in);
 
-    for(auto i = 0; i < argc_in; i++)
+    for (auto i = 0; i < argc_in; i++)
     {
         exec_args_tmp[i + 1] = argv_in[i];
     }
@@ -663,16 +675,15 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     exec_args_tmp[exec_argc] = nullptr;
 
     auto child_pid = fork();
-    if(child_pid == 0)
+    if (child_pid == 0)
     {
-        if(execvp(exec_args_tmp[0], exec_args_tmp) == -1)
+        if (execvp(exec_args_tmp[0], exec_args_tmp) == -1)
         {
-#ifdef PAL_LOGGING_ENABLED
-            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
-#endif
+            LOGE << "exec failed: " << exec_args_tmp[0] << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
             return FALSE;
         }
-    } else if(child_pid > 0) {
+    }
+    else if (child_pid > 0) {
         *pid_out = child_pid;
     }
 
@@ -688,7 +699,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(const uint32_t milliseconds)
     Sleep(milliseconds);
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
-    struct timespec ts = {0};
+    struct timespec ts = { 0 };
     ts.tv_sec = milliseconds / 1000;
     ts.tv_nsec = (milliseconds % 1000) * 1000000;
     nanosleep(&ts, nullptr);
@@ -702,25 +713,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows()
 {
 #if defined(PAL_PLATFORM_WINDOWS)
     return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_10_or_greater()
-{
-#if defined(PAL_PLATFORM_WINDOWS)
-#if defined(PAL_PLATFORM_MINGW) 
-    const float mingw_get_win_version = []()
-    {
-        OSVERSIONINFO osvi = {};
-        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-        const auto version = static_cast<float>(osvi.dwMajorVersion) + (static_cast<float>(osvi.dwMinorVersion) / 10.0f);
-        return GetVersionEx(&osvi) ? version : 0.0f;
-    };
-    return mingw_get_win_version() >= 10.0f ? TRUE : FALSE;
-#endif
-    return ::IsWindows10OrGreater() ? TRUE : FALSE;
 #else
     return FALSE;
 #endif
@@ -762,7 +754,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os()
 // - Environment
 PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char* value_in)
 {
-    if(name_in == nullptr)
+    if (name_in == nullptr)
     {
         return FALSE;
     }
@@ -791,7 +783,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
     const auto buffer_size = 65535;
     wchar_t buffer[buffer_size];
     const auto actual_len = GetEnvironmentVariable(environment_variable_in_utf16_string.data(), buffer, buffer_size);
-    if(actual_len <= 0)
+    if (actual_len <= 0)
     {
         return FALSE;
     }
@@ -893,24 +885,53 @@ BOOL pal_fs_chmod(const char *path_in, const pal_mode_t mode) {
     return is_success;
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(const char* path_in, char** path_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name_from_file_path(const char * path_in, char ** path_out)
 {
     if (path_in == nullptr)
     {
         return FALSE;
     }
-#if defined(PAL_PLATFORM_WINDOWS)
 
+#if defined(PAL_PLATFORM_WINDOWS)
+    const auto supports_pathcch_module = pal_is_windows_8_or_greater();
     pal_utf16_string path_in_utf16_string(path_in);
+
     wchar_t path_in_without_filespec[PAL_MAX_PATH];
     wcscpy_s(path_in_without_filespec, PAL_MAX_PATH, path_in_utf16_string.data());
 
-    PathRemoveFileSpec(path_in_without_filespec);
+    if (pal_is_windows_8_or_greater())
+    {
+        pal_module pathcch_module("api-ms-win-core-path-l1-1-0.dll");
+        if (!pathcch_module.is_loaded())
+        {
+            return FALSE;
+        }
 
+        using PathCchRemoveFileSpecFn = HRESULT(WINAPI*)(PWSTR  pszPath, size_t cchPath);
+
+        const auto path_cch_remove_file_spec_fn = pathcch_module.bind<PathCchRemoveFileSpecFn>("PathCchRemoveFileSpec");
+        if (path_cch_remove_file_spec_fn == nullptr)
+        {
+            return FALSE;
+        }
+
+        const auto hr = path_cch_remove_file_spec_fn(path_in_without_filespec, PAL_MAX_PATH);
+        if (!SUCCEEDED(hr))
+        {
+            return FALSE;
+        }
+
+        *path_out = pal_utf8_string(path_in_without_filespec).dup();
+
+        return TRUE;
+    }
+
+    PathRemoveFileSpec(path_in_without_filespec);
     *path_out = pal_utf8_string(path_in_without_filespec).dup();
 
     return TRUE;
-#else
+
+#elif defined(PAL_PLATFORM_LINUX)
     auto path_in_cpy = strdup(path_in);
     char* dir = dirname(path_in_cpy);
     if (dir)
@@ -922,10 +943,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name_absolute_path(cons
     }
     delete path_in_cpy;
     return FALSE;
+#else
+    return FALSE;
 #endif
-    }
+}
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_directory_name(const char * path_in, char ** path_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name(const char * path_in, char ** path_out)
 {
     if (path_in == nullptr)
     {
@@ -1040,42 +1063,6 @@ EXIT:
 }
 #endif
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_path_combine(const char * path1, const char * path2, char ** path_out)
-{
-    if (path1 == nullptr
-        || path2 == nullptr)
-    {
-        return FALSE;
-    }
-#if defined(PAL_PLATFORM_WINDOWS)
-
-    pal_utf16_string path_in_lhs_utf16_string(path1);
-    pal_utf16_string path_in_rhs_utf16_string(path2);
-
-    wchar_t path_combined[PAL_MAX_PATH];
-    if (nullptr == PathCombine(path_combined, path_in_lhs_utf16_string.data(), path_in_rhs_utf16_string.data()))
-    {
-        return false;
-    }
-
-    *path_out = pal_utf8_string(path_combined).dup();
-
-    return TRUE;
-#elif defined(PAL_PLATFORM_LINUX)
-    char buffer[1024];
-    if (nullptr == unix_path_combine(path1, path2, buffer))
-    {
-        return FALSE;
-    }
-
-    *path_out = strdup(buffer);
-
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char * file_path_in)
 {
     if (file_path_in == nullptr)
@@ -1120,15 +1107,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 #if defined(PAL_PLATFORM_WINDOWS)
 
     const pal_utf16_string extension_filter_in_utf16_string(
-        filter_extension_in != nullptr ? filter_extension_in : "*");
+        filter_extension_in != nullptr ? filter_extension_in : "*.*");
 
     pal_utf16_string path_root_utf16_string(path_in);
-    if (!path_root_utf16_string.ends_with(PAL_DIRECTORY_SEPARATOR_WIDE_STR))
-    {
-        path_root_utf16_string.append(PAL_DIRECTORY_SEPARATOR_WIDE_STR);
-    }
-
-    path_root_utf16_string.append(extension_filter_in_utf16_string);
+    path_root_utf16_string.append_if_not_ends_width(PAL_DIRECTORY_SEPARATOR_WIDE_STR);
+    path_root_utf16_string.append(extension_filter_in_utf16_string.c_str());
 
     WIN32_FIND_DATA file;
     const auto h_file = FindFirstFile(path_root_utf16_string.data(), &file);
@@ -1158,13 +1141,14 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
         }
 
         const auto relative_path = pal_utf8_string(file.cFileName).str();
-        if (relative_path == "." || relative_path == "..")
+        if (relative_path == "."
+            || relative_path == "..")
         {
             continue;
         }
 
         char* absolute_path = nullptr;
-        if (!pal_fs_path_combine(path_in, relative_path.data(), &absolute_path))
+        if (!pal_path_combine(path_in, relative_path.data(), &absolute_path))
         {
             delete[] absolute_path;
             continue;
@@ -1315,80 +1299,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char * path_in, cons
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out)
 {
 #if defined(PAL_PLATFORM_WINDOWS)
-    #if defined(PAL_PLATFORM_MINGW)
     wchar_t* buffer = nullptr;
     if ((buffer = _wgetcwd(nullptr, 0)) == nullptr)
     {
         return FALSE;
     }
-    
+
     *working_directory_out = pal_utf8_string(buffer).dup();
     delete buffer;
     return TRUE;
-    #else
-    wchar_t buffer[PAL_MAX_PATH];
-    if(0 == GetModuleFileName(nullptr, buffer, PAL_MAX_PATH))
-    {
-        return FALSE;
-    }
-
-    const auto pos = std::wstring(buffer).find_last_of(PAL_DIRECTORY_SEPARATOR_WIDE_STR);  // NOLINT(performance-faster-string-find)
-    if(pos == std::wstring::npos)
-    {
-        return FALSE;
-    }
-
-    const auto working_dir_wstr = std::wstring(buffer).substr(0, pos);
-    *working_directory_out = pal_utf8_string(working_dir_wstr).dup();
-
-    return TRUE;
-    #endif
 #elif defined(PAL_PLATFORM_LINUX)
     char cwd[PAL_MAX_PATH];
     auto status = getcwd(cwd, sizeof(cwd));
     if (status != nullptr)
     {
         *working_directory_out = strdup(cwd);
-        return TRUE;
-    }
-    return FALSE;
-#else
-    return FALSE;
-#endif
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_absolute_path(const char * path_in, char ** path_absolute_out)
-{
-    if (path_in == nullptr)
-    {
-        return FALSE;
-    }
-
-#if defined(PAL_PLATFORM_WINDOWS)
-
-    pal_utf16_string path_in_utf16_string(path_in);
-    pal_utf16_string path_absolute_out_utf16_string(PAL_MAX_PATH);
-    const auto path_absolute_out_len = GetLongPathName(path_in_utf16_string.data(),
-        path_absolute_out_utf16_string.data(), PAL_MAX_PATH);
-    if (path_absolute_out_len == 0)
-    {
-        return FALSE;
-    }
-
-    *path_absolute_out = pal_utf8_string(path_absolute_out_utf16_string.data()).dup();
-
-    return TRUE;
-#elif defined(PAL_PLATFORM_LINUX)
-    char real_path[PAL_MAX_PATH];
-    if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
-    {
-        std::string real_path_str(real_path);
-
-        // realpath should return canonicalized path without the trailing slash
-        assert(real_path_str.back() != '/');
-
-        *path_absolute_out = strdup(real_path_str.c_str());
-
         return TRUE;
     }
     return FALSE;
@@ -1409,15 +1334,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char * path_in
 
     pal_utf16_string path_in_utf16_string(path_in);
 
-    DWORD attributes;
-    if (!path_in_utf16_string.ends_with(PAL_DIRECTORY_SEPARATOR_WIDE_STR))
-    {
-        attributes = GetFileAttributes(path_in_utf16_string.append(PAL_DIRECTORY_SEPARATOR_WIDE_STR).data());
-    }
-    else {
-        attributes = GetFileAttributes(path_in_utf16_string.data());
-    }
-
+    const auto attributes = GetFileAttributes(path_in_utf16_string.data());
     if (attributes == INVALID_FILE_ATTRIBUTES)
     {
         directory_exists = FALSE;
@@ -1467,8 +1384,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
-    struct stat st = {0};
-    if(stat(filename_in, &st) == 0)
+    struct stat st = { 0 };
+    if (stat(filename_in, &st) == 0)
     {
         *file_size_out = st.st_size;
         return TRUE;
@@ -1514,7 +1431,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
         if (read_offset == 0)
         {
             *bytes_out = new char[total_bytes_to_read];
-            if(total_bytes_to_read < read_buffer_size)
+            if (total_bytes_to_read < read_buffer_size)
             {
                 std::memcpy(*bytes_out, &read_buffer, read_buffer_bytes_read);
                 read_offset = read_buffer_bytes_read;
@@ -1546,7 +1463,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
         return FALSE;
     }
 
-    fseek(fp, 0 , SEEK_END);
+    fseek(fp, 0, SEEK_END);
     auto total_size = static_cast<size_t>(ftell(fp));
     rewind(fp);
 
@@ -1575,22 +1492,20 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_m
     PAL_UNUSED(mode_in);
     pal_utf16_string directory_in_utf16_string(directory_in);
     const auto status = CreateDirectory(directory_in_utf16_string.data(), nullptr);
-#ifdef PAL_LOGGING_ENABLED
-    if(status == 0)
+    if (status == 0)
     {
         LOGE << "Error creating directory: " << directory_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+        return FALSE;
     }
-#endif
-    return status != 0 ? TRUE : FALSE;
+    return TRUE;
 #else
     const auto status = mkdir(directory_in, mode_in);
-#ifdef PAL_LOGGING_ENABLED
-    if(status != 0)
+    if (status != 0)
     {
-        LOGE << "Error creating directory: " << directory_in << ". Mode: " << mode_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+        LOGE << "Error creating directory: " << directory_in << ". Mode: " << mode_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
+        return FALSE;
     }
-#endif
-    return status == 0 ? TRUE : FALSE;
+    return TRUE;
 #endif
 }
 
@@ -1601,40 +1516,45 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_
         return FALSE;
     }
 
-    const auto directory_in_str = std::string(directory_in);
-    if(directory_in_str.empty())
+    char* directory_in_normalized = nullptr;
+    if (!pal_path_normalize(directory_in, &directory_in_normalized))
     {
         return FALSE;
     }
 
-    const auto expand_paths = [&directory_in_str]()
-    {
-        const auto delimiter = PAL_DIRECTORY_SEPARATOR_STR;
+    const auto directory_sep = PAL_DIRECTORY_SEPARATOR_STR;
 
-        auto last_index = directory_in_str.find_first_not_of(delimiter, 0);
-        auto current_index = directory_in_str.find_first_of(delimiter, last_index);
+    const auto directory_in_str = std::string(directory_in_normalized);
+    delete directory_in_normalized;
+
+    const auto expand_paths = [&directory_in_str, &directory_sep]()
+    {
+        auto last_index = directory_in_str.find_first_not_of(directory_sep, 0);
+        auto current_index = directory_in_str.find_first_of(directory_sep, last_index);
         auto paths = std::vector<std::string>();
 
         while (std::string::npos != current_index
-                || std::string::npos != last_index)
+            || std::string::npos != last_index)
         {
-            paths.emplace_back(directory_in_str.substr(0, current_index));
-            last_index = directory_in_str.find_first_not_of(delimiter, current_index);
-            current_index = directory_in_str.find_first_of(delimiter, last_index);
+            auto path = directory_in_str.substr(0, current_index);
+            paths.emplace_back(path);
+
+            last_index = directory_in_str.find_first_not_of(directory_sep, current_index);
+            current_index = directory_in_str.find_first_of(directory_sep, last_index);
         }
 
         return paths;
     };
 
     auto directories_created = 0;
-    for(const auto& path : expand_paths())
+    for (const auto& path : expand_paths())
     {
-        if(pal_fs_directory_exists(path.c_str()))
+        if (pal_fs_directory_exists(path.c_str()))
         {
-            continue ;
+            continue;
         }
 
-        if(!pal_fs_mkdir(path.c_str(), mode_in))
+        if (!pal_fs_mkdir(path.c_str(), mode_in))
         {
             return FALSE;
         }
@@ -1654,22 +1574,20 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
     const auto status = DeleteFile(filename_in_utf16_string.data());
-#ifdef PAL_LOGGING_ENABLED
-    if(status == 0)
+    if (status == 0)
     {
         LOGE << "Error removing file: " << filename_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+        return FALSE;
     }
-#endif
-    return status != 0 ? TRUE : FALSE;
+    return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
-    const auto success = remove(filename_in);
-#ifdef PAL_LOGGING_ENABLED
-    if(status != 0)
+    const auto status = remove(filename_in);
+    if (status != 0)
     {
-        LOGE << "Error removing file: " << filename_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+        LOGE << "Error removing file: " << filename_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
+        return FALSE;
     }
-#endif
-    return success == 0 ? TRUE : FALSE;
+    return TRUE;
 #else 
     return FALSE;
 #endif
@@ -1687,25 +1605,23 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     if (!recursive)
     {
         const auto status = RemoveDirectory(directory_in_utf16_string.data());
-#ifdef PAL_LOGGING_ENABLED
-        if(status == 0)
+        if (status == 0)
         {
             LOGE << "Error removing directory: " << directory_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+            return FALSE;
         }
-#endif
-        return status != 0 ? TRUE : FALSE;
+        return TRUE;
     }
 #elif defined(PAL_PLATFORM_LINUX)
-    if(!recursive)
+    if (!recursive)
     {
         const auto status = rmdir(directory_in);
-#ifdef PAL_LOGGING_ENABLED
-        if(status != 0)
+        if (status != 0)
         {
-            LOGE << "Error removing directory: " << directory_in << ". Errno: " << errno << ". Error code: " <<  std::strerror(errno);
+            LOGE << "Error removing directory: " << directory_in << ". Errno: " << errno << ". Error code: " << std::strerror(errno);
+            return FALSE;
         }
-#endif
-        return status == 0 ? TRUE : FALSE;    
+        return TRUE;
     }
 #else
     return FALSE;
@@ -1779,7 +1695,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const 
     }
 #endif
     return fopen_success;
-    }
+}
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const char* data_in, size_t data_len_in)
 {
@@ -1833,6 +1749,165 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_h
     return fclose_success;
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, char ** path_normalized_out)
+{
+    if (path_in == nullptr)
+    {
+        return FALSE;
+    }
+
+#if defined(PAL_PLATFORM_WINDOWS)
+    pal_utf16_string path_in_utf16_string(path_in);
+
+    if (pal_is_windows_8_or_greater())
+    {
+        pal_module pathcch_module("api-ms-win-core-path-l1-1-0.dll");
+        if (!pathcch_module.is_loaded())
+        {
+            return FALSE;
+        }
+
+        using PathCchCanonicalizeFn = HRESULT(WINAPI*)(PWSTR pszPathOut,
+            size_t cchPathOut,
+            PCWSTR pszPathIn);
+
+        auto path_cch_canonicalize_fn = pathcch_module.bind<PathCchCanonicalizeFn>("PathCchCanonicalizeEx");
+        if (path_cch_canonicalize_fn == nullptr)
+        {
+            return FALSE;
+        }
+
+        std::vector<wchar_t> buffer(PAL_MAX_PATH_UNICODE);
+
+        HRESULT const hr = path_cch_canonicalize_fn(buffer.data(),
+            buffer.size(),
+            path_in_utf16_string.data());
+
+        if (!SUCCEEDED(hr))
+        {
+            LOGE << "PathCchCanonicalizeEx failed to normalize path. "
+                << "Path: " << path_in_utf16_string << ". "
+                << "Error code: " << GetLastError();
+            return FALSE;
+        }
+
+        *path_normalized_out = pal_utf8_string(buffer.data()).dup();
+
+        return TRUE;
+    }
+
+    pal_utf16_string path_normalized_utf16_string(PAL_MAX_PATH);
+    const auto len = GetFullPathName(path_in_utf16_string.data(),
+        static_cast<DWORD>(path_normalized_utf16_string.size()), 
+        path_normalized_utf16_string.data(), nullptr);
+
+    if (len == 0 || path_normalized_utf16_string.size() < len)
+    {
+        LOGE << "GetFullPathName failed to normalize path. "
+                << "Path: " << path_in_utf16_string << ". "
+                << "Error code: " << GetLastError();
+        return FALSE;
+    }
+
+    return TRUE;
+#elif defined(PAL_PLATFORM_LINUX)
+    char real_path[PAL_MAX_PATH];
+    if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
+    {
+        std::string real_path_str(real_path);
+
+        // realpath should return canonicalized path without the trailing slash
+        assert(real_path_str.back() != '/');
+
+        *path_normalized_out = strdup(real_path_str.c_str());
+
+        return TRUE;
+    }
+    return FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_path_combine(const char * path1, const char * path2, char ** path_out)
+{
+    if (path1 == nullptr
+        || path2 == nullptr)
+    {
+        return FALSE;
+    }
+#if defined(PAL_PLATFORM_WINDOWS)
+
+    pal_utf16_string path1_utf16_string(path1);
+    pal_utf16_string path2_utf16_string(path2);
+
+    if (pal_is_windows_8_or_greater())
+    {
+        pal_module pathcch_module("api-ms-win-core-path-l1-1-0.dll");
+        if (!pathcch_module.is_loaded())
+        {
+            return FALSE;
+        }
+
+        using PathCchCombineExFn = HRESULT(WINAPI*)(PWSTR pszPathOut,
+            size_t cchPathOut, PCWSTR pszPathIn, PCWSTR pszMore, unsigned long dwFlags);
+
+        auto path_cch_combine_ex_fn = pathcch_module.bind<PathCchCombineExFn>("PathCchCombineEx");
+        if (path_cch_combine_ex_fn == nullptr)
+        {
+            return FALSE;
+        }
+
+        std::vector<wchar_t> buffer(PAL_MAX_PATH);
+
+        const auto hr = path_cch_combine_ex_fn(buffer.data(),
+            buffer.size(),
+            path1_utf16_string.data(),
+            path2_utf16_string.data(),
+            0);
+
+        if (!SUCCEEDED(hr))
+        {
+            LOGE << "PathCchCombineEx failed to combine paths. "
+                << "Path1: " << path1_utf16_string << ". "
+                << "Path2: " << path2_utf16_string << ". "
+                << "Error code: " << GetLastError();
+            return FALSE;
+        }
+
+        *path_out = pal_utf8_string(buffer.data()).dup();
+
+        return TRUE;
+    }
+
+    wchar_t path_combined[PAL_MAX_PATH];
+    if (nullptr == PathCombine(path_combined, path1_utf16_string.data(), path1_utf16_string.data()))
+    {
+        LOGE << "PathCombine failed to combine paths. "
+            << "Path1: " << path1_utf16_string << ". "
+            << "Path2: " << path1_utf16_string << ". "
+            << "Error code: " << GetLastError();
+        return false;
+    }
+
+    *path_out = pal_utf8_string(path_combined).dup();
+
+    return TRUE;
+#elif defined(PAL_PLATFORM_LINUX)
+    char buffer[1024];
+    if (nullptr == unix_path_combine(path1, path2, buffer))
+    {
+        return FALSE;
+    }
+
+    *path_out = strdup(buffer);
+
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char * src, const char * str)
 {
     if (src == nullptr || str == nullptr)
@@ -1848,7 +1923,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_endswith(const char * src, const cha
     }
 
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin()) ? TRUE : FALSE;
-}
+    }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_str_startswith(const char * src, const char * str)
 {
@@ -1871,7 +1946,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_iequals(const char* lhs, const char*
 
     const auto equals = str1.size() == str2.size() && std::equal(str1.begin(), str1.end(), str2.begin(), [](char & c1, char & c2) {
         return c1 == c2 || std::toupper(c1) == std::toupper(c2);
-    }) ? TRUE : FALSE;
+        }) ? TRUE : FALSE;
 
     return equals;
 }

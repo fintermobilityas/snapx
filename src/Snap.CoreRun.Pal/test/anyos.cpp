@@ -8,11 +8,6 @@ using testutils = corerun::support::util::test_utils;
 
 namespace
 {
-    TEST(PAL_GENERIC, pal_is_windows_10_or_greater_DoesNotSegfault)
-    {
-        pal_is_windows_10_or_greater();
-    }
-
     TEST(PAL_GENERIC, pal_is_windows_8_or_greater_DoesNotSegfault)
     {
         pal_is_windows_8_or_greater();
@@ -35,10 +30,9 @@ namespace
 
     TEST(PAL_GENERIC, pal_process_get_name_ReturnsThisProcessExeName)
     {
-        char* exe_name = nullptr;
-        EXPECT_TRUE(pal_process_get_name(&exe_name));
-        EXPECT_NE(exe_name, nullptr);
-        EXPECT_TRUE(pal_str_startswith(exe_name, "corerun_tests"));
+        auto exe_name = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_process_get_name(exe_name.get()));
+        EXPECT_TRUE(pal_str_startswith(*exe_name, "corerun_tests"));
     }
 
     TEST(PAL_GENERIC, pal_process_is_running)
@@ -50,9 +44,9 @@ namespace
         pal_pid_t next_pid = 1000;
         auto process_is_running = TRUE;
 
-        while(process_is_running)
+        while (process_is_running)
         {
-            if(next_pid > 25000)
+            if (next_pid > 25000)
             {
                 break;
             }
@@ -142,8 +136,8 @@ namespace
     {
         const auto random_variable = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), nullptr));
-        char* value = nullptr;
-        EXPECT_FALSE(pal_env_get(random_variable.c_str(), &value));
+        auto value = std::make_unique<char*>(new char);
+        EXPECT_FALSE(pal_env_get(random_variable.c_str(), value.get()));
     }
 
     TEST(PAL_ENV, pal_env_set_Overwrite)
@@ -151,9 +145,9 @@ namespace
         const auto random_variable = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST"));
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST2"));
-        char* value = nullptr;
-        EXPECT_TRUE(pal_env_get(random_variable.c_str(), &value));
-        EXPECT_STREQ(value, "TEST2");
+        auto value = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_env_get(random_variable.c_str(), value.get()));
+        EXPECT_STREQ(*value, "TEST2");
     }
 
     TEST(PAL_ENV, pal_env_set)
@@ -161,9 +155,9 @@ namespace
         const auto random_variable = testutils::build_random_str();
         const auto random_text = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), random_text.c_str()));
-        char* value = nullptr;
-        EXPECT_TRUE(pal_env_get(random_variable.c_str(), &value));
-        EXPECT_STREQ(value, random_text.c_str());
+        auto value = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_env_get(random_variable.c_str(), value.get()));
+        EXPECT_STREQ(*value, random_text.c_str());
     }
 
     TEST(PAL_ENV, pal_env_get_variable_DoesNotSegFault)
@@ -190,41 +184,17 @@ namespace
         EXPECT_FALSE(pal_fs_chmod(nullptr, 0));
     }
 
-    TEST(PAL_FS, pal_fs_get_directory_name_absolute_path_DoesNotSegfault)
-    {
-        char** path = nullptr;
-        EXPECT_FALSE(pal_fs_get_directory_name_absolute_path(nullptr, path));
-        EXPECT_EQ(path, nullptr);
-    }
-
-    TEST(PAL_FS, pal_fs_get_directory_name_DoesNotSegfault)
-    {
-        char** directory_name = nullptr;
-        EXPECT_FALSE(pal_fs_get_directory_name(nullptr, directory_name));
-        EXPECT_EQ(directory_name, nullptr);
-    }
-
-    TEST(PAL_FS, pal_fs_path_combine_DoesNotSegFault)
-    {
-        char** path = nullptr;
-        EXPECT_FALSE(pal_fs_path_combine(nullptr, nullptr, path));
-        EXPECT_EQ(path, nullptr);
-    }
-
     TEST(PAL_FS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
-        EXPECT_NE(working_dir, nullptr);
-        ASSERT_FALSE(pal_fs_file_exists(working_dir));
+        const auto working_dir = testutils::get_process_cwd();
+        ASSERT_FALSE(pal_fs_file_exists(working_dir.c_str()));
     }
 
     TEST(PAL_FS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
-        char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
-        EXPECT_NE(exe_abs_path, nullptr);
-        EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
+        auto exe_abs_path = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_process_get_real_path(exe_abs_path.get()));
+        EXPECT_TRUE(pal_fs_file_exists(*exe_abs_path));
     }
 
     TEST(PAL_FS, pal_fs_list_directories_DoesNotSegfault)
@@ -270,13 +240,11 @@ namespace
 
     TEST(PAL_FS, pal_fs_list_files_ReturnsAListOfFilesInCurrentWorkingDirectory)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
-        EXPECT_NE(working_dir, nullptr);
+        const auto working_dir = testutils::get_process_cwd();
 
         char** files_array = nullptr;
         size_t files_len = 0u;
-        EXPECT_TRUE(pal_fs_list_files(working_dir, nullptr, nullptr, &files_array, &files_len));
+        EXPECT_TRUE(pal_fs_list_files(working_dir.c_str(), nullptr, nullptr, &files_array, &files_len));
         EXPECT_NE(files_array, nullptr);
         EXPECT_GT(files_len, 0u);
 
@@ -293,23 +261,21 @@ namespace
 
     TEST(PAL_FS, pal_process_get_real_path)
     {
-        char* this_process_real_path = nullptr;
-        EXPECT_TRUE(pal_process_get_real_path(&this_process_real_path));
-        EXPECT_NE(this_process_real_path, nullptr);
-    }
-
-    TEST(PAL_FS, pal_fs_get_absolute_path_DoesNotSegfault)
-    {
-        char* path = nullptr;
-        EXPECT_FALSE(pal_fs_get_absolute_path(nullptr, &path));
-        EXPECT_EQ(path, nullptr);
+        auto this_process_real_path = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_process_get_real_path(this_process_real_path.get()));
+        EXPECT_NE(*this_process_real_path, nullptr);
     }
 
     TEST(PAL_FS, pal_fs_directory_exists_ReturnsTrueThatThisWorkingDirectoryExists)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
-        EXPECT_TRUE(pal_fs_directory_exists(working_dir));
+        auto working_dir = testutils::get_process_cwd();
+        EXPECT_TRUE(pal_fs_directory_exists(working_dir.c_str()));
+    }
+
+    TEST(PAL_FS_WINDOWS, pal_fs_directory_exists_TrailingSlash)
+    {
+        const auto working_dir = testutils::get_process_cwd() + PAL_DIRECTORY_SEPARATOR_STR;
+        ASSERT_TRUE(pal_fs_directory_exists(working_dir.c_str()));
     }
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsFalseWhenFileDoesNotExist)
@@ -330,28 +296,23 @@ namespace
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsAValueGreaterThanZero)
     {
-        char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
-        EXPECT_NE(exe_abs_path, nullptr);
-
+        auto exe_abs_path = testutils::get_process_real_path();
         size_t file_size = 0;
-        EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path, &file_size));
+        EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path.c_str(), &file_size));
         EXPECT_GT(file_size, 0u);
     }
 
     TEST(PAL_FS, pal_fs_read_file_ReadsCurrentProcessBinaryData)
     {
-        char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
-        EXPECT_NE(exe_abs_path, nullptr);
+        auto exe_abs_path = testutils::get_process_real_path();
 
         size_t expected_file_size = 0;
-        EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path, &expected_file_size));
+        EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path.c_str(), &expected_file_size));
         EXPECT_GT(expected_file_size, 0u);
 
         char* bytes = nullptr;
         size_t bytes_len = 0;
-        EXPECT_TRUE(pal_fs_read_binary_file(exe_abs_path, &bytes, &bytes_len));
+        EXPECT_TRUE(pal_fs_read_binary_file(exe_abs_path.c_str(), &bytes, &bytes_len));
         EXPECT_NE(bytes, nullptr);
         EXPECT_GT(bytes_len, 0);
 
@@ -421,11 +382,15 @@ namespace
         const auto working_dir = testutils::get_process_cwd();
 
         const auto test_path =
-                working_dir + PAL_DIRECTORY_SEPARATOR_C+
-                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
-                PAL_DIRECTORY_SEPARATOR_C + "a" +
-                PAL_DIRECTORY_SEPARATOR_C + "b" +
-                PAL_DIRECTORY_SEPARATOR_C + "c";
+            working_dir +
+            PAL_DIRECTORY_SEPARATOR_C + "a" +
+            PAL_DIRECTORY_SEPARATOR_C + "b" +
+            PAL_DIRECTORY_SEPARATOR_C + "c";
+
+        if (pal_fs_directory_exists(test_path.c_str()))
+        {
+            pal_fs_rmdir(test_path.c_str(), TRUE);
+        }
 
         ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
         ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
@@ -436,12 +401,16 @@ namespace
         const auto working_dir = testutils::get_process_cwd();
 
         const auto test_path =
-                working_dir + PAL_DIRECTORY_SEPARATOR_C+
-                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
-                PAL_DIRECTORY_SEPARATOR_C + "a" +
-                PAL_DIRECTORY_SEPARATOR_C + "b" +
-                PAL_DIRECTORY_SEPARATOR_C + "c" +
-                PAL_DIRECTORY_SEPARATOR_C;
+            working_dir +
+            PAL_DIRECTORY_SEPARATOR_C + "a" +
+            PAL_DIRECTORY_SEPARATOR_C + "b" +
+            PAL_DIRECTORY_SEPARATOR_C + "c" +
+            PAL_DIRECTORY_SEPARATOR_C;
+
+        if (pal_fs_directory_exists(test_path.c_str()))
+        {
+            pal_fs_rmdir(test_path.c_str(), TRUE);
+        }
 
         ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
         ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
@@ -452,14 +421,18 @@ namespace
         const auto working_dir = testutils::get_process_cwd();
 
         const auto test_path =
-                working_dir + PAL_DIRECTORY_SEPARATOR_C+
-                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
-                PAL_DIRECTORY_SEPARATOR_C + "a" +
-                PAL_DIRECTORY_SEPARATOR_C + "b" +
-                PAL_DIRECTORY_SEPARATOR_C + "c" +
-                PAL_DIRECTORY_SEPARATOR_C +
-                PAL_DIRECTORY_SEPARATOR_C +
-                PAL_DIRECTORY_SEPARATOR_C + "d";
+            working_dir +
+            PAL_DIRECTORY_SEPARATOR_C + "a" +
+            PAL_DIRECTORY_SEPARATOR_C + "b" +
+            PAL_DIRECTORY_SEPARATOR_C + "c" +
+            PAL_DIRECTORY_SEPARATOR_C +
+            PAL_DIRECTORY_SEPARATOR_C +
+            PAL_DIRECTORY_SEPARATOR_C + "d";
+
+        if (pal_fs_directory_exists(test_path.c_str()))
+        {
+            pal_fs_rmdir(test_path.c_str(), TRUE);
+        }
 
         ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
         ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
@@ -478,7 +451,7 @@ namespace
     }
 
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesEmptyDirectory)
-    {        
+    {
         const auto working_dir = testutils::get_process_cwd();
         const auto empty_dir = testutils::mkdir_random(working_dir);
         EXPECT_TRUE(pal_fs_directory_exists(empty_dir.c_str()));
@@ -526,9 +499,7 @@ namespace
 
     TEST(PAL_FS, pal_pal_fs_rmdir_RemovesDirectoryWithMultipleSubDirectories)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
-
+        const auto working_dir = testutils::get_process_cwd();
         const auto parent_dir = testutils::mkdir_random(working_dir);
         const auto parent_dir_filename = testutils::mkfile_random(parent_dir, testutils::build_random_filename().c_str());
 
@@ -593,6 +564,47 @@ namespace
         EXPECT_FALSE(pal_fs_fwrite(nullptr, nullptr, 0));
     }
 
+    // - Path
+
+    TEST(PAL_PATH, pal_path_normalize_DoesNotSegfault)
+    {
+        EXPECT_FALSE(pal_path_normalize(nullptr, nullptr));
+    }
+
+    TEST(PAL_PATH, pal_path_get_directory_name_DoesNotSegfault)
+    {
+        EXPECT_FALSE(pal_path_get_directory_name(nullptr, nullptr));
+    }
+
+    TEST(PAL_PATH, pal_path_get_directory_name)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+        const auto working_dir_name = testutils::get_directory_name(working_dir);
+
+        char* directory_name = nullptr;
+        ASSERT_TRUE(pal_path_get_directory_name(working_dir.c_str(), &directory_name));
+        ASSERT_STREQ(directory_name, working_dir_name.c_str());
+    }
+
+    TEST(PAL_PATH, pal_path_combine_DoesNotSegFault)
+    {
+        EXPECT_FALSE(pal_path_combine(nullptr, nullptr, nullptr));
+    }
+
+    TEST(PAL_PATH, pal_path_get_directory_name_from_file_path_DoesNotSegFault)
+    {
+        EXPECT_FALSE(pal_path_get_directory_name_from_file_path(nullptr, nullptr));
+    }
+
+    TEST(PAL_PATH, pal_path_get_directory_name_from_file_path)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+        const auto exe_real_path = testutils::get_process_real_path();
+        char* full_path_dir_name = nullptr;
+        EXPECT_TRUE(pal_path_get_directory_name_from_file_path(exe_real_path.c_str(), &full_path_dir_name));
+        ASSERT_STREQ(working_dir.c_str(), full_path_dir_name);
+    }
+
     // - String
 
     TEST(PAL_STRING, pal_str_endswith)
@@ -630,4 +642,4 @@ namespace
         EXPECT_TRUE(pal_str_is_null_or_whitespace("          "));
         EXPECT_FALSE(pal_str_is_null_or_whitespace("          s"));
     }
-}
+    }

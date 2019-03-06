@@ -2,6 +2,7 @@
 #include "main.hpp"
 #include "crossguid/Guid.hpp"
 #include "nlohmann/json.hpp"
+#include "vendor/semver/semver200.h"
 #include "tests/support/utils.hpp"
 
 #include <string>
@@ -14,7 +15,6 @@ using testutils = corerun::support::util::test_utils;
 
 const int demoapp_default_exit_code = 0;
 
-const uint32_t default_permissions = 0777;
 static std::random_device dev;
 static auto rng = std::mt19937_64 { dev() };
 
@@ -65,11 +65,7 @@ namespace {
         }
 
         ~corerun_run_details() {
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
             pal_fs_rmdir(this->install_dir.c_str(), TRUE);
-#else
-            EXPECT_TRUE(pal_fs_rmdir(this->install_dir.c_str(), TRUE));
-#endif
         }
     };
 
@@ -142,7 +138,7 @@ namespace {
             const auto app_dir = path_combine(this->install_dir, app_dir_prefix + version);
             const auto app_dir_demoapp_exe = path_combine(app_dir, this->app_name + this->os_file_ext);
 
-            ASSERT_TRUE(pal_fs_mkdirp(app_dir.c_str(), default_permissions)) << "Failed to create app dir: " << app_dir;
+            ASSERT_TRUE(pal_fs_mkdirp(app_dir.c_str(), this_exe::default_permissions)) << "Failed to create app dir: " << app_dir;
             ASSERT_TRUE(file_copy(this->working_dir_demoapp_exe.c_str(), app_dir_demoapp_exe.c_str())) << "Failed copy demoapp" << this->working_dir_demoapp_exe;
 
             this->m_apps.emplace_back(corerun_app_details(app_dir, app_dir_demoapp_exe,
@@ -152,7 +148,7 @@ namespace {
         static std::string path_combine(const std::string& path1, const std::string& path2)
         {
             char* path_combined = nullptr;
-            if (!pal_fs_path_combine(path1.c_str(), path2.c_str(), &path_combined))
+            if (!pal_path_combine(path1.c_str(), path2.c_str(), &path_combined))
             {
                 return std::string();
             }
@@ -170,25 +166,7 @@ namespace {
             {
                 return false;
             }
-
-            char* bytes = nullptr;
-            size_t bytes_len = 0;
-            if (!pal_fs_read_binary_file(src_filename, &bytes, &bytes_len))
-            {
-                return false;
-            }
-
-            if (!pal_fs_write(dest_filename, "wb", bytes, bytes_len))
-            {
-                return false;
-            }
-
-            if (!pal_fs_chmod(dest_filename, default_permissions))
-            {
-                return false;
-            }
-
-            return true;
+            return testutils::file_copy(std::string(src_filename), std::string(dest_filename));
         }
 
         std::unique_ptr<stubexecutable_run_details> run_stubexecutable_with_args(const std::vector<std::string>& arguments)
@@ -276,7 +254,7 @@ namespace {
         {
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_corerun_exe.c_str()));
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_demoapp_exe.c_str()));
-            ASSERT_TRUE(pal_fs_mkdirp(this->install_dir.c_str(), default_permissions));
+            ASSERT_TRUE(pal_fs_mkdirp(this->install_dir.c_str(), this_exe::default_permissions));
             ASSERT_TRUE(file_copy(this->working_dir_corerun_exe.c_str(), this->install_dir_corerun_exe.c_str()));
         }
 
@@ -484,7 +462,7 @@ namespace {
 
         snapx snapx("demoapp", working_dir);
 
-        int app_count = 25;
+        const auto app_count = 25;
 
         std::string expected_app_version = std::string();
         std::vector<std::string> app_versions;

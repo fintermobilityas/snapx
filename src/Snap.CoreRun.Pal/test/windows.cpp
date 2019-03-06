@@ -6,13 +6,61 @@ using testutils = corerun::support::util::test_utils;
 
 namespace
 {
-    TEST(PAL_GENERIC_WINDOWS, pal_set_icon_DoesNotSegfault)
+    struct path_combine_test_case
     {
-        const auto exe_filename = "corerun_demoapp.exe";
-        const auto icon_filename = "test.ico";
-        ASSERT_FALSE(pal_has_icon(exe_filename));
-        ASSERT_TRUE(pal_set_icon(exe_filename, icon_filename));
-        ASSERT_TRUE(pal_has_icon(exe_filename));
+    public:
+        const char *path1;
+        const char *path2;
+        const char *combined;
+        path_combine_test_case() = delete;
+
+        path_combine_test_case(const char* path1, const char* path2, const char* combined) :
+            path1(path1), path2(path2), combined(combined)
+        {
+
+        }
+    };
+
+    // https://github.com/wine-mirror/wine/blob/6a04cf4a69205ddf6827fb2a4b97862fd1947c62/dlls/shlwapi/tests/path.c
+
+    std::vector<path_combine_test_case> path_combine_test_cases = {
+         /* normal paths */
+        path_combine_test_case("C:\\",  "a",     "C:\\a"),
+        path_combine_test_case("C:\\b", "..\\a", "C:\\a"),
+        path_combine_test_case("C:",    "a",     "C:\\a"),
+        path_combine_test_case("C:\\",  ".",     "C:\\"),
+        path_combine_test_case("C:\\",  "..",    "C:\\"),
+        path_combine_test_case("\\a",   "b",     "\\a\\b"),
+
+        /* normal UNC paths */
+        path_combine_test_case("\\\\192.168.1.1\\test", "a",  "\\\\192.168.1.1\\test\\a"),
+        path_combine_test_case("\\\\192.168.1.1\\test", "..", "\\\\192.168.1.1"),
+
+        /* NT paths */
+        path_combine_test_case("\\\\?\\C:\\", "a",  "C:\\a"),
+        path_combine_test_case("\\\\?\\C:\\", "..", "C:\\"),
+
+        /* NT UNC path */
+        path_combine_test_case("\\\\?\\UNC\\192.168.1.1\\test", "a",  "\\\\192.168.1.1\\test\\a"),
+        path_combine_test_case("\\\\?\\UNC\\192.168.1.1\\test", "..", "\\\\192.168.1.1")
+    };
+
+    TEST(PAL_GENERIC_WINDOWS, pal_set_icon)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+
+        const auto src_filename = testutils::path_combine(
+            working_dir, "corerun_demoapp.exe");
+        const auto dst_filename = testutils::path_combine(
+            working_dir, testutils::build_random_filename(".exe"));
+        const auto icon_filename = testutils::path_combine(
+            working_dir, "test.ico");
+
+        ASSERT_TRUE(testutils::file_copy(src_filename, dst_filename));
+        ASSERT_FALSE(pal_has_icon(dst_filename.c_str()));
+        ASSERT_TRUE(pal_set_icon(dst_filename.c_str(), icon_filename.c_str()));
+        ASSERT_TRUE(pal_has_icon(dst_filename.c_str()));
+        ASSERT_TRUE(pal_fs_rmfile(dst_filename.c_str()));
     }
 
     TEST(PAL_GENERIC_WINDOWS, pal_is_windows)
@@ -23,28 +71,26 @@ namespace
 
     TEST(PAL_GENERIC_WINDOWS, pal_process_exec)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_process_get_cwd(&working_dir));
+        auto working_dir = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_process_get_cwd(working_dir.get()));
 
         pal_exit_code_t exit_code = 1;
-        EXPECT_TRUE(pal_process_exec("whoami", working_dir, -1, nullptr, &exit_code));
+        EXPECT_TRUE(pal_process_exec("whoami", *working_dir, -1, nullptr, &exit_code));
         EXPECT_EQ(exit_code, 0);
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
-        char* working_dir = nullptr;
-        EXPECT_TRUE(pal_fs_get_cwd(&working_dir));
-        EXPECT_NE(working_dir, nullptr);
-        ASSERT_FALSE(pal_fs_file_exists(working_dir));
+        auto working_dir = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_fs_get_cwd(working_dir.get()));
+        ASSERT_FALSE(pal_fs_file_exists(*working_dir));
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
-        char* exe_abs_path = nullptr;
-        EXPECT_TRUE(pal_process_get_real_path(&exe_abs_path));
-        EXPECT_NE(exe_abs_path, nullptr);
-        EXPECT_TRUE(pal_fs_file_exists(exe_abs_path));
+        auto exe_abs_path = std::make_unique<char*>(new char);
+        EXPECT_TRUE(pal_process_get_real_path(exe_abs_path.get()));
+        EXPECT_TRUE(pal_fs_file_exists(*exe_abs_path));
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
@@ -61,41 +107,6 @@ namespace
         delete working_dir;
     }
 
-    TEST(PAL_FS_WINDOWS, pal_fs_mkdir_LongPath)
-    {
-        if(!testutils::is_windows10_or_greater())
-        {
-            GTEST_SKIP();
-            return;
-        }
-
-        const auto working_dir = testutils::get_process_cwd();
-
-        const auto long_path_base_dir = working_dir + PAL_DIRECTORY_SEPARATOR_STR + testutils::build_random_str();
-        ASSERT_TRUE(pal_fs_mkdir(long_path_base_dir.c_str(), 777));
-
-        const auto expected_directories_created = 10;
-        auto directories_remaining = expected_directories_created;
-        auto long_path_current_dir = long_path_base_dir;
-        while(directories_remaining > 0)
-        {
-            long_path_current_dir += PAL_DIRECTORY_SEPARATOR_STR + testutils::build_random_str();
-            if(!pal_fs_mkdir(long_path_current_dir.c_str(), 777))
-            {
-                break;
-            }
-
-            --directories_remaining;
-        }
-
-        ASSERT_EQ(directories_remaining, 0) 
-            << "Should have created " << expected_directories_created 
-            << " directories but only " << (expected_directories_created - directories_remaining) 
-            << " was created.";
-
-        ASSERT_TRUE(pal_fs_directory_exists(long_path_current_dir.c_str()));
-    }
-
     TEST(PAL_FS_WINDOWS, pal_process_get_name_ReturnsThisProcessExeName)
     {
         char* exe_name = nullptr;
@@ -108,6 +119,27 @@ namespace
         char* environment_variable = nullptr;
         EXPECT_TRUE(pal_env_get("PATH", &environment_variable));
         EXPECT_NE(environment_variable, nullptr);
+    }
+
+    TEST(PAL_PATH_WINDOWS, pal_path_normalize)
+    {        
+        const auto expected_str = std::string("C:/test/123");
+
+        char* path_normalized = nullptr;
+        ASSERT_TRUE(pal_path_normalize(expected_str.c_str(), &path_normalized));
+        ASSERT_STREQ(path_normalized, expected_str.c_str());
+    }
+
+    TEST(PAL_PATH_WINDOWS, pal_path_combine)
+    {
+        ASSERT_GT(path_combine_test_cases.size(), 0u);
+
+        for (const auto &test_case : path_combine_test_cases)
+        {
+            auto path_combined = std::make_unique<char*>(new char);
+            EXPECT_TRUE(pal_path_combine(test_case.path1, test_case.path2, path_combined.get()));
+            EXPECT_STREQ(*path_combined, test_case.combined);
+        }
     }
 
     TEST(PAL_STR_WINDOWS, pal_str_widen_DoesNotSegfault)

@@ -1,22 +1,5 @@
 #include "main.hpp"
 
-#ifdef PAL_LOGGING_ENABLED
-#include <plog/Appenders/ColorConsoleAppender.h>
-#include <plog/Appenders/RollingFileAppender.h>
-#include <plog/Appenders/DebugOutputAppender.h>
-#endif
-
-inline void maybe_enable_plog()
-{
-#ifdef PAL_LOGGING_ENABLED
-    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("corerun.log", 8000, 3);
-    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-    static plog::DebugOutputAppender<plog::TxtFormatter> debugOutputAppender;
-    plog::init(plog::Severity::verbose, &fileAppender)
-    .addAppender(&consoleAppender)
-    .addAppender(&debugOutputAppender);
-#endif
-}
 
 // MSVS, MINGW ENTRYPOINT
 // -->
@@ -31,7 +14,8 @@ int APIENTRY wWinMain(
     _In_ const int  n_cmd_show)
     // ReSharper enable all
 {
-    maybe_enable_plog();
+    this_exe::plog_init();
+
     pal_mitigate_dll_hijacking();
 
     auto argc = 0;
@@ -51,7 +35,7 @@ int APIENTRY wWinMain(
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Unknown error: " << e.what() << std::endl;
+        LOGE << "Unknown error: " << e.what();
     }
 
     return 1;
@@ -61,12 +45,12 @@ int main(const int argc, char *argv[])
 {
     try
     {
-        maybe_enable_plog();
+        this_exe::plog_init();
         return corerun_main_impl(argc, argv, -1);
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Unknown error: " << e.what() << std::endl;
+        LOGE << "Unknown error: " << e.what();
     }
     return 1;
 }

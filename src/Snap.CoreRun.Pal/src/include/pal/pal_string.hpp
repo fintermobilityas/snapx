@@ -29,7 +29,6 @@ protected:
     std::basic_string<TStorageClass> m_value;
 
 public:
-
     virtual ~pal_string()
     {
         if (m_ptr != nullptr)
@@ -72,14 +71,53 @@ public:
         return m_value.data();
     }
 
-    TStdString& append(const TStdString& string)
+    void prepend_if(const bool yes, const TStdString& string)
     {
-        return m_value.append(string);
+        if(!yes)
+        {
+            return;
+        }
+        prepend(string);
     }
 
-    void append(const pal_string& string)
+    void prepend(const TStdString& string)
     {
-       m_value.append(string.m_value);
+        m_value = m_value.insert(0, string);        
+    }
+
+    void append_if(const bool yes, const TStdString& string)
+    {
+        if(!yes)
+        {
+            return;
+        }
+        append(string);
+    }
+
+    void append(const TStdString& string)
+    {
+        m_value = m_value.append(string);
+    }
+
+    void append_if_not_ends_width(const TStdString& string)
+    {
+        append_if(!ends_with(string), string);
+    }
+
+    void remove_if_ends_width(const TStdString& string)
+    {
+        if(!ends_with(string))
+        {
+            return;
+        }
+
+        const auto pos = m_value.find_last_of(string);
+        if(pos == std::string::npos)
+        {
+            return;
+        }
+
+        m_value = m_value.substr(0, pos);
     }
 
     TStdString str()
@@ -89,8 +127,14 @@ public:
 
     bool ends_with(const TStdString& string)
     {
-        if (string.size() > m_value.size()) return false;
-        return std::equal(string.rbegin(), string.rend(), m_value.rbegin());
+        return m_value.size() >= string.size() 
+            && 0 == m_value.compare(m_value.size() - string.size(), string.size(), string);
+    }
+
+    bool starts_with(const TStdString& string)
+    {
+        return m_value.size() >= string.size() 
+            && 0 == m_value.compare(0, string.size(), string);
     }
 
     bool empty()
@@ -102,6 +146,17 @@ public:
     {
         return empty() || m_value.find_first_not_of(' ') == m_value.npos;
     }
+
+    size_t size()
+    {
+        return m_value.size();
+    }
+
+    const TStorageClass* c_str() const noexcept
+    {
+        return m_value.c_str();
+    }
+
 
 };
 

@@ -2,14 +2,9 @@
 #include <vector>
 #include <sstream>
 
+#include "corerun.hpp"
 #include "pal/pal.hpp"
 #include "nlohmann/json.hpp"
-
-#ifdef PAL_LOGGING_ENABLED
-#include <plog/Appenders/ColorConsoleAppender.h>
-#include <plog/Appenders/RollingFileAppender.h>
-#include <plog/Appenders/DebugOutputAppender.h>
-#endif
 
 using json = nlohmann::json;
 
@@ -18,14 +13,9 @@ const pal_exit_code_t unit_test_error_exit_code = 1;
 
 int corerun_demoapp_main_impl(int argc, char **argv)
 {
-#ifdef PAL_LOGGING_ENABLED
-    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("corerun.log", 8000, 3);
-    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
-    static plog::DebugOutputAppender<plog::TxtFormatter> debugOutputAppender;
-    plog::init(plog::Severity::verbose, &fileAppender)
-        .addAppender(&consoleAppender)
-        .addAppender(&debugOutputAppender);
-#endif
+    this_exe::plog_init();
+
+    LOGD << "Process started. Arguments: " << this_exe::build_argv_str(argc, argv);
 
     pal_mitigate_dll_hijacking();
 
@@ -65,6 +55,8 @@ int corerun_demoapp_main_impl(int argc, char **argv)
         }
     }
 
+    LOGV << "Writing json";
+
     std::stringstream ss;
     ss << output.dump() << std::endl;
 
@@ -81,6 +73,9 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     pal_fs_write(log_filename_str.c_str(), "wb", data, data_len);
 
     auto exit_code = output["exit_code"].get<pal_exit_code_t>();
+
+    LOGV << "Process exited. Exit code: " << exit_code;
+
     return exit_code;
 }
 

@@ -8,6 +8,21 @@ using testutils = corerun::support::util::test_utils;
 
 namespace
 {
+    TEST(PAL_GENERIC, pal_is_windows_10_or_greater_DoesNotSegfault)
+    {
+        pal_is_windows_10_or_greater();
+    }
+
+    TEST(PAL_GENERIC, pal_is_windows_8_or_greater_DoesNotSegfault)
+    {
+        pal_is_windows_8_or_greater();
+    }
+
+    TEST(PAL_GENERIC, pal_is_windows_7_or_greater_DoesNotSegfault)
+    {
+        pal_is_windows_7_or_greater();
+    }
+
     TEST(PAL_GENERIC, pal_set_icon_DoesNotSegfault)
     {
         pal_set_icon(nullptr, nullptr);

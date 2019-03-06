@@ -78,10 +78,6 @@ typedef int pal_exit_code_t;
 
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
 
-#if defined(PAL_PLATFORM_WINDOWS)
-typedef BOOL(WINAPI *win32_set_default_dll_directories_function)(DWORD directory_flags);
-#endif
-
 // - Generic
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent();
@@ -107,6 +103,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
                                                           pal_pid_t *pid_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(uint32_t milliseconds);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_10_or_greater();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_8_or_greater();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_7_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os();
 

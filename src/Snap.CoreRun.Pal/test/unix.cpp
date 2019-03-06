@@ -56,8 +56,27 @@ namespace
 
     TEST(PAL_GENERIC_UNIX, pal_is_linux)
     {
-        ASSERT_FALSE(pal_is_windows());
         ASSERT_TRUE(pal_is_linux()); 
+    }
+
+    TEST(PAL_GENERIC_UNIX, pal_is_windows)
+    {
+        ASSERT_FALSE(pal_is_windows());
+    }
+
+    TEST(PAL_GENERIC_UNIX, pal_is_windows_10_or_greater)
+    {
+        ASSERT_FALSE(pal_is_windows_10_or_greater());
+    }
+
+    TEST(PAL_GENERIC_UNIX, pal_is_windows_8_or_greater)
+    {
+        ASSERT_FALSE(pal_is_windows_8_or_greater());
+    }
+
+    TEST(PAL_GENERIC_UNIX, pal_is_windows_7_or_greater)
+    {
+        ASSERT_FALSE(pal_is_windows_7_or_greater());
     }
 
     TEST(PAL_GENERIC_UNIX, pal_process_exec)

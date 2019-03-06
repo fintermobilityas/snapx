@@ -22,6 +22,7 @@
 #include <direct.h> // mkdir
 #include <cwchar>
 #include <tlhelp32.h> // CreateToolhelp32Snapshot 
+#include "versionhelpers.h"
 #include "vendor/rcedit/rcedit.hpp"
 #elif defined(PAL_PLATFORM_LINUX)
 #include <sys/types.h> // O_RDONLY
@@ -701,6 +702,43 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows()
 {
 #if defined(PAL_PLATFORM_WINDOWS)
     return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_10_or_greater()
+{
+#if defined(PAL_PLATFORM_WINDOWS)
+#if defined(PAL_PLATFORM_MINGW) 
+    const float mingw_get_win_version = []()
+    {
+        OSVERSIONINFO osvi = {};
+        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+        const auto version = static_cast<float>(osvi.dwMajorVersion) + (static_cast<float>(osvi.dwMinorVersion) / 10.0f);
+        return GetVersionEx(&osvi) ? version : 0.0f;
+    };
+    return mingw_get_win_version() >= 10.0f ? TRUE : FALSE;
+#endif
+    return ::IsWindows10OrGreater() ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_8_or_greater()
+{
+#if defined(PAL_PLATFORM_WINDOWS)
+    return ::IsWindows8OrGreater() ? TRUE : FALSE;
+#else
+    return FALSE;
+#endif
+}
+
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_7_or_greater()
+{
+#if defined(PAL_PLATFORM_WINDOWS)
+    return ::IsWindows7OrGreater() ? TRUE : FALSE;
 #else
     return FALSE;
 #endif

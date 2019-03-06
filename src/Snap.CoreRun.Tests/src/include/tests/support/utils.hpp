@@ -4,24 +4,6 @@
 #include "crossguid/Guid.hpp"
 #include <string>
 
-#if defined(PAL_PLATFORM_WINDOWS)
-#include "versionhelpers.h"
-#if defined(PAL_PLATFORM_MINGW) 
-inline float mingw_get_win_version()
-{
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFO));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    const auto version = (float)osvi.dwMajorVersion + ((float)osvi.dwMinorVersion / 10);
-    return GetVersionEx(&osvi) ? version : 0.0;
-}
-
-inline mingw_is_windows10_or_greater(void) {
-    return mingw_get_win_version() >= 10.0f;
-}
-#endif
-#endif
-
 namespace corerun
 {
     namespace support
@@ -34,13 +16,7 @@ namespace corerun
 
                 static bool is_windows10_or_greater()
                 {
-#if defined(PAL_PLATFORM_MINGW)
-                    return mingw_is_windows10_or_greater();
-#elif defined(PAL_PLATFORM_WINDOWS)
-                    return ::IsWindows10OrGreater();
-#else
-                    return false;
-#endif
+                    return pal_is_windows_10_or_greater();
                 }
 
                 static std::string get_process_cwd()

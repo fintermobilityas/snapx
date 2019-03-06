@@ -66,7 +66,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     size_t paths_out_len = 0;
     if (!pal_fs_list_directories(app_dir.c_str(), nullptr, nullptr, &paths_out, &paths_out_len))
     {
-        LOGE << "Failed to list directories inside app dir: " << app_dir << std::endl;
+        LOGE << "Failed to list directories inside app dir: " << app_dir;
         return std::string();
     }
 

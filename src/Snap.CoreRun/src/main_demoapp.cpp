@@ -55,7 +55,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
         }
     }
 
-    LOGV << "Writing json";
+    LOGV << "Writing json: " << log_filename_str;
 
     std::stringstream ss;
     ss << output.dump() << std::endl;
@@ -74,8 +74,8 @@ int corerun_demoapp_main_impl(int argc, char **argv)
 
     auto exit_code = output["exit_code"].get<pal_exit_code_t>();
 
-    LOGV << "Process exited. Exit code: " << exit_code;
-
+    LOGV << "Demoapp process exited. Exit code: " << exit_code;
+     
     return exit_code;
 }
 
@@ -108,7 +108,7 @@ int APIENTRY wWinMain(
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Unknown error: " << e.what() << std::endl;
+        LOGE << "Unknown error: " << e.what();
     }
 
     return 1;
@@ -122,7 +122,7 @@ int main(const int argc, char *argv[])
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Unknown error: " << e.what() << std::endl;
+        LOGE << "Unknown error: " << e.what();
     }
     return 1;
 }

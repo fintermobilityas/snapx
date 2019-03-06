@@ -539,7 +539,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
     DWORD exit_code;
     if (FALSE == GetExitCodeProcess(pi.hProcess, &exit_code))
     {
-        LOGE << "GetExitCodeProcess: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError() << std::endl;
+        LOGE << "GetExitCodeProcess: Process exit prematurely. Result: " << result << ". Error code: " << GetLastError();
         return FALSE;
     }
 

@@ -115,10 +115,10 @@ namespace {
             m_apps(std::vector<corerun_app_details>()),
             app_name(app_name),
             working_dir(working_dir),
-            working_dir_demoapp_exe(path_combine(working_dir, "corerun_demoapp" + os_file_ext)),
-            working_dir_corerun_exe(path_combine(working_dir, "corerun" + os_file_ext)),
-            install_dir(path_combine(working_dir, m_unique_id)),
-            install_dir_corerun_exe(path_combine(install_dir, app_name + os_file_ext)),
+            working_dir_demoapp_exe(testutils::path_combine(working_dir, "corerun_demoapp" + os_file_ext)),
+            working_dir_corerun_exe(testutils::path_combine(working_dir, "corerun" + os_file_ext)),
+            install_dir(testutils::path_combine(working_dir, m_unique_id)),
+            install_dir_corerun_exe(testutils::path_combine(install_dir, app_name + os_file_ext)),
             os_file_ext(os_file_ext)
         {
             init();
@@ -135,28 +135,14 @@ namespace {
 
         void install(const std::string& version, const std::string& app_dir_prefix = "app-", bool version_invalid = false)
         {
-            const auto app_dir = path_combine(this->install_dir, app_dir_prefix + version);
-            const auto app_dir_demoapp_exe = path_combine(app_dir, this->app_name + this->os_file_ext);
+            const auto app_dir = testutils::path_combine(this->install_dir, app_dir_prefix + version);
+            const auto app_dir_demoapp_exe = testutils::path_combine(app_dir, this->app_name + this->os_file_ext);
 
             ASSERT_TRUE(pal_fs_mkdirp(app_dir.c_str(), this_exe::default_permissions)) << "Failed to create app dir: " << app_dir;
             ASSERT_TRUE(file_copy(this->working_dir_demoapp_exe.c_str(), app_dir_demoapp_exe.c_str())) << "Failed copy demoapp" << this->working_dir_demoapp_exe;
 
             this->m_apps.emplace_back(corerun_app_details(app_dir, app_dir_demoapp_exe,
                 this->app_name + this->os_file_ext, version, version_invalid));
-        }
-
-        static std::string path_combine(const std::string& path1, const std::string& path2)
-        {
-            char* path_combined = nullptr;
-            if (!pal_path_combine(path1.c_str(), path2.c_str(), &path_combined))
-            {
-                return std::string();
-            }
-
-            std::string path_combined_str(path_combined);
-            delete path_combined;
-
-            return path_combined_str;
         }
 
         static bool file_copy(const char* src_filename, const char* dest_filename)
@@ -219,8 +205,7 @@ namespace {
             }
             catch (const json::exception& ex)
             {
-                std::cout << "Failed to parse json output log. What: " << ex.what() << std::endl;
-                std::cout << log_output << std::endl;
+                LOGE << "Failed to parse json output log. What: " << ex.what() << ". Output: " << log_output;
                 return run_details;
             }
 
@@ -284,25 +269,22 @@ namespace {
 
             const auto log_filename = most_recent_app.exe_name_relative_path + ".json";
 
-            const auto log_filename_absolute_path = path_combine(most_recent_app.working_dir, log_filename);
+            const auto log_filename_absolute_path = testutils::path_combine(most_recent_app.working_dir, log_filename);
             if (log_filename_absolute_path.empty())
             {
-                std::cerr << "Log file not found: " << log_filename_absolute_path << std::endl;
+                LOGE << "Log file not found: " << log_filename_absolute_path;
                 return std::string();
             }
 
-            char* log_output = nullptr;
+            auto log_output = std::make_unique<char*>(new char);
             size_t log_output_len = 0;
-            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), &log_output, &log_output_len) || log_output_len <= 0)
+            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), log_output.get(), &log_output_len) || log_output_len <= 0)
             {
-                std::cerr << "Failed to read log file: " << log_filename_absolute_path << ". Size: " << log_output_len << std::endl;
+                LOGE << "Failed to read log file: " << log_filename_absolute_path << ". Size: " << log_output_len;
                 return std::string();
             }
 
-            std::string log_output_str(log_output);
-            delete log_output;
-
-            return log_output_str;
+            return std::string(*log_output);
         }
 
     };

@@ -116,12 +116,13 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
         const auto h_kernel32 = LoadLibrary(L"kernel32.dll");
 	    assert(h_kernel32 != NULL);
 
-        const auto pfn = reinterpret_cast<win32_set_default_dll_directories_function>(
+        using SetDefaultDllDirectoriesFN = BOOL(WINAPI*)(DWORD DirectoryFlags);
+        const auto set_default_dll_directories_fn = reinterpret_cast<SetDefaultDllDirectoriesFN>(
             GetProcAddress(h_kernel32, "SetDefaultDllDirectories"));
 
-	    if (pfn)
+	    if (set_default_dll_directories_fn)
 	    {
-	        (*pfn)(LOAD_LIBRARY_SEARCH_SYSTEM32);
+	        (*set_default_dll_directories_fn)(LOAD_LIBRARY_SEARCH_SYSTEM32);
 	    }
 
 	    preload_libs();

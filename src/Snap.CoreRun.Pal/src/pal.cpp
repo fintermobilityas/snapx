@@ -407,9 +407,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
 {
-    auto process_killed = FALSE;
 #if defined(PAL_PLATFORM_WINDOWS)
     const auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    auto process_killed = FALSE;
     if (process != nullptr)
     {
         process_killed = TerminateProcess(process, 1);
@@ -418,8 +418,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
     return process_killed;
 #elif defined(PAL_PLATFORM_LINUX)
     auto result = kill(pid, SIGTERM);
-    process_killed = result == 0;
-    return process_killed;
+    return result == 0 ? TRUE : FALSE;
 #else
     return FALSE;
 #endif
@@ -1509,7 +1508,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
     }
 
     fseek(fp, 0 , SEEK_END);
-    auto total_size = ftell(fp);
+    auto total_size = static_cast<size_t>(ftell(fp));
     rewind(fp);
 
     auto buffer = new char[total_size];
@@ -1850,7 +1849,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* st
     return value.empty_or_whitespace() ? TRUE : FALSE;
 #elif defined(PAL_PLATFORM_LINUX)
     std::string value(str);
-    const auto empty_or_whitespace = value.empty() || value.find_first_not_of(' ') == value.npos;
+    const auto empty_or_whitespace = value.empty() || value.find_first_not_of(' ') == std::string::npos;
     return empty_or_whitespace ? TRUE : FALSE;
 #else
     return FALSE;

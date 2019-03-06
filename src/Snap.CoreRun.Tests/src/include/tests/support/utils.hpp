@@ -40,7 +40,7 @@ namespace corerun
                 }
 
 
-                static std::string mkdir_random(const std::string& working_dir, const uint32_t mode = 0777u)
+                static std::string mkdir_random(const std::string& working_dir, const pal_mode_t mode = 0777u)
                 {
                     if (mode <= 0)
                     {
@@ -60,7 +60,7 @@ namespace corerun
                     return random_dir_str;
                 }
 
-                static std::string mkdir(const std::string& working_dir, const char* directory_name, const uint32_t mode = 0777u)
+                static std::string mkdir(const std::string& working_dir, const char* directory_name, const pal_mode_t mode = 0777u)
                 {
                     if (directory_name == nullptr)
                     {

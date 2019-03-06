@@ -396,6 +396,66 @@ namespace
         EXPECT_FALSE(pal_fs_mkdir(nullptr, 0));
     }
 
+    TEST(PAL_FS, pal_fs_mkdirp_DoesNotSegfault)
+    {
+        EXPECT_FALSE(pal_fs_mkdirp(nullptr, 0));
+    }
+
+    TEST(PAL_FS, pal_fs_mkdirp)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+
+        const auto test_path =
+                working_dir + PAL_DIRECTORY_SEPARATOR_C+
+                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
+                PAL_DIRECTORY_SEPARATOR_C + "a" +
+                PAL_DIRECTORY_SEPARATOR_C + "b" +
+                PAL_DIRECTORY_SEPARATOR_C + "c";
+
+        ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
+        ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
+    }
+
+    TEST(PAL_FS, pal_fs_mkdirpTrailingDirectorySeparator)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+
+        const auto test_path =
+                working_dir + PAL_DIRECTORY_SEPARATOR_C+
+                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
+                PAL_DIRECTORY_SEPARATOR_C + "a" +
+                PAL_DIRECTORY_SEPARATOR_C + "b" +
+                PAL_DIRECTORY_SEPARATOR_C + "c" +
+                PAL_DIRECTORY_SEPARATOR_C;
+
+        ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
+        ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
+    }
+
+    TEST(PAL_FS, pal_fs_mkdirpMultipleTrailingDirectorySeparators)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+
+        const auto test_path =
+                working_dir + PAL_DIRECTORY_SEPARATOR_C+
+                testutils::build_random_str() + PAL_DIRECTORY_SEPARATOR_C +
+                PAL_DIRECTORY_SEPARATOR_C + "a" +
+                PAL_DIRECTORY_SEPARATOR_C + "b" +
+                PAL_DIRECTORY_SEPARATOR_C + "c" +
+                PAL_DIRECTORY_SEPARATOR_C +
+                PAL_DIRECTORY_SEPARATOR_C +
+                PAL_DIRECTORY_SEPARATOR_C + "d";
+
+        ASSERT_TRUE(pal_fs_mkdirp(test_path.c_str(), 0777));
+        ASSERT_TRUE(pal_fs_directory_exists(test_path.c_str()));
+    }
+
+    TEST(PAL_FS, pal_fs_mkdirp_ReturnsFalseIfDirectoryAlreadyExists)
+    {
+        const auto working_dir = testutils::get_process_cwd();
+        ASSERT_FALSE(pal_fs_mkdirp(working_dir.c_str(), 0777));
+    }
+
     TEST(PAL_FS, pal_pal_fs_rmdir_DoesNotSegfault)
     {
         EXPECT_FALSE(pal_fs_rmdir(nullptr, FALSE));

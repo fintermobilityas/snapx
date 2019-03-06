@@ -1556,6 +1556,57 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_m
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_mode_t mode_in)
+{
+    if (directory_in == nullptr || mode_in <= 0)
+    {
+        return FALSE;
+    }
+
+    const auto directory_in_str = std::string(directory_in);
+    if(directory_in_str.empty())
+    {
+        return FALSE;
+    }
+
+    const auto expand_paths = [&directory_in_str]()
+    {
+        const auto delimiter = PAL_DIRECTORY_SEPARATOR_STR;
+
+        auto last_index = directory_in_str.find_first_not_of(delimiter, 0);
+        auto current_index = directory_in_str.find_first_of(delimiter, last_index);
+        auto paths = std::vector<std::string>();
+
+        while (std::string::npos != current_index
+                || std::string::npos != last_index)
+        {
+            paths.emplace_back(directory_in_str.substr(0, current_index));
+            last_index = directory_in_str.find_first_not_of(delimiter, current_index);
+            current_index = directory_in_str.find_first_of(delimiter, last_index);
+        }
+
+        return paths;
+    };
+
+    auto directories_created = 0;
+    for(const auto& path : expand_paths())
+    {
+        if(pal_fs_directory_exists(path.c_str()))
+        {
+            continue ;
+        }
+
+        if(!pal_fs_mkdir(path.c_str(), mode_in))
+        {
+            return FALSE;
+        }
+
+        ++directories_created;
+    }
+
+    return directories_created > 0 ? TRUE : FALSE;
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
 {
     if (filename_in == nullptr)

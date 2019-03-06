@@ -134,6 +134,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_mode_t mode_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_mode_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);

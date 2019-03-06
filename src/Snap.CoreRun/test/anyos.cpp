@@ -142,7 +142,7 @@ namespace {
             const auto app_dir = path_combine(this->install_dir, app_dir_prefix + version);
             const auto app_dir_demoapp_exe = path_combine(app_dir, this->app_name + this->os_file_ext);
 
-            ASSERT_TRUE(pal_fs_mkdir(app_dir.c_str(), default_permissions)) << "Failed to create app dir: " << app_dir;
+            ASSERT_TRUE(pal_fs_mkdirp(app_dir.c_str(), default_permissions)) << "Failed to create app dir: " << app_dir;
             ASSERT_TRUE(file_copy(this->working_dir_demoapp_exe.c_str(), app_dir_demoapp_exe.c_str())) << "Failed copy demoapp" << this->working_dir_demoapp_exe;
 
             this->m_apps.emplace_back(corerun_app_details(app_dir, app_dir_demoapp_exe,
@@ -276,7 +276,7 @@ namespace {
         {
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_corerun_exe.c_str()));
             ASSERT_TRUE(pal_fs_file_exists(this->working_dir_demoapp_exe.c_str()));
-            ASSERT_TRUE(pal_fs_mkdir(this->install_dir.c_str(), default_permissions));
+            ASSERT_TRUE(pal_fs_mkdirp(this->install_dir.c_str(), default_permissions));
             ASSERT_TRUE(file_copy(this->working_dir_corerun_exe.c_str(), this->install_dir_corerun_exe.c_str()));
         }
 

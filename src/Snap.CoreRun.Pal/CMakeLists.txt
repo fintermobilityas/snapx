@@ -23,6 +23,7 @@ list(APPEND pal_INCLUDE_DIRS
 
 list(APPEND pal_SOURCES
    src/pal_string.cpp
+   src/pal_module.cpp
    src/pal.cpp
 )
 

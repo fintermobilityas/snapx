@@ -11,12 +11,13 @@ jobs:
         sudo apt install apt-transport-https
         echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
         sudo apt update
-        sudo apt-get -yq install mono-complete
-    displayName: Installing mono
+        sudo apt-get -yq install mono-develop
+    displayName: Installing mono develop
   - task: DotNetCoreInstaller@0
     inputs:
       packageType: 'sdk' 
       version: '2.2.104' 
+    displayName: Install .NET Core 2.2.104
   - script: pwsh $(buildScript)
   - task: PublishTestResults@2
     displayName: Publish test results
@@ -37,6 +38,11 @@ jobs:
     name: Youpark
     vmImage: 'win1803'
   steps:
+  - task: DotNetCoreInstaller@0
+    inputs:
+      packageType: 'sdk' 
+      version: '2.2.104' 
+    displayName: Install .NET Core 2.2.104
   - script: powershell -f $(buildScript) -VisualStudioVersion "15"
   - task: PublishTestResults@2
     displayName: Publish .NET test results

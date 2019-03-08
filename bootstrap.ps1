@@ -334,10 +334,10 @@ function Invoke-Dotnet-Unit-Tests
             "test"
             "$Project",  
             "--logger trx", 
-            "--verbosity=diag",
+            "--diag=testhang.txt",
             "--configuration=$Configuration"
-            # "--", # RunSettings
-            # "RunConfiguration.TestSessionTimeout=60000"
+            "--", # RunSettings
+            "RunConfiguration.TestSessionTimeout=60000"
         )    
     }
 

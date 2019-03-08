@@ -125,10 +125,13 @@ namespace snapx
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
             var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
+            var snapPackageRestorer = new SnapPackageRestorer(snapOs.Filesystem, nugetServiceCommandPack, 
+                snapCryptoProvider, snapPack);
+
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
-                snapPack, snapAppWriter, snapXEmbeddedResources, 
-                nugetServiceCommandPack,  nugetServiceCommandPromote, nugetServiceNoopLogger,
+                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, 
+                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceNoopLogger,
                 toolWorkingDirectory, workingDirectory, cancellationToken);
         }
 
@@ -137,7 +140,7 @@ namespace snapx
             [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageRestorer snapPackageRestorer,
             [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote,
             [NotNull] INugetService nugetServiceNoopLogger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
@@ -154,6 +157,7 @@ namespace snapx
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
+            if (snapPackageRestorer == null) throw new ArgumentNullException(nameof(snapPackageRestorer));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
@@ -168,7 +172,7 @@ namespace snapx
                     (PromoteNupkgOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapCryptoProvider, coreRunLib, 
+                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapCryptoProvider, snapPackageRestorer, coreRunLib, 
                         SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),

@@ -5,13 +5,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Configuration;
 using NuGet.Packaging;
-using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using snapx.Core;
 using snapx.Options;
@@ -31,7 +28,7 @@ namespace snapx
             [NotNull] ISnapAppReader appReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor, ISnapCryptoProvider snapCryptoProvider,
-            [NotNull] ICoreRunLib coreRunLib, [NotNull] ILog logger,
+            [NotNull] ISnapPackageRestorer packageRestorer, [NotNull] ICoreRunLib coreRunLib, [NotNull] ILog logger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -44,6 +41,7 @@ namespace snapx
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
+            if (packageRestorer == null) throw new ArgumentNullException(nameof(packageRestorer));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
@@ -151,9 +149,7 @@ namespace snapx
                 logger.Info("Successfully unpacked releases nupkg.");
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
-                if (!await RestoreAsync(logger, filesystem, nugetService,
-                    snapCryptoProvider, snapPack, snapReleases, snapApps, snapAppChannel,
-                    pushFeed, cancellationToken))
+                if (!await packageRestorer.RestoreAsync(logger,snapReleases, snapApps, snapAppChannel, pushFeed, cancellationToken))
                 {
                     return 1;
                 }
@@ -199,7 +195,7 @@ namespace snapx
                         mostRecentSnapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
                     }
 
-                    logger.Info($"Successfully read release information.");
+                    logger.Info("Successfully read release information.");
                 }
                 else
                 {
@@ -246,7 +242,7 @@ namespace snapx
 
             if (mostRecentSnapApp == null)
             {
-                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, null, 0));
+                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize));
                 goto buildReleasePackage;
             }
 
@@ -482,212 +478,7 @@ namespace snapx
                 return (true, installerFinalAbsolutePath);
             }
         }
-        
-        // Todo: Extract to interface: ISnapReleaseRestorer
-        
-        internal static async Task<bool> RestoreAsync([NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] INugetService nugetService, [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapPack snapPack,
-            [NotNull] SnapReleases snapReleases,[NotNull] SnapApps snapApps, [NotNull] SnapChannel snapChannel, [NotNull] PackageSource pushFeed, CancellationToken cancellationToken)
-        {
-            if (logger == null) throw new ArgumentNullException(nameof(logger));
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
-            if (snapCryptoProvider == null) throw new ArgumentNullException(nameof(snapCryptoProvider));
-            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
-            if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
-            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
-            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
-            if (pushFeed == null) throw new ArgumentNullException(nameof(pushFeed));
-
-            var releasesForChannel = snapReleases.Apps.Where(x => x.ChannelName == snapChannel.Name).ToList();
-            if (!releasesForChannel.Any())
-            {
-                return false;
-            }
-            
-            var stopwatch = new Stopwatch();
-            stopwatch.Restart();
-
-            logger.Info($"Verifying checksums for {releasesForChannel.Count} packages for channel: {snapChannel.Name}.");
-
-            var packagesDirectory = snapApps.Generic.Packages;
-            var baseNupkgRelease = releasesForChannel.First(x => !x.IsDelta);
-            var baseNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, baseNupkgRelease.FullFilename);
-
-            bool ChecksumOk(SnapRelease nupkgToVerify, bool silent = false)
-            {
-                if (nupkgToVerify == null) throw new ArgumentNullException(nameof(nupkgToVerify));
-
-                var deltaNupkgFilenameAbsolutePath = filesystem.PathCombine(packagesDirectory, nupkgToVerify.DeltaFilename);
-                var shouldChecksumDeltaFile = nupkgToVerify.FullFilename != baseNupkgRelease.FullFilename;
-                if (shouldChecksumDeltaFile
-                    && !filesystem.FileExists(deltaNupkgFilenameAbsolutePath))
-                {
-                    logger.Error($"Unable to checksum delta nupkg because it does not exist: {nupkgToVerify.DeltaFilename}");
-                    return false;
-                }
-
-                var fullNupkFilenameAbsolutePath = filesystem.PathCombine(packagesDirectory, nupkgToVerify.FullFilename);
-                if (!filesystem.FileExists(fullNupkFilenameAbsolutePath))
-                {
-                    logger.Error($"Unable to checksum full nupkg because it does not exist: {nupkgToVerify.FullFilename}");
-                    return false;
-                }
-
-                bool ChecksumOkImpl(string nupkgAbsoluteFilename, long fileSize, string expectedChecksum)
-                {
-                    if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));
-                    if (fileSize <= 0) throw new ArgumentOutOfRangeException(nameof(fileSize));
-                    if (expectedChecksum == null) throw new ArgumentNullException(nameof(expectedChecksum));
-
-                    var relativeFilename = filesystem.PathGetFileName(nupkgAbsoluteFilename);
-
-                    using (var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename))
-                    {
-                        if (!silent)
-                        {
-                            logger.Info($"Verifying checksum: {relativeFilename}. File size: {fileSize.BytesAsHumanReadable()}.");
-                        }
-                        
-                        var checksum = snapCryptoProvider.Sha512(packageArchiveReader, Encoding.UTF8);
-                        if (checksum != expectedChecksum)
-                        {
-                            logger.Error($"Checksum mismatch: {relativeFilename}.");
-                            return false;
-                        }
-                        
-                        return true;
-                    }
-                }
-
-                try
-                {
-                    if (shouldChecksumDeltaFile)
-                    {
-                        if (!ChecksumOkImpl(deltaNupkgFilenameAbsolutePath, nupkgToVerify.DeltaFilesize, nupkgToVerify.DeltaChecksum))
-                        {
-                            return false;
-                        }
-                    }
-
-                    return ChecksumOkImpl(fullNupkFilenameAbsolutePath, nupkgToVerify.FullFilesize, nupkgToVerify.FullChecksum);
-                }
-                catch (Exception e)
-                {
-                    logger.ErrorException("Unknown error while checksumming", e);
-                }
-
-                return false;
-            }
-
-            async Task<bool> RestoreAsync(SnapRelease nupkgToRestore)
-            {
-                if (nupkgToRestore == null) throw new ArgumentNullException(nameof(nupkgToRestore));
-                var filename = nupkgToRestore.IsDelta ? nupkgToRestore.DeltaFilename : nupkgToRestore.FullFilename;
-                var fileSize = nupkgToRestore.IsDelta ? nupkgToRestore.DeltaFilesize : nupkgToRestore.FullFilesize;
-                
-                var restoreStopwatch = new Stopwatch();
-                restoreStopwatch.Restart();
-
-                logger.Info($"Restoring nupkg: {filename}. " +
-                            $"File size: {fileSize.BytesAsHumanReadable()}. " +
-                            $"Nuget feed name: {pushFeed.Name}.");
-
-                try
-                {
-                    var snapPreviousVersionDownloadResult = await nugetService
-                        .DownloadAsync(nupkgToRestore.BuildPackageIdentity(), pushFeed, snapApps.Generic.Packages, cancellationToken);
-
-                    using (snapPreviousVersionDownloadResult)
-                    {
-                        if (!snapPreviousVersionDownloadResult.SuccessSafe())
-                        {
-                            snapPreviousVersionDownloadResult.Dispose();
-                            logger.Error($"Failed to restore nupkg: {filename}.");
-                            return false;
-                        }
-                    }
-
-                    if (nupkgToRestore.FullFilename == baseNupkgRelease.FullFilename)
-                    {
-                        goto success;
-                    }
-
-                    if (nupkgToRestore.IsDelta)
-                    {
-                        var nupkgToReassembleFrom = snapReleases.Apps.FirstOrDefault(x => x.Version < nupkgToRestore.Version);
-                        if (nupkgToReassembleFrom == null)
-                        {
-                            goto success;
-                        }
-                                                
-                        var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, nupkgToRestore.DeltaFilename);
-                        var fullNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, nupkgToReassembleFrom.FullFilename);
-
-                        var reassembleProgressSource = new SnapProgressSource();
-                        reassembleProgressSource.Progress += (sender, i) => { logger.Info($"Progress: {i}%"); };
-
-                        var (reassembledFullNupkgMemoryStream, _, _) = await snapPack.ReassambleFullPackageAsync(deltaNupkgAbsolutePath,
-                            fullNupkgAbsolutePath, reassembleProgressSource, cancellationToken);
-                        using (reassembledFullNupkgMemoryStream)
-                        {
-                            var dstFilename = filesystem.PathCombine(packagesDirectory, nupkgToRestore.FullFilename);
-                            await filesystem.FileWriteAsync(reassembledFullNupkgMemoryStream, dstFilename, cancellationToken);
-                        }
-                    }
-
-                    success:
-                    logger.Info($"Succesfully restored nupkg {filename} in {restoreStopwatch.Elapsed.TotalSeconds:0.0}s");
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    logger.ErrorException($"Unknown error restoring: {filename}", e);
-                    return false;
-                }
-            }
-
-            string restoreReason = null;
-            if (!filesystem.FileExists(baseNupkgAbsolutePath))
-            {
-                restoreReason = "Base nupkg does not exist.";
-            }
-            else if (!ChecksumOk(baseNupkgRelease, true))
-            {
-                restoreReason = "Invalid SHA512 checksum.";
-            }
-
-            if (restoreReason != null)
-            {
-                logger.Warn($"Attempting to restore full nupkg: {baseNupkgRelease.FullFilename}. " +
-                            $"Version: {baseNupkgRelease.Version}. " +
-                            $"File size: {baseNupkgRelease.FullFilesize.BytesAsHumanReadable()}. " +
-                            $"Reason: {restoreReason}");
-
-                if (!await RestoreAsync(baseNupkgRelease))
-                {
-                    return false;
-                }
-            }
-
-            foreach (var deltaRelease in releasesForChannel.Where(x => x.IsDelta))
-            {
-                if (ChecksumOk(deltaRelease, true))
-                {
-                    continue;
-                }
-                
-                if (!await RestoreAsync(deltaRelease))
-                {
-                    return false;
-                }
-            }
-
-            logger.Info($"Successfully verified {releasesForChannel.Count} packages in {stopwatch.Elapsed.TotalSeconds:0.0}s.");
-
-            return true;
-        }
-
+              
         static async Task PushPackagesAsync([NotNull] PackOptions packOptions, [NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
             [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel,
             [NotNull] List<string> packages, CancellationToken cancellationToken)

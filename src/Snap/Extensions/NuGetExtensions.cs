@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Common;
 using NuGet.Configuration;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using Snap.Core.Models;
 using Snap.NuGet;
@@ -16,7 +19,84 @@ using Snap.NuGet;
 namespace Snap.Extensions
 {
     internal static class NuGetExtensions
-    {
+    {        
+        internal static async Task<Uri> BuildDownloadUrlV3Async([NotNull] this DownloadResourceV3 downloadResourceV3, [NotNull] PackageIdentity identity, [NotNull] ILogger logger, CancellationToken token)
+        {
+            if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
+            if (identity == null) throw new ArgumentNullException(nameof(identity));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
+
+            var type = downloadResourceV3.GetType();
+            
+            const string getDownloadUrlMethodName = "GetDownloadUrl";
+            var getDownloadUrlMethod = type.GetMethod(getDownloadUrlMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (getDownloadUrlMethod == null)
+            {
+                throw new MissingMethodException(getDownloadUrlMethodName);
+            }
+
+            var getDownloadUrlTask = (dynamic) getDownloadUrlMethod.Invoke(downloadResourceV3, new object[] {identity, logger, token});
+            var downloadUri = await getDownloadUrlTask;
+
+            return downloadUri as Uri;
+        }
+
+        internal static HttpSource BuildHttpSource([NotNull] this DownloadResourceV3 downloadResourceV3)
+        {
+            if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
+            
+            var type = downloadResourceV3.GetType();
+            
+            const string httpSourcePrivateReadonlyFieldName = "_client";
+            var httpSource = type.GetField(httpSourcePrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (httpSource == null)
+            {
+                throw new MissingFieldException(httpSourcePrivateReadonlyFieldName);
+            }
+
+            return httpSource.GetValue(downloadResourceV3) as HttpSource;            
+        }
+        
+        internal static HttpSource BuildHttpSource([NotNull] this V2FeedParser v2FeedParser)
+        {
+            if (v2FeedParser == null) throw new ArgumentNullException(nameof(v2FeedParser));
+            
+            var type = v2FeedParser.GetType();
+            
+            const string httpSourcePrivateReadonlyFieldName = "_httpSource";
+            var httpSource = type.GetField(httpSourcePrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (httpSource == null)
+            {
+                throw new MissingFieldException(httpSourcePrivateReadonlyFieldName);
+            }
+
+            return httpSource.GetValue(v2FeedParser) as HttpSource;            
+        }
+
+        internal static string BuildDownloadUrlV2([NotNull] this PackageIdentity packageIdentity)
+        {
+            if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
+            var dependencyInfo = packageIdentity as SourcePackageDependencyInfo;
+            return dependencyInfo?.DownloadUri?.ToString();
+        }
+        
+        internal static V2FeedParser BuildV2FeedParser([NotNull] this DownloadResourceV2Feed downloadResourceV2Feed)
+        {
+            if (downloadResourceV2Feed == null) throw new ArgumentNullException(nameof(downloadResourceV2Feed));
+
+            var type = downloadResourceV2Feed.GetType();
+            
+            const string feedParserPrivateReadonlyFieldName = "_feedParser";
+            var v2FeedParser = type.GetField(feedParserPrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            if (v2FeedParser == null)
+            {
+                throw new MissingFieldException(feedParserPrivateReadonlyFieldName);
+            }
+
+            return v2FeedParser.GetValue(downloadResourceV2Feed) as V2FeedParser;
+        }
+        
         internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));

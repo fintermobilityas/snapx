@@ -11,6 +11,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
+using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Logging;
 using Snap.NuGet;
@@ -119,7 +120,76 @@ namespace Snap.Tests.NuGet
 
                 var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory.WorkingDirectory, localFilename);
                 Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
-            }      
+            }
+        }
+
+        [Fact]
+        public async Task TestDirectDownloadWithProgressAsync()
+        {
+            var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
+            var percentages = new List<int>();
+            var progressSourceMock = new Mock<ISnapProgressSource>();
+            progressSourceMock.Setup(x => x.Raise(It.IsAny<int>())).Callback((int percentage) =>
+            {
+                percentages.Add(percentage);
+            });
+
+            var downloadContext = new DirectDownloadContext
+            {
+                PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
+                PackageFileSize = 64196,
+                MaxRetries = 3
+            };
+
+            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+                progressSourceMock.Object, CancellationToken.None))
+            {
+                Assert.NotNull(downloadResourceResult);
+                Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
+                
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+                
+                Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
+                Assert.True(percentages.Distinct().Count() == percentages.Count, "Reported progress percentage values must be unique.");
+            }
+            
+        }
+        
+        [Fact]
+        public async Task TestDirectDownloadWithProgressAsync_Unknown_File_Size()
+        {
+            var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
+            var percentages = new List<int>();
+            var progressSourceMock = new Mock<ISnapProgressSource>();
+            progressSourceMock.Setup(x => x.Raise(It.IsAny<int>())).Callback((int percentage) =>
+            {
+                percentages.Add(percentage);
+            });
+
+            var downloadContext = new DirectDownloadContext
+            {
+                PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
+                PackageFileSize = 0,
+                MaxRetries = 3
+            };
+
+            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+                progressSourceMock.Object, CancellationToken.None))
+            {
+                Assert.NotNull(downloadResourceResult);
+                Assert.Equal(64196, downloadResourceResult.PackageStream.Length);
+                
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+                
+                Assert.Equal(3, percentages.Count);
+                Assert.Equal(0, percentages[0]);
+                Assert.Equal(50, percentages[1]);
+                Assert.Equal(100, percentages[2]);
+            }
+            
         }
     }
 }

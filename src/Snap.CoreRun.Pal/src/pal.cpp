@@ -1802,19 +1802,107 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
-    char real_path[PAL_MAX_PATH];
-    if (realpath(path_in, real_path) != nullptr && real_path[0] != '\0')
+
+    std::string path_in_str(path_in);
+    if(path_in_str.empty())
     {
-        std::string real_path_str(real_path);
-
-        // realpath should return canonicalized path without the trailing slash
-        assert(real_path_str.back() != '/');
-
-        *path_normalized_out = strdup(real_path_str.c_str());
-
-        return TRUE;
+        return FALSE;
     }
-    return FALSE;
+
+    const auto canonicalize_path = [](const std::string& path)
+    {
+        if (path.empty())
+        {
+            return path;
+        }
+
+        auto next = std::string::npos;
+        std::vector<std::string> path_components;
+        const auto forward_trailing = std::string("/\\");
+        const auto forward = std::string("/");
+        const auto dot = std::string(".");
+        const auto dot_dot = std::string("..");
+
+        const auto starts_with_slash = path.front() == forward[0];
+        if(path.size() == 1
+            && starts_with_slash)
+        {
+            return forward;
+        }
+
+        do
+        {
+            const auto path_components_len = path_components.size();
+
+            const auto current = next + 1;
+            next = path.find_first_of(forward_trailing, current);
+
+            std::string path_component(path.substr(current, next - current));
+
+            // Skip empty (preserve initial)
+            if (path_component.empty()
+                && path_components_len > 0)
+            {
+                continue;
+            }
+
+            // Skip . (preserve initial)
+            if (path_component == dot
+                && path_components_len > 0)
+            {
+                continue;
+            }
+
+            if (path_component == dot_dot && path_components_len > 0)
+            {
+                // Ignore if .. follows initial /
+                if (path_components.back().empty())
+                {
+                    continue;
+                }
+                if (path_components.back() != dot_dot)
+                {
+                    path_components.pop_back();
+                    continue;
+                }
+            }
+
+            path_components.emplace_back(path_component);
+        } while (next != std::string::npos);
+
+        std::stringstream buffer;
+        for(const auto& v : path_components)
+        {
+            buffer << v << forward;
+        }
+
+        auto normalized_path = buffer.str();
+        if(normalized_path.empty())
+        {
+            if(starts_with_slash)
+            {
+                normalized_path = forward;
+            }
+        } else if(normalized_path.size() > 1)
+        {
+            if(normalized_path.back() == forward[0])
+            {
+                normalized_path.pop_back();
+            }
+        }
+
+        return normalized_path;
+    };
+
+    const auto path_normalized = canonicalize_path(path_in_str);
+    if(path_normalized.empty())
+    {
+        return FALSE;
+    }
+
+    *path_normalized_out = strdup(path_normalized.c_str());
+
+    return TRUE;
 #else
     return FALSE;
 #endif

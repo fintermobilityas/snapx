@@ -13,12 +13,27 @@ namespace
     public:
         const char *path1;
         const char *path2;
-        const char *combined;
+        const char *value;
 
         path_combine_test_case() = delete;
 
-        path_combine_test_case(const char* path1, const char* path2, const char* combined) :
-            path1(path1), path2(path2), combined(combined)
+        path_combine_test_case(const char* path1, const char* path2, const char* value) :
+            path1(path1), path2(path2), value(value)
+        {
+
+        }
+    };
+
+    struct path_normalize_test_case
+    {
+    public:
+        const char *input;
+        const char *expected_value;
+
+        path_normalize_test_case() = delete;
+
+        path_normalize_test_case(const char* input, const char* expected_value) :
+                input(input), expected_value(expected_value)
         {
 
         }
@@ -41,6 +56,67 @@ namespace
         path_combine_test_case("", "", nullptr),
         path_combine_test_case(" ", " ", nullptr),
         path_combine_test_case(nullptr, nullptr, nullptr)
+    };
+
+    // realpath -m --canonicalize-missing -P <expression>
+    std::vector<path_normalize_test_case> path_normalize_test_cases = {
+        path_normalize_test_case("", nullptr),
+        path_normalize_test_case(nullptr, nullptr),
+        path_normalize_test_case("/", "/"),
+        path_normalize_test_case("//", "/"),
+        path_normalize_test_case("///", "/"),
+        path_normalize_test_case("////", "/"),
+        path_normalize_test_case("/////", "/"),
+        path_normalize_test_case("/abc", "/abc"),
+        path_normalize_test_case("//abc", "/abc"),
+        path_normalize_test_case("///abc", "/abc"),
+        path_normalize_test_case("abc", "abc"),
+        path_normalize_test_case("abc/", "abc"),
+        path_normalize_test_case("abc//", "abc"),
+        path_normalize_test_case("abc/123", "abc/123"),
+        path_normalize_test_case("abc//123", "abc/123"),
+        path_normalize_test_case("abc///123", "abc/123"),
+        path_normalize_test_case("abc/./123", "abc/123"),
+        path_normalize_test_case("abc/x/../123", "abc/123"),
+        path_normalize_test_case("..", ".."),
+        path_normalize_test_case("/..", "/"),
+        path_normalize_test_case("../123", "../123"),
+        path_normalize_test_case("/../123", "/123"),
+        path_normalize_test_case("//../123", "/123"),
+        path_normalize_test_case("./../123", "123"),
+        path_normalize_test_case("./", "."),
+        path_normalize_test_case(".//", "."),
+        path_normalize_test_case(".///", "."),
+        path_normalize_test_case("./abc", "./abc"),
+        path_normalize_test_case("././abc", "./abc"),
+        path_normalize_test_case("./../abc", "abc"),
+        path_normalize_test_case("abc/.", "abc"),
+        path_normalize_test_case("abc/./.", "abc"),
+        path_normalize_test_case("/abc/.", "/abc"),
+        path_normalize_test_case("/abc/./.", "/abc"),
+        path_normalize_test_case("/./abc/.", "/abc"),
+        path_normalize_test_case("/abc/././123", "/abc/123"),
+        path_normalize_test_case("abc/../123", "123"),
+        path_normalize_test_case("/abc/../123", "/123"),
+        path_normalize_test_case("abc/./../123", "123"),
+        path_normalize_test_case("/abc/./../123", "/123"),
+        path_normalize_test_case("abc/def/../123", "abc/123"),
+        path_normalize_test_case("/abc/def/../123", "/abc/123"),
+        path_normalize_test_case("abc/def/../../123", "123"),
+        path_normalize_test_case("/abc/def/../../123", "/123"),
+        path_normalize_test_case("/abc/..", "/"),
+        path_normalize_test_case("abc/..", nullptr),
+        path_normalize_test_case("abc/123/..", "abc"),
+        path_normalize_test_case("/abc/123/..", "/abc"),
+        path_normalize_test_case("abc/123/../..", nullptr),
+        path_normalize_test_case("/abc/123/../..", "/"),
+        path_normalize_test_case("abc/123/../../.", "."),
+        path_normalize_test_case("/abc/123/../../.", "/"),
+        path_normalize_test_case("abc/123/.././..", nullptr),
+        path_normalize_test_case("/abc/123/.././..", "/"),
+        path_normalize_test_case("abc////..////z////", "/z"),
+        path_normalize_test_case("/////abc////..////z////", "/z"),
+        path_normalize_test_case("d/./e/.././o/f/g/./h/../../.././n/././e/./i/..", "d/o/n/e")
     };
 
     TEST(PAL_GENERIC_UNIX, pal_is_linux)
@@ -99,11 +175,56 @@ namespace
 
         for (const auto &test_case : path_combine_test_cases)
         {
-            char* path_combined = nullptr;
-            const auto ASSERT_success = test_case.combined == nullptr ? FALSE : TRUE;
-            ASSERT_EQ(pal_path_combine(test_case.path1, test_case.path2, &path_combined), ASSERT_success);
-            ASSERT_STREQ(path_combined, test_case.combined);
+            auto path_combined = std::make_unique<char*>(nullptr);
+            const auto ASSERT_success = test_case.value == nullptr ? FALSE : TRUE;
+            ASSERT_EQ(pal_path_combine(test_case.path1, test_case.path2, path_combined.get()), ASSERT_success);
+            ASSERT_STREQ(*path_combined, test_case.value);
         }
     }
+
+    TEST(PAL_PATH_UNIX, pal_path_normalize)
+    {
+        ASSERT_GT(path_normalize_test_cases.size(), 0u);
+
+        auto test_case_index = 0;
+        for (const auto &test_case : path_normalize_test_cases)
+        {
+            auto path_normalized = std::make_unique<char*>(nullptr);
+            const auto ASSERT_success = test_case.expected_value == nullptr ? FALSE : TRUE;
+
+            EXPECT_EQ(pal_path_normalize(test_case.input, path_normalized.get()), ASSERT_success)
+                << " @Input:" << test_case.input
+                << " @Expected:" << test_case.expected_value
+                << " @Normalized:" << *path_normalized
+                << " @Test case index:" << std::to_string(test_case_index);
+
+            EXPECT_STREQ(*path_normalized, test_case.expected_value)
+                     << " @Input:" << test_case.input
+                     << " @Expected:" << test_case.expected_value
+                     << " @Normalized:" << *path_normalized
+                     << " @Test case index:" << std::to_string(test_case_index);
+
+            std::cout << "Completed: " << test_case_index;
+            test_case_index++;
+        }
+    }
+
+    /*TEST(PAL_PATH_UNIX, pal_path_normalize_debug)
+    {
+        const auto test_case = path_normalize_test_cases[24];
+
+        auto path_normalized = std::make_unique<char*>(nullptr);
+        const auto ASSERT_success = test_case.expected_value == nullptr ? FALSE : TRUE;
+
+        ASSERT_EQ(pal_path_normalize(test_case.input, path_normalized.get()), ASSERT_success)
+                                    << " @Input:" << test_case.input
+                                    << " @Expected:" << test_case.expected_value
+                                    << " @Normalized:" << *path_normalized;
+
+        ASSERT_STREQ(*path_normalized, test_case.expected_value)
+                                    << " @Input:" << test_case.input
+                                    << " @Expected:" << test_case.expected_value
+                                    << " @Normalized:" << *path_normalized;
+    }*/
 
 }

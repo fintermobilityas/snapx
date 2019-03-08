@@ -16,7 +16,7 @@ namespace corerun
 
                 static bool file_copy(const std::string& src_filename, const std::string& dest_filename)
                 {
-                    auto bytes = std::make_unique<char*>(new char);
+                    auto bytes = std::make_unique<char*>(nullptr);
                     size_t bytes_len = 0;
                     if (!pal_fs_read_binary_file(src_filename.c_str(), bytes.get(), &bytes_len))
                     {
@@ -28,17 +28,12 @@ namespace corerun
                         return false;
                     }
 
-                    if (!pal_fs_chmod(dest_filename.c_str(), 0777))
-                    {
-                        return false;
-                    }
-
-                    return true;
+                    return pal_fs_chmod(dest_filename.c_str(), 0777) == TRUE;
                 }
 
-                static std::string path_combine(std::string path1, std::string path2)
+                static std::string path_combine(const std::string &path1, const std::string &path2)
                 {
-                    auto path_combined = std::make_unique<char*>(new char);
+                    auto path_combined = std::make_unique<char*>(nullptr);
                     if (!pal_path_combine(path1.c_str(), path2.c_str(), path_combined.get()))
                     {
                         return std::string();
@@ -48,7 +43,7 @@ namespace corerun
 
                 static std::string get_process_cwd()
                 {
-                    auto working_dir = std::make_unique<char*>(new char);
+                    auto working_dir = std::make_unique<char*>(nullptr);
                     if (!pal_process_get_cwd(working_dir.get()))
                     {
                         return std::string();
@@ -83,17 +78,18 @@ namespace corerun
                         return std::string();
                     }
 
-                    char* random_dir = nullptr;
-                    pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), &random_dir);
-                    if (!pal_fs_mkdir(random_dir, mode))
+                    auto random_dir = std::make_unique<char*>(nullptr);
+                    if(!pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), random_dir.get()))
                     {
                         return std::string();
                     }
 
-                    auto random_dir_str = std::string(random_dir);
-                    delete random_dir;
+                    if (!pal_fs_mkdir(*random_dir, mode))
+                    {
+                        return std::string();
+                    }
 
-                    return random_dir_str;
+                    return std::string(*random_dir);
                 }
 
                 static std::string mkdir(const std::string& working_dir, const char* directory_name, const pal_mode_t mode = 0777)
@@ -103,17 +99,18 @@ namespace corerun
                         return std::string();
                     }
 
-                    char* dst_directory = nullptr;
-                    pal_path_combine(working_dir.c_str(), directory_name, &dst_directory);
-                    if (!pal_fs_mkdir(dst_directory, mode))
+                    auto dst_directory = std::make_unique<char*>(nullptr);
+                    if(!pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), dst_directory.get()))
                     {
                         return std::string();
                     }
 
-                    const auto dst_directory_str = std::string(dst_directory);
-                    delete dst_directory;
+                    if (!pal_fs_mkdir(*dst_directory, mode))
+                    {
+                        return std::string();
+                    }
 
-                    return dst_directory_str;
+                    return std::string(*dst_directory);
                 }
 
                 static std::string mkfile_random(const std::string& working_dir, const char* filename)
@@ -124,23 +121,19 @@ namespace corerun
                         return std::string();
                     }
 
-                    char* dst_filename = nullptr;
-                    if (!pal_path_combine(working_dir.c_str(), filename, &dst_filename))
+                    auto dst_filename = std::make_unique<char*>(nullptr);
+                    if(!pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), dst_filename.get()))
                     {
                         return std::string();
                     }
 
                     const auto text = "Hello World";
-                    if (!pal_fs_write(dst_filename, "wb", text, strlen(text)))
+                    if (!pal_fs_write(*dst_filename, "wb", text, strlen(text)))
                     {
-                        delete dst_filename;
                         return std::string();
                     }
 
-                    auto dst_filename_str = std::string(dst_filename);
-                    delete dst_filename;
-
-                    return dst_filename_str;
+                    return std::string(*dst_filename);
                 }
 
                 static std::string build_random_str()

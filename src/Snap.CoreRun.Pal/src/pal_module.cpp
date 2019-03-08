@@ -28,7 +28,7 @@ const std::string& pal_module::get_filename() const
     return m_filename;
 }
 
-void* pal_module::bind(const std::string& fn)
+void* pal_module::_bind(const std::string& fn)
 {
     if (!this->is_loaded())
     {

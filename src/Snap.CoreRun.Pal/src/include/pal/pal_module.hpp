@@ -20,8 +20,8 @@ public:
     template<typename T>
     T bind(const std::string& fn)
     {
-        return reinterpret_cast<T>(bind(fn));
+        return reinterpret_cast<T>(_bind(fn));
     }
 private:
-    void* bind(const std::string& fn);
+    void* _bind(const std::string& fn);
 };

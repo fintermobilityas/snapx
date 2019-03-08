@@ -12,7 +12,7 @@ jobs:
         echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
         sudo apt update
         sudo apt-get -yq install mono-complete
-      displayName: Installing mono
+    displayName: Installing mono
   - task: DotNetCoreInstaller@0
     inputs:
       packageType: 'sdk' 

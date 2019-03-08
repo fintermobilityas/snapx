@@ -334,7 +334,7 @@ function Invoke-Dotnet-Unit-Tests
             "test"
             "$Project",  
             "--logger trx", 
-            "--verbosity=normal",
+            "--verbosity=diag",
             "--configuration=$Configuration"
             # "--", # RunSettings
             # "RunConfiguration.TestSessionTimeout=60000"

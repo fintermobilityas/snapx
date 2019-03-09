@@ -204,7 +204,6 @@ namespace
                      << " @Normalized:" << *path_normalized
                      << " @Test case index:" << std::to_string(test_case_index);
 
-            std::cout << "Completed: " << test_case_index;
             test_case_index++;
         }
     }

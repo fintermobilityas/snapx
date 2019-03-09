@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -203,7 +203,8 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        public AssemblyDefinition BuildEmptyExecutable(string applicationName, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
+        public AssemblyDefinition BuildEmptyExecutable(string applicationName, bool randomVersion = false, 
+            IReadOnlyCollection<AssemblyDefinition> references = null, int exitCode = 0)
         {
             if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
 
@@ -239,14 +240,42 @@ namespace Snap.Shared.Tests
             programType.Methods.Add(ctor);
 
             var mainMethod = new MethodDefinition("Main",
-                MethodAttributes.Public | MethodAttributes.Static, mainModule.TypeSystem.Void);
+                MethodAttributes.Public | MethodAttributes.Static, mainModule.TypeSystem.Int32);
             programType.Methods.Add(mainMethod);
 
             var argsParameter = new ParameterDefinition("args",
                 ParameterAttributes.None, mainModule.ImportReference(typeof(string[])));
             mainMethod.Parameters.Add(argsParameter);
+            
+            var stringJoinMethodReference = mainModule.ImportReference(
+                typeof(string).GetMethod(nameof(string.Join), new []
+                {
+                    typeof(string), 
+                    typeof(object[])
+                }));
+            var systemConsoleWriteLineMethodReference = mainModule.ImportReference(
+                typeof(Console).GetMethod(nameof(Console.WriteLine), new []
+                {
+                    typeof(string), 
+                    typeof(object), 
+                    typeof(object) 
+                }));
+
             il = mainMethod.Body.GetILProcessor();
-            il.Append(il.Create(OpCodes.Nop));
+            // Console.WriteLine("Arguments({0}):{1}", args.Length, string.Join(",", args));
+            il.Append(il.Create(OpCodes.Nop));            
+            il.Append(il.Create(OpCodes.Ldstr, "Arguments({0}):{1}"));
+            il.Append(il.Create(OpCodes.Ldarg_0));
+            il.Append(il.Create(OpCodes.Ldlen));
+            il.Append(il.Create(OpCodes.Conv_I4));
+            il.Append(il.Create(OpCodes.Box, mainModule.TypeSystem.Int32));
+            il.Append(il.Create(OpCodes.Ldstr, ","));
+            il.Append(il.Create(OpCodes.Ldarg_0));
+            il.Append(il.Create(OpCodes.Call, stringJoinMethodReference));            
+            il.Append(il.Create(OpCodes.Call, systemConsoleWriteLineMethodReference));            
+            il.Append(il.Create(OpCodes.Nop));          
+            // return exitCode;
+            il.Append(il.Create(OpCodes.Ldc_I4, exitCode));
             il.Append(il.Create(OpCodes.Ret));
 
             assembly.EntryPoint = mainMethod;

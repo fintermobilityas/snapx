@@ -15,3 +15,5 @@ TestResults/
 
 src/Snap\.sln\.DotSettings\.user
 packages-microsoft-prod.deb*
+*.txt
+*.log

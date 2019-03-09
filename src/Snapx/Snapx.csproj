@@ -5,7 +5,6 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
         <RootNamespace>snapx</RootNamespace>
         <AssemblyName>snapx</AssemblyName>
         <PackageId>snapx</PackageId>

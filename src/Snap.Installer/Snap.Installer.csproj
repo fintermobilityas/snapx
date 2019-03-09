@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
     <Import Project="Snap.Installer.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
         <IsPackable>false</IsPackable>

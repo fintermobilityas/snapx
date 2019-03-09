@@ -47,6 +47,8 @@
 
     <PropertyGroup>
         <LangVersion>7.3</LangVersion>
+        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.1;net472</TargetFrameworks>
+        <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.1</TargetFrameworks>
     </PropertyGroup>
 
     <PropertyGroup>

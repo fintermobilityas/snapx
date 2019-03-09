@@ -3,7 +3,6 @@
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
-        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
     </PropertyGroup>

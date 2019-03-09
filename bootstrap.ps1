@@ -13,7 +13,10 @@ param(
     [string] $DotNetRid = $null,
     [Parameter(Position = 5, ValueFromPipeline = $true)]
     [Validateset(15, 16)]
-    [int] $VisualStudioVersion = 15
+    [int] $VisualStudioVersion = 15,
+    [Parameter(Position = 6, ValueFromPipeline = $true)]
+    [ValidateSet("netcoreapp2.1")]
+    [string] $NetCoreAppVersion = "netcoreapp2.1"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -80,7 +83,7 @@ switch -regex ($OSVersion) {
 }
 
 $TargetArch = $Arch
-$TargetArchDotNet = "netcoreapp2.2"
+$TargetArchDotNet = $NetCoreAppVersion
 if ($Cross) {
     $TargetArch = $ArchCross
 }

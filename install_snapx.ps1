@@ -1,12 +1,15 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    $Bootstrap = $false,
+    [bool] $Bootstrap = $false,
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [ValidateSet("Debug", "Release")]
-    $Configuration = "Release",
+    [string] $Configuration = "Release",
     [Parameter(Position = 2, ValueFromPipeline = $true)]
     [Validateset(15, 16)]
-    [int] $VisualStudioVersion = 15
+    [int] $VisualStudioVersion = 15,
+    [Parameter(Position = 3, ValueFromPipeline = $true)]
+    [ValidateSet("netcoreapp2.1")]
+    [string] $NetCoreAppVersion = "netcoreapp2.1"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -67,7 +70,7 @@ if($env:SNAPX_CI_BUILD -eq $true) {
 }
 
 Invoke-Command-Colored $CommandDotnet @("clean src/Snapx")
-Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f netcoreapp2.2 {0}" -f ($Properties -join " "))
+Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f ${NetCoreAppVersion} {0}" -f ($Properties -join " "))
 Invoke-Command-Colored $CommandDotnet @("pack -c $Configuration src/Snapx --no-build")
 
 $CommandSnapx = $CommandSnapx

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -18,9 +18,9 @@ using Snap.Core.Resources;
 using Snap.Installer.Core;
 using Snap.Installer.Options;
 using Snap.Logging;
-using Snap.Logging.LogProviders;
 using Snap.NuGet;
 using LogLevel = Snap.Logging.LogLevel;
+using Snap.Logging.LogProviders;
 
 namespace Snap.Installer
 {
@@ -54,15 +54,18 @@ namespace Snap.Installer
                     
             var environmentCts = new CancellationTokenSource();
             
-            var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
             int exitCode;
            
             try
             {
-                var snapOs = SnapOs.AnyOs;               
-                ConfigureNlog(snapOs);
+                var snapOs = SnapOs.AnyOs;
+                
+                ConfigureNlog(snapOs);                
                 LogProvider.SetCurrentLogProvider(new NLogLogProvider());
-                var environment = BuildEnvironment(snapOs, environmentCts, logLevel);
+
+                var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
+                
+                var environment = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
                 exitCode = MainImpl(environment, snapInstallerLogger, args);
             }
             catch (Exception e)
@@ -109,12 +112,14 @@ namespace Snap.Installer
             var snapAppWriter = snapInstallerEnvironment.Container.GetInstance<ISnapAppWriter>();
             var snapFilesystem = snapInstallerEnvironment.Container.GetInstance<ISnapFilesystem>();
             snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);
+            var snapPackageManager = snapInstallerEnvironment.Container.GetInstance<ISnapPackageManager>();
+            var nugetServiceCommandInstall = new NugetService(snapOs.Filesystem, new NugetLogger(snapInstallerLogger));
 
             int RunInstaller(InstallOptions opts)
             {
                 if (opts == null) throw new ArgumentNullException(nameof(opts));
                 return Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter,  snapInstallerLogger);
+                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapInstallerLogger);
             }
 
             try
@@ -142,7 +147,7 @@ namespace Snap.Installer
                     notParsedFunc: errs => RunInstaller(new InstallOptions()));                      
         }
 
-        static SnapInstallerEnvironment BuildEnvironment(ISnapOs snapOs, CancellationTokenSource globalCts, LogLevel logLevel)
+        static SnapInstallerEnvironment BuildEnvironment(ISnapOs snapOs, CancellationTokenSource globalCts, LogLevel logLevel, ILog logger)
         {
             var container = new ServiceContainer();
             
@@ -180,6 +185,19 @@ namespace Snap.Installer
                 c.GetInstance<ISnapOs>(),
                 c.GetInstance<ISnapEmbeddedResources>()
             ));
+            container.Register<ISnapNugetLogger>(c => new NugetLogger(logger));
+            container.Register<INugetService>(c => new NugetService(
+                c.GetInstance<ISnapFilesystem>(), 
+                c.GetInstance<ISnapNugetLogger>())
+            );
+            container.Register<ISnapPackageManager>(c => new SnapPackageManager(
+                c.GetInstance<ISnapFilesystem>(),
+                c.GetInstance<ISnapOsSpecialFolders>(),
+                c.GetInstance<INugetService>(),
+                c.GetInstance<ISnapCryptoProvider>(),
+                c.GetInstance<ISnapExtractor>(),
+                c.GetInstance<ISnapAppReader>(),
+                c.GetInstance<ISnapPack>()));
 
             var ioEnvironment = new SnapInstallerIoEnvironment
             {

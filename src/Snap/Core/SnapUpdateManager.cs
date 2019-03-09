@@ -6,12 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Common;
-using NuGet.Configuration;
-using NuGet.Packaging;
-using NuGet.Packaging.Core;
 using Snap.AnyOS;
-using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -24,25 +19,33 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
-        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, CancellationToken cancellationToken = default);
-        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(string arguments = null, CancellationToken cancellationToken = default);
+        Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
+        
+        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, 
+            CancellationToken cancellationToken = default);
+        
+        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null, 
+            CancellationToken cancellationToken = default);
+        
         string GetStubExecutableAbsolutePath();
     }
 
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public sealed class SnapUpdateManager : ISnapUpdateManager
     {
         readonly string _rootDirectory;
         readonly string _packagesDirectory;
         readonly SnapApp _snapApp;
         readonly INugetService _nugetService;
-        readonly INuGetPackageSources _nugetPackageSources;
         readonly ISnapOs _snapOs;
         readonly ISnapInstaller _snapInstaller;
         readonly ISnapPack _snapPack;
-        readonly DisposableTempDirectory _nugetSourcesTempDirectory;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapExtractor _snapExtractor;
         readonly ILog _logger;
+        readonly ISnapCryptoProvider _snapCryptoProvider;
+        readonly ISnapPackageManager _snapPackageManager;
+        readonly ISnapAppWriter _snapAppWriter;
 
         [UsedImplicitly]
         public SnapUpdateManager(ILog logger = null) : this(
@@ -61,8 +64,8 @@ namespace Snap.Core
         [SuppressMessage("ReSharper", "JoinNullCheckWithUsage")]
         internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null, 
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null, 
-            ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
-            ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
+            ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, 
+            ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -71,31 +74,27 @@ namespace Snap.Core
             _snapOs = snapOs ?? SnapOs.AnyOs;
             _rootDirectory = workingDirectory;
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
-            _nugetSourcesTempDirectory = new DisposableTempDirectory(
-                _snapOs.Filesystem.PathCombine(_snapOs.SpecialFolders.InstallerCacheDirectory, "temp", "nuget"), _snapOs.Filesystem);
             _snapApp = snapApp;
-            _nugetPackageSources = snapApp.BuildNugetSources(_nugetSourcesTempDirectory.WorkingDirectory);
             
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
-            snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
+            _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
             _snapAppReader = snapAppReader ?? new SnapAppReader();
-            var snapAppWriter1 = snapAppWriter ?? new SnapAppWriter();
-            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, snapAppWriter1, snapCryptoProvider, snapEmbeddedResources);
+            _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
+            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, snapEmbeddedResources);
             _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
             _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources);
-
-            if (!_nugetPackageSources.Items.Any())
-            {
-                throw new Exception("Nuget package sources cannot be empty");
-            }
-
-            if (_nugetPackageSources.Settings == null)
-            {
-                throw new Exception("Nuget package sources settings cannot be null");
-            }
+            _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
+                                      _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapCryptoProvider,
+                                      _snapExtractor, _snapAppReader, _snapPack);
             
             _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
+        }
+
+        public async Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
+        {
+            var (snapReleases, _) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
+            return snapReleases;
         }
 
         public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
@@ -120,7 +119,7 @@ namespace Snap.Core
         /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
         /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
         /// <exception cref="OperationCanceledException">Is thrown when restart is cancelled by user.</exception>
-        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(string arguments = null, CancellationToken cancellationToken = default)
+        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null, CancellationToken cancellationToken = default)
         {
             typeof(SnapUpdateManager).Assembly
                 .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
@@ -132,9 +131,12 @@ namespace Snap.Core
             
             var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
 
-            var shutdownArguments = arguments == null ? argumentWaitForProcessId : $"{arguments} {argumentWaitForProcessId}";
+            var shutdownArguments = $"{argumentWaitForProcessId}";
             
-            var process = _snapOs.ProcessManager.StartNonBlocking(stubExecutableFullPath, shutdownArguments);
+            var process = _snapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
+                .AddRange(arguments ?? new List<string>())
+                .Add(shutdownArguments)
+            );
 
             if (process.HasExited)
             {
@@ -153,51 +155,17 @@ namespace Snap.Core
         }
 
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken  = default)
-        {            
-            SnapReleases snapReleases;
-            PackageSource packageSource;
-            
-            try
-            {                
-                var channel = _snapApp.Channels.Single(x => x.Current);
-                if (!(channel.UpdateFeed is SnapNugetFeed snapNugetFeed))
-                {
-                    _logger?.Error("Todo: Retrieve update feed credentials from http feed.");
-                    return null;
-                }
-
-                packageSource = _nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name 
-                                                                     && x.SourceUri == snapNugetFeed.Source);                
-                var snapReleasesDownloadResult = await _nugetService
-                    .DownloadLatestAsync(_snapApp.BuildNugetReleasesUpstreamPackageId(), 
-                        _packagesDirectory, packageSource, cancellationToken, true);
-
-                if (!snapReleasesDownloadResult.SuccessSafe())
-                {
-                    _logger?.Error($"Unknown error while downloading {_snapApp.BuildNugetReleasesUpstreamPackageId()} from {packageSource.Source}.");
-                    return null;
-                }
-                                
-                using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream))
-                {
-                    snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader, cancellationToken);
-                    if (snapReleases == null)
-                    {
-                        _logger?.Error("Unknown error unpacking releases nupkg");
-                        return null;
-                    }
-                }
-            }
-            catch (Exception e)
+        {                        
+            var (snapReleases, packageSource) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
+            if (snapReleases == null)
             {
-                _logger?.Error("Exception thrown while checking for updates", e);
                 return null;
             }
-
-            var currentChannel = _snapApp.Channels.Single(x => x.Current);
+            
+            var channel = _snapApp.Channels.Single(x => x.Current);
 
             var deltaUpdates = snapReleases.Apps
-                .Where(x => x.IsDelta && x.ChannelName == currentChannel.Name && x.Version > _snapApp.Version)
+                .Where(x => x.IsDelta && x.ChannelName == channel.Name && x.Version > _snapApp.Version)
                 .OrderBy(x => x.Version)
                 .ToList();
 
@@ -205,152 +173,39 @@ namespace Snap.Core
             {
                 return null;
             }
-
-            var baseFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, _snapApp.BuildNugetFullLocalFilename());
-            if (!_snapOs.Filesystem.FileExists(baseFullNupkg))
-            {
-                _logger?.Error($"Unable to find current full nupkg: {baseFullNupkg} which is required for reassembling delta packages.");
-                return null;
-            }
-
-            snapProgressSource?.Raise(0);
-
-            _logger?.Info($"Delta updates found! Updates that need to be reassembled: {string.Join(",", deltaUpdates.Select(x => x.Version))}.");
-
-            var downloadResultsTasks =
-                deltaUpdates.Select(x =>
-                {
-                    var identity = new PackageIdentity(x.UpstreamId, x.Version.ToNuGetVersion());
-                    return _nugetService.DownloadAsync(identity, packageSource, _packagesDirectory, cancellationToken, true);
-                });
-            var downloadResourceResults = await Task.WhenAll(downloadResultsTasks);
-            var downloadsFailed = downloadResourceResults.Where(x => !x.SuccessSafe()).ToList();
-            downloadResourceResults.ForEach(x => x.Dispose());
-            if (downloadsFailed.Any())
-            {
-                _logger?.Error($"Failed to download {downloadsFailed.Count} of {downloadResourceResults.Length}. ");
-                return null;
-            }
             
-            snapProgressSource?.Raise(10);
+            snapProgressSource?.Raise(0);            
 
-            _logger?.Info($"Successfully downloaded {deltaUpdates.Count} delta updates.");
-
-            var deltas = deltaUpdates.Select(x =>
+            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, snapReleases, channel, packageSource, null, cancellationToken))
             {
-                var snapAppDelta = new SnapApp(_snapApp)
-                {
-                    Version = x.Version
-                };
-
-                return _snapOs.Filesystem.PathCombine(_packagesDirectory, snapAppDelta.BuildNugetDeltaLocalFilename());
-            }).ToList();
-
-            snapProgressSource?.Raise(20);
-
-            var deltaSnaps = new List<(SnapApp app, string nupkg)>();
-
-            var deltaNb = 1;
-            var total = deltas.Count;
-            foreach (var deltaNupkg in deltas)
-            {
-                if (!_snapOs.Filesystem.FileExists(deltaNupkg))
-                {
-                    _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Nupkg does not exist: {deltaNupkg}. ");
-                    return null;
-                }
-
-                using (var asyncCoreReader = new PackageArchiveReader(deltaNupkg))
-                {
-                    var snapApp = await _snapPack.GetSnapAppAsync(asyncCoreReader, cancellationToken);
-                    if (snapApp == null)
-                    {
-                        _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Unable to retrieve snap manifest from nupkg: {deltaNupkg}. ");
-                        return null;
-                    }
-
-                    if (!snapApp.Delta)
-                    {
-                        _logger?.Error($"Unable to apply delta {deltaNb} of {total}. Snap manifest reports it's not a delta update. Nupkg: {deltaNupkg}.");
-                        return null;
-                    }
-
-                    deltaSnaps.Add((snapApp, deltaNupkg));
-                }
-
-                deltaNb++;
+                _logger.Error("Unknown error restoring nuget packages.");
+                return null;
             }
 
             snapProgressSource?.Raise(50);
 
-
-            // Todo: A significant speedup could be achieved by applying the updates in memory. 
-            // One could also avoid creating a full nupkg per delta and simply write the final reassembled
-            // nupkg to disk. This is not a lot of work either.
-            
-            var nextFullNupkg = baseFullNupkg;
-            SnapApp updatedSnapApp = null;
-            deltaNb = 1;
-
-            foreach (var (_, deltaNupkgFilename) in deltaSnaps)
-            {
-                if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
-                {
-                    _logger?.Error($"Failed to apply delta update {deltaNb} of {total}. Full nupkg was not found: {nextFullNupkg}.");
-                    return null;
-                }
-
-                _logger?.Info($"Reassembling delta update {deltaNb} of {total}. Full nupkg: {nextFullNupkg}. Delta nupkg: {deltaNupkgFilename}");
-
-                try
-                {
-                    var (nupkgStream, snapApp, _) =
-                        await _snapPack.ReassambleFullPackageAsync(deltaNupkgFilename, nextFullNupkg, cancellationToken: cancellationToken);
-
-                    updatedSnapApp = snapApp;
-                    nextFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, updatedSnapApp.BuildNugetFullLocalFilename());
-
-                    _logger?.Info($"Successfully reassembled delta update {deltaNb} of {total}. Writing full nupkg to disk: {nextFullNupkg}");
-
-                    await _snapOs.Filesystem.FileWriteAsync(nupkgStream, nextFullNupkg, cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    _logger?.ErrorException($"Unknown error while reassembling delta update at index {deltaNb}.", e);
-                    return null;
-                }
-            }
-
-            snapProgressSource?.Raise(70);
-
-            _logger?.Info($"Finished building deltas. Attempting to install reassembled full nupkg: {nextFullNupkg}");
-
-            if (updatedSnapApp == null)
-            {
-                _logger?.Error($"Fatal error! Unable to install full nupkg because {nameof(updatedSnapApp)} is null.");
-                return null;
-            }
-            
+            var releaseToInstall = snapReleases.Apps.Last();
+            var nextFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
             if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
             {
-                _logger?.Error($"Unable to install final full nupkg because it does not exist on disk: {nextFullNupkg}.");
+                _logger?.Error($"Unable to find full nupkg: {nextFullNupkg}.");
                 return null;
             }
+            
+            snapProgressSource?.Raise(60);
 
-            snapProgressSource?.Raise(80);
-
+            SnapApp updatedSnapApp;
             try
             {
                 updatedSnapApp = await _snapInstaller.UpdateAsync(nextFullNupkg, _rootDirectory, logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {
-                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install reassembled full nupkg: {nextFullNupkg}");
+                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nextFullNupkg}");
                 }
             }
             catch (Exception e)
             {
-                _logger?.ErrorException("Exception thrown while installing full nupkg reassembled from one or multiple delta packages." +
-                                      $"Filename: {nextFullNupkg}.", e);
+                _logger?.ErrorException($"Unknown error updating application. Filename: {nextFullNupkg}.", e);
                 return null;
             }
                        
@@ -361,7 +216,7 @@ namespace Snap.Core
 
         public void Dispose()
         {
-            _nugetSourcesTempDirectory?.Dispose();
+      
         }
     }
 }

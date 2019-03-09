@@ -11,7 +11,7 @@ namespace Snap.Core
 
         public static readonly string SnapAppLibraryName = "Snap.App";
         public static readonly string SnapDllFilename = "Snap.dll";
-        public static string SnapAppDllFilename => SnapAppLibraryName + ".dll";
+        public static string SnapAppDllFilename => $"{SnapAppLibraryName}.dll";
         
         public static readonly string SnapUniqueTargetPathFolderName = BuildSnapNuspecUniqueFolderName();
         public static readonly string NuspecTargetFrameworkMoniker = NuGetFramework.AnyFramework.Framework;

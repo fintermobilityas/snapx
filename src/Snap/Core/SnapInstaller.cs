@@ -323,20 +323,31 @@ namespace Snap.Core
                 }
             }          
            
-            var allSnapAwareApps = new List<string> {coreRunExeAbsolutePath};
+            var allSnapAwareApps = new List<string>
+            {
+                coreRunExeAbsolutePath
+            }.Select(x =>
+                {
+                    var installOrUpdateTxt = isInitialInstall ? "--snap--installed" : "--snap--updated";
+                    return new ProcessStartInfoBuilder(x)
+                        .Add($"{installOrUpdateTxt} {currentVersion.ToNormalizedString()}");
+                })
+                .ToList();
             
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall ?
-                $"--snap-installed {currentVersion}" : $"--snap-updated {currentVersion}");
+            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger);
         }
 
-        Task InvokeSnapAwareApps(IReadOnlyCollection<string> allSnapAwareApps, 
-            TimeSpan cancelInvokeProcessesAfterTs, string args, ILog logger = null)
+        async Task InvokeSnapAwareApps([NotNull] IReadOnlyCollection<ProcessStartInfoBuilder> allSnapAwareApps, 
+            TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion, ILog logger = null)
         {
+            if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
+            if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion))
+                ;
             logger?.Info(
-                $"Invoking {allSnapAwareApps.Count} processes with arguments: {args}. " +
+                $"Invoking {allSnapAwareApps.Count} processes. " +
                          $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
-            return allSnapAwareApps.ForEachAsync(async exe =>
+            var invocationTasks = allSnapAwareApps.ForEachAsync(async processStartInfoBuilder =>
             {
                 using (var cts = new CancellationTokenSource())
                 {
@@ -344,16 +355,27 @@ namespace Snap.Core
 
                     try
                     {
-                        await _snapOs.ProcessManager.RunAsync(exe, args, cts.Token);
+                        var (exitCode, stdout) = await _snapOs.ProcessManager.RunAsync(processStartInfoBuilder, cts.Token);
+                        logger?.Debug($"Processed exited: {exitCode}. Exe: {processStartInfoBuilder.Filename}. Stdout: {stdout}.");
                     }
                     catch (Exception ex)
                     {
-                        logger?.ErrorException($"Couldn't run Snap hook: {args}, continuing: {exe}.", ex);
+                        logger?.ErrorException($"Exception thrown while executing snap hook for executable: {processStartInfoBuilder.Filename}.", ex);
                     }
                 }
             }, 1 /* at a time */);
-        }
 
+            await Task.WhenAll(invocationTasks);
+
+            if (!isInitialInstall)
+            {
+                return;
+            }
+
+            allSnapAwareApps.ForEach(x => _snapOs.ProcessManager
+                .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)
+                    .Add($"--snap-first-run {semanticVersion.ToNormalizedString()}")));
+        }
         
         string GetApplicationDirectory(string baseDirectory, SemanticVersion version)
         {

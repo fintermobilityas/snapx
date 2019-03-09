@@ -59,17 +59,17 @@ namespace Snap.NuGet
         Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken,
             bool noCache = false);
 
-        Task<DownloadResourceResult> DownloadAsync([NotNull] PackageIdentity packageIdentity,
-            [NotNull] PackageSource source, string packagesDirectory, CancellationToken cancellationToken, bool noCache = false);
-
-        Task<DownloadResourceResult> DownloadLatestAsync(string packageId, string packagesDirectory,
-            [NotNull] PackageSource source, CancellationToken cancellationToken, bool noCache = false);
 
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
         
-        Task<DownloadResourceResult> DirectDownloadWithProgressAsync([NotNull] PackageSource packageSource, [NotNull] DirectDownloadContext directDownloadContext,
-            [NotNull] ISnapProgressSource snapProgressSource, CancellationToken cancellationToken);
+        Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
+            [NotNull] PackageSource source, CancellationToken cancellationToken);
+
+        Task<DownloadResourceResult> DownloadAsync([NotNull] PackageSource packageSource, PackageIdentity packageIdentity, CancellationToken cancellationToken);
+        
+        Task<DownloadResourceResult> DownloadAsyncWithProgressAsync([NotNull] PackageSource packageSource, [NotNull] DirectDownloadContext directDownloadContext,
+            ISnapProgressSource snapProgressSource, CancellationToken cancellationToken);
     }
 
     internal class NugetService : INugetService
@@ -117,27 +117,15 @@ namespace Snap.NuGet
             return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
-        public async Task<DownloadResourceResult> DownloadAsync(PackageIdentity packageIdentity, PackageSource source, string packagesDirectory,
-            CancellationToken cancellationToken,
-            bool noCache = false)
+        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource source, CancellationToken cancellationToken)
         {
-            if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
-            return await DownloadAsync(source, packageIdentity, packagesDirectory, cancellationToken, noCache);
-        }
-
-        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, string packagesDirectory, PackageSource source,
-            CancellationToken cancellationToken,
-            bool noCache = false)
-        {
-            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, noCache);
+            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, true);
             if (metadata == null)
             {
                 return null;
             }
 
-            return await DownloadAsync(metadata.Identity, metadata.Source, packagesDirectory, cancellationToken, noCache);
+            return await DownloadAsync(metadata.Source, metadata.Identity, cancellationToken);
         }
 
         public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource,
@@ -175,7 +163,6 @@ namespace Snap.NuGet
                 nugetLogger ?? NullLogger.Instance);
         }
 
-
         public async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync([NotNull] string searchTerm, [NotNull] SearchFilter filters, int skip, int take,
             [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken)
         {
@@ -192,13 +179,28 @@ namespace Snap.NuGet
                 .Where(x => x?.Identity?.Version != null)
                 .ToList();
         }
+        
+        public Task<DownloadResourceResult> DownloadAsync(PackageSource packageSource, [NotNull] PackageIdentity packageIdentity, CancellationToken cancellationToken)
+        {
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
+            
+            var downloadContext = new DirectDownloadContext
+            {
+                MaxRetries = 3,
+                PackageIdentity = packageIdentity,
+                PackageFileSize = 0
+            };
+                        
+            var progressSource = new SnapProgressSource();
+            return DownloadAsyncWithProgressAsync(packageSource, downloadContext, progressSource, cancellationToken);
+        }
 
-        public async Task<DownloadResourceResult> DirectDownloadWithProgressAsync(PackageSource packageSource,  DirectDownloadContext directDownloadContext,
+        public async Task<DownloadResourceResult> DownloadAsyncWithProgressAsync(PackageSource packageSource, DirectDownloadContext directDownloadContext,
             ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
         {
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
             if (directDownloadContext == null) throw new ArgumentNullException(nameof(directDownloadContext));
-            if (snapProgressSource == null) throw new ArgumentNullException(nameof(snapProgressSource));
             
             using (var cacheContext = new SourceCacheContext())
             {
@@ -274,7 +276,7 @@ namespace Snap.NuGet
                         var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
                        
                         var previouslyReportedProgressPercentage = 0;
-                        snapProgressSource.Raise(previouslyReportedProgressPercentage);
+                        snapProgressSource?.Raise(previouslyReportedProgressPercentage);
 
                         var totalBytesDownloadedSoFar = 0L;
                         while (!cancellationToken.IsCancellationRequested)
@@ -291,7 +293,7 @@ namespace Snap.NuGet
                                                         
                             if (previouslyReportedProgressPercentage != thisProgressPercentage)
                             {
-                                snapProgressSource.Raise(thisProgressPercentage);
+                                snapProgressSource?.Raise(thisProgressPercentage);
                                 previouslyReportedProgressPercentage = thisProgressPercentage;
                             }
                             
@@ -300,76 +302,17 @@ namespace Snap.NuGet
 
                         if (directDownloadContext.PackageFileSize <= 0)
                         {
-                            snapProgressSource.Raise(100);
+                            snapProgressSource?.Raise(100);
                         }
                         
                         ArrayPool<byte>.Shared.Return(buffer);
+
+                        inputStream.Seek(0, SeekOrigin.Begin);
                         
                         return new DownloadResourceResult(inputStream, packageSource.Source);
                     }
 
                     return await httpSource.ProcessStreamAsync(request, ProcessAsync, cacheContext, _nugetLogger, cancellationToken);
-                }
-            }
-        }
-
-        async Task<DownloadResourceResult> DownloadAsync(PackageSource packageSource, PackageIdentity packageIdentity,
-            string packagesDirectory, CancellationToken cancellationToken, bool noCache)
-        {
-            using (var cacheContext = new SourceCacheContext())
-            {
-                var tempPackagesDirectory = _snapFilesystem.PathCombine(packagesDirectory, Guid.NewGuid().ToString());
-                var redirectedPackagesDirectory = _snapFilesystem.PathCombine(tempPackagesDirectory, "nuget_install_dir");
-                _snapFilesystem.DirectoryCreate(redirectedPackagesDirectory);
-
-                if (noCache)
-                {
-                    cacheContext.NoCache = true;
-                    cacheContext.WithRefreshCacheTrue();
-                    cacheContext.GeneratedTempFolder = redirectedPackagesDirectory;
-                }
-
-                using (new DisposableAction(() =>
-                {
-                    try
-                    {
-                        _snapFilesystem.DirectoryDelete(redirectedPackagesDirectory, true);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.ErrorException("Exception thrown while attempting to delete nuget temp directory", e);
-                    }
-                }))
-                {
-                    var downloadContext = new PackageDownloadContext(cacheContext, redirectedPackagesDirectory, false);
-
-                    var sourceRepository = _packageSources.Get(packageSource);
-                    var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
-
-                    using (var downloadResult = await downloadResource
-                        .GetDownloadResourceResultAsync(packageIdentity, downloadContext,
-                            redirectedPackagesDirectory, _nugetLogger, cancellationToken))
-                    {
-                        if (!downloadResult.SuccessSafe())
-                        {
-                            return downloadResult;
-                        }
-                    }
-
-                    var localFilenameAbsolutePath = _snapFilesystem.PathCombine(
-                            redirectedPackagesDirectory, packageIdentity.Id.ToLowerInvariant(), packageIdentity.Version.ToNormalizedString(),
-                            $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg");
-
-                    if (!_snapFilesystem.FileExists(localFilenameAbsolutePath))
-                    {
-                        throw new FileNotFoundException(localFilenameAbsolutePath);    
-                    }
-                
-                    var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, _snapFilesystem.PathGetFileName(localFilenameAbsolutePath));
-                    _snapFilesystem.FileDeleteIfExists(dstFilenameAbsolutePath);
-                    _snapFilesystem.FileMove(localFilenameAbsolutePath, dstFilenameAbsolutePath);
-
-                    return new DownloadResourceResult(_snapFilesystem.FileRead(dstFilenameAbsolutePath), packageSource.Source);                              
                 }
             }
         }

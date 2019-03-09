@@ -4,7 +4,6 @@ using System.Linq;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
-using Snap.Core.UnitTest;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -26,23 +25,12 @@ namespace Snap.Core
                 if (SnapOs != null)
                 {
                     return;
-                }
+                }                               
             }
-
-            if (Current != null)
-            {
-                if (ModeDetector.InUnitTestRunner())
-                {
-                    return;
-                }
-                
-                throw new Exception($"Expected {nameof(Current)} to equal null.");
-            }
-                        
-            SnapOs = AnyOS.SnapOs.AnyOs;
 
             try
-            {
+            {     
+                SnapOs = AnyOS.SnapOs.AnyOs;
                 WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
                 Current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
             }
@@ -68,8 +56,12 @@ namespace Snap.Core
         /// parameter, your app will exit after this method is called, which 
         /// is required by Snap. 
         /// </summary>
+        /// <param name="onFirstRun">Called the first time an app is run after
+        /// being installed. Your application will **not** exit after this is
+        /// dispatched, you should use this as a hint (i.e. show a 'Welcome'
+        /// </param>
         /// <param name="onInstalled">Called when your app is initially
-        /// installed. Your application will not exit afterwards.
+        /// installed. Your application will exit afterwards.
         /// </param>
         /// <param name="onUpdated">Called when your app is updated to a new
         /// version. Your application will exit afterwards.</param>
@@ -77,6 +69,7 @@ namespace Snap.Core
         /// arguments. In your app, leave this as null.</param>
         /// <returns>If this methods returns TRUE then you should exit your program immediately.</returns>
         public static bool ProcessEvents(
+            Action<SemanticVersion> onFirstRun = null,
             Action<SemanticVersion> onInstalled = null,
             Action<SemanticVersion> onUpdated = null,
             string[] arguments = null)
@@ -88,6 +81,7 @@ namespace Snap.Core
             }
 
             var invoke = new[] {
+                new { Key = "--snap-first-run", Value = onFirstRun ??  DefaultAction },
                 new { Key = "--snap-installed", Value = onInstalled ??  DefaultAction },
                 new { Key = "--snap-updated", Value = onUpdated ??  DefaultAction }
             }.ToDictionary(k => k.Key, v => v.Value);
@@ -98,17 +92,22 @@ namespace Snap.Core
                 return false;
             }
 
+            var doNotExitActions = new[]
+            {
+                "--snap-first-run"
+            };
+            
             try
             {
                 Logger.Trace($"Handling event: {actionName}.");
 
-                var currentVersion = SemanticVersion.Parse(args[1]);
+                var currentVersion = SemanticVersion.Parse(args[0].Substring(actionName.Length));
 
                 invoke[actionName](currentVersion);
 
                 Logger.Trace($"Handled event: {actionName}.");
 
-                if (string.Equals(actionName, "--snap-installed", StringComparison.InvariantCulture))
+                if (doNotExitActions.Any(x => string.Equals(x, actionName)))
                 {
                     return false;
                 }

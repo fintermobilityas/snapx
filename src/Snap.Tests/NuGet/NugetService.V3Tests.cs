@@ -1,27 +1,24 @@
 ﻿using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Mono.Cecil;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
-using Snap.Core.IO;
-using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Logging;
 using Snap.NuGet;
-using Snap.Reflection;
 using Snap.Shared.Tests;
-using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.NuGet
 {
+    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")] 
     public class NugetServiceV3Tests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;
@@ -98,18 +95,13 @@ namespace Snap.Tests.NuGet
             Assert.Null(v450Release);
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TestDownloadAsync(bool noCache)
+        [Fact]
+        public async Task TestDownloadAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
-            var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
 
-            using (var packagesDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,
-                packagesDirectory.WorkingDirectory, CancellationToken.None, noCache))
+            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageSource, packageIdentity, CancellationToken.None))
             {
                 Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
@@ -117,9 +109,6 @@ namespace Snap.Tests.NuGet
                 Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
 
                 Assert.Null(downloadResourceResult.PackageReader);
-
-                var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory.WorkingDirectory, localFilename);
-                Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
             }
         }
 
@@ -141,11 +130,12 @@ namespace Snap.Tests.NuGet
                 MaxRetries = 3
             };
 
-            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+            using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
                 progressSourceMock.Object, CancellationToken.None))
             {
                 Assert.NotNull(downloadResourceResult);
                 Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
+                Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
@@ -174,11 +164,12 @@ namespace Snap.Tests.NuGet
                 MaxRetries = 3
             };
 
-            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+            using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
                 progressSourceMock.Object, CancellationToken.None))
             {
                 Assert.NotNull(downloadResourceResult);
                 Assert.Equal(64196, downloadResourceResult.PackageStream.Length);
+                Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);

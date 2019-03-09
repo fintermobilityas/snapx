@@ -216,6 +216,9 @@ namespace Snap.Core
 
         Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
         IEnumerable<SnapPackFileChecksum> ParseChecksumManifest(string content);
+
+        Task<MemoryStream> GetSnapAppDllAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
+        
         Task<int> CountNonNugetFilesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
         Task<IEnumerable<string>> GetFilesAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken);
 
@@ -775,14 +778,21 @@ namespace Snap.Core
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
 
-            var targetPath = _snapFilesystem.PathCombine(SnapConstants.SnapNuspecTargetPath, SnapConstants.SnapAppDllFilename);
-
-            using (var assemblyStream = await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true))
+            using (var assemblyStream = await GetSnapAppDllAsync(asyncPackageCoreReader, cancellationToken))
             using (var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyStream, new ReaderParameters(ReadingMode.Immediate)))
             {
                 var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader);
                 return snapApp;
             }
+        }
+        
+        public async Task<MemoryStream> GetSnapAppDllAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default)
+        {
+            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+
+            var targetPath = _snapFilesystem.PathCombine(SnapConstants.SnapNuspecTargetPath, SnapConstants.SnapAppDllFilename);
+
+            return await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken, true);
         }
 
         (MemoryStream nuspecStream, List<(string filename, string targetPath)> packgeFiles) RewriteNuspec([NotNull] ISnapPackageDetails packageDetails,

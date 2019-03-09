@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using Snap.Logging;
+using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Core.Logging
 {
@@ -24,18 +25,16 @@ namespace Snap.Core.Logging
         {
             if (logLevel < _logLevel)
             {
-                return _logger.Log(logLevel, messageFunc, exception, formatParameters);
+                 return _logger.Log(logLevel, messageFunc, exception, formatParameters);
             }
-
+            
             var message = messageFunc?.Invoke();
             if (message != null)
             {
-                _logDelegate.Invoke(logLevel, messageFunc, exception, formatParameters);
+                _logDelegate.Invoke(logLevel, () => message, exception, formatParameters);
             }
-            
-            _logger.Log(logLevel, messageFunc, exception, formatParameters);
 
-            return true;
+            return _logger.Log(logLevel, () => message, exception, formatParameters);
         }
     }
 }

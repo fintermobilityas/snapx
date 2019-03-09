@@ -7,11 +7,14 @@ using JetBrains.Annotations;
 using NuGet.Packaging;
 using Snap.AnyOS;
 using Snap.Core;
+using Snap.Core.IO;
 using Snap.Core.Logging;
+using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Installer.Options;
 using Snap.Installer.ViewModels;
 using Snap.Logging;
+using Snap.NuGet;
 
 namespace Snap.Installer
 {
@@ -21,8 +24,8 @@ namespace Snap.Installer
         static int Install([NotNull] InstallOptions options, [NotNull] ISnapInstallerEnvironment environment,
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
-            [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, 
-            [NotNull] ILog loggerUntilMainWindowVisible)
+            [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
+            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ILog diskLogger)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (environment == null) throw new ArgumentNullException(nameof(environment));
@@ -34,7 +37,9 @@ namespace Snap.Installer
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
-            if (loggerUntilMainWindowVisible == null) throw new ArgumentNullException(nameof(loggerUntilMainWindowVisible));
+            if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
+            if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (diskLogger == null) throw new ArgumentNullException(nameof(diskLogger));
 
             // NB! All filesystem operations has to be readonly until check that verifies
             // current user is not elevated to root has run.
@@ -45,16 +50,17 @@ namespace Snap.Installer
             var onFirstAnimationRenderedEvent = new ManualResetEventSlim(false);
             var exitCode = 1;
 
-            void InstallInBackground(MainWindowViewModel mainWindowViewModel)
+            // ReSharper disable once ImplicitlyCapturedClosure
+            async Task InstallInBackgroundAsync(MainWindowViewModel mainWindowViewModel)
             {
                 if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
 
-                loggerUntilMainWindowVisible.Info("Waiting for main window to become visible.");
+                diskLogger.Info("Waiting for main window to become visible.");
                 onFirstAnimationRenderedEvent.Wait(cancellationToken);
                 onFirstAnimationRenderedEvent.Dispose();
-                loggerUntilMainWindowVisible.Info("Main window should now be visible.");
+                diskLogger.Info("Main window should now be visible.");
 
-                var mainWindowLogger = new LogForwarder(LogLevel.Info, loggerUntilMainWindowVisible, (level, func, exception, parameters) =>
+                var mainWindowLogger = new LogForwarder(LogLevel.Info, diskLogger, (level, func, exception, parameters) =>
                 {
                     var message = func?.Invoke();
                     if (message == null)
@@ -64,60 +70,155 @@ namespace Snap.Installer
 
                     SetStatusText(mainWindowViewModel, message);
                 });
+                
+                if (coreRunLib.IsElevated())
+                {
+                    var rootUserText = snapOs.OsPlatform == OSPlatform.Windows ? "Administrator" : "root";
+                    mainWindowLogger.Error($"Error! Installer cannot run in an elevated user context: {rootUserText}");
+                    goto done;
+                }
+                
+                var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
+                var nupkgAbsolutePath = options.Filename != null ? snapFilesystem.PathGetFullPath(options.Filename) : null;
+                if (nupkgAbsolutePath == null
+                     && snapFilesystem.FileExists(snapAppDllAbsolutePath))
+                {
+                    mainWindowLogger.Info($"Downloading releases manifest");
 
-                var nupkgAbsolutePath = options.Filename == null ? 
-                    snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg") : 
-                    snapFilesystem.PathGetFullPath(options.Filename);
+                    try
+                    {
+                        var snapApp = environment.Io.ThisExeWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
+                        var (snapReleases, packageSource) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken, mainWindowLogger);
+                        if (snapReleases == null)
+                        {
+                            mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
+                            goto done;
+                        }
+
+                        if (!snapReleases.Apps.Any())
+                        {
+                            mainWindowLogger.Error("Downloaded releases manifest but could not find any available installer assets.");
+                            goto done;
+                        }
+
+                        var channel = snapApp.Channels.SingleOrDefault(x => x.Current);
+                        if (channel == null)
+                        {
+                            mainWindowLogger.Error("Unable to determine application channel");
+                            goto done;
+                        }
+                        
+                        var fullVersion = snapReleases.Apps.First();
+                        if (fullVersion.IsDelta)
+                        {
+                            mainWindowLogger.Error("Expected to install a full nupkg payload, but this is a delta. " +
+                                                   $"Version: {fullVersion.Version}. " +
+                                                   $"Filename: {fullVersion.DeltaFilename}. " +
+                                                   $"Checksum: {fullVersion.DeltaChecksum}.");
+                            goto done;
+                        }
+
+                        var newestVersion = snapReleases.Apps.Last();
+
+                        var totalDownloadSize = fullVersion.FullFilesize +
+                                                snapReleases.Apps.Where(x => x.IsDelta)
+                                                    .Sum(x => x.DeltaFilesize);
+
+                        mainWindowLogger.Info($"Installing: {newestVersion.Version}. Total download size: {totalDownloadSize.BytesAsHumanReadable()}");
+
+                        // ReSharper disable once MethodSupportsCancellation
+                        await Task.Delay(TimeSpan.FromSeconds(3));
+                        
+                        using (var tmpRestoreDir = new DisposableTempDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
+                        {
+                            mainWindowLogger.Info("Downloading required assets");
+                            
+                            if (!await snapPackageManager.RestoreAsync(mainWindowLogger,
+                                tmpRestoreDir.WorkingDirectory, snapReleases, channel, packageSource, installerProgressSource, cancellationToken))
+                            {
+                                mainWindowLogger.Info("Unknown error while restoring assets.");
+                                goto done;
+                            }
+
+                            mainWindowLogger.Info("Successfully downloaded install payload");
+
+                            var setupNupkgAbsolutePath = snapOs.Filesystem.PathCombine(tmpRestoreDir.WorkingDirectory, newestVersion.FullFilename);
+                            if (!snapFilesystem.FileExists(setupNupkgAbsolutePath))
+                            {
+                                mainWindowLogger.Error($"Install payload does not exist on disk: {setupNupkgAbsolutePath}.");
+                                goto done;
+                            }
+                                                                                    
+                            nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg");
+
+                            mainWindowLogger.Info("Moving install payload to installer directory");
+
+                            snapOs.Filesystem.FileDeleteIfExists(nupkgAbsolutePath);
+                            snapOs.Filesystem.FileMove(setupNupkgAbsolutePath, nupkgAbsolutePath);
+                            
+                            mainWindowLogger.Info("Successfully moved installer payload");
+
+                            installerProgressSource.Reset();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        mainWindowLogger.ErrorException("Unknown error while downloading assets", e);
+                        goto done;
+                    }
+                    
+                } else if (nupkgAbsolutePath == null) 
+                {
+                    nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg");
+                }
+
+                if (nupkgAbsolutePath == null)
+                {
+                    mainWindowLogger.Error("Unknown error. Expected either Setup.nupkg or web installer payload.");
+                    goto done;
+                }
+                
                 if (!snapFilesystem.FileExists(nupkgAbsolutePath))
                 {
                     mainWindowLogger.Error($"Unable to find nupkg installer payload: {snapFilesystem.PathGetFileName(nupkgAbsolutePath)}");
                     goto done;
                 }
-
+                
+                diskLogger.Debug($"Payload: {nupkgAbsolutePath}.");
+                
+                mainWindowLogger.Info("Attempting to read payload");
+                
                 using (var nupkgStream = snapFilesystem.FileRead(nupkgAbsolutePath))
                 using (var packageArchiveReader = new PackageArchiveReader(nupkgStream))
                 {
-                    mainWindowLogger.Info("Unpacking snap manifest");
+                    mainWindowLogger.Info($"Unpacking manifest: {SnapConstants.SnapAppDllFilename}");
+                    
                     var nupkgRelativeFilename = snapFilesystem.PathGetFileName(nupkgAbsolutePath);
+                    
                     mainWindowLogger.Info($"Preparing to unpack nupkg: {nupkgRelativeFilename}.");
 
-                    var snapApp = snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken).GetAwaiter().GetResult();
+                    var snapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
                     if (snapApp == null)
                     {
-                        mainWindowLogger.Error("Unknown error reading snap app manifest. Nupkg payload corrupt?");
+                        mainWindowLogger.Error("Unknown error reading snap app manifest. Payload corrupt?");
                         goto done;
                     }
 
-                    if (snapApp.Delta)
-                    {
-                        mainWindowLogger.Error("Installing delta applications is not supported.");
-                        goto done;
-                    }
-
-                    var snapChannel = snapApp.Channels.SingleOrDefault(x => x.Name == options.Channel) ?? snapApp.Channels.FirstOrDefault();
-                    if (snapChannel == null)
+                    var channel = snapApp.Channels.SingleOrDefault(x => x.Name == options.Channel) ?? snapApp.Channels.FirstOrDefault();
+                    if (channel == null)
                     {
                         mainWindowLogger.Error($"Unknown release channel: {options.Channel}");
                         goto done;
                     }
 
-                    mainWindowLogger.Info($"Preparing to install {snapApp.Id}. Channel: {snapChannel.Name}.");
-
-                    if (coreRunLib.IsElevated())
-                    {
-                        var rootUserText = snapOs.OsPlatform == OSPlatform.Windows ? "Administrator" : "root";
-                        mainWindowLogger.Error($"Error! Snaps cannot be installed when current user is elevated as {rootUserText}");
-                        goto done;
-                    }
-
                     var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
 
-                    mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
+                    mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {channel.Name}");
 
                     try
                     {
-                        var snapAppInstalled = snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                            packageArchiveReader, installerProgressSource, mainWindowLogger, cancellationToken).GetAwaiter().GetResult();
+                        var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
+                            packageArchiveReader, installerProgressSource, mainWindowLogger, cancellationToken);
 
                         if (snapAppInstalled == null)
                         {
@@ -130,7 +231,7 @@ namespace Snap.Installer
                     }
                     catch (Exception e)
                     {
-                        mainWindowLogger.ErrorException("Unknown error during install. Please check logs.", e);
+                        mainWindowLogger.ErrorException("Unknown error during install", e);
                     }
                 }
 
@@ -148,7 +249,7 @@ namespace Snap.Installer
                 MainWindow.ViewModel = new MainWindowViewModel(snapInstallerEmbeddedResources,
                     installerProgressSource, () => onFirstAnimationRenderedEvent.Set(),  cancellationToken);
 
-                Task.Factory.StartNew(() => InstallInBackground(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
+                Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
 
             }).Start<MainWindow>();
             

@@ -125,8 +125,8 @@ namespace snapx
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
             var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
-            var snapPackageRestorer = new SnapPackageRestorer(snapOs.Filesystem, nugetServiceCommandPack, 
-                snapCryptoProvider, snapPack);
+            var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, nugetServiceCommandPack, 
+                snapCryptoProvider, snapExtractor, snapAppReader, snapPack);
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
@@ -140,7 +140,7 @@ namespace snapx
             [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageRestorer snapPackageRestorer,
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageManager snapPackageManager,
             [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote,
             [NotNull] INugetService nugetServiceNoopLogger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
@@ -157,7 +157,7 @@ namespace snapx
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
-            if (snapPackageRestorer == null) throw new ArgumentNullException(nameof(snapPackageRestorer));
+            if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
@@ -172,7 +172,7 @@ namespace snapx
                     (PromoteNupkgOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapCryptoProvider, snapPackageRestorer, coreRunLib, 
+                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapPackageManager, coreRunLib, 
                         SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),

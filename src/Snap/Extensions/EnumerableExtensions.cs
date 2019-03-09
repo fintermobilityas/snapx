@@ -18,11 +18,6 @@ namespace Snap.Extensions
             foreach (var item in source) onNext(item);
         }
 
-        public static Task ForEachAsync<T>(this IEnumerable<T> source, Action<T> body, int degreeOfParallelism = 0)
-        {
-            return ForEachAsync(source, x => Task.Run(() => body(x)), degreeOfParallelism);
-        }
-
         public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> body, int degreeOfParallelism = 0)
         {
             degreeOfParallelism = degreeOfParallelism <= 0 ? Environment.ProcessorCount : degreeOfParallelism;

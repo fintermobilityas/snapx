@@ -41,7 +41,7 @@ namespace Snap.AnyOS.Unix
                 try
                 {
                     var (lsbReleaseExitCode, lsbReleaseStdOutput) = OsProcessManager
-                        .RunAsync("lsb_release", "-a", CancellationToken.None).GetAwaiter().GetResult();
+                        .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None).GetAwaiter().GetResult();
                     if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
                     {
                         var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
@@ -59,7 +59,7 @@ namespace Snap.AnyOS.Unix
 
                 try
                 {
-                    var (whoamiExitCode, whoamiStdOutput) = OsProcessManager.RunAsync("whoami", string.Empty, default).GetAwaiter().GetResult();
+                    var (whoamiExitCode, whoamiStdOutput) = OsProcessManager.RunAsync(new ProcessStartInfoBuilder("whoami"),default).GetAwaiter().GetResult();
                     if (whoamiExitCode == 0 && !string.IsNullOrWhiteSpace(whoamiStdOutput))
                     {
                         Username = whoamiStdOutput;
@@ -91,6 +91,11 @@ namespace Snap.AnyOS.Unix
             var autoStartup = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Startup);
             if (!shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Desktop))
             {
+                var shortcutLocations = Enum.GetNames(typeof(SnapShortcutLocation)).ToList();
+
+                logger?.Warn("Ignoring creating shortcut for executable because none of the specified shortcut locations are valid for this OS! " +
+                             $"Shortcut locations: {string.Join(", ", shortcutLocations)}. " +
+                             $"Executable: {shortcutDescription.ExeAbsolutePath}");
                 return;
             }
 
@@ -118,7 +123,7 @@ namespace Snap.AnyOS.Unix
             await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
                 absoluteDesktopShortcutPath, cancellationToken);
             
-            _logger?.Info("Attempting to mark shortcut as trusted");
+            _logger?.Info($"Attempting to mark shortcut as trusted: {absoluteDesktopShortcutPath}.");
             var trustedSuccess = await OsProcessManager.ChmodExecuteAsync(absoluteDesktopShortcutPath, cancellationToken);
             _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
         }

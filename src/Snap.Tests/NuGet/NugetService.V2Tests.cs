@@ -84,33 +84,8 @@ namespace Snap.Tests.NuGet
             Assert.Null(v450Release);
         }
                 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task TestDownloadAsync(bool noCache)
-        {
-            var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
-            var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
-            var localFilename = $"{packageIdentity.ToString().ToLowerInvariant()}.nupkg";
-
-            using (var packagesDirectory = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageIdentity, packageSource,
-                packagesDirectory.WorkingDirectory, CancellationToken.None, noCache))
-            {
-                Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
-
-                Assert.True(downloadResourceResult.PackageStream.CanRead);
-                Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
-
-                Assert.Null(downloadResourceResult.PackageReader);
-
-                var localFilenameAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory.WorkingDirectory, localFilename);
-                Assert.True(_snapFilesystem.FileExists(localFilenameAbsolutePath));
-            }      
-        }
-        
         [Fact]
-        public async Task TestDirectDownloadWithProgressAsync()
+        public async Task TestDownloadAsyncWithProgressAsync()
         {
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
             var percentages = new List<int>();
@@ -127,11 +102,12 @@ namespace Snap.Tests.NuGet
                 MaxRetries = 3
             };
 
-            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+            using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
                 progressSourceMock.Object, CancellationToken.None))
             {
                 Assert.NotNull(downloadResourceResult);
                 Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
+                Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
@@ -143,7 +119,7 @@ namespace Snap.Tests.NuGet
         }
         
         [Fact]
-        public async Task TestDirectDownloadWithProgressAsync_Unknown_File_Size()
+        public async Task TestDownloadAsyncWithProgressAsync_Unknown_File_Size()
         {
             var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
             var percentages = new List<int>();
@@ -160,11 +136,12 @@ namespace Snap.Tests.NuGet
                 MaxRetries = 3
             };
 
-            using (var downloadResourceResult = await _nugetService.DirectDownloadWithProgressAsync(packageSource, downloadContext, 
+            using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
                 progressSourceMock.Object, CancellationToken.None))
             {
                 Assert.NotNull(downloadResourceResult);
                 Assert.Equal(64196, downloadResourceResult.PackageStream.Length);
+                Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);

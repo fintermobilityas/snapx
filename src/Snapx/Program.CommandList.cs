@@ -99,8 +99,7 @@ namespace snapx
                 try
                 {
                     var downloadResult = await SnapUtility.Retry(async () => 
-                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamPackageId(),
-                            filesystem.PathGetTempPath(), x.packageSource, cancellationToken, true),
+                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamPackageId(), x.packageSource, cancellationToken),
                         retriesPerTask, delayInMilliseconds,true);
                     downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
                 }

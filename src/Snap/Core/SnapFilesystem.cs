@@ -372,11 +372,12 @@ namespace Snap.Core
         public async Task DirectoryDeleteAsync([NotNull] string directory, List<string> excludePaths = null)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
-            Logger.Debug("Starting to delete folder: {0}", directory);
+            
+            Logger.Debug($"Starting to delete folder: {directory}");
 
             if (!DirectoryExists(directory))
             {
-                Logger.Warn("DeleteDirectory: does not exist - {0}", directory);
+                Logger.Error($"Directory does not exist: {directory}");
                 return;
             }
 
@@ -388,92 +389,83 @@ namespace Snap.Core
             {
                 files = Directory.GetFiles(directory);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex)
             {
-                var message = $"The files inside {directory} could not be read";
-                Logger.Warn(message, ex);
+                Logger.Warn($"The files inside {directory} could not be read", ex);
             }
 
-            var dirs = new string[0];
+            var subdirectories = new string[0];
             try
             {
-                dirs = Directory.GetDirectories(directory);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                var message = $"The directories inside {directory} could not be read";
-                Logger.Warn(message, ex);
-            }
-
-            var fileOperations = files.ForEachAsync(file =>
-            {
-                foreach (var excludePath in excludePaths)
-                {
-                    if (string.Equals(excludePath, file, StringComparison.Ordinal))
-                    {
-                        return;
-                    }
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    try
-                    {
-                        File.SetAttributes(file, FileAttributes.Normal);                    
-                    }
-                    catch (UnauthorizedAccessException e)
-                    {
-                        Logger.Warn($"Unable to set file attribute to 'Normal' for file: {file}", e);
-                    }
-                }
-
-                try
-                {
-                    File.Delete(file);
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    Logger.Warn($"Unable to delete file: {file}", e);
-                }
-            });
-
-            var directoryOperations =
-                dirs.ForEachAsync(async dir =>
-                {
-                    foreach (var excludePath in excludePaths)
-                    {
-                        if (string.Equals(excludePath, dir, StringComparison.Ordinal))
-                        {
-                            return;
-                        }
-                    }
-                    await DirectoryDeleteAsync(dir);
-                });
-
-            await Task.WhenAll(fileOperations, directoryOperations);
-
-            Logger.Debug("Now deleting folder: {0}", directory);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                try
-                {
-                    File.SetAttributes(directory, FileAttributes.Normal);   
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    Logger.Warn($"Unable to set file attribute to 'Normal' for directory: {directory}", e);
-                }          
-            }
-
-            try
-            {
-                Directory.Delete(directory, false);
+                subdirectories = Directory.GetDirectories(directory);
             }
             catch (Exception ex)
             {
-                var message = $"DeleteDirectory: could not delete - {directory}";
-                Logger.ErrorException(message, ex);
+                Logger.Error($"The directories inside {directory} could not be read", ex);
             }
+
+            var fileDeleteTasks = files.ForEachAsync(file =>
+            {
+                foreach (var excludePath in excludePaths)
+                {
+                    if (string.Equals(excludePath, file, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return Task.CompletedTask;
+                    }
+                }
+
+                return Task.Run(() =>
+                {
+                    try
+                    {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            File.SetAttributes(directory, FileAttributes.Normal);
+                        }
+
+                        File.Delete(file);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error($"Unable to delete file: {file}", e);
+                    }
+                });
+            });
+
+            // We have to delete all files before we delete the directory.
+            await Task.WhenAll(fileDeleteTasks);
+
+            var subdirectoriesDeleteTasks =
+                subdirectories.ForEachAsync(dir =>
+                {
+                    foreach (var excludePath in excludePaths)
+                    {
+                        if (string.Equals(excludePath, dir, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            return Task.CompletedTask;
+                        }
+                    }
+                    return DirectoryDeleteAsync(dir);
+                });
+
+            await Task.WhenAll(subdirectoriesDeleteTasks);
+
+            Logger.Debug($"Deleting directory: {directory}");
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    File.SetAttributes(directory, FileAttributes.Normal);
+                }   
+                
+                Directory.Delete(directory, false);
+                
+                Logger.Debug($"Successfully deleted directory: {directory}");
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException($"Unable to delete directory: {directory}", e);
+            }    
         }
 
         public string DirectoryWorkingDirectory()

@@ -1,4 +1,5 @@
 ﻿#if PLATFORM_UNIX
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ Codename:	cosmic";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var (exitCode, maybeLsbRelease) = await _snapOs.ProcessManager.RunAsync("lsb_release", "-a", CancellationToken.None);
+                var (exitCode, maybeLsbRelease) = await _snapOs.ProcessManager.RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None);
                 if (exitCode == 0 && !string.IsNullOrWhiteSpace(maybeLsbRelease))
                 {
                     lsbRelease = maybeLsbRelease;

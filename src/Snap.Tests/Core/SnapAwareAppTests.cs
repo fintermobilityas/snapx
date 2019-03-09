@@ -10,13 +10,12 @@ namespace Snap.Tests.Core
 {
     public class SnapAwareAppTests : IClassFixture<BaseFixture>
     {
-        readonly ISnapFilesystem _snapFilesystem;
+        // ReSharper disable once NotAccessedField.Local
         readonly BaseFixture _baseFixture;
 
         public SnapAwareAppTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
-            _snapFilesystem = new SnapFilesystem();
 
             SnapAwareApp.Current = null;
         }
@@ -59,6 +58,35 @@ namespace Snap.Tests.Core
 
             snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
         }
+        
+        [Fact]
+        public void Test_ProcessEvents_OnFirstRun()
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            var wasInvoked = false;
+            SemanticVersion currentVersion = null;
+            var expectedVersion = SemanticVersion.Parse("21212.0.0");
+            var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
+            {
+                "c:\\my.exe",
+                "--snap-first-run",
+                expectedVersion.ToNormalizedString()
+            }, onFirstRun: version =>
+            {
+                wasInvoked = true;
+                currentVersion = version;
+            });
+
+            Assert.False(shouldExit);
+            Assert.True(wasInvoked);
+            Assert.Equal(expectedVersion, currentVersion);
+
+            snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
 
         [Fact]
         public void Test_ProcessEvents_OnInstalled()
@@ -82,11 +110,11 @@ namespace Snap.Tests.Core
                 currentVersion = version;
             });
 
-            Assert.False(shouldExit);
+            Assert.True(shouldExit);
             Assert.True(wasInvoked);
             Assert.Equal(expectedVersion, currentVersion);
 
-            snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+            snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Once);
         }
 
         [Fact]

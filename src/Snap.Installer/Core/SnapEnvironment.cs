@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using JetBrains.Annotations;
 using LightInject;
@@ -8,6 +9,8 @@ using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Installer.Core
 {
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapInstallerIoEnvironment
     {
         ISnapOsSpecialFolders SpecialFolders { get; }

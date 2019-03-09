@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using Moq;
 using NuGet.Configuration;
-using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core;
@@ -89,7 +88,7 @@ namespace Snap.Tests.Core
                     .InstallAsync(fullNupkg1AbsolutePath, installDir.WorkingDirectory);
                 Assert.NotNull(installedSnapApp);
 
-                var (_, snapReleasesMemoryStream, snapReleasesFilenameAbsolutePath) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
+                var (_, snapReleasesMemoryStream, _) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
                     new List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize)>
                     {
                         (fullNupkg1PackageDetails.App, fullNupkg1Checksum, 
@@ -110,11 +109,10 @@ namespace Snap.Tests.Core
                     fullNupkg1PackageDetails.App, nugetServiceMock.Object);
                
                 SetupDownloadLatestAsync(nugetServiceMock, 
-                    snapApp, snapApp.BuildNugetReleasesUpstreamPackageId(), 
-                    snapReleasesFilenameAbsolutePath, snapReleasesMemoryStream, nugetPackageSources, packagesDirectory);
+                    snapApp, snapApp.BuildNugetReleasesUpstreamPackageId(), snapReleasesMemoryStream, nugetPackageSources);
                 
-                SetupDownloadAsync(nugetServiceMock, 
-                    deltaSnapApp, deltaNupkgMemoryStream, nugetPackageSources, packagesDirectory);
+                DownloadAsyncWithProgressAsync(nugetServiceMock, 
+                    deltaSnapApp, deltaNupkgMemoryStream, nugetPackageSources);
 
                 var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
                 Assert.NotNull(updatedSnapApp);
@@ -123,26 +121,21 @@ namespace Snap.Tests.Core
                 nugetServiceMock.Verify(x => x
                     .DownloadLatestAsync(
                         It.Is<string>(v => v == snapApp.BuildNugetReleasesUpstreamPackageId()),
-                        It.Is<string>(v => v.StartsWith(packagesDirectory)),
                         It.IsAny<PackageSource>(),
-                        It.IsAny<CancellationToken>(),
-                        It.Is<bool>(v => v)), Times.Once);
+                        It.IsAny<CancellationToken>()), Times.Once);
                 
                 nugetServiceMock.Verify(x => x
-                    .DownloadAsync(
-                        It.Is<PackageIdentity>(v => v.Id.StartsWith(deltaSnapApp.BuildDeltaNugetUpstreamPackageId())),
+                    .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
-                        It.Is<string>(v => v.StartsWith(packagesDirectory)),
-                        It.IsAny<CancellationToken>(),
-                        It.Is<bool>(v => v)), Times.Once);
+                        It.Is<DirectDownloadContext>(v => v.PackageIdentity.Id.StartsWith(deltaSnapApp.BuildDeltaNugetUpstreamPackageId())),
+                        It.IsAny<ISnapProgressSource>(),
+                        It.IsAny<CancellationToken>()), Times.Once);
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 10)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 20)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 70)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 60)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.IsAny<int>()), Times.Exactly(7));          
+                progressSourceMock.Verify(x => x.Raise(It.IsAny<int>()), Times.Exactly(4));          
                 
                 var fullNupkg1AbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory, 
                     fullNupkg1PackageDetails.App.BuildNugetFullLocalFilename());
@@ -160,7 +153,7 @@ namespace Snap.Tests.Core
         }
         
         [Fact]
-        public async Task TestUpdateToLatestReleaseAsync__Consecutive_Deltas()
+        public async Task TestUpdateToLatestReleaseAsync_Consecutive_Deltas()
         {
             var snapApp = _baseFixture.BuildSnapApp();
 
@@ -178,7 +171,7 @@ namespace Snap.Tests.Core
                     fullNupkg1PackageDetails.App.BuildNugetFullLocalFilename());
 
                 var (fullNupkg2MemoryStream, fullNupkg2PackageDetails, fullNupkg2Checksum) =
-                    await BuildFullNupkgAsync(snapApp, snapApp.Version.BumpMajor(1));
+                    await BuildFullNupkgAsync(snapApp, snapApp.Version.BumpMajor());
 
                 var fullNupkg2AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
                     fullNupkg2PackageDetails.App.BuildNugetFullLocalFilename());
@@ -205,7 +198,7 @@ namespace Snap.Tests.Core
                     .InstallAsync(fullNupkg1AbsolutePath, installDir.WorkingDirectory);
                 Assert.NotNull(installedSnapApp);
 
-                var (_, snapReleasesMemoryStream, snapReleasesFilenameAbsolutePath) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
+                var (_, snapReleasesMemoryStream, _) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
                     new List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize)>
                     {
                         (fullNupkg1PackageDetails.App, fullNupkg1Checksum, fullNupkg1MemoryStream.Length, null, 0),
@@ -231,12 +224,11 @@ namespace Snap.Tests.Core
                     fullNupkg1PackageDetails.App, nugetServiceMock.Object);
             
                 SetupDownloadLatestAsync(nugetServiceMock, 
-                    snapApp, snapApp.BuildNugetReleasesUpstreamPackageId(), 
-                    snapReleasesFilenameAbsolutePath, snapReleasesMemoryStream, nugetPackageSources, packagesDirectory);              
-                SetupDownloadAsync(nugetServiceMock, 
-                    deltaSnapApp1, deltaNupkg1MemoryStream, nugetPackageSources, packagesDirectory);
-                SetupDownloadAsync(nugetServiceMock, 
-                    deltaSnapApp2, deltaNupkg2MemoryStream, nugetPackageSources, packagesDirectory);
+                    snapApp, snapApp.BuildNugetReleasesUpstreamPackageId(), snapReleasesMemoryStream, nugetPackageSources);              
+                DownloadAsyncWithProgressAsync(nugetServiceMock, 
+                    deltaSnapApp1, deltaNupkg1MemoryStream, nugetPackageSources);
+                DownloadAsyncWithProgressAsync(nugetServiceMock, 
+                    deltaSnapApp2, deltaNupkg2MemoryStream, nugetPackageSources);
 
                 var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
                 Assert.NotNull(updatedSnapApp);
@@ -245,28 +237,23 @@ namespace Snap.Tests.Core
                 nugetServiceMock.Verify(x => x
                     .DownloadLatestAsync(
                         It.Is<string>(v => v == snapApp.BuildNugetReleasesUpstreamPackageId()),
-                        It.Is<string>(v => v.StartsWith(packagesDirectory)),
                         It.IsAny<PackageSource>(),
-                        It.IsAny<CancellationToken>(),
-                        It.Is<bool>(v => v)), Times.Once);
+                        It.IsAny<CancellationToken>()), Times.Once);
                                 
                 nugetServiceMock.Verify(x => x
-                    .DownloadAsync(
-                        It.Is<PackageIdentity>(v => 
-                            v.Id == deltaSnapApp1.BuildDeltaNugetUpstreamPackageId() 
-                            || v.Id == deltaSnapApp2.BuildDeltaNugetUpstreamPackageId()),
+                    .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
-                        It.Is<string>(v => v.StartsWith(packagesDirectory)),
-                        It.IsAny<CancellationToken>(),
-                        It.Is<bool>(v => v)), Times.Exactly(2));
+                        It.Is<DirectDownloadContext>(v => 
+                            v.PackageIdentity.Id == deltaSnapApp1.BuildDeltaNugetUpstreamPackageId() 
+                            || v.PackageIdentity.Id == deltaSnapApp2.BuildDeltaNugetUpstreamPackageId()),
+                        It.IsAny<ISnapProgressSource>(),
+                        It.IsAny<CancellationToken>()), Times.Exactly(2));
                 
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 10)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 20)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 70)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 60)), Times.Once);
                 progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.IsAny<int>()), Times.Exactly(7));
+                progressSourceMock.Verify(x => x.Raise(It.IsAny<int>()), Times.Exactly(4));
 
                 var fullNupkg1AbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory, 
                     fullNupkg1PackageDetails.App.BuildNugetFullLocalFilename());
@@ -357,8 +344,8 @@ namespace Snap.Tests.Core
                 });
         }
         
-        void SetupDownloadAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 
-            [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nuGetPackageSources, string packagesDirectory)
+        void DownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 
+            [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (nugetServiceMock == null) throw new ArgumentNullException(nameof(nugetServiceMock));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -369,25 +356,17 @@ namespace Snap.Tests.Core
             var downloadResourceResult = snapApp.BuildDownloadResourceResult(packageStream, nuGetPackageSources);
 
             nugetServiceMock
-                .Setup(x => x
-                    .DownloadAsync(
-                        It.Is<PackageIdentity>(
-                            v => v.Equals(packageIdentity)),
+                .Setup(x => x.DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
-                        It.IsAny<string>(), 
-                        It.IsAny<CancellationToken>(), 
-                        It.IsAny<bool>())
-                    )
-                .ReturnsAsync( () =>
-                {
-                    var localFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
-                    _snapOs.Filesystem.FileWrite(downloadResourceResult.PackageStream, localFilename);
-                    return downloadResourceResult;
-                });
+                        It.Is<DirectDownloadContext>(v => v.PackageIdentity.Equals(packageIdentity)),
+                        It.IsAny<ISnapProgressSource>(),
+                        It.IsAny<CancellationToken>()
+                ))
+                .ReturnsAsync( () => downloadResourceResult);
         }
         
-        void SetupDownloadLatestAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, string upstreamPackageId, string nupkgAbsolutePath,
-            [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nuGetPackageSources, string packagesDirectory)
+        void SetupDownloadLatestAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, string upstreamPackageId,
+            [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (nugetServiceMock == null) throw new ArgumentNullException(nameof(nugetServiceMock));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -399,20 +378,12 @@ namespace Snap.Tests.Core
             nugetServiceMock
                 .Setup(x => x
                     .DownloadLatestAsync(
-                        It.Is<string>(
-                            v => v.Equals(upstreamPackageId)),
-                        It.Is<string>(v => v.StartsWith(packagesDirectory)),
+                        It.Is<string>(v => v.Equals(upstreamPackageId)),
                         It.IsAny<PackageSource>(), 
-                        It.IsAny<CancellationToken>(), 
-                        It.IsAny<bool>())
+                        It.IsAny<CancellationToken>())
                 )
-                .ReturnsAsync( () =>
-                {
-                    _snapOs.Filesystem.FileWrite(downloadResourceResult.PackageStream, nupkgAbsolutePath);
-                    return downloadResourceResult;
-                });
+                .ReturnsAsync( () => downloadResourceResult);
         }
-
         
         Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails, string checksum)> BuildFullNupkgAsync([NotNull] SnapApp snapApp,
             [NotNull] SemanticVersion semanticVersion)
@@ -432,7 +403,7 @@ namespace Snap.Tests.Core
             return _baseFixture.BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object, _snapOs.Filesystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
         }
 
-        ISnapUpdateManager BuildUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null,
+        static ISnapUpdateManager BuildUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null,
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
             ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)

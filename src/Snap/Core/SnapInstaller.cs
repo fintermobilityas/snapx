@@ -343,7 +343,7 @@ namespace Snap.Core
             ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
-            if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion))
+            if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion));
                 
             logger?.Info(
                 $"Invoking {allSnapAwareApps.Count} processes. " +

@@ -338,18 +338,18 @@ namespace Snap.Core
             await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
         }
 
-        async Task InvokeSnapAwareApps([NotNull] IReadOnlyCollection<ProcessStartInfoBuilder> allSnapAwareApps, 
+        async Task InvokeSnapAwareApps([NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps, 
             TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion, 
             ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
             if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion))
-                ;
+                
             logger?.Info(
                 $"Invoking {allSnapAwareApps.Count} processes. " +
                          $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
-            var invocationTasks = allSnapAwareApps.ForEachAsync(async processStartInfoBuilder =>
+            var invocationTasks = allSnapAwareApps.ForEachAsync(async x =>
             {
                 using (var cts = new CancellationTokenSource())
                 {
@@ -357,15 +357,23 @@ namespace Snap.Core
 
                     try
                     {
+                        logger?.Debug(x.ToString());
+                        
                         var (exitCode, stdout) = await _snapOs.ProcessManager
-                            .RunAsync(processStartInfoBuilder, cancellationToken) // Two cancellation tokens is intentional because of unit tests mocks.
+                            .RunAsync(x, cancellationToken) // Two cancellation tokens is intentional because of unit tests mocks.
                             .WithCancellation(cts.Token); // Two cancellation tokens is intentional because of unit tests mocks.
                         
-                        logger?.Debug($"Processed exited: {exitCode}. Exe: {processStartInfoBuilder.Filename}. Stdout: {stdout}.");
-                    }
+                        logger?.Debug($"Processed exited: {exitCode}. Exe: {x.Filename}. Stdout: {stdout}.");
+                    } 
                     catch (Exception ex)
                     {
-                        logger?.ErrorException($"Exception thrown while executing snap hook for executable: {processStartInfoBuilder.Filename}.", ex);
+                        logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
+                        if (isInitialInstall && ex is OperationCanceledException)
+                        {
+                            allSnapAwareApps.Remove(x);
+                            logger.Warn($"First run will not be triggered for executable: {x.Filename}. " +
+                                        $"Reason: The process did not exit after specified timeout.");
+                        }
                     }
                 }
             }, 1 /* at a time */);

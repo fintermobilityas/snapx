@@ -11,8 +11,8 @@ param(
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $VisualStudioVersionStr = "15",
     [Parameter(Position = 5, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.1")]
-    [string] $NetCoreAppVersion = "netcoreapp2.1"
+    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp2.2"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -295,17 +295,24 @@ switch ($Target) {
         if($OSPlatform -eq "Windows")
         {
             Invoke-Build-Native 
+            if(0 -ne $LASTEXITCODE) {
+                exit $LASTEXITCODE
+            }       
             Invoke-Native-UnitTests
-        }
-
-        if(0 -ne $LASTEXITCODE) {
-            exit $LASTEXITCODE
-        }        
-
+            if(0 -ne $LASTEXITCODE) {
+                exit $LASTEXITCODE
+            }       
+        }    
+ 
         Invoke-Build-Snapx
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE
         }        
+
+        Invoke-Build-Snap
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        } 
 
         Invoke-Dotnet-Unit-Tests
         if(0 -ne $LASTEXITCODE) {

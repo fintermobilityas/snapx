@@ -8,8 +8,8 @@ param(
     [Validateset(15, 16)]
     [int] $VisualStudioVersion = 15,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.1")]
-    [string] $NetCoreAppVersion = "netcoreapp2.1"
+    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp2.2"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -26,6 +26,7 @@ $OSVersion = [Environment]::OSVersion
 $Properties = @()
 
 $ToolInstallDir = Join-Path $WorkingDir tools\snapx
+$SnapxSrcDir = Join-Path $WorkingDir src/Snapx
 
 $NupkgsDir = Join-Path $WorkingDir nupkgs
 if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
@@ -63,22 +64,56 @@ if($Bootstrap)
 
 if($env:SNAPX_CI_BUILD -eq $true) {
     if(Test-Path $ToolInstallDir) {
-        Invoke-Command-Colored $CommandDotnet @("tool uninstall --tool-path $ToolInstallDir snapx")
+        Invoke-Command-Colored $CommandDotnet @(
+            "tool",
+            "uninstall",
+            "--tool-path",
+            "$ToolInstallDir",
+            "snapx"
+        )
     }
 } else {
-    Invoke-Command-Colored $CommandDotnet @("tool uninstall -g snapx")
+    Invoke-Command-Colored $CommandDotnet @(
+        "tool",
+        "uninstall",
+        "--global",
+        "snapx"
+    )
 }
 
-Invoke-Command-Colored $CommandDotnet @("clean src/Snapx")
-Invoke-Command-Colored $CommandDotnet @("build -c $Configuration src/Snapx -f ${NetCoreAppVersion} {0}" -f ($Properties -join " "))
-Invoke-Command-Colored $CommandDotnet @("pack -c $Configuration src/Snapx --no-build")
+Invoke-Command-Clean-Dotnet-Directory $SnapxSrcDir
+Invoke-Command-Colored $CommandDotnet @(
+    "build"
+    "--configuration $Configuration"
+    "$SnapxSrcDir"
+    "-f ${NetCoreAppVersion} {0}" -f ($Properties -join " ")
+)
+Invoke-Command-Colored $CommandDotnet @(
+    "pack",
+    "--no-build",
+    "--output ${NupkgsDir}",
+    "--configuration $Configuration",
+    "$SnapxSrcDir"
+)
 
 $CommandSnapx = $CommandSnapx
 if($env:SNAPX_CI_BUILD -eq $true) {
-    Invoke-Command-Colored $CommandDotnet @("tool install --tool-path $ToolInstallDir --add-source $NupkgsDir snapx")
+    Invoke-Command-Colored $CommandDotnet @(
+        "tool",
+        "install", 
+        "--tool-path $ToolInstallDir",
+        "--add-source $NupkgsDir",
+        "snapx"
+    )
     $CommandSnapx = Join-Path $ToolInstallDir $CommandSnapx
 } else {
-    Invoke-Command-Colored $CommandDotnet @("tool install --global --add-source $NupkgsDir snapx")
+    Invoke-Command-Colored $CommandDotnet @(
+        "tool",
+        "install",
+        "--global",
+        "--add-source $NupkgsDir",
+        "snapx"
+    )
 }
 
 # Prove that executable is working and able to start. 

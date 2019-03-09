@@ -63,6 +63,32 @@ function Write-Output-Header-Warn {
     Write-Output-Colored -Message $Message -ForegroundColor Yellow
     Write-Host
 }
+function Invoke-Command-Clean-Dotnet-Directory {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Directory
+    )
+
+    if($false -eq (Test-Path $Directory))
+    {
+        return
+    }
+
+    $Bin = Join-Path $Directory bin
+    if(Test-Path $Bin)
+    {
+        Write-Output "Removing: $Bin" 
+        Get-ChildItem -Path $Bin -Recurse | Remove-Item -Force -Recurse
+    }
+
+    $Obj = Join-Path $Directory obj
+    if(Test-Path $Obj)
+    {
+        Write-Output "Removing: $Obj" 
+        Get-ChildItem -Path $Obj -Recurse | Remove-Item -Force -Recurse
+    }
+
+}
 function Invoke-Command-Colored {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]

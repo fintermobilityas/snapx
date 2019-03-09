@@ -15,8 +15,8 @@ param(
     [Validateset(15, 16)]
     [int] $VisualStudioVersion = 15,
     [Parameter(Position = 6, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.1")]
-    [string] $NetCoreAppVersion = "netcoreapp2.1"
+    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp2.2"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -28,6 +28,12 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 
 $ToolsDir = Join-Path $WorkingDir tools
 $SrcDir = Join-Path $WorkingDir src
+
+$NupkgsDir = Join-Path $WorkingDir nupkgs
+if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
+{
+    $NupkgsDir = $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+}
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
@@ -90,8 +96,8 @@ if ($Cross) {
 
 # Projects
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
-$SnapNetSrcDir = Join-Path $WorkingDir src\Snap
-$SnapInstallerNetSrcDir = Join-Path $WorkingDir src\Snap.Installer
+$SnapDotnetSrcDir = Join-Path $WorkingDir src\Snap
+$SnapInstallerDotnetSrcDir = Join-Path $WorkingDir src\Snap.Installer
 
 function Invoke-Build-Native {	
     Write-Output-Header "Building native dependencies"
@@ -168,15 +174,21 @@ function Invoke-Build-Snap {
     Resolve-Shell-Dependency $CommandDotnet
     Resolve-Shell-Dependency $CommandSnapx
 
-    Invoke-Command-Colored $CommandDotnet @(
-        "clean $SnapNetSrcDir"
-    )
+    Invoke-Command-Clean-Dotnet-Directory $SnapDotnetSrcDir
 
     Invoke-Command-Colored $CommandDotnet @(
-        ("build {0}" -f (Join-Path $SnapNetSrcDir Snap.csproj))
+        ("build {0}" -f (Join-Path $SnapDotnetSrcDir Snap.csproj))
         "/p:SnapNupkg=true",
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
+    )
+
+    Invoke-Command-Colored $CommandDotnet @(
+        "pack",
+        "--no-build",
+        "--output ${NupkgsDir}",
+        "--configuration $Configuration",
+        "$SnapDotnetSrcDir"
     )
 }
 function Invoke-Build-Snap-Installer {
@@ -216,23 +228,21 @@ function Invoke-Build-Snap-Installer {
         }
     }
 
-    $SnapInstallerNetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
-    $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir $SnapInstallerExeName
-    $SnapInstallerExeZipAbsolutePath = Join-Path $SnapInstallerNetBuildPublishDir "Setup-$Rid.zip"
+    $SnapInstallerDotnetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
+    $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir $SnapInstallerExeName
+    $SnapInstallerExeZipAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir "Setup-$Rid.zip"
 
-    Write-Output "Build src directory: $SnapInstallerNetSrcDir"
-    Write-Output "Build output directory: $SnapInstallerNetBuildPublishDir"
+    Write-Output "Build src directory: $SnapInstallerDotnetSrcDir"
+    Write-Output "Build output directory: $SnapInstallerDotnetBuildPublishDir"
     Write-Output "Arch: $TargetArchDotNet"
     Write-Output "Rid: $Rid"
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
-    Invoke-Command-Colored $CommandDotnet @(
-        "clean $SnapInstallerNetSrcDir"
-    )
+    Invoke-Command-Clean-Dotnet-Directory $SnapInstallerDotnetSrcDir
 
     Invoke-Command-Colored $CommandDotnet @(
-        ("publish {0}" -f (Join-Path $SnapInstallerNetSrcDir Snap.Installer.csproj))
+        ("publish {0}" -f (Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj))
         "/p:ShowLinkerSizeComparison=true"
         "/p:CrossGenDuringPublish=$MonoLinkerCrossGenEnabled"
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
@@ -240,7 +250,7 @@ function Invoke-Build-Snap-Installer {
         "--runtime $Rid"
         "--framework $TargetArchDotNet"
         "--self-contained true"
-        "--output $SnapInstallerNetBuildPublishDir"
+        "--output $SnapInstallerDotnetBuildPublishDir"
     )
 
     if ($Rid -eq "win-x64") {
@@ -261,7 +271,7 @@ function Invoke-Build-Snap-Installer {
     }
 
     Compress-Archive `
-        -Path $SnapInstallerNetBuildPublishDir\* `
+        -Path $SnapInstallerDotnetBuildPublishDir\* `
         -CompressionLevel Optimal `
         -DestinationPath $SnapInstallerExeZipAbsolutePath
 }

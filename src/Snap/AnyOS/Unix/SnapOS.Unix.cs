@@ -36,6 +36,8 @@ namespace Snap.AnyOS.Unix
 
         void SnapOsUnixInit()
         {
+            Username = Environment.UserName;
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 try
@@ -55,19 +57,6 @@ namespace Snap.AnyOS.Unix
                 catch (Exception e)
                 {
                     _logger.Warn("Exception thrown while executing 'lsb_release'", e);
-                }
-
-                try
-                {
-                    var (whoamiExitCode, whoamiStdOutput) = OsProcessManager.RunAsync(new ProcessStartInfoBuilder("whoami"),default).GetAwaiter().GetResult();
-                    if (whoamiExitCode == 0 && !string.IsNullOrWhiteSpace(whoamiStdOutput))
-                    {
-                        Username = whoamiStdOutput;
-                    }
-                }
-                catch (Exception e)
-                {
-                    _logger.ErrorException("Exception thrown while executing 'whoami'", e);
                 }
 
                 return;

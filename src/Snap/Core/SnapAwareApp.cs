@@ -101,7 +101,7 @@ namespace Snap.Core
             {
                 Logger.Trace($"Handling event: {actionName}.");
 
-                var currentVersion = SemanticVersion.Parse(args[0].Substring(actionName.Length));
+                var currentVersion = SemanticVersion.Parse(args[1]);
 
                 invoke[actionName](currentVersion);
 

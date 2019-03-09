@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Mono.Cecil;
 using Moq;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
@@ -21,6 +22,7 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
+    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class SnapInstallerTests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;
@@ -59,32 +61,58 @@ namespace Snap.Tests.Core
             var anyOs = SnapOs.AnyOs;
             Assert.NotNull(anyOs);
             
+            var loggerMock = new Mock<ILog>();
+
             var progressSource = new Mock<ISnapProgressSource>();
             progressSource.
                 Setup(x => x.Raise(It.IsAny<int>()));
 
+            var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+            
+            var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
+            snapOsProcessManager
+                .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync( (ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
+                {
+                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                    if (result.exitCode != 0)
+                    {
+                        failedRunAsyncReturnValues.Add(result);
+                    }
+                    return result;
+                });
+            snapOsProcessManager
+                .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
+                .Returns( (ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
+            snapOsProcessManager
+                .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));            
             _snapOsMock
                 .Setup(x => x.Filesystem)
                 .Returns(_snapFilesystem);
-
             _snapOsMock
                 .Setup(x => x.ProcessManager)
-                .Returns(_snapOsProcessManager);
-
+                .Returns(snapOsProcessManager.Object);
             _snapOsMock
                 .Setup(x => x.CreateShortcutsForExecutableAsync(
                     It.IsAny<SnapOsShortcutDescription>(),
                     It.IsAny<ILog>(),
-                    It.IsAny<CancellationToken>()));
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
 
             var snapApp = _baseFixture.BuildSnapApp();
-
+            snapApp.Shortcuts = new List<SnapShortcutLocation>
+            {
+                SnapShortcutLocation.Desktop
+            };
+            
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mylibrary");
             var snapAppExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 { snapAppExeAssemblyDefinition.BuildRelativeFilename(), snapAppExeAssemblyDefinition },
+                { snapAppExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename(), snapAppExeAssemblyDefinition.BuildRuntimeSettings() },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
@@ -105,6 +133,7 @@ namespace Snap.Tests.Core
             using (updateNupkgMemoryStream)
             using (var tmpNupkgDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var updateCts = new CancellationTokenSource())
             {
                 var installNupkgAbsoluteFilename = await WriteNupkgAsync(installPackageDetails.App, installNupkgMemoryStream, tmpNupkgDir.WorkingDirectory, CancellationToken.None);
                 var updateNupkgAbsoluteFilename = await WriteNupkgAsync(updatePackageDetails.App, updateNupkgMemoryStream, tmpNupkgDir.WorkingDirectory, CancellationToken.None);
@@ -116,14 +145,19 @@ namespace Snap.Tests.Core
 
                 // 1. Install
                                        
-                await _snapInstaller.InstallAsync(installNupkgAbsoluteFilename, rootDir.WorkingDirectory);
+                await _snapInstaller.InstallAsync(installNupkgAbsoluteFilename, rootDir.WorkingDirectory,
+                    logger: loggerMock.Object, cancellationToken: updateCts.Token);
                
+                _snapOsMock.Invocations.Clear();
+                snapOsProcessManager.Invocations.Clear();
+                
                 // 2. Update
                 
                 var updateAppDirName = $"app-{updatePackageDetails.App.Version}";
                 var updateAppDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, updateAppDirName);
                 
-                await _snapInstaller.UpdateAsync(updateNupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object);
+                await _snapInstaller.UpdateAsync(updateNupkgAbsoluteFilename, rootDir.WorkingDirectory, 
+                    progressSource.Object, loggerMock.Object, updateCts.Token);
                 
                 var expectedInstallFiles = nuspecLayout
                     .Select(x => _snapFilesystem.PathCombine(installAppDir, x.Key))
@@ -171,8 +205,42 @@ namespace Snap.Tests.Core
                     Assert.Equal(expectedLayout[i], extractedLayout[i]);
                 }
                 
+                Assert.Empty(failedRunAsyncReturnValues);
+
+                var coreRunExe = _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
+                    _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp));
+                var appExe = _snapFilesystem.PathCombine(updateAppDir, snapAppExeAssemblyDefinition.BuildRelativeFilename());
+                var snapUpdatedArguments = $"--snap-updated {updatedSnapApp.Version.ToNormalizedString()}";
+                
                 progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
                 
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                }
+                
+                _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()), Times.Never);
+                
+                _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                    It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(), 
+                    It.IsAny<CancellationToken>()), Times.Once);
+                
+                _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                    It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe), 
+                    It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                
+                snapOsProcessManager.Verify(x => x.RunAsync(It.Is<ProcessStartInfoBuilder>(
+                    v => v.Filename == coreRunExe && v.Arguments == snapUpdatedArguments), 
+                    It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+
+                snapOsProcessManager.Verify(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()), Times.Never);
             }
         }
         
@@ -181,33 +249,61 @@ namespace Snap.Tests.Core
         {
             var anyOs = SnapOs.AnyOs;
             Assert.NotNull(anyOs);
+
+            var loggerMock = new Mock<ILog>();
             
             var progressSource = new Mock<ISnapProgressSource>();
             progressSource.
                 Setup(x => x.Raise(It.IsAny<int>()));
 
+            var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+            
+            var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
+            snapOsProcessManager
+                .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync( (ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
+                {
+                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                    if (result.exitCode != 0)
+                    {
+                        failedRunAsyncReturnValues.Add(result);
+                    }
+                    return result;
+                });
+            snapOsProcessManager
+                .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
+                .Returns( (ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
+            snapOsProcessManager
+                .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));
             _snapOsMock
                 .Setup(x => x.Filesystem)
                 .Returns(_snapFilesystem);
-
             _snapOsMock
                 .Setup(x => x.ProcessManager)
-                .Returns(_snapOsProcessManager);
-
+                .Returns(snapOsProcessManager.Object);
             _snapOsMock
                 .Setup(x => x.CreateShortcutsForExecutableAsync(
                     It.IsAny<SnapOsShortcutDescription>(),
                     It.IsAny<ILog>(),
-                    It.IsAny<CancellationToken>()));
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
 
             var snapApp = _baseFixture.BuildSnapApp();
+            snapApp.Shortcuts = new List<SnapShortcutLocation>
+            {
+                SnapShortcutLocation.Desktop,
+                SnapShortcutLocation.Startup,
+                SnapShortcutLocation.StartMenu
+            };
             var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("mylibrary");
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 // exe
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
+                { testExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename(), testDllAssemblyDefinition.BuildRuntimeSettings() },
                 // dll
                 { $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition },
                 { $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}", testDllAssemblyDefinition }
@@ -219,6 +315,7 @@ namespace Snap.Tests.Core
             using (nupkgMemoryStream)
             using (var tmpNupkgDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var installCts = new CancellationTokenSource())
             {
                 var nupkgAbsoluteFilename = await WriteNupkgAsync(snapApp, nupkgMemoryStream,
                     tmpNupkgDir.WorkingDirectory, CancellationToken.None);
@@ -227,7 +324,7 @@ namespace Snap.Tests.Core
                 var appDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, appDirName);
                 var packagesDir = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "packages");
                                 
-                await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object);
+                await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory, progressSource.Object, loggerMock.Object, installCts.Token);
                
                 var expectedLayout = new List<string>
                     {
@@ -237,6 +334,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(appDir, SnapConstants.SnapDllFilename),
                         // App assemblies
                         _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename()),
+                        _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename()),
                         _snapFilesystem.PathCombine(appDir, $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
                         _snapFilesystem.PathCombine(appDir, $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
                         // Nupkg
@@ -263,8 +361,52 @@ namespace Snap.Tests.Core
                 {
                     Assert.Equal(expectedLayout[i], extractedLayout[i]);
                 }
+
+                Assert.Empty(failedRunAsyncReturnValues);
+
+                var coreRunExe = _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
+                    _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App));
+                var appExe = _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename());
+                var snapInstalledArguments = $"--snap-installed {snapApp.Version.ToNormalizedString()}";
+                var snapFirstRunArguments = $"--snap-first-run {snapApp.Version.ToNormalizedString()}";
                 
-                progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);                
+                progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                    snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                        It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                }
+                
+                _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
+                    It.Is<string>(v => v == rootDir.WorkingDirectory),
+                    It.Is<CancellationToken>(v => v != default)), Times.Once);
+                
+                _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                    It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(), 
+                    It.IsAny<CancellationToken>()), Times.Once);
+                
+                _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                    It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe), 
+                    It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                
+                snapOsProcessManager.Verify(x => x.RunAsync(
+                    It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()), Times.Once);
+                
+                snapOsProcessManager.Verify(x => x.RunAsync(
+                    It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe 
+                                                        && v.Arguments == snapInstalledArguments), 
+                    It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                
+                snapOsProcessManager.Verify(x => x.StartNonBlocking(
+                    It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe 
+                                                        & v.Arguments == snapFirstRunArguments)), Times.Once);
+                snapOsProcessManager.Verify(x => x.StartNonBlocking(
+                    It.IsAny<ProcessStartInfoBuilder>()), Times.Once);
             }
         }
         
@@ -291,7 +433,7 @@ namespace Snap.Tests.Core
             var snapApp = _baseFixture.BuildSnapApp();
             var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition }
             };

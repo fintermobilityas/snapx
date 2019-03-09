@@ -44,7 +44,7 @@ namespace Snap.Tests.Core
             var mainAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
             var snapFileSystem = _snapOs.Filesystem;
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 {mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition},
             };

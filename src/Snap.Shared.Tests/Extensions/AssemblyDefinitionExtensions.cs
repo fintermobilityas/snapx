@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Core;
@@ -23,6 +25,30 @@ namespace Snap.Shared.Tests.Extensions
             }
 
             return assemblyName;
+        }
+
+        public static string BuildRuntimeSettingsRelativeFilename([NotNull] this AssemblyDefinition assemblyDefinition)
+        {
+            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+            var filename = assemblyDefinition.BuildRelativeFilename();
+            return $"{filename}.runtimesettings.json";
+        }
+        
+        public static MemoryStream BuildRuntimeSettings([NotNull] this AssemblyDefinition assemblyDefinition)
+        {
+            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+            const string runtimeConfigSettings = @"
+{
+  ""runtimeOptions"": {
+            ""tfm"": ""netcoreapp2.1"",
+            ""framework"": {
+                ""name"": ""Microsoft.NETCore.App"",
+                ""version"": ""2.1.0""
+            }
+        }
+    }
+";
+            return new MemoryStream(Encoding.UTF8.GetBytes(runtimeConfigSettings));
         }
 
         public static string GetFullPath(this AssemblyDefinition assemblyDefinition, [NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)

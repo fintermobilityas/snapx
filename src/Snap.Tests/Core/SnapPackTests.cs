@@ -99,7 +99,7 @@ namespace Snap.Tests.Core
             // 1. Previous
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
@@ -111,7 +111,7 @@ namespace Snap.Tests.Core
             // 2. Current
             var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgTestDllAssemblyDefinition = previousNupkgTestDllAssemblyDefinition;
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
@@ -169,7 +169,7 @@ namespace Snap.Tests.Core
             // 1. Previous
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
@@ -181,7 +181,7 @@ namespace Snap.Tests.Core
             // 2. Current
             var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), currentNupkgTestDllAssemblyDefinition }
@@ -239,7 +239,7 @@ namespace Snap.Tests.Core
             // 1. Previous
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgAssemblyDefinition.BuildRelativeFilename(), previousNupkgAssemblyDefinition }
@@ -252,7 +252,7 @@ namespace Snap.Tests.Core
             var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test2");
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
                 { currentNupkgAssemblyDefinition1.BuildRelativeFilename(), currentNupkgAssemblyDefinition1 },
@@ -315,7 +315,7 @@ namespace Snap.Tests.Core
             // 1. Previous
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
@@ -327,7 +327,7 @@ namespace Snap.Tests.Core
             // 2. Current
             var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test2");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition },
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
@@ -388,7 +388,7 @@ namespace Snap.Tests.Core
             // 1. Previous
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition }
@@ -400,7 +400,7 @@ namespace Snap.Tests.Core
             // 2. Current
             var currentNupkgMainExecutableAssemblyDefinition = previousNupkgMainExecutableAssemblyDefinition;
             var currentNupkgTestDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test2");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 { previousNupkgTestDllAssemblyDefinition.BuildRelativeFilename(), previousNupkgTestDllAssemblyDefinition },
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
@@ -462,7 +462,7 @@ namespace Snap.Tests.Core
             var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);            
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
@@ -489,7 +489,7 @@ namespace Snap.Tests.Core
             var testExeAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);            
             var testDllAssemblyDefinition = _baseFixture.BuildEmptyLibrary("test");
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 { testExeAssemblyDefinition.BuildRelativeFilename(), testExeAssemblyDefinition },
                 { testDllAssemblyDefinition.BuildRelativeFilename(), testDllAssemblyDefinition },
@@ -553,7 +553,7 @@ namespace Snap.Tests.Core
             var dllDefinition1 = _baseFixture.BuildEmptyLibrary("test");
             var dllDefinition2 = _baseFixture.BuildEmptyLibrary("test");
 
-            var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var nuspecLayout = new Dictionary<string, object>
             {
                 { mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition },
                 { $"subdirectory/{dllDefinition1.BuildRelativeFilename()}", dllDefinition1 },
@@ -618,7 +618,7 @@ namespace Snap.Tests.Core
 
             using (var rootDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
             {
-                var nuspecLayout = new Dictionary<string, AssemblyDefinition>
+                var nuspecLayout = new Dictionary<string, object>
                 {
                     { mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition },
                     { "file1", file1AssemblyDefinition },
@@ -687,7 +687,7 @@ namespace Snap.Tests.Core
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test1"); 
             var previousNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test2");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 // Modified in current
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
@@ -704,7 +704,7 @@ namespace Snap.Tests.Core
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary(previousNupkgAssemblyDefinition1.Name.Name, true);
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
             var currentNupkgAssemblyDefinition3 = _baseFixture.BuildEmptyLibrary("test4");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 // Modified
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
@@ -820,7 +820,7 @@ namespace Snap.Tests.Core
             var previousNupkgMainExecutableAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(previousNupkgSnapApp);
             var previousNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary("test1"); 
             var previousNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test2");            
-            var previousNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var previousNupkgNuspecLayout = new Dictionary<string, object>
             {
                 // Modified in current
                 { previousNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), previousNupkgMainExecutableAssemblyDefinition },
@@ -837,7 +837,7 @@ namespace Snap.Tests.Core
             var currentNupkgAssemblyDefinition1 = _baseFixture.BuildEmptyLibrary(previousNupkgAssemblyDefinition1.Name.Name, true);
             var currentNupkgAssemblyDefinition2 = _baseFixture.BuildEmptyLibrary("test3");
             var currentNupkgAssemblyDefinition3 = _baseFixture.BuildEmptyLibrary("test4");
-            var currentNupkgNuspecLayout = new Dictionary<string, AssemblyDefinition>
+            var currentNupkgNuspecLayout = new Dictionary<string, object>
             {
                 // Modified
                 { currentNupkgMainExecutableAssemblyDefinition.BuildRelativeFilename(), currentNupkgMainExecutableAssemblyDefinition },
@@ -933,7 +933,7 @@ namespace Snap.Tests.Core
             var mainExe = _baseFixture.BuildSnapAwareEmptyExecutable(snapAppBefore);
             
             var (nupkgMemoryStream, _, _) = await _baseFixture
-                .BuildInMemoryFullPackageAsync(snapAppBefore, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, new Dictionary<string, AssemblyDefinition>
+                .BuildInMemoryFullPackageAsync(snapAppBefore, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources, new Dictionary<string, object>
                 {
                     { mainExe.BuildRelativeFilename(), mainExe },
                     { testDll.BuildRelativeFilename(), testDll }

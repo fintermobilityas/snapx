@@ -315,7 +315,7 @@ namespace Snap.Core
                         IconAbsolutePath = iconAbsolutePath
                     };
                     
-                    await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription,logger, cancellationToken);
+                    await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);
                 }
                 catch (Exception e)
                 {
@@ -328,17 +328,19 @@ namespace Snap.Core
                 coreRunExeAbsolutePath
             }.Select(x =>
                 {
-                    var installOrUpdateTxt = isInitialInstall ? "--snap--installed" : "--snap--updated";
+                    var installOrUpdateTxt = isInitialInstall ? "--snap-installed" : "--snap-updated";
                     return new ProcessStartInfoBuilder(x)
-                        .Add($"{installOrUpdateTxt} {currentVersion.ToNormalizedString()}");
+                        .Add(installOrUpdateTxt)
+                        .Add(currentVersion.ToNormalizedString());
                 })
                 .ToList();
             
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger);
+            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
         }
 
         async Task InvokeSnapAwareApps([NotNull] IReadOnlyCollection<ProcessStartInfoBuilder> allSnapAwareApps, 
-            TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion, ILog logger = null)
+            TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion, 
+            ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
             if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion))
@@ -355,7 +357,10 @@ namespace Snap.Core
 
                     try
                     {
-                        var (exitCode, stdout) = await _snapOs.ProcessManager.RunAsync(processStartInfoBuilder, cts.Token);
+                        var (exitCode, stdout) = await _snapOs.ProcessManager
+                            .RunAsync(processStartInfoBuilder, cancellationToken) // Two cancellation tokens is intentional because of unit tests mocks.
+                            .WithCancellation(cts.Token); // Two cancellation tokens is intentional because of unit tests mocks.
+                        
                         logger?.Debug($"Processed exited: {exitCode}. Exe: {processStartInfoBuilder.Filename}. Stdout: {stdout}.");
                     }
                     catch (Exception ex)

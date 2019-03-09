@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Fasterflect;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -204,7 +205,7 @@ namespace Snap.Shared.Tests
         }
 
         public AssemblyDefinition BuildEmptyExecutable(string applicationName, bool randomVersion = false, 
-            IReadOnlyCollection<AssemblyDefinition> references = null, int exitCode = 0)
+            List<AssemblyDefinition> references = null, int exitCode = 0)
         {
             if (applicationName == null) throw new ArgumentNullException(nameof(applicationName));
 
@@ -282,7 +283,7 @@ namespace Snap.Shared.Tests
 
             if (references == null)
             {
-                return assembly;
+                references = new List<AssemblyDefinition>();
             }
 
             foreach (var assemblyDefinition in references)
@@ -293,7 +294,7 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        public AssemblyDefinition BuildSnapAwareEmptyExecutable([NotNull] SnapApp snapApp, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> references = null)
+        public AssemblyDefinition BuildSnapAwareEmptyExecutable([NotNull] SnapApp snapApp, bool randomVersion = false, List<AssemblyDefinition> references = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             var testExeAssemblyDefinition = BuildEmptyExecutable(snapApp.Id, randomVersion, references);
@@ -301,6 +302,8 @@ namespace Snap.Shared.Tests
             testExeAssemblyDefinitionReflector.SetSnapAware();
             return testExeAssemblyDefinition;
         }
+        
+        
 
         public AssemblyDefinition BuildLibrary(string libraryName, string className, IReadOnlyCollection<AssemblyDefinition> references = null)
         {
@@ -332,7 +335,7 @@ namespace Snap.Shared.Tests
 
         internal async Task<(MemoryStream memoryStream, SnapPackageDetails packageDetails, string checksum)> BuildInMemoryFullPackageAsync(
             [NotNull] SnapApp snapApp, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapFilesystem filesystem, 
-            [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, AssemblyDefinition> nuspecFilesLayout, 
+            [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] Dictionary<string, object> nuspecFilesLayout, 
             ISnapProgressSource progressSource = null, CancellationToken cancellationToken = default)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -363,12 +366,23 @@ namespace Snap.Shared.Tests
                     App = snapApp
                 };
 
-                foreach (var pair in nuspecFilesLayout)
+                foreach (var (key, value) in nuspecFilesLayout)
                 {
-                    var dstFilename = filesystem.PathCombine(snapPackDetails.NuspecBaseDirectory, pair.Key);
+                    var dstFilename = filesystem.PathCombine(snapPackDetails.NuspecBaseDirectory, key);
                     var directory = filesystem.PathGetDirectoryName(dstFilename);
                     filesystem.DirectoryCreateIfNotExists(directory);
-                    pair.Value.Write(dstFilename);                
+                    switch (value)
+                    {
+                        case AssemblyDefinition assemblyDefinition:
+                            assemblyDefinition.Write(dstFilename);                
+                            break;
+                        case MemoryStream memoryStream:
+                            await filesystem.FileWriteAsync(memoryStream, dstFilename, cancellationToken);
+                            memoryStream.Seek(0, SeekOrigin.Begin);
+                            break;
+                        default:
+                            throw new NotSupportedException($"{key}: {value?.GetType().FullName}");
+                    }
                 }
 
                 await filesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);

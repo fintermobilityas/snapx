@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -166,6 +167,12 @@ namespace Snap.AnyOS
         public async Task<bool> ChmodExecuteAsync([NotNull] string filename, CancellationToken cancellationToken)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+            
             var (exitCode, _) = await RunAsync(new ProcessStartInfoBuilder("chmod").Add("+x").Add(filename), cancellationToken);
             return exitCode == 0;
         }

@@ -89,6 +89,7 @@ namespace snapx
 
             var snapAppChannel = snapApp.Channels.First();
 
+            logger.Info($"Schema: {snapApps.Schema}");
             logger.Info($"Packages directory: {snapApps.Generic.Packages}");
             logger.Info($"Artifacts directory: {snapApps.Generic.Artifacts}");
             logger.Info($"Installers directory: {snapApps.Generic.Installers}");

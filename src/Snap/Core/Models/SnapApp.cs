@@ -19,15 +19,11 @@ namespace Snap.Core.Models
         [YamlIgnore]
         public bool Delta => DeltaSummary != null;
         public SnapAppDeltaSummary DeltaSummary { get; set; }
-        public List<string> PersistentAssets { get; set; }
-        public List<SnapShortcutLocation> Shortcuts { get; set; }
         
         [UsedImplicitly]
         public SnapApp()
         {
             Channels = new List<SnapChannel>();
-            PersistentAssets = new List<string>();
-            Shortcuts = new List<SnapShortcutLocation>();
         }
 
         internal SnapApp([NotNull] SnapApp app)
@@ -41,8 +37,6 @@ namespace Snap.Core.Models
                 Target = new SnapTarget(app.Target);
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
-            PersistentAssets = app.PersistentAssets.Select(x => x).ToList();
-            Shortcuts = app.Shortcuts.Select(x => x).ToList();
         }
 
         internal void SetCurrentChannel([NotNull] string channelName)
@@ -145,11 +139,14 @@ namespace Snap.Core.Models
         public string Rid { get; set; }
         public string Nuspec { get; set; }
         public string Icon { get; set; }
+        public List<SnapShortcutLocation> Shortcuts { get; set; }
+        public List<string> PersistentAssets { get; set; }
 
         [UsedImplicitly]
         public SnapTarget()
         {
-
+            Shortcuts = new List<SnapShortcutLocation>();
+            PersistentAssets = new List<string>();
         }
 
         internal SnapTarget([NotNull] SnapTarget target)
@@ -160,6 +157,8 @@ namespace Snap.Core.Models
             Rid = target.Rid;
             Nuspec = target.Nuspec;
             Icon = target.Icon;
+            Shortcuts = target.Shortcuts;
+            PersistentAssets = target.PersistentAssets;
         }
 
         internal SnapTarget([NotNull] SnapsTarget snapsTarget) : this(new SnapTarget
@@ -168,7 +167,9 @@ namespace Snap.Core.Models
             Framework = snapsTarget.Framework,
             Nuspec = snapsTarget.Nuspec,
             Rid = snapsTarget.Rid,
-            Icon = snapsTarget.Icon
+            Icon = snapsTarget.Icon,
+            Shortcuts = snapsTarget.Shortcuts,
+            PersistentAssets = snapsTarget.PersistentAssets
         })
         {
             if (snapsTarget == null) throw new ArgumentNullException(nameof(snapsTarget));

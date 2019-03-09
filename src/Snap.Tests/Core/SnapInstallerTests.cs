@@ -101,7 +101,7 @@ namespace Snap.Tests.Core
                 .Returns(Task.CompletedTask);
 
             var snapApp = _baseFixture.BuildSnapApp();
-            snapApp.Shortcuts = new List<SnapShortcutLocation>
+            snapApp.Target.Shortcuts = new List<SnapShortcutLocation>
             {
                 SnapShortcutLocation.Desktop
             };
@@ -290,7 +290,7 @@ namespace Snap.Tests.Core
                 .Returns(Task.CompletedTask);
 
             var snapApp = _baseFixture.BuildSnapApp();
-            snapApp.Shortcuts = new List<SnapShortcutLocation>
+            snapApp.Target.Shortcuts = new List<SnapShortcutLocation>
             {
                 SnapShortcutLocation.Desktop,
                 SnapShortcutLocation.Startup,
@@ -449,7 +449,7 @@ namespace Snap.Tests.Core
                 await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFile), excludedFile, default);
                 await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFileInsideDirectory), excludedFileInsideDirectory, default);
 
-                snapApp.PersistentAssets = new List<string>
+                snapApp.Target.PersistentAssets = new List<string>
                 {
                     nameof(excludedDirectory),
                     _snapFilesystem.PathGetFileName(excludedFile),

@@ -104,11 +104,17 @@ namespace Snap.Tests.Core
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
-                    Nuspec = "test.nuspec"
-                },
-                PersistentAssets = new List<string>
-                {
-                    "application.json"
+                    Nuspec = "test.nuspec",
+                    Shortcuts = new List<SnapShortcutLocation>
+                    {
+                        SnapShortcutLocation.Desktop,
+                        SnapShortcutLocation.Desktop,
+                        SnapShortcutLocation.StartMenu
+                    },
+                    PersistentAssets = new List<string>
+                    {
+                        "application.json"
+                    }
                 }
             };
 
@@ -181,6 +187,7 @@ namespace Snap.Tests.Core
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
             Assert.Equal(snapAppBefore.Target.Nuspec, snapAppAfter.Target.Nuspec);
+            Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
 
             // Channels
             Assert.Equal(snapAppBefore.Channels.Count, snapAppAfter.Channels.Count);
@@ -240,9 +247,6 @@ namespace Snap.Tests.Core
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
                 }
             }
-            
-            // Persistent assets
-            Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
         }
 
     }

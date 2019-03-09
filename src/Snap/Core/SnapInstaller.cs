@@ -207,9 +207,9 @@ namespace Snap.Core
             logger?.Info($"Installing snap id: {snapApp.Id}. " +
                                   $"Version: {snapApp.Version}. ");
 
-            if (snapApp.PersistentAssets.Any())
+            if (snapApp.Target.PersistentAssets.Any())
             {
-                logger?.Info($"Persistent assets: {string.Join(", ", snapApp.PersistentAssets)}");                
+                logger?.Info($"Persistent assets: {string.Join(", ", snapApp.Target.PersistentAssets)}");                
             }
             
             snapProgressSource?.Raise(10);
@@ -217,7 +217,7 @@ namespace Snap.Core
             {
                 _snapOs.KillAllRunningInsideDirectory(baseDirectory, cancellationToken);
                 logger?.Info($"Deleting existing base directory: {baseDirectory}");
-                await _snapOs.Filesystem.DirectoryDeleteAsync(baseDirectory, snapApp.PersistentAssets);
+                await _snapOs.Filesystem.DirectoryDeleteAsync(baseDirectory, snapApp.Target.PersistentAssets);
             }
 
             snapProgressSource?.Raise(20);
@@ -273,7 +273,7 @@ namespace Snap.Core
                 .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));            
             var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ? 
                 _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
-            
+                        
             logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
             logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
             logger?.Debug($"{nameof(iconAbsolutePath)}: {iconAbsolutePath}");
@@ -294,14 +294,14 @@ namespace Snap.Core
 
             var coreRunExeFilename = _snapOs.Filesystem.PathGetFileName(coreRunExeAbsolutePath);
 
-            if (!snapApp.Shortcuts.Any())
+            if (!snapApp.Target.Shortcuts.Any())
             {
                 logger?.Warn("This application does not specify any shortcut locations.");
             }
             else
             {
-                var shortcutLocations = snapApp.Shortcuts.First();
-                snapApp.Shortcuts.Skip(1).ForEach(x => shortcutLocations |= x);
+                var shortcutLocations = snapApp.Target.Shortcuts.First();
+                snapApp.Target.Shortcuts.Skip(1).ForEach(x => shortcutLocations |= x);
                 logger?.Info($"Shortcuts will be created in the following locations: {string.Join(", ", shortcutLocations)}");
                 try
                 {

@@ -97,7 +97,7 @@ namespace Snap.Tests.Core
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
             
-            snapAppBefore.PersistentAssets = new List<string>
+            snapAppBefore.Target.PersistentAssets = new List<string>
             {
                 "subdirectory/",
                 "somefile.json"
@@ -108,7 +108,7 @@ namespace Snap.Tests.Core
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
                 
-                Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
+                Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
             }
         }
         
@@ -117,7 +117,7 @@ namespace Snap.Tests.Core
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
             
-            snapAppBefore.Shortcuts = new List<SnapShortcutLocation>
+            snapAppBefore.Target.Shortcuts = new List<SnapShortcutLocation>
             {
                 SnapShortcutLocation.Desktop,
                 SnapShortcutLocation.StartMenu
@@ -128,7 +128,7 @@ namespace Snap.Tests.Core
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
                 
-                Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
+                Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
             }
         }
 

@@ -120,11 +120,14 @@ namespace Snap.Core.Models
         public string Rid { get; set; }
         public string Nuspec { get; set; }
         public string Icon { get; set; }
+        public List<SnapShortcutLocation> Shortcuts { get; set; }
+        public List<string> PersistentAssets { get; set; }
 
         [UsedImplicitly]
         public SnapsTarget()
         {
-
+            Shortcuts = new List<SnapShortcutLocation>();
+            PersistentAssets = new List<string>();
         }
 
         internal SnapsTarget([NotNull] SnapTarget target)
@@ -135,6 +138,8 @@ namespace Snap.Core.Models
             Rid = target.Rid;
             Nuspec = target.Nuspec;
             Icon = target.Icon;
+            Shortcuts = target.Shortcuts;
+            PersistentAssets = target.PersistentAssets;
         }
 
         public SnapsTarget([NotNull] SnapsTarget target)
@@ -145,6 +150,8 @@ namespace Snap.Core.Models
             Rid = target.Rid;
             Nuspec = target.Nuspec;
             Icon = target.Icon;
+            Shortcuts = target.Shortcuts;
+            PersistentAssets = target.PersistentAssets;
         }
     }
 
@@ -156,15 +163,12 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
-        public List<string> PersistentAssets { get; set; }
-        public List<SnapShortcutLocation> Shortcuts { get; set; }
         
         [UsedImplicitly]
         public SnapsApp()
         {
             Channels = new List<string>();
             Targets = new List<SnapsTarget>();
-            Shortcuts = new List<SnapShortcutLocation>();
         }
 
         internal SnapsApp([NotNull] SnapApp snapApp)
@@ -173,8 +177,6 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
-            PersistentAssets = snapApp.PersistentAssets.Select(x => x).ToList();
-            Shortcuts = snapApp.Shortcuts.Select(x => x).ToList();
         }
 
         public SnapsApp([NotNull] SnapsApp snapApp)
@@ -183,8 +185,6 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
-            PersistentAssets = snapApp.PersistentAssets.Select(x => x).ToList();
-            Shortcuts = snapApp.Shortcuts.Select(x => x).ToList();
         }
     }
 
@@ -226,6 +226,7 @@ namespace Snap.Core.Models
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapApps
     {
+        public int Schema { get; set; }
         public SnapAppsGeneric Generic { get; set; }
         public List<SnapsChannel> Channels { get; set; }
         public List<SnapsApp> Apps { get; set; }
@@ -242,7 +243,7 @@ namespace Snap.Core.Models
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
             Apps = new List<SnapsApp> { new SnapsApp(snapApp) };
-            Generic = new SnapAppsGeneric();
+            Generic = new SnapAppsGeneric();            
         }
 
         public SnapApps([NotNull] SnapApps snapApps)
@@ -251,6 +252,7 @@ namespace Snap.Core.Models
             Channels = snapApps.Channels.Select(x => new SnapsChannel(x)).ToList();
             Apps = snapApps.Apps.Select(x => new SnapsApp(x)).ToList();
             Generic = new SnapAppsGeneric(snapApps.Generic);
+            Schema = snapApps.Schema;
         }
 
     }

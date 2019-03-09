@@ -320,7 +320,7 @@ namespace Snap.Extensions
             {
                 throw new Exception($"Target runtime identifiers (rids) must be unique: {string.Join(",", snapAppUniqueRuntimeIdentifiers)}. Snap id: {snapApp.Id}");
             }
-            
+                        
             var snapAppTarget = snapApp.Targets.SingleOrDefault(x => string.Equals(x.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
             if (snapAppTarget == null)
             {
@@ -335,6 +335,12 @@ namespace Snap.Extensions
             if (!snapAppTarget.Framework.IsNetFrameworkValidSafe())
             {
                 throw new Exception($"Unknown .NET framework: {snapAppTarget.Framework}");
+            }
+            
+            var snapAppTargetUniqueShortcuts = snapAppTarget.Shortcuts.Select(x => x).ToList();
+            if (snapAppTargetUniqueShortcuts.Distinct().Count() != snapAppTarget.Shortcuts.Count)
+            {
+                throw new Exception($"Target shortcut locations must be unique: {string.Join(",", snapAppTargetUniqueShortcuts)}. Snap id: {snapApp.Id}");
             }
             
             if (snapAppTarget.Icon != null)
@@ -405,7 +411,7 @@ namespace Snap.Extensions
                 snapAppChannels.Add(new SnapChannel(snapsChannel.Name, currentChannel, pushFeed, updateFeed));
             }
 
-            if (snapApp.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase)))
+            if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase)))
             {
                 throw new Exception("Fatal error! A persistent asset starting with 'app-' was detected in manifest. This is a reserved keyword.");
             }
@@ -414,9 +420,7 @@ namespace Snap.Extensions
             {
                 Id = snapApp.Id,
                 Channels = snapAppChannels,
-                Target = new SnapTarget(snapAppTarget),
-                Shortcuts = snapApp.Shortcuts,
-                PersistentAssets = snapApp.PersistentAssets
+                Target = new SnapTarget(snapAppTarget)
             };
         }
 

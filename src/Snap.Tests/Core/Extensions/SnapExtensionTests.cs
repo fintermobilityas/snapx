@@ -554,17 +554,17 @@ namespace Snap.Tests.Core.Extensions
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win-x64",
-                    Nuspec = "test.nuspec"
-                },
-                PersistentAssets = new List<string>
-                {
-                    "subdirectory",
-                    "myjsonfile.json"
-                },
-                Shortcuts = new List<SnapShortcutLocation>
-                {
-                    SnapShortcutLocation.Desktop,
-                    SnapShortcutLocation.Startup
+                    Nuspec = "test.nuspec",
+                    Shortcuts = new List<SnapShortcutLocation>
+                    {
+                        SnapShortcutLocation.Desktop,
+                        SnapShortcutLocation.Startup
+                    },
+                    PersistentAssets = new List<string>
+                    {
+                        "subdirectory",
+                        "myjsonfile.json"
+                    }
                 }
             };
 
@@ -587,6 +587,8 @@ namespace Snap.Tests.Core.Extensions
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
             Assert.Equal(snapAppBefore.Target.Nuspec, snapAppAfter.Target.Nuspec);
+            Assert.Equal(snapAppBefore.Target.Shortcuts, snapAppAfter.Target.Shortcuts);
+            Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
 
             // Channels
             Assert.Equal(snapAppBefore.Channels.Count, snapAppAfter.Channels.Count);
@@ -643,14 +645,10 @@ namespace Snap.Tests.Core.Extensions
                         Assert.Equal(lhsNugetUpdateFeed.ProtocolVersion, rhsNugetUpdateFeed.ProtocolVersion);
                         Assert.Equal(lhsNugetUpdateFeed.ApiKey, rhsNugetUpdateFeed.ApiKey);
                         Assert.Equal(lhsNugetUpdateFeed.Username, rhsNugetUpdateFeed.Username);
-                        if (lhsNugetUpdateFeed.IsPasswordEncryptionSupported())
-                        {
-                            Assert.Equal(EncryptionUtility.DecryptString(lhsNugetUpdateFeed.Password), rhsNugetUpdateFeed.Password);
-                        }
-                        else
-                        {
-                            Assert.Equal(lhsNugetUpdateFeed.Password, rhsNugetUpdateFeed.Password);
-                        }
+                        Assert.Equal(
+                            lhsNugetUpdateFeed.IsPasswordEncryptionSupported()
+                                ? EncryptionUtility.DecryptString(lhsNugetUpdateFeed.Password)
+                                : lhsNugetUpdateFeed.Password, rhsNugetUpdateFeed.Password);
                         break;
                     case SnapHttpFeed rhsHttpUpdateFeed:
                         var lhsHttpUpdateFeed = (SnapHttpFeed) lhsUpdateFeed;
@@ -662,10 +660,6 @@ namespace Snap.Tests.Core.Extensions
                         throw new NotSupportedException(rhsUpdateFeed.GetType().ToString());
                 }
             }
-            
-            // Persistent assets
-            Assert.Equal(snapAppBefore.PersistentAssets, snapAppAfter.PersistentAssets);
-            Assert.Equal(snapAppBefore.Shortcuts, snapAppAfter.Shortcuts);
         }
 
         [Fact]
@@ -729,6 +723,7 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps
             {
+                Schema = 1,
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
                 Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
                 Generic = new SnapAppsGeneric
@@ -736,8 +731,6 @@ namespace Snap.Tests.Core.Extensions
                     Packages = "./packages"
                 }
             };
-            
-            var a = new SnapAppWriter().ToSnapAppsYamlString(snapApps);
 
             var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(_baseFixture.NugetTempDirectory, new List<PackageSource>
             {

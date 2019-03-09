@@ -107,11 +107,17 @@ namespace Snap.Shared.Tests
                     Os = osPlatform,
                     Framework = "netcoreapp2.1",
                     Rid = "win-x64",
-                    Nuspec = "test.nuspec"
-                },
-                PersistentAssets = new List<string>
-                {
-                    "application.json"
+                    Nuspec = "test.nuspec",
+                    Shortcuts = new List<SnapShortcutLocation>
+                    {
+                        SnapShortcutLocation.Desktop,
+                        SnapShortcutLocation.Startup,
+                        SnapShortcutLocation.StartMenu
+                    },
+                    PersistentAssets = new List<string>
+                    {
+                        "application.json"
+                    }
                 }
             };
         }
@@ -122,6 +128,7 @@ namespace Snap.Shared.Tests
 
             return new SnapApps
             {
+                Schema = 1,
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
                 Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
                 Generic = new SnapAppsGeneric

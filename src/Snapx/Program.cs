@@ -234,6 +234,11 @@ namespace snapx
                     goto error;
                 }
 
+                if (snapApps.Schema != 1)
+                {
+                    throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {snapApps.Schema}.");
+                }
+
                 return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), snapsFilename);
             }
             catch (YamlException yamlException)

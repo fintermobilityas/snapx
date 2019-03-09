@@ -77,14 +77,14 @@ function Invoke-Command-Clean-Dotnet-Directory {
     $Bin = Join-Path $Directory bin
     if(Test-Path $Bin)
     {
-        Write-Output "Removing: $Bin" 
+        Write-Output "Removing directory: $Bin" 
         Get-ChildItem -Path $Bin -Recurse | Remove-Item -Force -Recurse
     }
 
     $Obj = Join-Path $Directory obj
     if(Test-Path $Obj)
     {
-        Write-Output "Removing: $Obj" 
+        Write-Output "Removing directory: $Obj" 
         Get-ChildItem -Path $Obj -Recurse | Remove-Item -Force -Recurse
     }
 

@@ -244,7 +244,7 @@ namespace snapx
             if (mostRecentSnapApp == null)
             {
                 snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize));
-                goto buildReleasePackage;
+                goto buildInstallers;
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -269,19 +269,7 @@ namespace snapx
                 deltaNupkgFilesize));
             pushPackages.Add(deltaNupkgAbsolutePath);
 
-            buildReleasePackage:
-            logger.Info('-'.Repeat(TerminalDashesWidth));
-            logger.Info("Building releases package");
-
-            using (var releasesMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapReleases))
-            {
-                var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, snapApp.BuildNugetReleasesLocalFilename());
-                await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
-
-                pushPackages.Add(releasesNupkgAbsolutePath);
-            }
-
-            logger.Info("Finished building releases package");
+            buildInstallers:
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader,
@@ -313,6 +301,19 @@ namespace snapx
             var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
             logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
 
+            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info("Building releases package");
+
+            using (var releasesMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapReleases))
+            {
+                var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, snapApp.BuildNugetReleasesLocalFilename());
+                await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
+
+                pushPackages.Add(releasesNupkgAbsolutePath);
+            }
+
+            logger.Info("Finished building releases package");
+            
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
                 await PushPackagesAsync(packOptions, logger, filesystem, nugetService, snapApp, snapAppChannel, pushPackages, cancellationToken);

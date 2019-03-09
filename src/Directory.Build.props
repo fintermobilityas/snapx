@@ -41,7 +41,7 @@
         <IsPackable>false</IsPackable>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath Condition="$(PackageOutputPath) == '' AND $(IsCIBuild)">$(BUILD_ARTIFACTSTAGINGDIRECTORY)</PackageOutputPath>
-        <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)nupkgs</PackageOutputPath>
+        <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)..\nupkgs</PackageOutputPath>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     </PropertyGroup>
 

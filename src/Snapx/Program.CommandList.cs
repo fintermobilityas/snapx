@@ -85,7 +85,7 @@ namespace snapx
                     "Rid"
                 }.Concat(snapApp.Channels.Select(x => $"Channel: {x.Name}")).ToArray();
 
-                tables.Add((snapApp, new ConsoleTable(tableColumns) { Header = $"Id: {snapApp.Id}" }));
+                tables.Add((snapApp, new ConsoleTable(tableColumns) { Header = $"Release summary: {snapApp.Id}" }));
             }
 
             const int maxConcurrentMetadataTasks = 2;
@@ -181,6 +181,8 @@ namespace snapx
 
                     table.AddRow(rowValues.ToArray());
                 }
+
+                logger.Info('-'.Repeat(TerminalDashesWidth));
                 
                 table.Write(logger);
             }

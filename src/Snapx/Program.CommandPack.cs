@@ -312,9 +312,13 @@ namespace snapx
                 await PushPackagesAsync(packOptions, logger, filesystem, nugetService, 
                     snapPackageManager, snapReleases, snapApp, snapAppChannel, pushPackages, cancellationToken);
             }
-
+                
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
+
+            await CommandListAsync(new ListOptions { Id = snapApp.Id }, filesystem, snapAppReader, 
+                nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
+
             return 0;
         }
 
@@ -647,8 +651,6 @@ namespace snapx
                     $"Local version: {snapReleases.Version}. " +
                     "Retrying in 15 seconds");
                      
-                logger.Info('-'.Repeat(TerminalDashesWidth));
-
                 sleep:                      
                 await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
             }

@@ -270,29 +270,13 @@ namespace Snap.Core
             var coreRunExeAbsolutePath = _snapOs.Filesystem
                 .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
             var mainExeAbsolutePath = _snapOs.Filesystem
-                .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
-
-            string iconDstAbsolutePath = default;
-            if (_snapOs.DistroType == SnapOsDistroType.Ubuntu)
-            {
-                iconDstAbsolutePath = _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon);
-                
-                var iconSrcAbsolutePath = _snapOs.Filesystem.PathCombine(baseDirectory, snapApp.Target.Icon);
-                logger?.Debug($"Copying icon from {iconSrcAbsolutePath} to {iconDstAbsolutePath}. " +
-                              "Reason: Ubuntu does not render icon unless the icon " +
-                              "resides in the same folder as the stub executable.");
-                
-                await _snapOs.Filesystem.FileCopyAsync(
-                iconSrcAbsolutePath, 
-                iconDstAbsolutePath, cancellationToken);
-            }
+                .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));            
+            var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ? 
+                _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
                         
             logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
             logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
-            if (iconDstAbsolutePath != null)
-            {
-                logger?.Debug($"{nameof(iconDstAbsolutePath)}: {iconDstAbsolutePath}");                
-            }
+            logger?.Debug($"{nameof(iconAbsolutePath)}: {iconAbsolutePath}");
             
             async Task ChmodAsync(string exePath)
             {
@@ -328,7 +312,7 @@ namespace Snap.Core
                         NuspecReader = nuspecReader,
                         ShortcutLocations = shortcutLocations,
                         ExeAbsolutePath = coreRunExeAbsolutePath,
-                        IconAbsolutePath = iconDstAbsolutePath
+                        IconAbsolutePath = iconAbsolutePath
                     };
                     
                     await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);

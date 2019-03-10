@@ -22,7 +22,7 @@ namespace Snap.Core
         char FixedNewlineChar { get; }
         char DirectorySeparatorChar { get; }
         void DirectoryCreate(string directory);
-        void DirectoryCreateIfNotExists(string directory);
+        bool DirectoryCreateIfNotExists(string directory);
         bool DirectoryExists(string directory);
         void DirectoryDelete(string directory, bool recursive = false);
         Task DirectoryDeleteAsync(string directory, List<string> excludePaths = null);
@@ -255,11 +255,12 @@ namespace Snap.Core
             Directory.CreateDirectory(directory);
         }
 
-        public void DirectoryCreateIfNotExists([NotNull] string directory)
+        public bool DirectoryCreateIfNotExists([NotNull] string directory)
         {
             if (directory == null) throw new ArgumentNullException(nameof(directory));
-            if (DirectoryExists(directory)) return;
+            if (DirectoryExists(directory)) return false;
             DirectoryCreate(directory);
+            return true;
         }
 
         public bool DirectoryExists(string directory)

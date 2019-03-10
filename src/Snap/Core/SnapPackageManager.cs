@@ -158,7 +158,7 @@ namespace Snap.Core
                     
             if (!releasesForChannel.Any())
             {
-                return false;
+                return true;
             }
 
             var stopwatch = new Stopwatch();

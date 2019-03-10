@@ -225,7 +225,7 @@ namespace Snap.Core
         Task<IEnumerable<SnapPackFileChecksum>> GetChecksumManifestAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader,
             CancellationToken cancellationToken);
 
-        MemoryStream BuildReleasesPackage(SnapApp snapApp, SnapReleases releases);
+        MemoryStream BuildReleasesPackage(SnapApp snapApp, SnapReleases snapReleases);
     }
 
     internal sealed class SnapPack : ISnapPack
@@ -683,58 +683,48 @@ namespace Snap.Core
             }
         }
 
-        public MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapReleases releases)
+        public MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapReleases snapReleases)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (releases == null) throw new ArgumentNullException(nameof(releases));
+            if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
 
-            var genisisReleaseCount = releases.Apps.Count(x => x.IsGenisis && x.Target.Rid == snapApp.Target.Rid);
+            var snapReleasesThisRid = snapReleases.Apps.Where(x => x.Target.Rid == snapApp.Target.Rid).ToList();
+
+            var genisisReleaseCount = snapReleasesThisRid.Count(x => x.IsGenisis);
             if (genisisReleaseCount != 1)
             {
                 throw new Exception("Must contain exactly one (1) genisis release.");
             }
 
-            var fullReleases = releases.Apps.Where(x => !x.IsDelta).Select(x => x.FullFilename).ToList();
+            var fullReleases = snapReleasesThisRid.Where(x => !x.IsDelta).Select(x => x.FullFilename).ToList();
             if (fullReleases.Distinct().Count() != fullReleases.Count)
             {
                 throw new Exception($"Expected all full release filenames to be unique: {string.Join(",", fullReleases)}");
             }
             
-            var deltaReleases = releases.Apps.Where(x => x.IsDelta).Select(x => x.DeltaFilename).ToList();
+            var deltaReleases = snapReleasesThisRid.Where(x => x.IsDelta).Select(x => x.DeltaFilename).ToList();
             if (deltaReleases.Distinct().Count() != deltaReleases.Count)
             {
                 throw new Exception($"Expected all delta release filenames to be unique: {string.Join(",", deltaReleases)}");
             }
-
-            var snapRelease = releases.Apps.First();
+            
+            var snapRelease = snapReleasesThisRid.First();
 
             var packageBuilder = new PackageBuilder
             {
                 Id = snapApp.BuildNugetReleasesUpstreamPackageId(),
-                Version = releases.Version.ToNuGetVersion(),
+                Version = snapReleases.Version.ToNuGetVersion(),
                 Description = $"Snapx application database. This file contains release details for application: {snapApp.Id}. Channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}.",
                 Authors = {"Snapx"}
             };
 
-            foreach (var release in releases.Apps.Where(x => x.Target.Rid == snapApp.Target.Rid))
+            foreach (var release in snapReleasesThisRid)
             {
                 if (release.Id != snapRelease.Id)
                 {
                     throw new Exception($"Invalid id: {release.Id}. Expected: {snapRelease.Id}");
                 }
-
-                var expectedFullFilename = new SnapApp(snapApp) {Version = release.Version}.BuildNugetFullLocalFilename();
-                if (release.FullFilename != expectedFullFilename)
-                {
-                    throw new Exception($"Invalid full filename: {release.FullFilename}. Expected: {expectedFullFilename}");
-                }
-
-                var expectedDeltaFilename = new SnapApp(snapApp) {Version = release.Version }.BuildNugetDeltaLocalFilename();
-                if (release.DeltaFilename != expectedDeltaFilename)
-                {
-                    throw new Exception($"Invalid delta filename: {release.DeltaFilename}. Expected: {expectedDeltaFilename}");
-                }
-
+                
                 var expectedUpstreamId = new SnapApp(snapApp)
                 {
                     Version = release.Version, 
@@ -745,8 +735,37 @@ namespace Snap.Core
                     throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedUpstreamId}");
                 }
 
+                if (release.IsGenisis)
+                {
+                    if (release.DeltaFilename != null)
+                    {
+                        throw new Exception($"Genisis release should not specify a delta filename. Filename: {release.FullFilename}.");
+                    }
+                    
+                    if (release.DeltaChecksum != null)
+                    {
+                        throw new Exception($"Genisis release should not specify a delta checksum. Filename: {release.FullFilename}.");
+                    }
+                    
+                    if (release.DeltaFilesize != 0)
+                    {
+                        throw new Exception($"Genisis release should not specify a delta file size. Filename: {release.FullFilename}.");
+                    }
+                }
+
                 if (release.IsDelta)
                 {
+                    if (release.FullChecksum == release.DeltaChecksum)
+                    {
+                        throw new Exception($"Invalid checksum! Full checksum should not equal delta checksum. Filename: {release.DeltaFilename}.");
+                    }
+
+                    var expectedDeltaFilename = new SnapApp(snapApp) {Version = release.Version }.BuildNugetDeltaLocalFilename();
+                    if (release.DeltaFilename != expectedDeltaFilename)
+                    {
+                        throw new Exception($"Invalid delta filename: {release.DeltaFilename}. Expected: {expectedDeltaFilename}");
+                    }      
+                    
                     if (release.DeltaChecksum == null || release.DeltaChecksum.Length != 128)
                     {
                         throw new Exception($"Invalid checksum: {release.DeltaChecksum}. Filename: {release.DeltaFilename}");
@@ -760,6 +779,12 @@ namespace Snap.Core
                     continue;
                 }
                 
+                var expectedFullFilename = new SnapApp(snapApp) {Version = release.Version}.BuildNugetFullLocalFilename();
+                if (release.FullFilename != expectedFullFilename)
+                {
+                    throw new Exception($"Invalid full filename: {release.FullFilename}. Expected: {expectedFullFilename}");
+                }
+
                 if (release.FullChecksum == null || release.FullChecksum.Length != 128)
                 {
                     throw new Exception($"Invalid checksum: {release.FullChecksum}. Filename: {release.FullFilename}");
@@ -771,7 +796,7 @@ namespace Snap.Core
                 }
             }
 
-            var yamlString = _snapAppWriter.ToSnapReleasesYamlString(releases);
+            var yamlString = _snapAppWriter.ToSnapReleasesYamlString(snapReleases);
 
             using (var snapReleasesStream = new MemoryStream(Encoding.UTF8.GetBytes(yamlString)))
             {

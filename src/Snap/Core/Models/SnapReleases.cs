@@ -64,15 +64,29 @@ namespace Snap.Core.Models
             FullFilename = snapApp.BuildNugetFullLocalFilename(),
             FullFilesize = fullFilesize,
             FullChecksum = fullChecksum,
-            DeltaFilename = snapApp.BuildNugetDeltaLocalFilename(),
-            DeltaFilesize = deltaFileSize,
-            DeltaChecksum = deltaChecksum,
+            DeltaFilename = genisis ? null : snapApp.BuildNugetDeltaLocalFilename(),
+            DeltaFilesize = genisis ? 0 : deltaFileSize,
+            DeltaChecksum = genisis ? null : deltaChecksum,
             IsDelta = snapApp.Delta,
             IsGenisis = genisis
         })
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (channel == null) throw new ArgumentNullException(nameof(channel));
+            if (!genisis)
+            {
+                return;
+            }
+
+            if (deltaChecksum != null)
+            {
+                throw new ArgumentException("A genisis release should not specify a delta checksum", nameof(deltaChecksum));
+            }
+            
+            if (deltaFileSize != 0)
+            {
+                throw new ArgumentException("A genisis release should not specify a delta file size", nameof(deltaFileSize));
+            }
         }
 
         public bool Equals(SnapRelease other)

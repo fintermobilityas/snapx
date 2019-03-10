@@ -65,7 +65,7 @@ namespace Snap.Tests.Core
                 var nugetPackageSources = snapApp.BuildNugetSources(nugetPackageSourcesDir.WorkingDirectory);
                 var packagesDirectory = _snapOs.Filesystem.PathCombine(installDir.WorkingDirectory, "packages");
                 
-                var (fullRelease1MemoryStream, fullRelease1PackageDetails, fullRelease11Checksum) =
+                var (fullRelease1MemoryStream, fullRelease1PackageDetails, fullRelease1Checksum) =
                     await BuildFullNupkgAsync(snapApp, snapApp.Version);
                 
                 var fullRelease1AbsolutePath = _snapOs.Filesystem.PathCombine(rootDir.WorkingDirectory, 
@@ -96,7 +96,7 @@ namespace Snap.Tests.Core
                 var (_, releasesMemoryStream, _) = await BuildSnapReleasesNupkgAsync(snapApp, packagesDirectory,
                     new List<(SnapApp snapApp, string fullChecksum, long fullFilesize, string deltaChecksum, long deltaFilesize, bool genisis)>
                     {
-                        (fullRelease1PackageDetails.App, fullRelease11Checksum, 
+                        (fullRelease1PackageDetails.App, fullRelease1Checksum, 
                             fullRelease1MemoryStream.Length, null, 0, true),
                         
                         (fullRelease2PackageDetails.App, fullRelease2Checksum,

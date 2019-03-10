@@ -112,7 +112,6 @@ namespace snapx
             var pushPackages = new List<string>();
             string mostRecentReleaseNupkgAbsolutePath = null;
             SnapApp mostRecentSnapApp = null;
-            var genisisRelease = false;
 
             logger.Info("Downloading releases manifest");
 
@@ -131,7 +130,6 @@ namespace snapx
                 }
 
                 snapReleases = new SnapReleases();
-                genisisRelease = true;
             }
             else
             {
@@ -199,8 +197,6 @@ namespace snapx
                     {
                         return 1;
                     }
-
-                    genisisRelease = true;
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -234,7 +230,7 @@ namespace snapx
 
             if (mostRecentSnapApp == null)
             {
-                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, genisis: genisisRelease));
+                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, genisis: true));
                 pushPackages.Add(currentNupkgAbsolutePath);
                 goto buildInstallers;
             }
@@ -256,8 +252,6 @@ namespace snapx
                 await filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default);
             }
 
-            snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, 
-                currentNupkgFilesize, deltaNupkgChecksum, deltaNupkgFilesize));
             snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel, currentNupkgChecksum,
                 currentNupkgFilesize, deltaNupkgChecksum,deltaNupkgFilesize));
             pushPackages.Add(deltaNupkgAbsolutePath);

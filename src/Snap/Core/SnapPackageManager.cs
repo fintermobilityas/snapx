@@ -29,7 +29,7 @@ namespace Snap.Core
         Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
         void RaiseChecksumProgress(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum);
 
-        void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownloaded, long totalBytesDownloaded,
+        void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
 
         void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
@@ -49,8 +49,8 @@ namespace Snap.Core
             ChecksumProgress?.Invoke((progressPercentage, releasesOk, releasesChecksummed, releasesToChecksum));
         }
 
-        public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
-            long totalBytesToDownload)
+        public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, 
+            long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)
         {
             DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
         }
@@ -278,7 +278,7 @@ namespace Snap.Core
                             
                             Interlocked.Exchange(ref downloadProgressPercentage, totalBytesDownloadedPercentage);
 
-                            progressSource?.RaiseDownloadProgress((int) totalBytesDownloadedPercentage,
+                            progressSource?.RaiseDownloadProgress(totalBytesDownloadedPercentage,
                                 totalReleasesDownloadedVolatile, totalReleasesToDownload,
                                 totalBytesDownloadedSoFarVolatile, totalBytesToDownload);
 
@@ -479,7 +479,7 @@ namespace Snap.Core
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
-            var deltaNupkgFilenameAbsolutePath = _filesystem.PathCombine(packagesDirectory, currentRelease.DeltaFilename);
+            var deltaNupkgFilenameAbsolutePath = currentRelease.IsGenisis ? null : _filesystem.PathCombine(packagesDirectory, currentRelease.DeltaFilename);
             var fullNupkFilenameAbsolutePath = _filesystem.PathCombine(packagesDirectory, currentRelease.FullFilename);
 
             bool ChecksumImpl(string nupkgAbsoluteFilename, long fileSize, string expectedChecksum)

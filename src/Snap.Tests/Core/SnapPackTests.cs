@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -952,29 +953,28 @@ namespace Snap.Tests.Core
         [InlineData("linux-x64", "LINUX")]
         public async Task TestBuildReleasesPackage(string rid, string osPlatform)
         {
-            var snapApp1 = _baseFixture.BuildSnapApp();
-            snapApp1.Version = snapApp1.Version.BumpMajor();
-            snapApp1.Target.Rid = rid;
-            snapApp1.Target.Os = OSPlatform.Create(osPlatform);
+            var genisisApp = _baseFixture.BuildSnapApp();
+            genisisApp.Version = genisisApp.Version.BumpMajor();
+            genisisApp.Target.Rid = rid;
+            genisisApp.Target.Os = OSPlatform.Create(osPlatform);
             
-            var snapApp2 = new SnapApp(snapApp1)
+            var updatedApp = new SnapApp(genisisApp)
             {
-                Version = snapApp1.Version.BumpMajor()
+                Version = genisisApp.Version.BumpMajor()
             };
 
             var releases = new SnapReleases();
 
-            var snapApp1FullChecksum = string.Join("", Enumerable.Repeat("X", 128));
-            var snapApp1DeltaChecksum = string.Join("", Enumerable.Repeat("X", 128));
-            var snapApp2FullChecksum = string.Join("", Enumerable.Repeat("X", 128));
-            var snapApp2DeltaChecksum = string.Join("", Enumerable.Repeat("X", 128));
+            var genisisChecksum = string.Join("", Enumerable.Repeat("A", 128));
+            var updatedAppFullChecksum = string.Join("", Enumerable.Repeat("C", 128));
+            var updatedAppDeltaChecksum = string.Join("", Enumerable.Repeat("D", 128));
             
-            releases.Apps.Add(new SnapRelease(snapApp1, snapApp1.GetCurrentChannelOrThrow(), snapApp1FullChecksum, 10, snapApp1DeltaChecksum, 1, true));
-            releases.Apps.Add(new SnapRelease(snapApp2, snapApp2.GetCurrentChannelOrThrow(), snapApp2FullChecksum, 20, snapApp2DeltaChecksum, 2));
+            releases.Apps.Add(new SnapRelease(genisisApp, genisisApp.GetCurrentChannelOrThrow(), genisisChecksum, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(updatedApp, updatedApp.GetCurrentChannelOrThrow(), updatedAppFullChecksum, 2, updatedAppDeltaChecksum, 1));
 
-            var expectedPackageId = $"{snapApp1.Id}_snapx";
+            var expectedPackageId = $"{genisisApp.Id}_snapx";
             
-            using (var releasesStream = _snapPack.BuildReleasesPackage(snapApp1, releases))
+            using (var releasesStream = _snapPack.BuildReleasesPackage(genisisApp, releases))
             {
                 Assert.NotNull(releasesStream);
                 Assert.Equal(0, releasesStream.Position);
@@ -987,17 +987,50 @@ namespace Snap.Tests.Core
                     Assert.NotNull(snapReleases);
                     Assert.Equal(2, snapReleases.Apps.Count);
                     
-                    Assert.Equal(snapApp1.Version, snapReleases.Apps[0].Version);
-                    Assert.Equal(snapApp1FullChecksum, snapReleases.Apps[0].FullChecksum);
-                    Assert.Equal(snapApp1DeltaChecksum, snapReleases.Apps[0].DeltaChecksum);
-                    Assert.Equal(snapApp1.Target.Rid, snapReleases.Apps[0].Target.Rid);
-                    Assert.Equal(snapApp1.Target.Os, snapReleases.Apps[0].Target.Os);
+                    Assert.Equal(genisisApp.Version, snapReleases.Apps[0].Version);
+                    Assert.Equal(genisisChecksum, snapReleases.Apps[0].FullChecksum);
+                    Assert.Null(snapReleases.Apps[0].DeltaChecksum);
+                    Assert.Equal(genisisApp.Target.Rid, snapReleases.Apps[0].Target.Rid);
+                    Assert.Equal(genisisApp.Target.Os, snapReleases.Apps[0].Target.Os);
                     
-                    Assert.Equal(snapApp2.Version, snapReleases.Apps[1].Version);
-                    Assert.Equal(snapApp2.Target.Rid, snapReleases.Apps[1].Target.Rid);
-                    Assert.Equal(snapApp2.Target.Os, snapReleases.Apps[1].Target.Os);
-                    Assert.Equal(snapApp2FullChecksum, snapReleases.Apps[1].FullChecksum);
-                    Assert.Equal(snapApp2DeltaChecksum, snapReleases.Apps[1].DeltaChecksum);
+                    Assert.Equal(updatedApp.Version, snapReleases.Apps[1].Version);
+                    Assert.Equal(updatedApp.Target.Rid, snapReleases.Apps[1].Target.Rid);
+                    Assert.Equal(updatedApp.Target.Os, snapReleases.Apps[1].Target.Os);
+                    Assert.Equal(updatedAppFullChecksum, snapReleases.Apps[1].FullChecksum);
+                    Assert.Equal(updatedAppDeltaChecksum, snapReleases.Apps[1].DeltaChecksum);
+                }
+            }
+        }
+        
+        [Fact]
+        public async Task TestBuildReleasesPackage_Genisis()
+        {
+            var genisisApp = _baseFixture.BuildSnapApp();
+            var genisisAppFullChecksum = string.Join("", Enumerable.Repeat("X", 128));            
+            var releases = new SnapReleases();
+            
+            releases.Apps.Add(new SnapRelease(genisisApp, genisisApp.GetCurrentChannelOrThrow(), genisisAppFullChecksum, 1, genisis: true));
+
+            var expectedPackageId = $"{genisisApp.Id}_snapx";
+            
+            using (var releasesStream = _snapPack.BuildReleasesPackage(genisisApp, releases))
+            {
+                Assert.NotNull(releasesStream);
+                Assert.Equal(0, releasesStream.Position);
+
+                using (var packageArchiveReader = new PackageArchiveReader(releasesStream))
+                {
+                    Assert.Equal(expectedPackageId, packageArchiveReader.GetIdentity().Id);
+                    
+                    var snapReleases = await _snapExtractor.ExtractReleasesAsync(packageArchiveReader, _snapAppReader);
+                    Assert.NotNull(snapReleases);
+                    Assert.Single(snapReleases.Apps);
+                    
+                    Assert.Equal(genisisApp.Version, snapReleases.Apps[0].Version);
+                    Assert.Equal(genisisAppFullChecksum, snapReleases.Apps[0].FullChecksum);
+                    Assert.Null(snapReleases.Apps[0].DeltaChecksum);
+                    Assert.Equal(genisisApp.Target.Rid, snapReleases.Apps[0].Target.Rid);
+                    Assert.Equal(genisisApp.Target.Os, snapReleases.Apps[0].Target.Os);
                 }
             }
         }
@@ -1007,39 +1040,39 @@ namespace Snap.Tests.Core
         {
             const string snapAppId = "test";
         
-            var snapAppFullWindows = _baseFixture.BuildSnapApp(snapAppId);
-            snapAppFullWindows.Version = new SemanticVersion(1, 0, 0);
-            snapAppFullWindows.Target.Rid = "windows-x64";
-            snapAppFullWindows.Target.Os = OSPlatform.Create("WINDOWS");
+            var genisisAppWindows = _baseFixture.BuildSnapApp(snapAppId);
+            genisisAppWindows.Version = new SemanticVersion(1, 0, 0);
+            genisisAppWindows.Target.Rid = "windows-x64";
+            genisisAppWindows.Target.Os = OSPlatform.Create("WINDOWS");
 
-            var snapAppDeltaWindows = new SnapApp(snapAppFullWindows)
+            var deltaAppWindows = new SnapApp(genisisAppWindows)
             {
-                Version = snapAppFullWindows.Version.BumpMajor()
+                Version = genisisAppWindows.Version.BumpMajor()
             };
 
-            var snapAppFullLinux = _baseFixture.BuildSnapApp(snapAppId);
-            snapAppFullLinux.Version = new SemanticVersion(1, 0, 0);
-            snapAppFullLinux.Target.Rid = "linux-x64";
-            snapAppFullLinux.Target.Os = OSPlatform.Create("LINUX");
+            var genisisAppLinux = _baseFixture.BuildSnapApp(snapAppId);
+            genisisAppLinux.Version = new SemanticVersion(1, 0, 0);
+            genisisAppLinux.Target.Rid = "linux-x64";
+            genisisAppLinux.Target.Os = OSPlatform.Create("LINUX");
 
-            var snapAppDeltaLinux = new SnapApp(snapAppFullLinux)
+            var deltaAppLinux = new SnapApp(genisisAppLinux)
             {
-                Version = snapAppFullLinux.Version.BumpMajor()
+                Version = genisisAppLinux.Version.BumpMajor()
             };
             
             var releases = new SnapReleases();
 
-            var fullChecksumWindows = string.Join("", Enumerable.Repeat("X", 128));
-            var deltaChecksumWindows = string.Join("", Enumerable.Repeat("X", 128));
-            var fullChecksumLinux = string.Join("", Enumerable.Repeat("X", 128));
-            var deltaChecksumLinux = string.Join("", Enumerable.Repeat("X", 128));
+            var genisisChecksumWindows = string.Join("", Enumerable.Repeat("A", 128));
+            var deltaChecksumWindows = string.Join("", Enumerable.Repeat("B", 128));
+            var genisisChecksumLinux = string.Join("", Enumerable.Repeat("C", 128));
+            var deltaChecksumLinux = string.Join("", Enumerable.Repeat("D", 128));
             
-            releases.Apps.Add(new SnapRelease(snapAppFullWindows, snapAppFullWindows.GetCurrentChannelOrThrow(), fullChecksumWindows, 20, fullChecksumWindows, 2, true));
-            releases.Apps.Add(new SnapRelease(snapAppDeltaWindows, snapAppDeltaWindows.GetCurrentChannelOrThrow(), fullChecksumWindows, 20, deltaChecksumWindows, 2));
+            releases.Apps.Add(new SnapRelease(genisisAppWindows, genisisAppWindows.GetCurrentChannelOrThrow(), genisisChecksumWindows, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(deltaAppWindows, deltaAppWindows.GetCurrentChannelOrThrow(), genisisChecksumWindows, 2, deltaChecksumWindows, 3));
 
             var expectedPackageId = $"{snapAppId}_snapx";
             
-            using (var releasesStream = _snapPack.BuildReleasesPackage(snapAppFullWindows, releases))
+            using (var releasesStream = _snapPack.BuildReleasesPackage(genisisAppWindows, releases))
             {
                 Assert.NotNull(releasesStream);
                 Assert.Equal(0, releasesStream.Position);
@@ -1052,24 +1085,24 @@ namespace Snap.Tests.Core
                     Assert.NotNull(snapReleases);
                     Assert.Equal(2, snapReleases.Apps.Count);
                     
-                    Assert.Equal(snapAppFullWindows.Version, snapReleases.Apps[0].Version);
-                    Assert.Equal(fullChecksumWindows, snapReleases.Apps[0].FullChecksum);
-                    Assert.Equal(deltaChecksumWindows, snapReleases.Apps[0].DeltaChecksum);
-                    Assert.Equal(snapAppFullWindows.Target.Rid, snapReleases.Apps[0].Target.Rid);
-                    Assert.Equal(snapAppFullWindows.Target.Os, snapReleases.Apps[0].Target.Os);
+                    Assert.Equal(genisisAppWindows.Version, snapReleases.Apps[0].Version);
+                    Assert.Equal(genisisChecksumWindows, snapReleases.Apps[0].FullChecksum);
+                    Assert.Null(snapReleases.Apps[0].DeltaChecksum);
+                    Assert.Equal(genisisAppWindows.Target.Rid, snapReleases.Apps[0].Target.Rid);
+                    Assert.Equal(genisisAppWindows.Target.Os, snapReleases.Apps[0].Target.Os);
                     
-                    Assert.Equal(snapAppDeltaWindows.Version, snapReleases.Apps[1].Version);
-                    Assert.Equal(snapAppDeltaWindows.Target.Rid, snapReleases.Apps[1].Target.Rid);
-                    Assert.Equal(snapAppDeltaWindows.Target.Os, snapReleases.Apps[1].Target.Os);
-                    Assert.Equal(fullChecksumWindows, snapReleases.Apps[1].FullChecksum);
+                    Assert.Equal(deltaAppWindows.Version, snapReleases.Apps[1].Version);
+                    Assert.Equal(deltaAppWindows.Target.Rid, snapReleases.Apps[1].Target.Rid);
+                    Assert.Equal(deltaAppWindows.Target.Os, snapReleases.Apps[1].Target.Os);
+                    Assert.Equal(genisisChecksumWindows, snapReleases.Apps[1].FullChecksum);
                     Assert.Equal(deltaChecksumWindows, snapReleases.Apps[1].DeltaChecksum);
                 }
             }
             
-            releases.Apps.Add(new SnapRelease(snapAppFullLinux, snapAppFullLinux.GetCurrentChannelOrThrow(), fullChecksumLinux, 10, deltaChecksumLinux, 1, true));
-            releases.Apps.Add(new SnapRelease(snapAppDeltaLinux, snapAppDeltaLinux.GetCurrentChannelOrThrow(), fullChecksumLinux, 10, deltaChecksumLinux, 1));
+            releases.Apps.Add(new SnapRelease(genisisAppLinux, genisisAppLinux.GetCurrentChannelOrThrow(), genisisChecksumLinux, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(deltaAppLinux, deltaAppLinux.GetCurrentChannelOrThrow(), genisisChecksumLinux, 2, deltaChecksumLinux, 3));
 
-            using (var releasesStream = _snapPack.BuildReleasesPackage(snapAppFullLinux, releases))
+            using (var releasesStream = _snapPack.BuildReleasesPackage(genisisAppLinux, releases))
             {
                 Assert.NotNull(releasesStream);
                 Assert.Equal(0, releasesStream.Position);
@@ -1082,20 +1115,21 @@ namespace Snap.Tests.Core
                     Assert.NotNull(snapReleases);
                     Assert.Equal(4, snapReleases.Apps.Count);
                     
-                    Assert.Equal(snapAppFullLinux.Version, snapReleases.Apps[2].Version);
-                    Assert.Equal(fullChecksumLinux, snapReleases.Apps[2].FullChecksum);
-                    Assert.Equal(deltaChecksumLinux, snapReleases.Apps[2].DeltaChecksum);
-                    Assert.Equal(snapAppFullLinux.Target.Rid, snapReleases.Apps[2].Target.Rid);
-                    Assert.Equal(snapAppFullLinux.Target.Os, snapReleases.Apps[2].Target.Os);
+                    Assert.Equal(genisisAppLinux.Version, snapReleases.Apps[2].Version);
+                    Assert.Equal(genisisChecksumLinux, snapReleases.Apps[2].FullChecksum);
+                    Assert.Null(snapReleases.Apps[2].DeltaChecksum);
+                    Assert.Equal(genisisAppLinux.Target.Rid, snapReleases.Apps[2].Target.Rid);
+                    Assert.Equal(genisisAppLinux.Target.Os, snapReleases.Apps[2].Target.Os);
                     
-                    Assert.Equal(snapAppDeltaLinux.Version, snapReleases.Apps[3].Version);
-                    Assert.Equal(snapAppDeltaLinux.Target.Rid, snapReleases.Apps[3].Target.Rid);
-                    Assert.Equal(snapAppDeltaLinux.Target.Os, snapReleases.Apps[3].Target.Os);
-                    Assert.Equal(fullChecksumLinux, snapReleases.Apps[3].FullChecksum);
+                    Assert.Equal(deltaAppLinux.Version, snapReleases.Apps[3].Version);
+                    Assert.Equal(deltaAppLinux.Target.Rid, snapReleases.Apps[3].Target.Rid);
+                    Assert.Equal(deltaAppLinux.Target.Os, snapReleases.Apps[3].Target.Os);
+                    Assert.Equal(genisisChecksumLinux, snapReleases.Apps[3].FullChecksum);
                     Assert.Equal(deltaChecksumLinux, snapReleases.Apps[3].DeltaChecksum);
                 }
             }
         }
-
+        
+        
     }
 }

@@ -34,7 +34,9 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
         argv[i] = _strdup(arguments[i].c_str());
     }
 
-    LOGV << "Starting executable: " << executable_full_path << ". Arguments: " << this_exe::build_argv_str(argc, argv);
+    LOGV << "Starting executable: " << executable_full_path
+         << ". Arguments(" << std::to_string(argc) << "): "
+         << this_exe::build_argv_str(argc, argv);
 
     pal_pid_t process_pid;
     if (pal_process_daemonize(executable_full_path.c_str(), app_dir_str.c_str(), static_cast<int>(argc), argv, cmd_show, &process_pid))

@@ -39,7 +39,9 @@ inline void snapx_maybe_wait_for_debugger()
 
 inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_windows)
 {
-    LOGD << "Process started. Arguments: " << this_exe::build_argv_str(argc, argv);
+    LOGD << "Process started. "
+         << "Startup arguments(" << std::to_string(argc) << "): "
+        << this_exe::build_argv_str(argc, argv);
 
     if (pal_is_elevated())
     {
@@ -67,7 +69,9 @@ inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_win
             const auto pid_fragment = value.substr(wait_pid_pos + 1);
 
             const pal_pid_t wait_for_this_pid = std::stoul(pid_fragment);
+
             LOGD << "Waiting for process with id to exit: " << wait_for_this_pid;
+
             if (wait_for_this_pid <= 0)
             {
                 continue;
@@ -77,49 +81,51 @@ inline int corerun_main_impl(const int argc, char **argv, const int cmd_show_win
 
 #if PAL_PLATFORM_LINUX
             // We have to resolve stub executable working directory before fork
-            char* working_dir = nullptr;
-            if (!pal_path_get_directory_name_from_file_path(this_executable_full_path.c_str(), &working_dir))
+            auto working_dir = std::make_unique<char*>(nullptr);
+            if (!pal_path_get_directory_name_from_file_path(this_executable_full_path.c_str(), working_dir.get()))
             {
                 LOGE << "Failed to get directory name from path: " << this_executable_full_path;
                 exit(1);
             }
 
             // The reason why we have to fork is that we want to daemonize (background)
-            // this process because when the parent process exits this process will be killed.
+            // this process because when the parent process exits that process will be killed.
 
-            LOGD << "Forking";
+            LOGD << "Forking...";
 
-            auto child_pid = fork();
+            const auto child_pid = fork();
             if (child_pid == 0)
             {
-                LOGD << "Inside child, wait for process to exit";
+                LOGD << "Inside child, wait for process to exit: " << std::to_string(wait_for_this_pid);
 
                 // Child process has to wait for the executable that signaled the restart
                 main_wait_for_pid(wait_for_this_pid);
 
-                LOGD << "Process exited: " << wait_for_this_pid << ". Startup arguemnts: " << this_exe::build_argv_str(stubexecutable_arguments);
-
-                // Since we are now inside "app-X.0.0/myawesomeprogram" we have
-                // to change the working directory to the real stub executable working directory
-                if (0 != chdir(working_dir))
-                {
-                    LOGE << "Unable to change working dir: " << working_dir;
-                    exit(1);
-                }
+                LOGD << "Process exited: " << std::to_string(wait_for_this_pid) << ". "
+                     << "Startup arguments(" << std::to_string(stubexecutable_arguments.size()) << "): "
+                     << this_exe::build_argv_str(stubexecutable_arguments);
 
                 return snap::stubexecutable::run(stubexecutable_arguments, -1);
             }
             else
             {
-                // Do not exit until parent process has exited.
+                // Do not exit until process that requested restart has exited.
                 main_wait_for_pid(wait_for_this_pid);
+
+                LOGD << "Process exited: " << std::to_string(wait_for_this_pid) << ". "
+                     << "Exiting this process, child is now responsible for starting process that requested restart.";
+
+                exit(0);
             }
 #else
             main_wait_for_pid(wait_for_this_pid);
-#endif
-                        
-            LOGD << "Process exited: " << wait_for_this_pid << ". Startup arguments: " << this_exe::build_argv_str(stubexecutable_arguments);
+
+            LOGD << "Process exited: " << std::to_string(wait_for_this_pid) << ". "
+                 << "Startup arguments("<< std::to_string(stubexecutable_arguments.size()) << "): "
+                 << this_exe::build_argv_str(stubexecutable_arguments);
+
             break;
+#endif
         }
 
         ++argv_index;

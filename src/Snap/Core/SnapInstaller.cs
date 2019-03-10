@@ -387,7 +387,7 @@ namespace Snap.Core
                 return;
             }
 
-            allSnapAwareApps.RemoveAll(x => failedApplications.Contains(x));
+            allSnapAwareApps.RemoveAll(x => failedApplications.Any(f => f.Filename == x.Filename));
 
             allSnapAwareApps.ForEach(x => _snapOs.ProcessManager
                 .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)

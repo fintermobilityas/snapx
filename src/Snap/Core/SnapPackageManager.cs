@@ -66,8 +66,8 @@ namespace Snap.Core
         Task<(SnapReleases snapReleases, PackageSource packageSource)>
             GetSnapReleasesAsync([NotNull] SnapApp snapApp, CancellationToken cancellationToken, ILog logger = null);
 
-        Task<bool> RestoreAsync([NotNull] ILog logger, string packagesDirectory, [NotNull] SnapReleases snapReleases, [NotNull] SnapChannel snapChannel,
-            [NotNull] PackageSource updateFeed, ISnapPackageManagerProgressSource progressSource, CancellationToken cancellationToken);
+        Task<bool> RestoreAsync([NotNull] ILog logger, string packagesDirectory, [NotNull] SnapReleases snapReleases, SnapTarget snapAppTarget,
+            [NotNull] SnapChannel snapChannel, [NotNull] PackageSource packageSource, ISnapPackageManagerProgressSource progressSource, CancellationToken cancellationToken);
     }
 
     internal sealed class SnapPackageManager : ISnapPackageManager
@@ -141,16 +141,21 @@ namespace Snap.Core
         }
 
         public async Task<bool> RestoreAsync(ILog logger, [NotNull] string packagesDirectory,
-            SnapReleases snapReleases, SnapChannel snapChannel, PackageSource updateFeed, ISnapPackageManagerProgressSource progressSource,
+            SnapReleases snapReleases, [NotNull] SnapTarget snapAppTarget, SnapChannel snapChannel, PackageSource packageSource,
+            ISnapPackageManagerProgressSource progressSource,
             CancellationToken cancellationToken)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
+            if (snapAppTarget == null) throw new ArgumentNullException(nameof(snapAppTarget));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
-            if (updateFeed == null) throw new ArgumentNullException(nameof(updateFeed));
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
-            var releasesForChannel = snapReleases.Apps.Where(x => x.ChannelName == snapChannel.Name).ToList();
+            var releasesForChannel = snapReleases.Apps.Where(x => 
+                x.Target.Rid == snapAppTarget.Rid 
+                && x.ChannelName == snapChannel.Name).ToList();
+                    
             if (!releasesForChannel.Any())
             {
                 return false;
@@ -238,7 +243,7 @@ namespace Snap.Core
             logger.Info($"Downloading {releasesToDownload.Count} packages. " +
                         $"Total download size: {totalBytesToDownload.BytesAsHumanReadable()}.");
 
-            var degreeOfParallelism = Debugger.IsAttached ? 1 : 2;
+            var degreeOfParallelism = 2;
 
             var downloadedReleases = new List<SnapRelease>();
             long totalReleasesToDownload = releasesToDownload.Count;
@@ -292,7 +297,7 @@ namespace Snap.Core
                     };
 
                     var success = await DownloadAsync(snapReleases,
-                        genisisRelease, x, updateFeed,
+                        genisisRelease, x, packageSource,
                         packagesDirectory, thisProgressSource, logger, cancellationToken);
 
                     if (!success)
@@ -330,7 +335,7 @@ namespace Snap.Core
             foreach (var deltaRelease in deltaReleasesToReassemble)
             {
                 if (!await ReassembleFullReleaseAsync(snapReleases, releasesChecksumOk, previousFullRelease,
-                    deltaRelease, updateFeed, packagesDirectory, logger, cancellationToken))
+                    deltaRelease, packageSource, packagesDirectory, logger, cancellationToken))
                 {
                     return false;
                 }

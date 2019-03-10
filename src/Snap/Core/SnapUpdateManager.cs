@@ -237,7 +237,8 @@ namespace Snap.Core
                     progressSource?.RaiseRestoreProgress(tuple.progressPercentage, tuple.releasesRestored, tuple.releasesToRestore)
             };
 
-            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, snapReleases, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
+            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, 
+                snapReleases, _snapApp.Target, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
                 return null;

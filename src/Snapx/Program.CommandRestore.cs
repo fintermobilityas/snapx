@@ -119,7 +119,8 @@ namespace snapx
                         continue;
                     }
 
-                    await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, snapReleases, channel, packageSource, null, cancellationToken);
+                    await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, snapReleases,
+                         snapApp.Target, channel, packageSource, null, cancellationToken);
                 }
             }
 

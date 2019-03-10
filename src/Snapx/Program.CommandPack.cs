@@ -137,13 +137,17 @@ namespace snapx
                 logger.Info("Downloaded releases manifest");
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
-                if (!await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, snapReleases, snapAppChannel, pushFeed, null, cancellationToken))
+                if (!await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, 
+                    snapReleases, snapApp.Target, snapAppChannel, pushFeed, null, cancellationToken))
                 {
                     return 1;
                 }
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 
-                var snapAppMostRecentRelease = snapReleases.Apps.LastOrDefault(x => !x.IsDelta && x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);
+                var snapAppMostRecentRelease = snapReleases.Apps
+                    .LastOrDefault(x => !x.IsDelta 
+                        && x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);
+                        
                 if (snapAppMostRecentRelease != null)
                 {
                     if (snapAppMostRecentRelease.Version == snapApp.Version)

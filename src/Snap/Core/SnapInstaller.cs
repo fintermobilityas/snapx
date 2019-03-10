@@ -349,7 +349,7 @@ namespace Snap.Core
                 $"Invoking {allSnapAwareApps.Count} processes. " +
                          $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
-            var failedApplications = new List<ProcessStartInfoBuilder>();
+            var firstRunApplications = new List<ProcessStartInfoBuilder>();
 
             var invocationTasks = allSnapAwareApps.ForEachAsync(async x =>
             {
@@ -357,6 +357,7 @@ namespace Snap.Core
                 {
                     cts.CancelAfter(cancelInvokeProcessesAfterTs);
 
+                    var firstRun = isInitialInstall;
                     try
                     {
                         logger?.Debug(x.ToString());
@@ -366,16 +367,17 @@ namespace Snap.Core
                             .WithCancellation(cts.Token); // Two cancellation tokens is intentional because of unit tests mocks.
                         
                         logger?.Debug($"Processed exited: {exitCode}. Exe: {x.Filename}. Stdout: {stdout}.");
+
+                        firstRun = isInitialInstall && exitCode == 0;
                     } 
                     catch (Exception ex)
                     {
                         logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
-                        if (isInitialInstall && ex is OperationCanceledException)
-                        {
-                            failedApplications.Remove(x);
-                            logger.Warn($"First run will not be triggered for executable: {x.Filename}. " +
-                                        $"Reason: The process did not exit after specified timeout.");
-                        }
+                    }
+
+                    if (isInitialInstall && !firstRun)
+                    {
+                        logger.Warn($"First run will not be triggered for executable: {x.Filename}. Reason: Timeout or returned an exit code that is not 0.");
                     }
                 }
             }, 1 /* at a time */);
@@ -387,9 +389,7 @@ namespace Snap.Core
                 return;
             }
 
-            allSnapAwareApps.RemoveAll(x => failedApplications.Any(f => f.Filename == x.Filename));
-
-            allSnapAwareApps.ForEach(x => _snapOs.ProcessManager
+            firstRunApplications.ForEach(x => _snapOs.ProcessManager
                 .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)
                     .Add($"--snap-first-run {semanticVersion.ToNormalizedString()}")));
         }

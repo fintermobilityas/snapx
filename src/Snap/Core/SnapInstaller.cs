@@ -349,6 +349,8 @@ namespace Snap.Core
                 $"Invoking {allSnapAwareApps.Count} processes. " +
                          $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
+            var failedApplications = new List<ProcessStartInfoBuilder>();
+
             var invocationTasks = allSnapAwareApps.ForEachAsync(async x =>
             {
                 using (var cts = new CancellationTokenSource())
@@ -370,7 +372,7 @@ namespace Snap.Core
                         logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
                         if (isInitialInstall && ex is OperationCanceledException)
                         {
-                            allSnapAwareApps.Remove(x);
+                            failedApplications.Remove(x);
                             logger.Warn($"First run will not be triggered for executable: {x.Filename}. " +
                                         $"Reason: The process did not exit after specified timeout.");
                         }
@@ -384,6 +386,8 @@ namespace Snap.Core
             {
                 return;
             }
+
+            allSnapAwareApps.RemoveAll(x => failedApplications.Contains(x));
 
             allSnapAwareApps.ForEach(x => _snapOs.ProcessManager
                 .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)

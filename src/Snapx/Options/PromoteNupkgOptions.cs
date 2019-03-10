@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace snapx.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [Verb("promote", HelpText = "Promotes a nupkg to the next release channel")]
+    [Verb("promote", HelpText = "Promote a previous release. Typical flow: test -> staging -> production")]
     [UsedImplicitly]
     internal class PromoteNupkgOptions : BaseSubOptions
     {

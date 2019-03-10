@@ -695,6 +695,18 @@ namespace Snap.Core
                 throw new Exception("Must contain atleast one release.");
             }
 
+            var fullReleases = releases.Apps.Where(x => !x.IsDelta).Select(x => x.FullFilename).ToList();
+            if (fullReleases.Distinct().Count() != fullReleases.Count)
+            {
+                throw new Exception($"Expected all full release filenames to be unique: {string.Join(",", fullReleases)}");
+            }
+            
+            var deltaReleases = releases.Apps.Where(x => x.IsDelta).Select(x => x.DeltaFilename).ToList();
+            if (deltaReleases.Distinct().Count() != deltaReleases.Count)
+            {
+                throw new Exception($"Expected all delta release filenames to be unique: {string.Join(",", deltaReleases)}");
+            }
+
             var snapRelease = releases.Apps.First();
 
             var packageBuilder = new PackageBuilder

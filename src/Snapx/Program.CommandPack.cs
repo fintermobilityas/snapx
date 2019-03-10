@@ -89,7 +89,7 @@ namespace snapx
 
             var snapAppChannel = snapApp.Channels.First();
 
-            logger.Info($"Schema: {snapApps.Schema}");
+            logger.Info($"Schema version: {snapApps.Schema}");
             logger.Info($"Packages directory: {snapApps.Generic.Packages}");
             logger.Info($"Artifacts directory: {snapApps.Generic.Artifacts}");
             logger.Info($"Installers directory: {snapApps.Generic.Installers}");
@@ -111,16 +111,15 @@ namespace snapx
             var pushPackages = new List<string>();
             string mostRecentReleaseNupkgAbsolutePath = null;
             SnapApp mostRecentSnapApp = null;
-            SnapReleases snapReleases;
+            var genisisRelease = false;
 
-            logger.Info("Downloading releases nupkg");
+            logger.Info("Downloading releases manifest");
 
             var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(snapApps.Generic.Packages);
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
-            var snapReleasesDownloadResult = await nugetService
-                .DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamPackageId(), pushFeed, cancellationToken);
-            if (!snapReleasesDownloadResult.SuccessSafe())
+            var (snapReleases, _) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken);
+            if (snapReleases == null)
             {
                 if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
                                             "Is this the first time you are publishing this application? " +
@@ -131,23 +130,11 @@ namespace snapx
                 }
 
                 snapReleases = new SnapReleases();
+                genisisRelease = true;
             }
             else
             {
-                logger.Info("Unpacking releases nupkg.");
-
-                using (snapReleasesDownloadResult)
-                using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream))
-                {
-                    snapReleases = await snapExtractor.ExtractReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
-                    if (snapReleases == null)
-                    {
-                        logger.Error("Unknown error unpacking releases nupkg.");
-                        return 1;
-                    }
-                }
-
-                logger.Info("Successfully unpacked releases nupkg.");
+                logger.Info("Downloaded releases manifest");
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 if (!await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, snapReleases, snapAppChannel, pushFeed, null, cancellationToken))
@@ -235,15 +222,10 @@ namespace snapx
                 await filesystem.FileWriteAsync(currentNupkgStream, currentNupkgAbsolutePath, default);
             }
 
-            // Only upload the genisis full nupkg. 
             if (mostRecentSnapApp == null)
             {
+                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, genisis: genisisRelease));
                 pushPackages.Add(currentNupkgAbsolutePath);
-            }
-
-            if (mostRecentSnapApp == null)
-            {
-                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize));
                 goto buildInstallers;
             }
 
@@ -264,9 +246,10 @@ namespace snapx
                 await filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default);
             }
 
-            snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, deltaNupkgChecksum, deltaNupkgFilesize));
-            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, deltaNupkgChecksum,
-                deltaNupkgFilesize));
+            snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, 
+                currentNupkgFilesize, deltaNupkgChecksum, deltaNupkgFilesize));
+            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel, currentNupkgChecksum,
+                currentNupkgFilesize, deltaNupkgChecksum,deltaNupkgFilesize));
             pushPackages.Add(deltaNupkgAbsolutePath);
 
             buildInstallers:
@@ -302,7 +285,7 @@ namespace snapx
             logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
-            logger.Info("Building releases package");
+            logger.Info("Building releases manifest");
 
             using (var releasesMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapReleases))
             {
@@ -312,7 +295,7 @@ namespace snapx
                 pushPackages.Add(releasesNupkgAbsolutePath);
             }
 
-            logger.Info("Finished building releases package");
+            logger.Info("Finished building releases manifest");
             
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {

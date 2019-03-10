@@ -148,8 +148,8 @@ namespace snapx
                         var fullNupkgPackageId = snapAppTmp.BuildFullNugetUpstreamPackageId();
                         var deltaNupkgPackageId = snapAppTmp.BuildDeltaNugetUpstreamPackageId();
 
-                        var fullRelease = releases.Apps.FirstOrDefault(x => x.UpstreamId == fullNupkgPackageId);                        
-                        var deltaRelease = releases.Apps.LastOrDefault(x => x.UpstreamId == deltaNupkgPackageId);
+                        var fullRelease = releases.Apps.FirstOrDefault(x => x.ChannelName == channelName && x.UpstreamId == fullNupkgPackageId);                        
+                        var deltaRelease = releases.Apps.LastOrDefault(x => x.ChannelName == channelName && x.UpstreamId == deltaNupkgPackageId);
 
                         var rowValue = fullRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)
@@ -159,7 +159,7 @@ namespace snapx
 
                         if (fullRelease != null)
                         {
-                            rowValue += $"Full: {fullRelease.Version}";
+                            rowValue += $"Full: {fullRelease.Version} ({fullRelease.FullFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {
@@ -168,7 +168,7 @@ namespace snapx
 
                         if (deltaRelease != null)
                         {
-                            rowValue += $" / Delta: {deltaRelease.Version}";
+                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {

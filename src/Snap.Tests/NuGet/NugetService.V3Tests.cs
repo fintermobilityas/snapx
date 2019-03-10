@@ -117,13 +117,18 @@ namespace Snap.Tests.NuGet
         {
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
             var percentages = new List<int>();
-            var progressSourceMock = new Mock<ISnapProgressSource>();
-            progressSourceMock.Setup(x => x.Raise(It.IsAny<int>())).Callback((int percentage) =>
+            var progressSourceMock = new Mock<INugetServiceProgressSource>();
+            progressSourceMock.Setup(x => x.Raise(
+                It.IsAny<int>(), 
+                It.IsAny<long>(), 
+                It.IsAny<long>(), 
+                It.IsAny<long>()))
+                .Callback((int percentage, long bytesRead, long totalBytesSoFar, long totalBytesDownloaded) =>
             {
                 percentages.Add(percentage);
             });
 
-            var downloadContext = new DirectDownloadContext
+            var downloadContext = new DownloadContext
             {
                 PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
                 PackageFileSize = 64196,
@@ -137,8 +142,17 @@ namespace Snap.Tests.NuGet
                 Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
                 Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(
+                    It.Is<int>(v => v == 0), 
+                    It.Is<long>(v => v == 0), 
+                    It.Is<long>(v => v == 0), 
+                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
+                
+                progressSourceMock.Verify(x => x.Raise(
+                    It.Is<int>(v => v == 100), 
+                    It.IsAny<long>(), 
+                    It.Is<long>(v => v == downloadContext.PackageFileSize), 
+                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
                 
                 Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
                 Assert.True(percentages.Distinct().Count() == percentages.Count, "Reported progress percentage values must be unique.");
@@ -151,13 +165,18 @@ namespace Snap.Tests.NuGet
         {
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
             var percentages = new List<int>();
-            var progressSourceMock = new Mock<ISnapProgressSource>();
-            progressSourceMock.Setup(x => x.Raise(It.IsAny<int>())).Callback((int percentage) =>
-            {
-                percentages.Add(percentage);
-            });
+            var progressSourceMock = new Mock<INugetServiceProgressSource>();
+            progressSourceMock.Setup(x => x.Raise(
+                    It.IsAny<int>(), 
+                    It.IsAny<long>(), 
+                    It.IsAny<long>(), 
+                    It.IsAny<long>()))
+                .Callback((int percentage, long bytesRead, long totalBytesSoFar, long totalBytesDownloaded) =>
+                {
+                    percentages.Add(percentage);
+                });
 
-            var downloadContext = new DirectDownloadContext
+            var downloadContext = new DownloadContext
             {
                 PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
                 PackageFileSize = 0,
@@ -167,13 +186,29 @@ namespace Snap.Tests.NuGet
             using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
                 progressSourceMock.Object, CancellationToken.None))
             {
+                const long expectedPackageSize = 64196;
+                
                 Assert.NotNull(downloadResourceResult);
-                Assert.Equal(64196, downloadResourceResult.PackageStream.Length);
+                Assert.Equal(expectedPackageSize, downloadResourceResult.PackageStream.Length);
                 Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 0)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 50)), Times.Once);
-                progressSourceMock.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+                progressSourceMock.Verify(x => x.Raise(
+                    It.Is<int>(v => v == 0),
+                    It.Is<long>(v => v == 0), 
+                    It.Is<long>(v => v == 0), 
+                    It.Is<long>(v => v == 0)), Times.Once);
+                
+                progressSourceMock.Verify(x => x.Raise(
+                    It.Is<int>(v => v == 50),
+                    It.IsAny<long>(), 
+                    It.IsAny<long>(), 
+                    It.Is<long>(v => v == 0)), Times.Once);
+                
+                progressSourceMock.Verify(x => x.Raise(
+                    It.Is<int>(v => v == 100), 
+                    It.IsAny<long>(), 
+                    It.Is<long>(v => v == expectedPackageSize), 
+                    It.Is<long>(v => v == 0)), Times.Once);
                 
                 Assert.Equal(3, percentages.Count);
                 Assert.Equal(0, percentages[0]);

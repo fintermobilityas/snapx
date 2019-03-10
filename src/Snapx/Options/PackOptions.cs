@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace snapx.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [Verb("pack", HelpText = "Create a new release for a given app")]
+    [Verb("pack", HelpText = "Publish a new release")]
     [UsedImplicitly]
     internal class PackOptions : BaseSubOptions
     {

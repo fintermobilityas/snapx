@@ -12,7 +12,7 @@ namespace Snap.Core.Models
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    public class SnapRelease
+    public class SnapRelease : IEquatable<SnapRelease>
     {
         public string Id { get; set; }
         public string UpstreamId { get; set; }
@@ -26,6 +26,7 @@ namespace Snap.Core.Models
         public long DeltaFilesize { get; set; }
         public string DeltaChecksum { get; set; }
         public bool IsDelta { get; set; }
+        public bool IsGenisis { get; set; }
 
         [UsedImplicitly]
         public SnapRelease()
@@ -48,11 +49,12 @@ namespace Snap.Core.Models
             DeltaFilesize = release.DeltaFilesize;
             DeltaChecksum = release.DeltaChecksum;
             IsDelta = release.IsDelta;
+            IsGenisis = release.IsGenisis;
         }
         
         public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel, 
             string fullChecksum = null, long fullFilesize = 0, 
-            string deltaChecksum = null, long deltaFileSize = 0) : this(new SnapRelease
+            string deltaChecksum = null, long deltaFileSize = 0, bool genisis = false) : this(new SnapRelease
         {
             Id = snapApp.Id,
             Version = snapApp.Version,
@@ -65,11 +67,32 @@ namespace Snap.Core.Models
             DeltaFilename = snapApp.BuildNugetDeltaLocalFilename(),
             DeltaFilesize = deltaFileSize,
             DeltaChecksum = deltaChecksum,
-            IsDelta = snapApp.Delta
+            IsDelta = snapApp.Delta,
+            IsGenisis = genisis
         })
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (channel == null) throw new ArgumentNullException(nameof(channel));
+        }
+
+        public bool Equals(SnapRelease other)
+        {
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return string.Equals(UpstreamId, other.UpstreamId);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != GetType()) return false;
+            return Equals((SnapRelease) obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return (UpstreamId != null ? UpstreamId.GetHashCode() : 0);
         }
     }
     

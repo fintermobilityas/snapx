@@ -24,22 +24,39 @@ namespace Snap.NuGet
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    internal sealed class DirectDownloadContext
+    internal sealed class DownloadContext
     {
         public PackageIdentity PackageIdentity { get; set; }
         public long PackageFileSize { get; set; }
         public int MaxRetries { get; set; }
         
-        public DirectDownloadContext()
+        public DownloadContext()
         {
             
         }
 
-        public DirectDownloadContext([NotNull] SnapRelease snapRelease)
+        public DownloadContext([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             PackageIdentity = snapRelease.BuildPackageIdentity();
             PackageFileSize = snapRelease.IsDelta ? snapRelease.DeltaFilesize : snapRelease.FullFilesize;
+        }
+    }
+    
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    internal interface INugetServiceProgressSource
+    {
+        Action<(int progressPercentage, long bytesRead, long totalBytesDownloaded, long totalBytesToDownload)> Progress { get; set; }
+        void Raise(int progressPercentage, long bytesRead, long totalBytesDownloaded, long totalBytesToDownload);
+    }
+
+    internal sealed class NugetServiceProgressSource : INugetServiceProgressSource
+    {
+        public Action<(int progressPercentage, long bytesRead, long totalBytesDownloaded, long totalBytesToDownload)> Progress { get; set; }
+
+        public void Raise(int progressPercentage, long bytesRead, long totalBytesDownloaded, long totalBytesToDownload)
+        {
+            Progress?.Invoke((progressPercentage, bytesRead, totalBytesDownloaded, totalBytesToDownload));
         }
     }
         
@@ -68,8 +85,8 @@ namespace Snap.NuGet
 
         Task<DownloadResourceResult> DownloadAsync([NotNull] PackageSource packageSource, PackageIdentity packageIdentity, CancellationToken cancellationToken);
         
-        Task<DownloadResourceResult> DownloadAsyncWithProgressAsync([NotNull] PackageSource packageSource, [NotNull] DirectDownloadContext directDownloadContext,
-            ISnapProgressSource snapProgressSource, CancellationToken cancellationToken);
+        Task<DownloadResourceResult> DownloadAsyncWithProgressAsync([NotNull] PackageSource packageSource, [NotNull] DownloadContext downloadContext,
+            INugetServiceProgressSource progressSource, CancellationToken cancellationToken);
     }
 
     internal class NugetService : INugetService
@@ -185,22 +202,22 @@ namespace Snap.NuGet
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
             if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
             
-            var downloadContext = new DirectDownloadContext
+            var downloadContext = new DownloadContext
             {
                 MaxRetries = 3,
                 PackageIdentity = packageIdentity,
                 PackageFileSize = 0
             };
                         
-            var progressSource = new SnapProgressSource();
+            var progressSource = new NugetServiceProgressSource();
             return DownloadAsyncWithProgressAsync(packageSource, downloadContext, progressSource, cancellationToken);
         }
 
-        public async Task<DownloadResourceResult> DownloadAsyncWithProgressAsync(PackageSource packageSource, DirectDownloadContext directDownloadContext,
-            ISnapProgressSource snapProgressSource, CancellationToken cancellationToken)
+        public async Task<DownloadResourceResult> DownloadAsyncWithProgressAsync(PackageSource packageSource, DownloadContext downloadContext,
+            INugetServiceProgressSource progressSource, CancellationToken cancellationToken)
         {
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
-            if (directDownloadContext == null) throw new ArgumentNullException(nameof(directDownloadContext));
+            if (downloadContext == null) throw new ArgumentNullException(nameof(downloadContext));
             
             using (var cacheContext = new SourceCacheContext())
             {
@@ -235,7 +252,7 @@ namespace Snap.NuGet
                     {
                         case DownloadResourceV3 downloadResourceV3:
                             httpSource = downloadResourceV3.BuildHttpSource();
-                            downloadUrl = await downloadResourceV3.BuildDownloadUrlV3Async(directDownloadContext.PackageIdentity, _nugetLogger, cancellationToken);
+                            downloadUrl = await downloadResourceV3.BuildDownloadUrlV3Async(downloadContext.PackageIdentity, _nugetLogger, cancellationToken);
                             break;
                         case DownloadResourceV2Feed downloadResourceV2Feed:
                             var v2FeedParser = downloadResourceV2Feed.BuildV2FeedParser();
@@ -244,7 +261,7 @@ namespace Snap.NuGet
                                 throw new Exception($"Unable to build {nameof(v2FeedParser)}");
                             }
                             
-                            var metadata = await v2FeedParser.GetPackage(directDownloadContext.PackageIdentity, cacheContext, _nugetLogger, cancellationToken);
+                            var metadata = await v2FeedParser.GetPackage(downloadContext.PackageIdentity, cacheContext, _nugetLogger, cancellationToken);
                             Uri.TryCreate(metadata?.DownloadUrl, UriKind.Absolute, out downloadUrl);
                             httpSource = v2FeedParser.BuildHttpSource();
                             break;
@@ -265,7 +282,7 @@ namespace Snap.NuGet
                     var request = new HttpSourceRequest(downloadUrl, _nugetLogger)
                     {
                         IgnoreNotFounds = true,
-                        MaxTries = Math.Max(1, directDownloadContext.MaxRetries)
+                        MaxTries = Math.Max(1, downloadContext.MaxRetries)
                     };
                     
                     async Task<DownloadResourceResult> ProcessAsync(Stream packageStream)
@@ -275,34 +292,31 @@ namespace Snap.NuGet
                         var inputStream = new MemoryStream();
                         var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
                        
-                        var previouslyReportedProgressPercentage = 0;
-                        snapProgressSource?.Raise(previouslyReportedProgressPercentage);
+                        var totalBytesToDownload = downloadContext.PackageFileSize;
+                        progressSource?.Raise(0, 0, 0, totalBytesToDownload);
 
                         var totalBytesDownloadedSoFar = 0L;
+                        var bytesRead = 0;
                         while (!cancellationToken.IsCancellationRequested)
                         {
-                            var bytesRead = await packageStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                            bytesRead = await packageStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
                             totalBytesDownloadedSoFar += bytesRead;
                             if (bytesRead == 0)
                             {
                                 break;
                             }
 
-                            var thisProgressPercentage = directDownloadContext.PackageFileSize <= 0 ? 50 : 
-                                (int) Math.Floor((double) totalBytesDownloadedSoFar / directDownloadContext.PackageFileSize * 100d);
+                            var thisProgressPercentage = downloadContext.PackageFileSize <= 0 ? 50 : 
+                                (int) Math.Floor((double) totalBytesDownloadedSoFar / downloadContext.PackageFileSize * 100d);
                                                         
-                            if (previouslyReportedProgressPercentage != thisProgressPercentage)
-                            {
-                                snapProgressSource?.Raise(thisProgressPercentage);
-                                previouslyReportedProgressPercentage = thisProgressPercentage;
-                            }
+                            progressSource?.Raise(thisProgressPercentage, bytesRead, totalBytesDownloadedSoFar, totalBytesToDownload);
                             
                             await inputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
                         }
 
-                        if (directDownloadContext.PackageFileSize <= 0)
+                        if (downloadContext.PackageFileSize <= 0)
                         {
-                            snapProgressSource?.Raise(100);
+                            progressSource?.Raise(100, bytesRead, totalBytesDownloadedSoFar, totalBytesToDownload);
                         }
                         
                         ArrayPool<byte>.Shared.Return(buffer);

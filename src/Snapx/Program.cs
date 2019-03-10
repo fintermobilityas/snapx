@@ -29,6 +29,7 @@ namespace snapx
         static readonly ILog SnapLogger = LogProvider.GetLogger("Snapx");
         static readonly ILog SnapPackLogger = LogProvider.GetLogger("Snapx.Pack");
         static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
+        static readonly ILog SnapRestoreLogger = LogProvider.GetLogger("Snapx.Restore");
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
 
         const int TerminalDashesWidth = 80;
@@ -123,6 +124,7 @@ namespace snapx
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
+            var nugetServiceCommandRestore = new NugetService(snapOs.Filesystem, new NugetLogger(SnapRestoreLogger));
             var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
             var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, nugetServiceCommandPack, 
@@ -131,7 +133,7 @@ namespace snapx
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, 
-                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceNoopLogger,
+                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger,
                 toolWorkingDirectory, workingDirectory, cancellationToken);
         }
 
@@ -141,7 +143,7 @@ namespace snapx
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageManager snapPackageManager,
-            [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote,
+            [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, INugetService nugetServiceCommandRestore,
             [NotNull] INugetService nugetServiceNoopLogger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
@@ -167,7 +169,7 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions>(args)
+                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions>(args)
                 .MapResult(
                     (PromoteNupkgOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
@@ -179,6 +181,8 @@ namespace snapx
                     (InstallOptions opts) => Snap.Installer.Program.Main(args),
                     (ListOptions opts) => CommandListAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                        (RestoreOptions opts) => CommandRestoreAsync(opts, snapFilesystem, snapAppReader,nuGetPackageSources,
+                            nugetServiceCommandRestore, snapExtractor, snapPackageManager, SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     errs =>
                     {
                         snapOs.EnsureConsole();

@@ -17,11 +17,60 @@ namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    public interface ISnapUpdateManagerProgressSource
+    {
+        Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
+        Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress { get; set; }
+        Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        Action<int> TotalProgress { get; set; }
+
+        void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long totalPackagesToChecksum);
+        void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
+            long totalBytesToDownload);
+        void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
+        void RaiseTotalProgress(int percentage);        
+    }
+    
+    public sealed class SnapUpdateManagerProgressSource : ISnapUpdateManagerProgressSource
+    {
+        public Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
+        public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress
+        {
+            get;
+            set;
+        }
+        public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        public Action<int> TotalProgress { get; set; }
+        
+        public void RaiseChecksumProgress(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)
+        {
+            ChecksumProgress?.Invoke((progressPercentage, releasesOk, releasesChecksummed, releasesToChecksum));
+        }
+
+        public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)
+        {
+            DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
+        }
+
+        public void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToStore)
+        {
+            RestoreProgress?.Invoke((progressPercentage, releasesRestored, releasesToStore));
+        }
+
+        public void RaiseTotalProgress(int percentage)
+        {
+            TotalProgress?.Invoke(percentage);
+        }
+
+    }
+    
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         
-        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = default, 
+        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
             CancellationToken cancellationToken = default);
         
         Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null, 
@@ -97,7 +146,7 @@ namespace Snap.Core
             return snapReleases;
         }
 
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -154,7 +203,7 @@ namespace Snap.Core
             return coreRunFullPath;
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapProgressSource snapProgressSource = null, CancellationToken cancellationToken  = default)
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, CancellationToken cancellationToken  = default)
         {                        
             var (snapReleases, packageSource) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
             if (snapReleases == null)
@@ -174,42 +223,54 @@ namespace Snap.Core
                 return null;
             }
             
-            snapProgressSource?.Raise(0);            
+            progressSource?.RaiseTotalProgress(0);
 
-            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, snapReleases, channel, packageSource, null, cancellationToken))
+            var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
+            {
+                ChecksumProgress = tuple =>
+                    progressSource?.RaiseChecksumProgress(tuple.progressPercentage, tuple.releasesOk, tuple.releasesChecksummed, tuple.releasesToChecksum),
+                DownloadProgress = tuple =>
+                    progressSource?.RaiseDownloadProgress(tuple.progressPercentage, tuple.releasesDownloaded, tuple.releasesToDownload,
+                        tuple.totalBytesDownloaded,
+                        tuple.totalBytesToDownload),
+                RestoreProgress = tuple =>
+                    progressSource?.RaiseRestoreProgress(tuple.progressPercentage, tuple.releasesRestored, tuple.releasesToRestore)
+            };
+
+            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, snapReleases, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
                 return null;
             }
 
-            snapProgressSource?.Raise(50);
+            progressSource?.RaiseTotalProgress(50);
 
-            var releaseToInstall = snapReleases.Apps.Last();
-            var nextFullNupkg = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
-            if (!_snapOs.Filesystem.FileExists(nextFullNupkg))
+            var releaseToInstall = snapReleases.Apps.Last(x => !x.IsDelta);
+            var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
+            if (!_snapOs.Filesystem.FileExists(nupkgToInstall))
             {
-                _logger?.Error($"Unable to find full nupkg: {nextFullNupkg}.");
+                _logger?.Error($"Unable to find full nupkg: {nupkgToInstall}.");
                 return null;
             }
             
-            snapProgressSource?.Raise(60);
+            progressSource?.RaiseTotalProgress(60);
 
             SnapApp updatedSnapApp;
             try
             {
-                updatedSnapApp = await _snapInstaller.UpdateAsync(nextFullNupkg, _rootDirectory, logger: _logger, cancellationToken: cancellationToken);
+                updatedSnapApp = await _snapInstaller.UpdateAsync(nupkgToInstall, _rootDirectory, logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {
-                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nextFullNupkg}");
+                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstall}");
                 }
             }
             catch (Exception e)
             {
-                _logger?.ErrorException($"Unknown error updating application. Filename: {nextFullNupkg}.", e);
+                _logger?.ErrorException($"Unknown error updating application. Filename: {nupkgToInstall}.", e);
                 return null;
             }
                        
-            snapProgressSource?.Raise(100);
+            progressSource?.RaiseTotalProgress(100);
 
             return updatedSnapApp;
         }

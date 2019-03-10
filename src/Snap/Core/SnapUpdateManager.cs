@@ -86,7 +86,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public sealed class SnapUpdateManager : ISnapUpdateManager
     {
-        readonly string _rootDirectory;
+        readonly string _workingDirectory;
         readonly string _packagesDirectory;
         readonly SnapApp _snapApp;
         readonly INugetService _nugetService;
@@ -122,10 +122,10 @@ namespace Snap.Core
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
-            _logger = logger ?? LogProvider.For<SnapUpdateManager>();
+            _logger = logger ?? LogProvider.For<ISnapUpdateManager>();
             _snapOs = snapOs ?? SnapOs.AnyOs;
-            _rootDirectory = workingDirectory;
-            _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
+            _workingDirectory = workingDirectory;
+            _packagesDirectory = _snapOs.Filesystem.PathCombine(_workingDirectory, "packages");
             _snapApp = snapApp;
 
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
@@ -141,6 +141,10 @@ namespace Snap.Core
                                       _snapExtractor, _snapAppReader, _snapPack);
 
             _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
+            
+            _logger.Debug($"Root directory: {_workingDirectory}");
+            _logger.Debug($"Packages directory: {_packagesDirectory}");
+            _logger.Debug($"Current version: {_snapApp?.Version}");
         }
 
         /// <summary>
@@ -169,7 +173,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                _logger?.Error("Exception thrown when attempting to update to latest release", e);
+                _logger.Error("Exception thrown when attempting to update to latest release", e);
                 return null;
             }
         }
@@ -251,23 +255,27 @@ namespace Snap.Core
 
             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
             {
-                ChecksumProgress = tuple =>
+                ChecksumProgress = x =>
                     progressSource?.RaiseChecksumProgress(
-                        tuple.progressPercentage,
-                        tuple.releasesOk,
-                        tuple.releasesChecksummed,
-                        tuple.releasesToChecksum
+                        x.progressPercentage,
+                        x.releasesOk,
+                        x.releasesChecksummed,
+                        x.releasesToChecksum
                     ),
-                DownloadProgress = tuple =>
+                DownloadProgress = x =>
                     progressSource?.RaiseDownloadProgress(
-                        tuple.progressPercentage,
-                        tuple.releasesDownloaded,
-                        tuple.releasesToDownload,
-                        tuple.totalBytesDownloaded,
-                        tuple.totalBytesToDownload
+                        x.progressPercentage,
+                        x.releasesDownloaded,
+                        x.releasesToDownload,
+                        x.totalBytesDownloaded,
+                        x.totalBytesToDownload
                     ),
-                RestoreProgress = tuple =>
-                    progressSource?.RaiseRestoreProgress(tuple.progressPercentage, tuple.releasesRestored, tuple.releasesToRestore)
+                RestoreProgress = x =>
+                    progressSource?.RaiseRestoreProgress(
+                        x.progressPercentage, 
+                        x.releasesRestored, 
+                        x.releasesToRestore
+                )
             };
 
             if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory,
@@ -283,7 +291,7 @@ namespace Snap.Core
             var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstall))
             {
-                _logger?.Error($"Unable to find full nupkg: {nupkgToInstall}.");
+                _logger.Error($"Unable to find full nupkg: {nupkgToInstall}.");
                 return null;
             }
 
@@ -292,7 +300,7 @@ namespace Snap.Core
             SnapApp updatedSnapApp;
             try
             {
-                updatedSnapApp = await _snapInstaller.UpdateAsync(nupkgToInstall, _rootDirectory, logger: _logger, cancellationToken: cancellationToken);
+                updatedSnapApp = await _snapInstaller.UpdateAsync(nupkgToInstall, _workingDirectory, logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstall}");
@@ -300,7 +308,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                _logger?.ErrorException($"Unknown error updating application. Filename: {nupkgToInstall}.", e);
+                _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstall}.", e);
                 return null;
             }
 

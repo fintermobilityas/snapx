@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -19,12 +19,12 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManagerProgressSource
     {
-        Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
+        Action<(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
         Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress { get; set; }
         Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
         Action<int> TotalProgress { get; set; }
 
-        void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long totalPackagesToChecksum);
+        void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum);
         void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
         void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
@@ -33,7 +33,7 @@ namespace Snap.Core
     
     public sealed class SnapUpdateManagerProgressSource : ISnapUpdateManagerProgressSource
     {
-        public Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
+        public Action<(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
         public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress
         {
             get;
@@ -42,9 +42,9 @@ namespace Snap.Core
         public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
         public Action<int> TotalProgress { get; set; }
         
-        public void RaiseChecksumProgress(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)
+        public void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)
         {
-            ChecksumProgress?.Invoke((progressPercentage, releasesOk, releasesChecksummed, releasesToChecksum));
+            ChecksumProgress?.Invoke((progressPercentage, releasesWithChecksumOk, releasesChecksummed, releasesToChecksum));
         }
 
         public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)
@@ -228,11 +228,20 @@ namespace Snap.Core
             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
             {
                 ChecksumProgress = tuple =>
-                    progressSource?.RaiseChecksumProgress(tuple.progressPercentage, tuple.releasesOk, tuple.releasesChecksummed, tuple.releasesToChecksum),
+                    progressSource?.RaiseChecksumProgress(
+                    tuple.progressPercentage, 
+                    tuple.releasesOk, 
+                    tuple.releasesChecksummed, 
+                    tuple.releasesToChecksum
+                ),
                 DownloadProgress = tuple =>
-                    progressSource?.RaiseDownloadProgress(tuple.progressPercentage, tuple.releasesDownloaded, tuple.releasesToDownload,
-                        tuple.totalBytesDownloaded,
-                        tuple.totalBytesToDownload),
+                    progressSource?.RaiseDownloadProgress(
+                    tuple.progressPercentage, 
+                    tuple.releasesDownloaded, 
+                    tuple.releasesToDownload,
+                    tuple.totalBytesDownloaded,
+                    tuple.totalBytesToDownload
+                ),
                 RestoreProgress = tuple =>
                     progressSource?.RaiseRestoreProgress(tuple.progressPercentage, tuple.releasesRestored, tuple.releasesToRestore)
             };

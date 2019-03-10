@@ -126,6 +126,7 @@ namespace Snap.Tests.NuGet
                     It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);                
             }
             
+            Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
         }
         
         [Fact]
@@ -176,6 +177,7 @@ namespace Snap.Tests.NuGet
                     It.Is<long>(v => v == 0)), Times.Once);         
             }
             
+            Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
         }
     }
 }

@@ -152,6 +152,8 @@ namespace Snap.Installer
                                             SetStatusText(mainWindowViewModel, $"{outputText}: {totalPercentage}%");
                                             break;
                                     }
+                                    
+                                    installerProgressSource.Raise(totalPercentage);
                                 }
                                 
                                 switch (type)

@@ -120,7 +120,7 @@ namespace snapx
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
             var (snapReleases, _) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken);
-            if (snapReleases == null)
+            if (snapReleases == null || snapReleases.Apps.All(x => x.Target.Rid != snapApp.Target.Rid))
             {
                 if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
                                             "Is this the first time you are publishing this application? " +

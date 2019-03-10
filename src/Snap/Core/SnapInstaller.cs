@@ -122,16 +122,7 @@ namespace Snap.Core
                 logger?.Error($"Packages directory does not exist: {packagesDirectory}");
                 return null;
             }
-
-            snapProgressSource?.Raise(20);
-            var nupkgFilename = _snapOs.Filesystem.PathGetFileName(nupkgAbsoluteFilename);
-            var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, nupkgFilename);
-            if (!_snapOs.Filesystem.FileExists(dstNupkgFilename))
-            {
-                logger?.Info($"Copying nupkg to packages folder: {dstNupkgFilename}");
-                await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
-            }
-
+            
             snapProgressSource?.Raise(30);
             logger?.Info($"Extracting nupkg to app directory: {appDirectory}");
             var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDirectory, false, cancellationToken);

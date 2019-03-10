@@ -178,8 +178,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapAppDllFilename),
                         _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapDllFilename),
                         // Packages
-                        _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(installNupkgAbsoluteFilename)),
-                        _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(updateNupkgAbsoluteFilename))
+                        _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(installNupkgAbsoluteFilename))
                     }
                     .Concat(expectedInstallFiles)
                     .Concat(expectedUpdatedFiles)

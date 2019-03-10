@@ -309,7 +309,8 @@ namespace snapx
             
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
-                await PushPackagesAsync(packOptions, logger, filesystem, nugetService, snapApp, snapAppChannel, pushPackages, cancellationToken);
+                await PushPackagesAsync(packOptions, logger, filesystem, nugetService, 
+                    snapPackageManager, snapReleases, snapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -547,13 +548,15 @@ namespace snapx
         }
               
         static async Task PushPackagesAsync([NotNull] PackOptions packOptions, [NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] INugetService nugetService, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel,
+            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] SnapReleases snapReleases, [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel,
             [NotNull] List<string> packages, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
+            if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             if (packages == null) throw new ArgumentNullException(nameof(packages));
@@ -582,13 +585,12 @@ namespace snapx
             logger.Info($"Upstream name: {snapChannel.PushFeed.Name}");
             logger.Info($"Upstream url: {snapChannel.PushFeed.Source}");
 
-            if (!logger.Prompt("y|yes", "Do you want to push this version upstream? [y|n]", infoOnly: packOptions.YesToAllPrompts))
+            if (!logger.Prompt("y|yes", "Are you ready to push release upstream? [y|n]", infoOnly: packOptions.YesToAllPrompts))
             {
                 logger.Error("Publish aborted.");
                 return;
             }
 
-            var nugetLogger = new NugetLogger(logger);
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
 
@@ -603,16 +605,54 @@ namespace snapx
 
                 return SnapUtility.Retry(async () =>
                 {
-                    await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, nugetLogger, cancellationToken: cancellationToken);
+                    logger.Info($"Pushing {packageAbsolutePath} to {packageSource.Name}");
+                    var pushStopwatch = new Stopwatch();
+                    pushStopwatch.Reset();
+                    await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
+                    logger.Info($"Pushed {packageAbsolutePath} to {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
                 });
             }
 
             logger.Info($"Pushing packages to default channel: {snapChannel.Name}. Feed: {snapChannel.PushFeed.Name}.");
-
+            
             await packages.ForEachAsync(async packageAbsolutePath =>
                 await PushPackageAsync(packageAbsolutePath), pushDegreeOfParallelism);
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
+
+            logger.Info('-'.Repeat(TerminalDashesWidth));
+
+            logger.Info($"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. ");
+
+            var waitForManifestStopwatch = new Stopwatch();
+            waitForManifestStopwatch.Restart();
+            
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var (upstreamSnapReleases, _) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken, logger);
+                if (upstreamSnapReleases == null)
+                {
+                    goto sleep;
+                }
+
+                if (upstreamSnapReleases.Version >= snapReleases.Version)
+                {
+                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapReleases.Version}. " +
+                                $"Completed in {waitForManifestStopwatch.Elapsed.TotalSeconds:0.0}s.");
+                    break;
+                }                    
+
+                logger.Info(
+                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapReleases.Version}. " +
+                    $"Local version: {snapReleases.Version}. " +
+                    "Retrying in 15 seconds");
+                     
+                logger.Info('-'.Repeat(TerminalDashesWidth));
+
+                sleep:                      
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+            }
+            
         }
     }
 }

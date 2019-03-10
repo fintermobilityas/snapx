@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -214,8 +214,11 @@ namespace Snap.Core
             var channel = _snapApp.Channels.Single(x => x.Current);
 
             var deltaUpdates = snapReleases.Apps
-                .Where(x => x.IsDelta && x.ChannelName == channel.Name && x.Version > _snapApp.Version)
-                .OrderBy(x => x.Version)
+                .Where(x => x.IsDelta 
+                    && x.Target.Rid == _snapApp.Target.Rid 
+                    && x.ChannelName == channel.Name 
+                    && x.Version > _snapApp.Version)
+                .OrderBy(x => x.Version) 
                 .ToList();
 
             if (!deltaUpdates.Any())

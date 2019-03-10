@@ -232,7 +232,12 @@ namespace Snap.Core
             logger.Info($"Downloading {releasesToDownload.Count} packages. " +
                         $"Total download size: {totalBytesToDownload.BytesAsHumanReadable()}.");
 
-            var degreeOfParallelism = 2;
+            if (_filesystem.DirectoryCreateIfNotExists(packagesDirectory))
+            {
+                logger.Debug($"Created packages directory: {packagesDirectory}");
+            }
+            
+            const int degreeOfParallelism = 2;
 
             var downloadedReleases = new List<SnapRelease>();
             long totalReleasesToDownload = releasesToDownload.Count;

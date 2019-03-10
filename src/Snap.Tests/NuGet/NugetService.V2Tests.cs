@@ -123,10 +123,7 @@ namespace Snap.Tests.NuGet
                     It.Is<int>(v => v == 100), 
                     It.IsAny<long>(), 
                     It.Is<long>(v => v == downloadContext.PackageFileSize), 
-                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
-                
-                Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
-                Assert.True(percentages.Distinct().Count() == percentages.Count, "Reported progress percentage values must be unique.");
+                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);                
             }
             
         }
@@ -170,18 +167,13 @@ namespace Snap.Tests.NuGet
                     It.Is<int>(v => v == 50), 
                     It.IsAny<long>(), 
                     It.IsAny<long>(), 
-                    It.Is<long>(v => v == 0)), Times.Once);
+                    It.Is<long>(v => v == 0)), Times.AtLeastOnce);
                 
                 progressSourceMock.Verify(x => x.Raise(
                     It.Is<int>(v => v == 100), 
                     It.IsAny<long>(), 
                     It.Is<long>(v => v == expectedPackageSize), 
-                    It.Is<long>(v => v == 0)), Times.Once);
-                
-                Assert.Equal(3, percentages.Count);
-                Assert.Equal(0, percentages[0]);
-                Assert.Equal(50, percentages[1]);
-                Assert.Equal(100, percentages[2]);
+                    It.Is<long>(v => v == 0)), Times.Once);         
             }
             
         }

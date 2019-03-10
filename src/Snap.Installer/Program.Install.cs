@@ -44,9 +44,7 @@ namespace Snap.Installer
             // current user is not elevated to root has run.
 
             var cancellationToken = environment.CancellationToken;
-
             var installerProgressSource = new SnapProgressSource();
-
             var onFirstAnimationRenderedEvent = new ManualResetEventSlim(false);
             var exitCode = 1;
 
@@ -119,6 +117,7 @@ namespace Snap.Installer
                                 long releasesToRestore = 0, long releasesRestored = 0,
                                 long totalBytesDownloaded = 0, long totalBytesToDownload = 0)
                             {
+                            
                                 void SetProgressText(long current, long total, string defaultText, string pluralText)
                                 {
                                     var outputText = total > 1 ? pluralText : defaultText;
@@ -133,7 +132,7 @@ namespace Snap.Installer
                                                     $"Downloaded so far: {totalBytesDownloaded.BytesAsHumanReadable()}. " +
                                                     $"Total: {totalBytesToDownload.BytesAsHumanReadable()}");
                                                 
-                                                return;
+                                                goto incrementProgress;
                                             }
                                     
                                             SetStatusText(mainWindowViewModel,
@@ -141,31 +140,32 @@ namespace Snap.Installer
                                                 $"Downloaded so far: {totalBytesDownloaded.BytesAsHumanReadable()}. " +
                                                 $"Total: {totalBytesToDownload.BytesAsHumanReadable()}");
                                             
-                                            break;
+                                            goto incrementProgress;
                                         default:
                                             if (total > 1)
                                             {
                                                 SetStatusText(mainWindowViewModel,$"{outputText} ({totalPercentage}%): {current} of {total}.");
-                                                return;
+                                                goto incrementProgress;
                                             }
                                     
                                             SetStatusText(mainWindowViewModel, $"{outputText}: {totalPercentage}%");
-                                            break;
+                                            goto incrementProgress;
                                     }
                                     
+                                    incrementProgress:
                                     installerProgressSource.Raise(totalPercentage);
                                 }
                                 
                                 switch (type)
                                 {
                                     case "Checksum":
-                                        SetProgressText(releasesToChecksum, releasesChecksummed, "Validating payloads", "Validating payload");
+                                        SetProgressText(releasesChecksummed, releasesToChecksum, "Validating payloads", "Validating payloads");
                                         break;
                                     case "Download":
-                                        SetProgressText(releasesToDownload, releasesDownloaded, "Downloading payloads", "Downloading payload");
+                                        SetProgressText(releasesDownloaded, releasesToDownload, "Downloading payloads", "Downloading payloads");
                                         break;
                                     case "Restore":
-                                        SetProgressText(releasesToRestore, releasesRestored, "Restore payload", "Restoring payload");
+                                        SetProgressText(releasesRestored, releasesToRestore, "Restore payload", "Restoring payloads");
                                         break;
                                     default:
                                         diskLogger.Warn($"Unknown progress type: {type}");
@@ -175,14 +175,20 @@ namespace Snap.Installer
 
                             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
                             {
-                                ChecksumProgress = tuple => UpdateProgress("Checksum",
-                                    tuple.progressPercentage, tuple.releasesToChecksum, tuple.releasesChecksummed),
-                                DownloadProgress = tuple => UpdateProgress("Download",
-                                    tuple.progressPercentage, releasesToDownload: tuple.releasesToDownload, 
-                                    releasesDownloaded: tuple.releasesDownloaded, totalBytesDownloaded: 
-                                    tuple.totalBytesDownloaded, totalBytesToDownload: tuple.totalBytesToDownload),
-                                RestoreProgress = tuple => UpdateProgress("Restore",
-                                    tuple.progressPercentage, releasesToRestore: tuple.releasesToRestore, releasesRestored: tuple.releasesRestored)
+                                ChecksumProgress = x => UpdateProgress("Checksum",
+                                    x.progressPercentage,
+                                    x.releasesToChecksum, 
+                                    x.releasesChecksummed),
+                                DownloadProgress = x => UpdateProgress("Download",
+                                    x.progressPercentage,                                     
+                                    releasesDownloaded: x.releasesDownloaded, 
+                                    releasesToDownload: x.releasesToDownload, 
+                                    totalBytesDownloaded: x.totalBytesDownloaded, 
+                                    totalBytesToDownload: x.totalBytesToDownload),
+                                RestoreProgress = x => UpdateProgress("Restore",
+                                    x.progressPercentage, 
+                                    releasesToRestore: x.releasesToRestore, 
+                                    releasesRestored: x.releasesRestored)
                             };
 
                             if (!await snapPackageManager.RestoreAsync(diskLogger,

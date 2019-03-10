@@ -90,6 +90,12 @@ namespace Snap.Core
                 return null;
             }
             
+            if (!_snapOs.Filesystem.DirectoryExists(baseDirectory))
+            {
+                logger?.Error($"Base directory does not exist: {baseDirectory}");
+                return null;
+            }
+            
             snapProgressSource?.Raise(0);
             logger?.Debug("Attempting to get snap app details from nupkg");
             var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
@@ -98,11 +104,6 @@ namespace Snap.Core
                                   $"Version: {snapApp.Version}. ");
 
             var appDirectory = GetApplicationDirectory(baseDirectory, snapApp.Version);
-            if (!_snapOs.Filesystem.DirectoryExists(baseDirectory))
-            {
-                logger?.Error($"App directory does not exist: {appDirectory}");
-                return null;
-            }
 
             snapProgressSource?.Raise(10);
             if (_snapOs.Filesystem.DirectoryExists(appDirectory))

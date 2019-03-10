@@ -120,7 +120,7 @@ namespace snapx
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
             var (snapReleases, _) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken);
-            if (snapReleases == null || snapReleases.Apps.All(x => x.Target.Rid != snapApp.Target.Rid))
+            if (snapReleases == null)
             {
                 if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
                                             "Is this the first time you are publishing this application? " +
@@ -199,6 +199,8 @@ namespace snapx
                     {
                         return 1;
                     }
+
+                    genisisRelease = true;
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));

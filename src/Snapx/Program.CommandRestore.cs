@@ -70,7 +70,8 @@ namespace snapx
             foreach (var snapApp in snapAppTargets)
             {
                 var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
-
+                filesystem.DirectoryCreateIfNotExists(packagesDirectory);
+                
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 logger.Info($"Id: {snapApp.Id}.");
                 logger.Info($"Rid: {snapApp.Target.Rid}");

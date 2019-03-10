@@ -26,14 +26,16 @@ namespace Snap.AnyOS
             _arguments = new List<string>();
         }
 
-        public ProcessStartInfoBuilder Add(string value)
+        public ProcessStartInfoBuilder Add([NotNull] string value)
         {
+            if (value == null) throw new ArgumentNullException(nameof(value));
             _arguments.Add(value);
             return this;
         }
 
-        public ProcessStartInfoBuilder AddRange(IEnumerable<string> values)
+        public ProcessStartInfoBuilder AddRange([NotNull] IEnumerable<string> values)
         {
+            if (values == null) throw new ArgumentNullException(nameof(values));
             _arguments.AddRange(values);
             return this;
         }
@@ -47,7 +49,7 @@ namespace Snap.AnyOS
 
         public override string ToString()
         {
-            return _arguments.Count <= 0 ? Filename : $"{Filename} {string.Join(" ", _arguments)}";
+            return Arguments == string.Empty ? Filename : $"{Filename} {Arguments}";
         }
     }
     

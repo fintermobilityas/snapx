@@ -328,7 +328,7 @@ namespace Snap.Core
                 coreRunExeAbsolutePath
             }.Select(x =>
                 {
-                    var installOrUpdateTxt = isInitialInstall ? "--snap-installed" : "--snap-updated";
+                    var installOrUpdateTxt = isInitialInstall ? "--snapx-installed" : "--snapx-updated";
                     return new ProcessStartInfoBuilder(x)
                         .Add(installOrUpdateTxt)
                         .Add(currentVersion.ToNormalizedString());
@@ -367,18 +367,27 @@ namespace Snap.Core
                             .WithCancellation(cts.Token); // Two cancellation tokens is intentional because of unit tests mocks.
                         
                         logger?.Debug($"Processed exited: {exitCode}. Exe: {x.Filename}. Stdout: {stdout}.");
-
-                        firstRun = isInitialInstall && exitCode == 0;
                     } 
                     catch (Exception ex)
                     {
                         logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
+                        firstRun = false;
                     }
 
-                    if (isInitialInstall && !firstRun)
+                    if (!isInitialInstall)
+                    {
+                        return;
+                    }
+                  
+                    if (!firstRun)
                     {
                         logger.Warn($"First run will not be triggered for executable: {x.Filename}. Reason: Timeout or returned an exit code that is not 0.");
                     }
+                    else
+                    {
+                        firstRunApplications.Add(x);                        
+                    }
+                    
                 }
             }, 1 /* at a time */);
 
@@ -391,7 +400,7 @@ namespace Snap.Core
 
             firstRunApplications.ForEach(x => _snapOs.ProcessManager
                 .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)
-                    .Add($"--snap-first-run {semanticVersion.ToNormalizedString()}")));
+                    .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}")));
         }
         
         string GetApplicationDirectory(string baseDirectory, SemanticVersion version)

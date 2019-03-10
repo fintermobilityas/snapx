@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
@@ -59,7 +60,7 @@ namespace Snap.Core
         /// </summary>
         /// <param name="onFirstRun">Called the first time an app is run after
         /// being installed. Your application will **not** exit after this is
-        /// dispatched, you should use this as a hint (i.e. show a 'Welcome'
+        /// dispatched, you should use this as a hint (i.e. show a 'Welcome' message)
         /// </param>
         /// <param name="onInstalled">Called when your app is initially
         /// installed. Your application will exit afterwards.
@@ -69,22 +70,24 @@ namespace Snap.Core
         /// <param name="arguments">Use in a unit-test runner to mock the 
         /// arguments. In your app, leave this as null.</param>
         /// <returns>If this methods returns TRUE then you should exit your program immediately.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="arguments"/> is null.</exception>
         public static bool ProcessEvents([NotNull] string[] arguments,
             Action<SemanticVersion> onFirstRun = null,
             Action<SemanticVersion> onInstalled = null,
             Action<SemanticVersion> onUpdated = null)
         {
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
-            var args = arguments.Skip(1).ToArray();
+            var skipNArguments = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 0;
+            var args = arguments.Skip(skipNArguments).ToArray();
             if (args.Length != 2)
             {
                 return false;
             }
 
             var invoke = new[] {
-                new { Key = "--snap-first-run", Value = onFirstRun ??  DefaultAction },
-                new { Key = "--snap-installed", Value = onInstalled ??  DefaultAction },
-                new { Key = "--snap-updated", Value = onUpdated ??  DefaultAction }
+                new { Key = "--snapx-first-run", Value = onFirstRun ??  DefaultAction },
+                new { Key = "--snapx-installed", Value = onInstalled ??  DefaultAction },
+                new { Key = "--snapx-updated", Value = onUpdated ??  DefaultAction }
             }.ToDictionary(k => k.Key, v => v.Value);
 
             var actionName = args[0];
@@ -95,7 +98,7 @@ namespace Snap.Core
 
             var doNotExitActions = new[]
             {
-                "--snap-first-run"
+                "--snapx-first-run"
             };
             
             try

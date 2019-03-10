@@ -1,3 +1,4 @@
+#if PLATFORM_WINDOWS
 using System;
 using Moq;
 using NuGet.Versioning;
@@ -67,10 +68,10 @@ namespace Snap.Tests.Core
         }
         
         [Theory]
-        [InlineData("--snap-first-run")]
-        [InlineData("--snap-installed")]
-        [InlineData("--snap-updated")]
-        [InlineData("--snap-some_Random_ARGuMents")]
+        [InlineData("--snapx-first-run")]
+        [InlineData("--snapx-installed")]
+        [InlineData("--snapx-updated")]
+        [InlineData("--snapx-some_Random_ARGuMents")]
         public void Test_ProcessEvents_Does_Not_Throw_If_Actions_Are_Null(string actionName)
         {
             var snapOsMock = new Mock<ISnapOs>();
@@ -102,7 +103,7 @@ namespace Snap.Tests.Core
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
                 "c:\\my.exe",
-                "--snap-first-run",
+                "--snapx-first-run",
                 expectedVersion.ToNormalizedString()
             }, onFirstRun: version =>
             {
@@ -131,7 +132,7 @@ namespace Snap.Tests.Core
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
              {
                 "c:\\my.exe",
-                "--snap-installed",
+                "--snapx-installed",
                 expectedVersion.ToNormalizedString()
             }, onInstalled: version =>
             {
@@ -155,10 +156,10 @@ namespace Snap.Tests.Core
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
             var wasInvoked = false;
-            var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
+            var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
                 "c:\\my.exe",
-                "--snap-installed",
+                "--snapx-installed",
                 "..."
             }, onInstalled: version =>
             {
@@ -185,7 +186,7 @@ namespace Snap.Tests.Core
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
                 "c:\\my.exe",
-                "--snap-updated",
+                "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
             {
@@ -212,7 +213,7 @@ namespace Snap.Tests.Core
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
                 "c:\\my.exe",
-                "--snap-updated",
+                "--snapx-updated",
                 "..."
             }, onInstalled: version =>
             {
@@ -236,10 +237,10 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             SemanticVersion currentVersion = null;
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
-            var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
+            var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
                 "c:\\my.exe",
-                "--snap-updated",
+                "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
             {
@@ -256,3 +257,4 @@ namespace Snap.Tests.Core
         }
     }
 }
+#endif

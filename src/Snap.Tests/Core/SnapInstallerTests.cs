@@ -210,7 +210,7 @@ namespace Snap.Tests.Core
                 var coreRunExe = _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
                     _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp));
                 var appExe = _snapFilesystem.PathCombine(updateAppDir, snapAppExeAssemblyDefinition.BuildRelativeFilename());
-                var snapUpdatedArguments = $"--snap-updated {updatedSnapApp.Version.ToNormalizedString()}";
+                var snapUpdatedArguments = $"--snapx-updated {updatedSnapApp.Version.ToNormalizedString()}";
                 
                 progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
                 
@@ -367,8 +367,8 @@ namespace Snap.Tests.Core
                 var coreRunExe = _snapFilesystem.PathCombine(rootDir.WorkingDirectory,
                     _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(packageDetails.App));
                 var appExe = _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename());
-                var snapInstalledArguments = $"--snap-installed {snapApp.Version.ToNormalizedString()}";
-                var snapFirstRunArguments = $"--snap-first-run {snapApp.Version.ToNormalizedString()}";
+                var snapInstalledArguments = $"--snapx-installed {snapApp.Version.ToNormalizedString()}";
+                var snapFirstRunArguments = $"--snapx-first-run {snapApp.Version.ToNormalizedString()}";
                 
                 progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
 

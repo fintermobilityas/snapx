@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
@@ -68,13 +69,13 @@ namespace Snap.Core
         /// <param name="arguments">Use in a unit-test runner to mock the 
         /// arguments. In your app, leave this as null.</param>
         /// <returns>If this methods returns TRUE then you should exit your program immediately.</returns>
-        public static bool ProcessEvents(
+        public static bool ProcessEvents([NotNull] string[] arguments,
             Action<SemanticVersion> onFirstRun = null,
             Action<SemanticVersion> onInstalled = null,
-            Action<SemanticVersion> onUpdated = null,
-            string[] arguments = null)
+            Action<SemanticVersion> onUpdated = null)
         {
-            var args = (arguments ?? Environment.GetCommandLineArgs()).Skip(1).ToArray();
+            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            var args = arguments.Skip(1).ToArray();
             if (args.Length != 2)
             {
                 return false;

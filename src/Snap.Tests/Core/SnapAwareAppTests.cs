@@ -34,10 +34,17 @@ namespace Snap.Tests.Core
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
-            var shouldExit = SnapAwareApp.ProcessEvents();
+            var shouldExit = SnapAwareApp.ProcessEvents(new string[]{});
             Assert.False(shouldExit);
 
             snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
+        
+        [Fact]
+        public void Test_ProcessEvents_Throws_If_Arguments_Parameter_Is_Null()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(() => SnapAwareApp.ProcessEvents(null));
+            Assert.Equal("arguments", ex.ParamName);
         }
 
         [Fact]
@@ -47,7 +54,7 @@ namespace Snap.Tests.Core
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
             SnapAwareApp.SnapOs = snapOsMock.Object;
 
-            var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
+            var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
                 "--a",
                 "--b",
@@ -57,6 +64,28 @@ namespace Snap.Tests.Core
             Assert.False(shouldExit);
 
             snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
+        }
+        
+        [Theory]
+        [InlineData("--snap-first-run")]
+        [InlineData("--snap-installed")]
+        [InlineData("--snap-updated")]
+        [InlineData("--snap-some_Random_ARGuMents")]
+        public void Test_ProcessEvents_Does_Not_Throw_If_Actions_Are_Null(string actionName)
+        {
+            var snapOsMock = new Mock<ISnapOs>();
+            snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
+
+            SnapAwareApp.SnapOs = snapOsMock.Object;
+
+            var expectedVersion = SemanticVersion.Parse("21212.0.0");
+            
+            SnapAwareApp.ProcessEvents(new[]
+            {
+                "c:\\my.exe",
+                actionName,
+                expectedVersion.ToNormalizedString()
+            });
         }
         
         [Fact]

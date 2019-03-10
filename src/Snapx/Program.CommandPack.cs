@@ -144,8 +144,9 @@ namespace snapx
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 
                 var snapAppMostRecentRelease = snapReleases.Apps
-                    .LastOrDefault(x => !x.IsDelta 
-                        && x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);
+                    .Where(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid)
+                    .OrderByDescending(x => x.Version)
+                    .FirstOrDefault();
                         
                 if (snapAppMostRecentRelease != null)
                 {

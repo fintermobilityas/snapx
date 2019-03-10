@@ -216,7 +216,9 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var snapsFilename = filesystem.PathCombine(workingDirectory, "snapx.yaml");
+            const string snapxYamlFilename = "snapx.yml";
+
+            var snapsFilename = filesystem.PathCombine(workingDirectory, snapxYamlFilename);
             if (!filesystem.FileExists(snapsFilename))
             {
                 SnapLogger.Error($"Snap manifest does not exist on disk: {snapsFilename}");
@@ -247,11 +249,12 @@ namespace snapx
             }
             catch (YamlException yamlException)
             {
-                SnapLogger.Error($"snapx.yaml file contains incorrect yaml syntax. Why: {yamlException.InnerException?.Message ?? yamlException.Message}.");                
+                var moreHelpfulExceptionMaybe = yamlException.InnerException ?? yamlException;
+                SnapLogger.Error($"{snapxYamlFilename} file contains incorrect yaml syntax. Error message: {moreHelpfulExceptionMaybe.Message}.", moreHelpfulExceptionMaybe);                
             }
             catch (Exception e)
             {
-                SnapLogger.ErrorException("Unknown error deserializing snapx.yaml", e);
+                SnapLogger.ErrorException($"Unknown error deserializing {snapxYamlFilename}", e);
             }
 
             error:

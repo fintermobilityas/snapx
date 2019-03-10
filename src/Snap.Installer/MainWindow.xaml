@@ -3,7 +3,6 @@
         Width="800"
         Height="600"
         FontFamily="resm:Snap.Installer.Assets.Fonts?assembly=Snap.Installer#Roboto"
-        WindowStartupLocation="CenterScreen"
         HasSystemDecorations="false"
         FontSize="14">
     <Window.Styles>

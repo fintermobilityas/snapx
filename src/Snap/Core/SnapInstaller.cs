@@ -112,11 +112,9 @@ namespace Snap.Core
                 logger?.Info($"Deleting existing app directory: {appDirectory}");
                 await _snapOs.Filesystem.DirectoryDeleteAsync(appDirectory);
             }
-            else
-            {
-                logger?.Info($"Creating app directory: {appDirectory}");
-                _snapOs.Filesystem.DirectoryCreateIfNotExists(appDirectory);
-            }
+
+            logger?.Info($"Creating app directory: {appDirectory}");
+            _snapOs.Filesystem.DirectoryCreate(appDirectory);
 
             var packagesDirectory = GetPackagesDirectory(baseDirectory);
             if (!_snapOs.Filesystem.DirectoryExists(packagesDirectory))

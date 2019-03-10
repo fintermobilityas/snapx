@@ -174,9 +174,11 @@ namespace Snap.Installer
                             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
                             {
                                 ChecksumProgress = tuple => UpdateProgress("Checksum",
-                                    tuple.progressPercentage, releasesToChecksum: tuple.releasesToChecksum, releasesChecksummed: tuple.releasesChecksummed),
+                                    tuple.progressPercentage, tuple.releasesToChecksum, tuple.releasesChecksummed),
                                 DownloadProgress = tuple => UpdateProgress("Download",
-                                    tuple.progressPercentage, releasesToDownload: tuple.releasesToDownload, releasesDownloaded: tuple.releasesDownloaded),
+                                    tuple.progressPercentage, releasesToDownload: tuple.releasesToDownload, 
+                                    releasesDownloaded: tuple.releasesDownloaded, totalBytesDownloaded: 
+                                    tuple.totalBytesDownloaded, totalBytesToDownload: tuple.totalBytesToDownload),
                                 RestoreProgress = tuple => UpdateProgress("Restore",
                                     tuple.progressPercentage, releasesToRestore: tuple.releasesToRestore, releasesRestored: tuple.releasesRestored)
                             };

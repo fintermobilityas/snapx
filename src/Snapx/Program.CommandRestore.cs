@@ -107,13 +107,16 @@ namespace snapx
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     logger.Info($"Restoring channel: {channel.Name}.");
 
-                    var hasReleases = snapReleases.Apps.Count(x => x.ChannelName == channel.Name) > 0;
-                    if (!hasReleases)
+                    var latestRelease = snapReleases.Apps
+                        .LastOrDefault(x => x.Target.Rid == snapApp.Target.Rid
+                                            && x.ChannelName == channel.Name);
+                            
+                    if (latestRelease == null)
                     {
                         logger.Info("No releases has been published to this channel.");
                         continue;
                     }
-
+                    
                     await snapPackageManager.RestoreAsync(logger, packagesDirectory, snapReleases,
                          snapApp.Target, channel, packageSource, null, cancellationToken);
                 }

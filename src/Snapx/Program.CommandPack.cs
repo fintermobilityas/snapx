@@ -584,6 +584,7 @@ namespace snapx
 
             logger.Info("Ready to publish application!");
             logger.Info($"Id: {snapApp.Id}");
+            logger.Info($"Rid: {snapApp.Target.Rid}");
             logger.Info($"Channel: {snapChannel.Name}");
             logger.Info($"Version: {snapApp.Version}");
             logger.Info($"Feed name: {snapChannel.PushFeed.Name}");

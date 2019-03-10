@@ -69,17 +69,12 @@ namespace snapx
 
             foreach (var snapApp in snapAppTargets)
             {
-                SetupDirectories(filesystem, snapApps, workingDirectory, new Dictionary<string, string>
-                {
-                    {"id", snapApp.Id},
-                    {"rid", snapApp.Target.Rid},
-                    {"version", "0.0.0"}
-                });
+                var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 logger.Info($"Id: {snapApp.Id}.");
                 logger.Info($"Rid: {snapApp.Target.Rid}");
-                logger.Info($"Packages directory: {snapApps.Generic.Packages}");
+                logger.Info($"Packages directory: {packagesDirectory}");
 
                 SnapReleases snapReleases;
                 PackageSource packageSource;
@@ -119,7 +114,7 @@ namespace snapx
                         continue;
                     }
 
-                    await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, snapReleases,
+                    await snapPackageManager.RestoreAsync(logger, packagesDirectory, snapReleases,
                          snapApp.Target, channel, packageSource, null, cancellationToken);
                 }
             }

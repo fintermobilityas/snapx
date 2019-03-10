@@ -70,16 +70,17 @@ namespace snapx
 
             snapApp.Version = semanticVersion;
 
-            SetupDirectories(filesystem, snapApps, workingDirectory, new Dictionary<string, string>
-            {
-                {"id", snapApp.Id},
-                {"rid", snapApp.Target.Rid},
-                {"version", snapApp.Version.ToNormalizedString()}
-            });
+            var artifactsDirectory = BuildArtifactsDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+            var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+            var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+            var nuspecsDirectory = BuildNuspecsDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+            
+            filesystem.DirectoryCreateIfNotExists(installersDirectory);
+            filesystem.DirectoryCreateIfNotExists(packagesDirectory);
 
             var nuspecFilename = snapApp.Target.Nuspec == null
                 ? null
-                : filesystem.PathCombine(workingDirectory, snapApps.Generic.Nuspecs, snapApp.Target.Nuspec);
+                : filesystem.PathCombine(workingDirectory, nuspecsDirectory, snapApp.Target.Nuspec);
 
             if (nuspecFilename == null || !filesystem.FileExists(nuspecFilename))
             {
@@ -90,10 +91,10 @@ namespace snapx
             var snapAppChannel = snapApp.Channels.First();
 
             logger.Info($"Schema version: {snapApps.Schema}");
-            logger.Info($"Packages directory: {snapApps.Generic.Packages}");
-            logger.Info($"Artifacts directory: {snapApps.Generic.Artifacts}");
-            logger.Info($"Installers directory: {snapApps.Generic.Installers}");
-            logger.Info($"Nuspecs directory: {snapApps.Generic.Nuspecs}");
+            logger.Info($"Packages directory: {packagesDirectory}");
+            logger.Info($"Artifacts directory: {artifactsDirectory}");
+            logger.Info($"Installers directory: {installersDirectory}");
+            logger.Info($"Nuspecs directory: {nuspecsDirectory}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Id: {snapApp.Id}");
@@ -115,7 +116,7 @@ namespace snapx
 
             logger.Info("Downloading releases manifest");
 
-            var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(snapApps.Generic.Packages);
+            var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(packagesDirectory);
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
             var (snapReleases, _) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken);
@@ -137,7 +138,7 @@ namespace snapx
                 logger.Info("Downloaded releases manifest");
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
-                if (!await snapPackageManager.RestoreAsync(logger, snapApps.Generic.Packages, 
+                if (!await snapPackageManager.RestoreAsync(logger, packagesDirectory, 
                     snapReleases, snapApp.Target, snapAppChannel, pushFeed, null, cancellationToken))
                 {
                     return 1;
@@ -159,7 +160,7 @@ namespace snapx
                     logger.Info($"Most recent release is: {snapAppMostRecentRelease.Version}");
 
                     var currentFullNupkgDisk = filesystem
-                        .EnumerateFiles(snapApps.Generic.Packages)
+                        .EnumerateFiles(packagesDirectory)
                         .Select(x => (nupkg: x.Name.ParseNugetLocalFilename(), fullName: x.FullName))
                         .Where(x => x.nupkg.valid
                                     && x.nupkg.fullOrDelta == "full"
@@ -181,7 +182,7 @@ namespace snapx
 
                     logger.Info($"Attempting to read release information from: {snapAppMostRecentRelease.FullFilename}.");
 
-                    mostRecentReleaseNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapAppMostRecentRelease.FullFilename);
+                    mostRecentReleaseNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppMostRecentRelease.FullFilename);
                     using (var packageArchiveReader = new PackageArchiveReader(mostRecentReleaseNupkgAbsolutePath))
                     {
                         mostRecentSnapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
@@ -206,7 +207,7 @@ namespace snapx
             var snapPackageDetails = new SnapPackageDetails
             {
                 App = snapApp,
-                NuspecBaseDirectory = snapApps.Generic.Artifacts,
+                NuspecBaseDirectory = artifactsDirectory,
                 NuspecFilename = nuspecFilename,
                 SnapProgressSource = new SnapProgressSource()
             };
@@ -217,7 +218,7 @@ namespace snapx
             };
 
             logger.Info($"Building full package: {snapApp.Version}.");
-            var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());
+            var currentNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
             long currentNupkgFilesize;
             var (currentNupkgStream, currentNupkgChecksum) = await snapPack.BuildFullPackageAsync(snapPackageDetails, coreRunLib, logger, cancellationToken);
             using (currentNupkgStream)
@@ -243,9 +244,9 @@ namespace snapx
             deltaProgressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
 
             var (deltaNupkgStream, deltaSnapApp, deltaNupkgChecksum) = await snapPack.BuildDeltaPackageAsync(mostRecentReleaseNupkgAbsolutePath,
-                currentNupkgAbsolutePath, deltaProgressSource, cancellationToken: cancellationToken);
+                currentNupkgAbsolutePath, deltaProgressSource, cancellationToken);
             var deltaNupkgFilesize = deltaNupkgStream.Length;
-            var deltaNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, deltaSnapApp.BuildNugetLocalFilename());
+            var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapApp.BuildNugetLocalFilename());
             using (deltaNupkgStream)
             {
                 logger.Info(
@@ -263,7 +264,7 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader,
-                snapApp, snapAppChannel, coreRunLib, snapApps.Generic.Installers, currentNupkgAbsolutePath, true,
+                snapApp, snapAppChannel, coreRunLib, installersDirectory, currentNupkgAbsolutePath, true,
                 cancellationToken);
 
             if (!installerOfflineSuccess)
@@ -278,7 +279,7 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,  snapPack, snapAppReader,
-                snapApp, snapAppChannel, coreRunLib, snapApps.Generic.Installers, currentNupkgAbsolutePath, false,
+                snapApp, snapAppChannel, coreRunLib, installersDirectory, currentNupkgAbsolutePath, false,
                 cancellationToken);
 
             if (!installerWebSuccess)

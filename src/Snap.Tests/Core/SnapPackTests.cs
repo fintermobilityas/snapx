@@ -960,7 +960,8 @@ namespace Snap.Tests.Core
             
             var updatedApp = new SnapApp(genisisApp)
             {
-                Version = genisisApp.Version.BumpMajor()
+                Version = genisisApp.Version.BumpMajor(),
+                DeltaSummary = new SnapAppDeltaSummary()
             };
 
             var releases = new SnapReleases();
@@ -992,12 +993,14 @@ namespace Snap.Tests.Core
                     Assert.Null(snapReleases.Apps[0].DeltaChecksum);
                     Assert.Equal(genisisApp.Target.Rid, snapReleases.Apps[0].Target.Rid);
                     Assert.Equal(genisisApp.Target.Os, snapReleases.Apps[0].Target.Os);
+                    Assert.True(snapReleases.Apps[0].IsGenisis);
                     
                     Assert.Equal(updatedApp.Version, snapReleases.Apps[1].Version);
                     Assert.Equal(updatedApp.Target.Rid, snapReleases.Apps[1].Target.Rid);
                     Assert.Equal(updatedApp.Target.Os, snapReleases.Apps[1].Target.Os);
                     Assert.Equal(updatedAppFullChecksum, snapReleases.Apps[1].FullChecksum);
                     Assert.Equal(updatedAppDeltaChecksum, snapReleases.Apps[1].DeltaChecksum);
+                    Assert.False(snapReleases.Apps[1].IsGenisis);
                 }
             }
         }
@@ -1047,7 +1050,8 @@ namespace Snap.Tests.Core
 
             var deltaAppWindows = new SnapApp(genisisAppWindows)
             {
-                Version = genisisAppWindows.Version.BumpMajor()
+                Version = genisisAppWindows.Version.BumpMajor(),
+                DeltaSummary = new SnapAppDeltaSummary()
             };
 
             var genisisAppLinux = _baseFixture.BuildSnapApp(snapAppId);
@@ -1057,7 +1061,8 @@ namespace Snap.Tests.Core
 
             var deltaAppLinux = new SnapApp(genisisAppLinux)
             {
-                Version = genisisAppLinux.Version.BumpMajor()
+                Version = genisisAppLinux.Version.BumpMajor(),
+                DeltaSummary = new SnapAppDeltaSummary()
             };
             
             var releases = new SnapReleases();

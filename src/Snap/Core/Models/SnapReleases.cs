@@ -25,7 +25,6 @@ namespace Snap.Core.Models
         public string DeltaFilename { get; set; }
         public long DeltaFilesize { get; set; }
         public string DeltaChecksum { get; set; }
-        public bool IsDelta { get; set; }
         public bool IsGenisis { get; set; }
 
         [UsedImplicitly]
@@ -48,7 +47,6 @@ namespace Snap.Core.Models
             DeltaFilename = release.DeltaFilename;
             DeltaFilesize = release.DeltaFilesize;
             DeltaChecksum = release.DeltaChecksum;
-            IsDelta = release.IsDelta;
             IsGenisis = release.IsGenisis;
         }
         
@@ -67,7 +65,6 @@ namespace Snap.Core.Models
             DeltaFilename = genisis ? null : snapApp.BuildNugetDeltaLocalFilename(),
             DeltaFilesize = genisis ? 0 : deltaFileSize,
             DeltaChecksum = genisis ? null : deltaChecksum,
-            IsDelta = snapApp.Delta,
             IsGenisis = genisis
         })
         {

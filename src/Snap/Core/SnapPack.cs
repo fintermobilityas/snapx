@@ -695,20 +695,18 @@ namespace Snap.Core
             {
                 throw new Exception("Must contain exactly one (1) genisis release.");
             }
-
-            var fullReleases = snapReleasesThisRid.Where(x => !x.IsDelta).Select(x => x.FullFilename).ToList();
-            if (fullReleases.Distinct().Count() != fullReleases.Count)
-            {
-                throw new Exception($"Expected all full release filenames to be unique: {string.Join(",", fullReleases)}");
-            }
             
-            var deltaReleases = snapReleasesThisRid.Where(x => x.IsDelta).Select(x => x.DeltaFilename).ToList();
+            var deltaReleases = snapReleasesThisRid.Where(x => !x.IsGenisis).Select(x => x.DeltaFilename).ToList();
             if (deltaReleases.Distinct().Count() != deltaReleases.Count)
             {
                 throw new Exception($"Expected all delta release filenames to be unique: {string.Join(",", deltaReleases)}");
             }
             
             var snapRelease = snapReleasesThisRid.First();
+            if (!snapRelease.IsGenisis)
+            {
+                throw new Exception("Expected first release to be the genisis release.");
+            }
 
             var packageBuilder = new PackageBuilder
             {
@@ -724,19 +722,15 @@ namespace Snap.Core
                 {
                     throw new Exception($"Invalid id: {release.Id}. Expected: {snapRelease.Id}");
                 }
-                
-                var expectedUpstreamId = new SnapApp(snapApp)
-                {
-                    Version = release.Version, 
-                    DeltaSummary = release.IsDelta ? new SnapAppDeltaSummary() : null
-                }.BuildNugetUpstreamPackageId();
-                if (release.UpstreamId != expectedUpstreamId)
-                {
-                    throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedUpstreamId}");
-                }
-
+                      
                 if (release.IsGenisis)
                 {
+                    var expectedFullUpstreamId = new SnapApp(snapApp) {Version = release.Version}.BuildFullNugetUpstreamPackageId();
+                    if (release.UpstreamId != expectedFullUpstreamId)
+                    {
+                        throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedFullUpstreamId}");                        
+                    }
+    
                     if (release.DeltaFilename != null)
                     {
                         throw new Exception($"Genisis release should not specify a delta filename. Filename: {release.FullFilename}.");
@@ -750,22 +744,22 @@ namespace Snap.Core
                     if (release.DeltaFilesize != 0)
                     {
                         throw new Exception($"Genisis release should not specify a delta file size. Filename: {release.FullFilename}.");
-                    }
+                    }                    
                 }
-
-                if (release.IsDelta)
+                else
                 {
-                    if (release.FullChecksum == release.DeltaChecksum)
+                    var expectedDeltaUpstreamId = new SnapApp(snapApp) {Version = release.Version}.BuildDeltaNugetUpstreamPackageId();
+                    if (release.UpstreamId != expectedDeltaUpstreamId)
                     {
-                        throw new Exception($"Invalid checksum! Full checksum should not equal delta checksum. Filename: {release.DeltaFilename}.");
+                        throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedDeltaUpstreamId}");                        
                     }
-
-                    var expectedDeltaFilename = new SnapApp(snapApp) {Version = release.Version }.BuildNugetDeltaLocalFilename();
+                    
+                    var expectedDeltaFilename = new SnapApp(snapApp) {Version = release.Version}.BuildNugetDeltaLocalFilename();
                     if (release.DeltaFilename != expectedDeltaFilename)
                     {
                         throw new Exception($"Invalid delta filename: {release.DeltaFilename}. Expected: {expectedDeltaFilename}");
-                    }      
-                    
+                    }
+
                     if (release.DeltaChecksum == null || release.DeltaChecksum.Length != 128)
                     {
                         throw new Exception($"Invalid checksum: {release.DeltaChecksum}. Filename: {release.DeltaFilename}");
@@ -775,10 +769,13 @@ namespace Snap.Core
                     {
                         throw new Exception($"Invalid file size: {release.DeltaFilesize}. Filename: {release.DeltaFilename}");
                     }
-
-                    continue;
                 }
                 
+                if (release.FullChecksum == release.DeltaChecksum)
+                {
+                    throw new Exception($"Invalid checksum! Full checksum should not equal delta checksum. Filename: {release.DeltaFilename}.");
+                }
+                                
                 var expectedFullFilename = new SnapApp(snapApp) {Version = release.Version}.BuildNugetFullLocalFilename();
                 if (release.FullFilename != expectedFullFilename)
                 {

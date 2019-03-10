@@ -152,11 +152,11 @@ namespace Snap.Core
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
-            var releasesForChannel = snapReleases.Apps.Where(x => 
-                x.Target.Rid == snapAppTarget.Rid 
-                && x.ChannelName == snapChannel.Name).ToList();
-                    
-            if (!releasesForChannel.Any())
+            var snapReleasesThisRestoreTarget = new SnapReleases(snapReleases);
+            snapReleasesThisRestoreTarget.Apps
+                .RemoveAll(x => x.Target.Rid != snapAppTarget.Rid 
+                    && x.ChannelName != snapChannel.Name);
+            if (!snapReleasesThisRestoreTarget.Apps.Any())
             {
                 return true;
             }
@@ -164,7 +164,7 @@ namespace Snap.Core
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
 
-            var genisisRelease = releasesForChannel.First();
+            var genisisRelease = snapReleasesThisRestoreTarget.Apps.First();
             if (!genisisRelease.IsGenisis)
             {
                 logger.Error("Expected first release to be a the genisis nupkg. " +
@@ -172,19 +172,13 @@ namespace Snap.Core
                              $"Filename:  {genisisRelease.DeltaFilename}");
                 return false;
             }
-
-            if (genisisRelease.IsDelta)
-            {
-                logger.Error($"Expected genisis release to be a full nupkg. Filename:  {genisisRelease.DeltaFilename}");
-                return false;
-            }
-
-            logger.Info($"Verifying checksums for {releasesForChannel.Count} packages in channel: {snapChannel.Name}.");
+            
+            logger.Info($"Verifying checksums for {snapReleasesThisRestoreTarget.Apps.Count} packages in channel: {snapChannel.Name}.");
 
             var releasesToDownload = new List<SnapRelease>();
             var releasesChecksumOk = new List<SnapRelease>();
 
-            var releasesToChecksum = releasesForChannel.Count;
+            var releasesToChecksum = snapReleasesThisRestoreTarget.Apps.Count;
             var releasesChecksummed = 0;
 
             progressSource?.RaiseChecksumProgress(0,
@@ -192,19 +186,14 @@ namespace Snap.Core
 
             logger.Info("Checksum progress: 0%");
 
-            foreach (var currentRelease in releasesForChannel)
+            foreach (var currentRelease in snapReleasesThisRestoreTarget.Apps)
             {
-                if (Checksum(snapReleases, currentRelease, packagesDirectory, logger))
+                if (Checksum(snapReleasesThisRestoreTarget, currentRelease, packagesDirectory, logger))
                 {
                     releasesChecksumOk.Add(currentRelease);
                     goto next;
                 }
-
-                if (!currentRelease.IsGenisis && !currentRelease.IsDelta)
-                {
-                    goto next;
-                }
-
+                
                 releasesToDownload.Add(currentRelease);
 
                 next:
@@ -213,7 +202,7 @@ namespace Snap.Core
                 logger.Info($"Checksum progress: {progress}% - Completed {releasesChecksummed} of {releasesToChecksum}.");
             }
 
-            logger.Info($"Verified {releasesForChannel.Count} packages " +
+            logger.Info($"Verified {snapReleasesThisRestoreTarget.Apps.Count} packages " +
                         $"in {stopwatch.Elapsed.TotalSeconds:0.0}s. ");
 
             if (!releasesToDownload.Any())
@@ -223,7 +212,7 @@ namespace Snap.Core
 
             stopwatch.Restart();
 
-            var isGenisisReleaseOnly = snapReleases.Apps.Count == 1;
+            var isGenisisReleaseOnly = snapReleasesThisRestoreTarget.Apps.Count == 1;
 
             long totalBytesToDownload;
             if (isGenisisReleaseOnly)
@@ -233,7 +222,7 @@ namespace Snap.Core
             else
             {
                 totalBytesToDownload = releasesToDownload
-                    .Sum(x => !x.IsGenisis && x.IsDelta ? x.DeltaFilesize : 0);
+                    .Sum(x => !x.IsGenisis ? x.DeltaFilesize : 0);
                 if (releasesToDownload.Contains(genisisRelease))
                 {
                     totalBytesToDownload += genisisRelease.FullFilesize;
@@ -296,7 +285,7 @@ namespace Snap.Core
                         }
                     };
 
-                    var success = await DownloadAsync(snapReleases,
+                    var success = await DownloadAsync(snapReleasesThisRestoreTarget,
                         genisisRelease, x, packageSource,
                         packagesDirectory, thisProgressSource, logger, cancellationToken);
 
@@ -334,7 +323,7 @@ namespace Snap.Core
             var previousFullRelease = genisisRelease;
             foreach (var deltaRelease in deltaReleasesToReassemble)
             {
-                if (!await ReassembleFullReleaseAsync(snapReleases, releasesChecksumOk, previousFullRelease,
+                if (!await ReassembleFullReleaseAsync(snapReleasesThisRestoreTarget, releasesChecksumOk, previousFullRelease,
                     deltaRelease, packageSource, packagesDirectory, logger, cancellationToken))
                 {
                     return false;
@@ -363,8 +352,8 @@ namespace Snap.Core
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
-            var filename = currentRelease.IsDelta ? currentRelease.DeltaFilename : currentRelease.FullFilename;
-            var filesize = currentRelease.IsDelta ? currentRelease.DeltaFilesize : currentRelease.FullFilesize;
+            var filename = !currentRelease.IsGenisis ? currentRelease.DeltaFilename : currentRelease.FullFilename;
+            var filesize = !currentRelease.IsGenisis ? currentRelease.DeltaFilesize : currentRelease.FullFilesize;
 
             var restoreStopwatch = new Stopwatch();
             restoreStopwatch.Restart();
@@ -441,8 +430,7 @@ namespace Snap.Core
 
                 logger.Debug($"Attempting to reassemble full nupkg from delta {currentRelease.DeltaFilename} using full nupkg {previousRelease.FullFilename}.");
 
-                var previousFullRelease = releases.Apps.SingleOrDefault(x => !x.IsDelta 
-                                                                             && x.FullFilename == previousRelease.FullFilename);
+                var previousFullRelease = releases.Apps.SingleOrDefault(x => x.FullFilename == previousRelease.FullFilename);
                 if (previousFullRelease == null)
                 {
                     logger.Error($"Unable to find {currentRelease.FullFilename} in release manifest.");

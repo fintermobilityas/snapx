@@ -214,7 +214,7 @@ namespace Snap.Core
             var channel = _snapApp.Channels.Single(x => x.Current);
 
             var deltaUpdates = snapReleases.Apps
-                .Where(x => x.IsDelta 
+                .Where(x => !x.IsGenisis 
                     && x.Target.Rid == _snapApp.Target.Rid 
                     && x.ChannelName == channel.Name 
                     && x.Version > _snapApp.Version)
@@ -258,7 +258,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var releaseToInstall = snapReleases.Apps.Last(x => !x.IsDelta);
+            var releaseToInstall = snapReleases.Apps.Last(x => !x.IsGenisis);
             var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstall))
             {

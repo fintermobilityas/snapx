@@ -20,34 +20,39 @@ namespace Snap.Core
     public interface ISnapUpdateManagerProgressSource
     {
         Action<(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
-        Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress { get; set; }
+
+        Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
+            DownloadProgress { get; set; }
+
         Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
         Action<int> TotalProgress { get; set; }
 
         void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum);
+
         void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
+
         void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
-        void RaiseTotalProgress(int percentage);        
+        void RaiseTotalProgress(int percentage);
     }
-    
+
     public sealed class SnapUpdateManagerProgressSource : ISnapUpdateManagerProgressSource
     {
         public Action<(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
-        public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress
-        {
-            get;
-            set;
-        }
+
+        public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
+            DownloadProgress { get; set; }
+
         public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
         public Action<int> TotalProgress { get; set; }
-        
+
         public void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)
         {
             ChecksumProgress?.Invoke((progressPercentage, releasesWithChecksumOk, releasesChecksummed, releasesToChecksum));
         }
 
-        public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)
+        public void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
+            long totalBytesToDownload)
         {
             DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
         }
@@ -61,21 +66,20 @@ namespace Snap.Core
         {
             TotalProgress?.Invoke(percentage);
         }
-
     }
-    
+
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
         Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
-        
-        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
+
+        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-        
-        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null, 
+
+        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
             CancellationToken cancellationToken = default);
-        
+
         string GetStubExecutableAbsolutePath();
     }
 
@@ -101,7 +105,6 @@ namespace Snap.Core
             Directory.GetParent(
                 Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName, logger)
         {
-
         }
 
         [UsedImplicitly]
@@ -111,9 +114,9 @@ namespace Snap.Core
         }
 
         [SuppressMessage("ReSharper", "JoinNullCheckWithUsage")]
-        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null, 
-            ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null, 
-            ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, 
+        internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null,
+            ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
+            ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null,
             ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -124,7 +127,7 @@ namespace Snap.Core
             _rootDirectory = workingDirectory;
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_rootDirectory, "packages");
             _snapApp = snapApp;
-            
+
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
             _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
             snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
@@ -136,17 +139,29 @@ namespace Snap.Core
             _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
                                       _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapCryptoProvider,
                                       _snapExtractor, _snapAppReader, _snapPack);
-            
+
             _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
         }
 
+        /// <summary>
+        /// Get all snap releases metadata. Useful if you want to show a version history, releases notes etc.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
         {
             var (snapReleases, _) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
             return snapReleases;
         }
 
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Updates current application to latest upstream release.
+        /// </summary>
+        /// <param name="snapProgressSource"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>Returns FALSE if there are no new releases available to install.</returns>
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null,
+            CancellationToken cancellationToken = default)
         {
             try
             {
@@ -160,28 +175,28 @@ namespace Snap.Core
         }
 
         /// <summary>
-        /// Restart current application. The stub executable will wait for this process until exit and then
-        /// 
+        /// Restart current application. You should invoke this method after <see cref="UpdateToLatestReleaseAsync"/> has finished.
         /// </summary>
         /// <param name="arguments"></param>
         /// <param name="cancellationToken"></param>
         /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
         /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
         /// <exception cref="OperationCanceledException">Is thrown when restart is cancelled by user.</exception>
-        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null, CancellationToken cancellationToken = default)
+        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
+            CancellationToken cancellationToken = default)
         {
             typeof(SnapUpdateManager).Assembly
                 .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
-            
+
             if (!_snapOs.Filesystem.FileExists(stubExecutableFullPath))
             {
                 throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
             }
-            
+
             var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
 
             var shutdownArguments = $"{argumentWaitForProcessId}";
-            
+
             var process = _snapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
                 .AddRange(arguments ?? new List<string>())
                 .Add(shutdownArguments)
@@ -189,67 +204,73 @@ namespace Snap.Core
 
             if (process.HasExited)
             {
-                throw new Exception($"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
-            }            
+                throw new Exception(
+                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
+            }
 
             await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
 
             return (stubExecutableFullPath, shutdownArguments);
         }
 
+        /// <summary>
+        /// Get absolute path to stub executable.
+        /// </summary>
+        /// <returns></returns>
         public string GetStubExecutableAbsolutePath()
         {
             typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
             return coreRunFullPath;
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, CancellationToken cancellationToken  = default)
-        {                        
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
+            CancellationToken cancellationToken = default)
+        {
             var (snapReleases, packageSource) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
             if (snapReleases == null)
             {
                 return null;
             }
-            
+
             var channel = _snapApp.Channels.Single(x => x.Current);
 
             var deltaUpdates = snapReleases.Apps
-                .Where(x => !x.IsGenisis 
-                    && x.Target.Rid == _snapApp.Target.Rid 
-                    && x.ChannelName == channel.Name 
-                    && x.Version > _snapApp.Version)
-                .OrderBy(x => x.Version) 
+                .Where(x => !x.IsGenisis
+                            && x.Target.Rid == _snapApp.Target.Rid
+                            && x.ChannelName == channel.Name
+                            && x.Version > _snapApp.Version)
+                .OrderBy(x => x.Version)
                 .ToList();
 
             if (!deltaUpdates.Any())
             {
                 return null;
             }
-            
+
             progressSource?.RaiseTotalProgress(0);
 
             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
             {
                 ChecksumProgress = tuple =>
                     progressSource?.RaiseChecksumProgress(
-                    tuple.progressPercentage, 
-                    tuple.releasesOk, 
-                    tuple.releasesChecksummed, 
-                    tuple.releasesToChecksum
-                ),
+                        tuple.progressPercentage,
+                        tuple.releasesOk,
+                        tuple.releasesChecksummed,
+                        tuple.releasesToChecksum
+                    ),
                 DownloadProgress = tuple =>
                     progressSource?.RaiseDownloadProgress(
-                    tuple.progressPercentage, 
-                    tuple.releasesDownloaded, 
-                    tuple.releasesToDownload,
-                    tuple.totalBytesDownloaded,
-                    tuple.totalBytesToDownload
-                ),
+                        tuple.progressPercentage,
+                        tuple.releasesDownloaded,
+                        tuple.releasesToDownload,
+                        tuple.totalBytesDownloaded,
+                        tuple.totalBytesToDownload
+                    ),
                 RestoreProgress = tuple =>
                     progressSource?.RaiseRestoreProgress(tuple.progressPercentage, tuple.releasesRestored, tuple.releasesToRestore)
             };
 
-            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory, 
+            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory,
                 snapReleases, _snapApp.Target, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
@@ -265,7 +286,7 @@ namespace Snap.Core
                 _logger?.Error($"Unable to find full nupkg: {nupkgToInstall}.");
                 return null;
             }
-            
+
             progressSource?.RaiseTotalProgress(60);
 
             SnapApp updatedSnapApp;
@@ -282,7 +303,7 @@ namespace Snap.Core
                 _logger?.ErrorException($"Unknown error updating application. Filename: {nupkgToInstall}.", e);
                 return null;
             }
-                       
+
             progressSource?.RaiseTotalProgress(100);
 
             return updatedSnapApp;
@@ -290,7 +311,6 @@ namespace Snap.Core
 
         public void Dispose()
         {
-      
         }
     }
 }

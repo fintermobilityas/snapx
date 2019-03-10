@@ -586,8 +586,7 @@ namespace snapx
             logger.Info($"Id: {snapApp.Id}");
             logger.Info($"Channel: {snapChannel.Name}");
             logger.Info($"Version: {snapApp.Version}");
-            logger.Info($"Upstream name: {snapChannel.PushFeed.Name}");
-            logger.Info($"Upstream url: {snapChannel.PushFeed.Source}");
+            logger.Info($"Feed name: {snapChannel.PushFeed.Name}");
 
             if (!logger.Prompt("y|yes", "Are you ready to push release upstream? [y|n]", infoOnly: packOptions.YesToAllPrompts))
             {

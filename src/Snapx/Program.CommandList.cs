@@ -88,7 +88,7 @@ namespace snapx
                 tables.Add((snapApp, new ConsoleTable(tableColumns) { Header = $"Id: {snapApp.Id}" }));
             }
 
-            const int maxConcurrentMetadataTasks = 4;
+            const int maxConcurrentMetadataTasks = 2;
             const int retriesPerTask = 5;
             const int delayInMilliseconds = 1200;
 

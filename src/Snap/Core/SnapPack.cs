@@ -688,11 +688,10 @@ namespace Snap.Core
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (releases == null) throw new ArgumentNullException(nameof(releases));
 
-            releases.Apps = releases.Apps.OrderBy(x => x.Version).ToList();
-
-            if (!releases.Apps.Any())
+            var genisisReleaseCount = releases.Apps.Count(x => x.IsGenisis && x.Target.Rid == snapApp.Target.Rid);
+            if (genisisReleaseCount != 1)
             {
-                throw new Exception("Must contain atleast one release.");
+                throw new Exception("Must contain exactly one (1) genisis release.");
             }
 
             var fullReleases = releases.Apps.Where(x => !x.IsDelta).Select(x => x.FullFilename).ToList();
@@ -717,7 +716,7 @@ namespace Snap.Core
                 Authors = {"Snapx"}
             };
 
-            foreach (var release in releases.Apps)
+            foreach (var release in releases.Apps.Where(x => x.Target.Rid == snapApp.Target.Rid))
             {
                 if (release.Id != snapRelease.Id)
                 {

@@ -211,7 +211,10 @@ namespace snapx
                 SnapProgressSource = new SnapProgressSource()
             };
 
-            snapPackageDetails.SnapProgressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
+            snapPackageDetails.SnapProgressSource.Progress += (sender, percentage) =>
+            {
+                logger.Info($"Progress: {percentage}%.");
+            };
 
             logger.Info($"Building full package: {snapApp.Version}.");
             var currentNupkgAbsolutePath = filesystem.PathCombine(snapApps.Generic.Packages, snapApp.BuildNugetLocalFilename());

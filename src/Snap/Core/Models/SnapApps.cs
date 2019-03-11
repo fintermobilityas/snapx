@@ -122,12 +122,14 @@ namespace Snap.Core.Models
         public string Icon { get; set; }
         public List<SnapShortcutLocation> Shortcuts { get; set; }
         public List<string> PersistentAssets { get; set; }
+        public List<SnapInstallerType> Installers { get; set; }
 
         [UsedImplicitly]
         public SnapsTarget()
         {
             Shortcuts = new List<SnapShortcutLocation>();
             PersistentAssets = new List<string>();
+            Installers = new List<SnapInstallerType>();
         }
 
         internal SnapsTarget([NotNull] SnapTarget target)
@@ -140,6 +142,7 @@ namespace Snap.Core.Models
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;
+            Installers = target.Installers;
         }
 
         public SnapsTarget([NotNull] SnapsTarget target)
@@ -152,6 +155,7 @@ namespace Snap.Core.Models
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;
+            Installers = target.Installers;
         }
     }
 

@@ -327,6 +327,8 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
             }
 
+            snapAppTarget.Installers = snapAppTarget.Installers.Distinct().ToList();
+
             if (!snapAppTarget.Rid.IsRuntimeIdentifierValidSafe())
             {
                 throw new Exception($"Unsupported rid: {rid}. Snap id: {snapApp.Id}");
@@ -340,7 +342,13 @@ namespace Snap.Extensions
             var snapAppTargetUniqueShortcuts = snapAppTarget.Shortcuts.Select(x => x).ToList();
             if (snapAppTargetUniqueShortcuts.Distinct().Count() != snapAppTarget.Shortcuts.Count)
             {
-                throw new Exception($"Target shortcut locations must be unique: {string.Join(",", snapAppTargetUniqueShortcuts)}. Snap id: {snapApp.Id}");
+                throw new Exception($"Target shortcut locations must be unique: {string.Join(", ", snapAppTargetUniqueShortcuts)}. Snap id: {snapApp.Id}");
+            }
+            
+            var snapAppTargetUniqueInstallers = snapAppTarget.Installers.Select(x => x).ToList();
+            if (snapAppTargetUniqueInstallers.Distinct().Count() != snapAppTarget.Installers.Count)
+            {
+                throw new Exception($"Target installer types must be unique: {string.Join(", ", snapAppTargetUniqueInstallers)}. Snap id: {snapApp.Id}");
             }
             
             if (snapAppTarget.Icon != null)

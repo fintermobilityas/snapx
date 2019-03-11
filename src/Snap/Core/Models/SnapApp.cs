@@ -141,12 +141,14 @@ namespace Snap.Core.Models
         public string Icon { get; set; }
         public List<SnapShortcutLocation> Shortcuts { get; set; }
         public List<string> PersistentAssets { get; set; }
+        public List<SnapInstallerType> Installers { get; set; }
 
         [UsedImplicitly]
         public SnapTarget()
         {
             Shortcuts = new List<SnapShortcutLocation>();
             PersistentAssets = new List<string>();
+            Installers = new List<SnapInstallerType>();
         }
 
         internal SnapTarget([NotNull] SnapTarget target)
@@ -159,6 +161,7 @@ namespace Snap.Core.Models
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;
+            Installers = target.Installers;
         }
 
         internal SnapTarget([NotNull] SnapsTarget snapsTarget) : this(new SnapTarget
@@ -169,7 +172,8 @@ namespace Snap.Core.Models
             Rid = snapsTarget.Rid,
             Icon = snapsTarget.Icon,
             Shortcuts = snapsTarget.Shortcuts,
-            PersistentAssets = snapsTarget.PersistentAssets
+            PersistentAssets = snapsTarget.PersistentAssets,
+            Installers = snapsTarget.Installers
         })
         {
             if (snapsTarget == null) throw new ArgumentNullException(nameof(snapsTarget));

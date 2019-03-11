@@ -26,6 +26,13 @@ namespace Snap.Core
         Startup = 1 << 2
     }
 
+    [Flags]
+    public enum SnapInstallerType
+    {
+        Web = 1 << 0,
+        Offline = 1 << 1
+    }
+
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapInstaller

@@ -650,7 +650,7 @@ namespace Snap.Tests.Core
             foreach (var (thisSnapApp, fullChecksum, fullFilesize, deltaChecksum, deltaFilesize, genisis) in packages)
             {
                 snapReleases.Apps.Add(new SnapRelease(thisSnapApp, 
-                    snapApp.GetCurrentChannelOrThrow(), fullChecksum, fullFilesize, deltaChecksum, deltaFilesize, genisis));                
+                    new List<string> { snapApp.GetCurrentChannelOrThrow().Name }, fullChecksum, fullFilesize, deltaChecksum, deltaFilesize, genisis));                
             }
                 
             var releasesNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetReleasesLocalFilename());

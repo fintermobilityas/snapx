@@ -154,8 +154,7 @@ namespace Snap.Core
 
             var snapReleasesThisRestoreTarget = new SnapReleases(snapReleases);
             snapReleasesThisRestoreTarget.Apps
-                .RemoveAll(x => x.Target.Rid != snapAppTarget.Rid 
-                    && x.ChannelName != snapChannel.Name);
+                .RemoveAll(x => !x.IsAvailableFor(snapAppTarget, snapChannel));
             if (!snapReleasesThisRestoreTarget.Apps.Any())
             {
                 return true;

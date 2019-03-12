@@ -235,7 +235,7 @@ namespace snapx
 
             if (mostRecentSnapApp == null)
             {
-                snapReleases.Apps.Add(new SnapRelease(snapApp, snapAppChannel, currentNupkgChecksum, currentNupkgFilesize, genisis: true));
+                snapReleases.Apps.Add(new SnapRelease(snapApp, new List<string> { snapAppChannel.Name }, currentNupkgChecksum, currentNupkgFilesize, genisis: true));
                 pushPackages.Add(currentNupkgAbsolutePath);
                 goto buildInstallers;
             }
@@ -257,7 +257,7 @@ namespace snapx
                 await filesystem.FileWriteAsync(deltaNupkgStream, deltaNupkgAbsolutePath, default);
             }
 
-            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, snapAppChannel, currentNupkgChecksum,
+            snapReleases.Apps.Add(new SnapRelease(deltaSnapApp, new List<string> { snapAppChannel.Name }, currentNupkgChecksum,
                 currentNupkgFilesize, deltaNupkgChecksum,deltaNupkgFilesize));
             pushPackages.Add(deltaNupkgAbsolutePath);
 

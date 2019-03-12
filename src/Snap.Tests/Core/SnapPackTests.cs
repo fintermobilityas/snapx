@@ -970,8 +970,8 @@ namespace Snap.Tests.Core
             var updatedAppFullChecksum = string.Join("", Enumerable.Repeat("C", 128));
             var updatedAppDeltaChecksum = string.Join("", Enumerable.Repeat("D", 128));
             
-            releases.Apps.Add(new SnapRelease(genisisApp, genisisApp.GetCurrentChannelOrThrow(), genisisChecksum, 1, genisis:true));
-            releases.Apps.Add(new SnapRelease(updatedApp, updatedApp.GetCurrentChannelOrThrow(), updatedAppFullChecksum, 2, updatedAppDeltaChecksum, 1));
+            releases.Apps.Add(new SnapRelease(genisisApp, new List<string> { genisisApp.GetCurrentChannelOrThrow().Name }, genisisChecksum, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(updatedApp, new List<string>{ updatedApp.GetCurrentChannelOrThrow().Name }, updatedAppFullChecksum, 2, updatedAppDeltaChecksum, 1));
 
             var expectedPackageId = $"{genisisApp.Id}_snapx";
             
@@ -1012,7 +1012,7 @@ namespace Snap.Tests.Core
             var genisisAppFullChecksum = string.Join("", Enumerable.Repeat("X", 128));            
             var releases = new SnapReleases();
             
-            releases.Apps.Add(new SnapRelease(genisisApp, genisisApp.GetCurrentChannelOrThrow(), genisisAppFullChecksum, 1, genisis: true));
+            releases.Apps.Add(new SnapRelease(genisisApp, new List<string> { genisisApp.GetCurrentChannelOrThrow().Name }, genisisAppFullChecksum, 1, genisis: true));
 
             var expectedPackageId = $"{genisisApp.Id}_snapx";
             
@@ -1072,8 +1072,8 @@ namespace Snap.Tests.Core
             var genisisChecksumLinux = string.Join("", Enumerable.Repeat("C", 128));
             var deltaChecksumLinux = string.Join("", Enumerable.Repeat("D", 128));
             
-            releases.Apps.Add(new SnapRelease(genisisAppWindows, genisisAppWindows.GetCurrentChannelOrThrow(), genisisChecksumWindows, 1, genisis:true));
-            releases.Apps.Add(new SnapRelease(deltaAppWindows, deltaAppWindows.GetCurrentChannelOrThrow(), genisisChecksumWindows, 2, deltaChecksumWindows, 3));
+            releases.Apps.Add(new SnapRelease(genisisAppWindows, new List<string> { genisisAppWindows.GetCurrentChannelOrThrow().Name }, genisisChecksumWindows, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(deltaAppWindows, new List<string> { deltaAppWindows.GetCurrentChannelOrThrow().Name }, genisisChecksumWindows, 2, deltaChecksumWindows, 3));
 
             var expectedPackageId = $"{snapAppId}_snapx";
             
@@ -1104,8 +1104,8 @@ namespace Snap.Tests.Core
                 }
             }
             
-            releases.Apps.Add(new SnapRelease(genisisAppLinux, genisisAppLinux.GetCurrentChannelOrThrow(), genisisChecksumLinux, 1, genisis:true));
-            releases.Apps.Add(new SnapRelease(deltaAppLinux, deltaAppLinux.GetCurrentChannelOrThrow(), genisisChecksumLinux, 2, deltaChecksumLinux, 3));
+            releases.Apps.Add(new SnapRelease(genisisAppLinux, new List<string> { genisisAppLinux.GetCurrentChannelOrThrow().Name }, genisisChecksumLinux, 1, genisis:true));
+            releases.Apps.Add(new SnapRelease(deltaAppLinux, new List<string> { deltaAppLinux.GetCurrentChannelOrThrow().Name }, genisisChecksumLinux, 2, deltaChecksumLinux, 3));
 
             using (var releasesStream = _snapPack.BuildReleasesPackage(genisisAppLinux, releases))
             {

@@ -17,7 +17,7 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public string UpstreamId { get; set; }
         public SemanticVersion Version { get; set; }
-        public string ChannelName { get; set; }
+        public List<string> Channels { get; set; }
         public SnapTarget Target { get; set; }
         public string FullFilename { get; set; }
         public long FullFilesize { get; set; }
@@ -30,7 +30,7 @@ namespace Snap.Core.Models
         [UsedImplicitly]
         public SnapRelease()
         {
-            
+            Channels = new List<string>();
         }
         
         public SnapRelease([NotNull] SnapRelease release)
@@ -39,7 +39,7 @@ namespace Snap.Core.Models
             Id = release.Id;
             UpstreamId = release.UpstreamId;
             Version = release.Version;
-            ChannelName = release.ChannelName;
+            Channels = release.Channels;
             Target = new SnapTarget(release.Target);
             FullFilename = release.FullFilename;
             FullFilesize = release.FullFilesize;
@@ -50,14 +50,14 @@ namespace Snap.Core.Models
             IsGenisis = release.IsGenisis;
         }
         
-        public SnapRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel, 
+        public SnapRelease([NotNull] SnapApp snapApp, List<string> channels, 
             string fullChecksum = null, long fullFilesize = 0, 
             string deltaChecksum = null, long deltaFileSize = 0, bool genisis = false) : this(new SnapRelease
         {
             Id = snapApp.Id,
             Version = snapApp.Version,
             UpstreamId = snapApp.BuildNugetUpstreamPackageId(),
-            ChannelName = channel.Name,
+            Channels = channels,
             Target = snapApp.Target,
             FullFilename = snapApp.BuildNugetFullLocalFilename(),
             FullFilesize = fullFilesize,
@@ -69,7 +69,9 @@ namespace Snap.Core.Models
         })
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (channel == null) throw new ArgumentNullException(nameof(channel));
+            if (channels == null) throw new ArgumentNullException(nameof(channels));
+            if (channels.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(channels));
+
             if (!genisis)
             {
                 return;
@@ -84,6 +86,26 @@ namespace Snap.Core.Models
             {
                 throw new ArgumentException("A genisis release should not specify a delta file size", nameof(deltaFileSize));
             }
+
+        }
+
+        public bool SupportsChannel([NotNull] SnapChannel channel)
+        {
+            if (channel == null) throw new ArgumentNullException(nameof(channel));
+            return SupportsChannel(channel.Name);
+        }
+        
+        public bool SupportsChannel([NotNull] string channelName)
+        {
+            if (channelName == null) throw new ArgumentNullException(nameof(channelName));
+            return Channels.Any(x => x == channelName);
+        }
+
+        public bool IsAvailableFor([NotNull] SnapTarget target, [NotNull] SnapChannel channel)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+            if (channel == null) throw new ArgumentNullException(nameof(channel));
+            return Target.Rid == target.Rid && SupportsChannel(channel);
         }
 
         public bool Equals(SnapRelease other)

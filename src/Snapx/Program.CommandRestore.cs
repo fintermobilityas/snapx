@@ -109,8 +109,7 @@ namespace snapx
                     logger.Info($"Restoring channel: {channel.Name}.");
 
                     var latestRelease = snapReleases.Apps
-                        .LastOrDefault(x => x.Target.Rid == snapApp.Target.Rid
-                                            && x.ChannelName == channel.Name);
+                        .LastOrDefault(x => x.IsAvailableFor(snapApp.Target, channel));
                             
                     if (latestRelease == null)
                     {

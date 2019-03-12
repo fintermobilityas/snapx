@@ -148,8 +148,8 @@ namespace snapx
                         var fullNupkgPackageId = snapAppTmp.BuildFullNugetUpstreamPackageId();
                         var deltaNupkgPackageId = snapAppTmp.BuildDeltaNugetUpstreamPackageId();
 
-                        var fullRelease = releases.Apps.FirstOrDefault(x => x.ChannelName == channelName && x.UpstreamId == fullNupkgPackageId);                        
-                        var deltaRelease = releases.Apps.LastOrDefault(x => x.ChannelName == channelName && x.UpstreamId == deltaNupkgPackageId);
+                        var fullRelease = releases.Apps.FirstOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == fullNupkgPackageId);                        
+                        var deltaRelease = releases.Apps.LastOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == deltaNupkgPackageId);
 
                         var rowValue = fullRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)

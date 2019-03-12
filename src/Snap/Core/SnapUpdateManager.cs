@@ -240,8 +240,7 @@ namespace Snap.Core
 
             var deltaUpdates = snapReleases.Apps
                 .Where(x => !x.IsGenisis
-                            && x.Target.Rid == _snapApp.Target.Rid
-                            && x.ChannelName == channel.Name
+                            && x.IsAvailableFor(_snapApp.Target, channel)
                             && x.Version > _snapApp.Version)
                 .OrderBy(x => x.Version)
                 .ToList();

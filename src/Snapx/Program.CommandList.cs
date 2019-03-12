@@ -70,11 +70,11 @@ namespace snapx
                     var packageSource = nuGetPackageSources.Items.Single(x => x.Name == channel.PushFeed.Name
                                                                               && x.SourceUri == channel.PushFeed.Source);
 
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildFullNugetUpstreamPackageId(), packageSource));
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildDeltaNugetUpstreamPackageId(), packageSource));
+                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamPackageId(), packageSource));
+                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamPackageId(), packageSource));
 
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildFullNugetUpstreamPackageId());
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildDeltaNugetUpstreamPackageId());
+                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamPackageId());
+                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamPackageId());
                 }
 
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);
@@ -145,8 +145,8 @@ namespace snapx
                         var snapAppTmp = new SnapApp(snapApp);
                         snapAppTmp.SetCurrentChannel(channelName);
 
-                        var fullNupkgPackageId = snapAppTmp.BuildFullNugetUpstreamPackageId();
-                        var deltaNupkgPackageId = snapAppTmp.BuildDeltaNugetUpstreamPackageId();
+                        var fullNupkgPackageId = snapAppTmp.BuildNugetUpstreamPackageId();
+                        var deltaNupkgPackageId = snapAppTmp.BuildNugetUpstreamPackageId();
 
                         var fullRelease = releases.Apps.FirstOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == fullNupkgPackageId);                        
                         var deltaRelease = releases.Apps.LastOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == deltaNupkgPackageId);

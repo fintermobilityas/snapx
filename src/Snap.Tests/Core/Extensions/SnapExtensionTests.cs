@@ -130,17 +130,15 @@ namespace Snap.Tests.Core.Extensions
                     Rid = "win7-x64"
                 }
             };
-
-            var fullOrDelta = !snapApp.Delta ? "full" : "delta";
-
-            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            
+            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Fact]
-        public void TestBuildFullNugetUpstreamPackageId()
+        public void TestBuildNugetUpstreamPackageId_Genisis()
         {
             var snapApp = new SnapApp
             {
@@ -153,14 +151,14 @@ namespace Snap.Tests.Core.Extensions
                     Rid = "win7-x64"
                 }
             };
-            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildFullNugetUpstreamPackageId();
+            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Fact]
-        public void TestBuildDeltaNugetUpstreamPackageId()
+        public void TestBuildNugetUpstreamPackageId_Delta()
         {
             var snapApp = new SnapApp
             {
@@ -174,9 +172,9 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildDeltaNugetUpstreamPackageId();
+            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         

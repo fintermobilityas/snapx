@@ -124,7 +124,7 @@ namespace Snap.Tests.Core
                 nugetServiceMock.Verify(x => x
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
-                        It.Is<DownloadContext>(v => v.PackageIdentity.Id.StartsWith(delta1SnapApp.BuildDeltaNugetUpstreamPackageId())),
+                        It.Is<DownloadContext>(v => v.PackageIdentity.Id.StartsWith(delta1SnapApp.BuildNugetUpstreamPackageId())),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
                 
@@ -251,7 +251,7 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity
-                            .ToString().Equals(fullRelease1PackageDetails.App.BuildFullNugetUpstreamPackageId() + $".{fullRelease1PackageDetails.App.Version}")),
+                            .ToString().Equals(fullRelease1PackageDetails.App.BuildNugetUpstreamPackageId() + $".{fullRelease1PackageDetails.App.Version}")),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
 
@@ -259,7 +259,7 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity.ToString()
-                            .Equals(delta1SnapApp.BuildDeltaNugetUpstreamPackageId() + $".{delta1SnapApp.Version}")),
+                            .Equals(delta1SnapApp.BuildNugetUpstreamPackageId() + $".{delta1SnapApp.Version}")),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
                 
@@ -400,7 +400,7 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity
-                        .ToString().Equals(fullRelease1PackageDetails.App.BuildFullNugetUpstreamPackageId() + $".{fullRelease1PackageDetails.App.Version}")),
+                        .ToString().Equals(fullRelease1PackageDetails.App.BuildNugetUpstreamPackageId() + $".{fullRelease1PackageDetails.App.Version}")),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
 
@@ -408,7 +408,7 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity.ToString()
-                        .Equals(delta1SnapApp.BuildDeltaNugetUpstreamPackageId() + $".{delta1SnapApp.Version}")),
+                        .Equals(delta1SnapApp.BuildNugetUpstreamPackageId() + $".{delta1SnapApp.Version}")),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
                 
@@ -416,7 +416,7 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity.ToString()
-                        .Equals(delta2SnapApp.BuildDeltaNugetUpstreamPackageId() + $".{delta2SnapApp.Version}")),
+                        .Equals(delta2SnapApp.BuildNugetUpstreamPackageId() + $".{delta2SnapApp.Version}")),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
                        
@@ -564,8 +564,8 @@ namespace Snap.Tests.Core
                     .DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => 
-                            v.PackageIdentity.Id == deltaSnapApp1.BuildDeltaNugetUpstreamPackageId() 
-                            || v.PackageIdentity.Id == deltaSnapApp2.BuildDeltaNugetUpstreamPackageId()),
+                            v.PackageIdentity.Id == deltaSnapApp1.BuildNugetUpstreamPackageId() 
+                            || v.PackageIdentity.Id == deltaSnapApp2.BuildNugetUpstreamPackageId()),
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Exactly(2));          
                 

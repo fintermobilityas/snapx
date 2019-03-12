@@ -722,15 +722,15 @@ namespace Snap.Core
                 {
                     throw new Exception($"Invalid id: {release.Id}. Expected: {snapRelease.Id}");
                 }
-                      
-                if (release.IsGenisis)
+                 
+                var expectedFullUpstreamId = new SnapApp(snapApp) {Version = release.Version}.BuildNugetUpstreamPackageId();
+                if (release.UpstreamId != expectedFullUpstreamId)
                 {
-                    var expectedFullUpstreamId = new SnapApp(snapApp) {Version = release.Version}.BuildFullNugetUpstreamPackageId();
-                    if (release.UpstreamId != expectedFullUpstreamId)
-                    {
-                        throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedFullUpstreamId}");                        
-                    }
-    
+                    throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedFullUpstreamId}");                        
+                }
+                     
+                if (release.IsGenisis)
+                {    
                     if (release.DeltaFilename != null)
                     {
                         throw new Exception($"Genisis release should not specify a delta filename. Filename: {release.FullFilename}.");
@@ -748,12 +748,6 @@ namespace Snap.Core
                 }
                 else
                 {
-                    var expectedDeltaUpstreamId = new SnapApp(snapApp) {Version = release.Version}.BuildDeltaNugetUpstreamPackageId();
-                    if (release.UpstreamId != expectedDeltaUpstreamId)
-                    {
-                        throw new Exception($"Invalid upstream id: {release.UpstreamId}. Expected: {expectedDeltaUpstreamId}");                        
-                    }
-                    
                     var expectedDeltaFilename = new SnapApp(snapApp) {Version = release.Version}.BuildNugetDeltaLocalFilename();
                     if (release.DeltaFilename != expectedDeltaFilename)
                     {

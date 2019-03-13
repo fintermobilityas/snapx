@@ -72,7 +72,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
-        Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
+        Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
 
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
@@ -152,10 +152,10 @@ namespace Snap.Core
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public async Task<SnapReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
+        public async Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
         {
-            var (snapReleases, _) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
-            return snapReleases;
+            var (snapsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            return snapsReleases?.GetReleases(_snapApp);
         }
 
         /// <summary>
@@ -230,21 +230,16 @@ namespace Snap.Core
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
             CancellationToken cancellationToken = default)
         {
-            var (snapReleases, packageSource) = await _snapPackageManager.GetSnapReleasesAsync(_snapApp, cancellationToken, _logger);
-            if (snapReleases == null)
+            var (snapsReleases, packageSource) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            if (snapsReleases == null)
             {
                 return null;
             }
 
-            var channel = _snapApp.Channels.Single(x => x.Current);
-
-            var deltaUpdates = snapReleases.Apps
-                .Where(x => !x.IsGenisis
-                            && x.IsAvailableFor(_snapApp.Target, channel)
-                            && x.Version > _snapApp.Version)
-                .OrderBy(x => x.Version)
-                .ToList();
-
+            var releases = snapsReleases.GetReleases(_snapApp);
+            var channel = _snapApp.GetCurrentChannelOrThrow();
+            
+            var deltaUpdates = releases.GetDeltaReleasesNewerThan(channel, _snapApp.Version);
             if (!deltaUpdates.Any())
             {
                 return null;
@@ -277,8 +272,8 @@ namespace Snap.Core
                 )
             };
 
-            if (!await _snapPackageManager.RestoreAsync(_logger, _packagesDirectory,
-                snapReleases, _snapApp.Target, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
+            if (!await _snapPackageManager.RestoreAsync(_packagesDirectory, releases, channel, 
+                packageSource, snapPackageManagerProgressSource, _logger, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
                 return null;
@@ -286,8 +281,14 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var releaseToInstall = snapReleases.Apps.Last(x => !x.IsGenisis);
-            var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.FullFilename);
+            var releaseToInstall = releases.GetMostRecentRelease(channel);
+            if (!releaseToInstall.IsDelta)
+            {
+                _logger.Error($"Fatal error! Expected to install delta release but was: {releaseToInstall.Filename}");
+                return null;
+            }
+            
+            var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.Filename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstall))
             {
                 _logger.Error($"Unable to find full nupkg: {nupkgToInstall}.");
@@ -313,7 +314,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(100);
 
-            return updatedSnapApp;
+            return new SnapApp(updatedSnapApp);
         }
 
         public void Dispose()

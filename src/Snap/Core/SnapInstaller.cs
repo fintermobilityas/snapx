@@ -132,7 +132,7 @@ namespace Snap.Core
             
             snapProgressSource?.Raise(30);
             logger?.Info($"Extracting nupkg to app directory: {appDirectory}");
-            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDirectory, false, cancellationToken);
+            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDirectory, cancellationToken);
             if (!extractedFiles.Any())
             {
                 logger?.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");
@@ -238,7 +238,7 @@ namespace Snap.Core
 
             snapProgressSource?.Raise(60);
             logger?.Info($"Extracting nupkg to app directory: {appDirectory}");
-            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDirectory, false, cancellationToken);
+            var extractedFiles = await _snapExtractor.ExtractAsync(asyncPackageCoreReader, appDirectory, cancellationToken);
             if (!extractedFiles.Any())
             {
                 logger?.Error($"Unknown error when attempting to extract nupkg: {nupkgAbsoluteFilename}");

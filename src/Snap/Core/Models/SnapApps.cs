@@ -167,6 +167,7 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
+        public string ReleaseNotes { get; set; }
         
         [UsedImplicitly]
         public SnapsApp()
@@ -181,6 +182,7 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
+            ReleaseNotes = snapApp.ReleaseNotes;
         }
 
         public SnapsApp([NotNull] SnapsApp snapApp)
@@ -189,6 +191,7 @@ namespace Snap.Core.Models
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
+            ReleaseNotes = snapApp.ReleaseNotes;
         }
     }
 

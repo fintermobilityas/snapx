@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -85,7 +84,7 @@ namespace Snap.Tests.Core
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
 
-                var snapAppAfterChannel = snapAppAfter.Channels.Single();
+                var snapAppAfterChannel = snapAppAfter.GetCurrentChannelOrThrow();
                 Assert.Null(snapAppAfterChannel.PushFeed.ApiKey);
                 Assert.Null(snapAppAfterChannel.PushFeed.Username);
                 Assert.Null(snapAppAfterChannel.PushFeed.Password);

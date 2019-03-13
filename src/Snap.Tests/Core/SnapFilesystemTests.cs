@@ -21,7 +21,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync()
         {
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
             {
                 var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
                 _snapFilesystem.DirectoryCreate(rootDirectory);
@@ -41,7 +41,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync_Non_Existant_Directory()
         {
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
             {
                 var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");                
                 await _snapFilesystem.DirectoryDeleteAsync(rootDirectory);                
@@ -52,7 +52,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync_ExcludePaths()
         {
-            using (var tmpDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
             {
                 var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
                 _snapFilesystem.DirectoryCreate(rootDirectory);

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using Snap.Extensions;
@@ -25,7 +24,6 @@ namespace Snap.Reflection
         IEnumerable<ITypeReflector> GetTypes();
         CecilResourceReflector GetResourceReflector();
         void AddResource(EmbeddedResource embeddedResource);
-        void SetSnapAware();
         void AddCustomAttribute(CustomAttribute attribute);
         void RewriteOrThrow<TSource>(Expression<Func<TSource, object>> selector, Action<TypeDefinition, string, string, PropertyDefinition> rewriter);
     }
@@ -78,24 +76,6 @@ namespace Snap.Reflection
         public CecilResourceReflector GetResourceReflector()
         {
             return new CecilResourceReflector(_assemblyDefinition);
-        }
-
-        public void SetSnapAware()
-        {
-            if (_assemblyDefinition.MainModule.Kind != ModuleKind.Console
-                && _assemblyDefinition.MainModule.Kind != ModuleKind.Windows)
-            {
-                throw new NotSupportedException("Only executables are allowed to be marked snap aware.");    
-            }
-            
-            var attributeConstructor = _assemblyDefinition.MainModule.ImportReference(
-                typeof(AssemblyMetadataAttribute).GetConstructor(new []{ typeof(string), typeof(string) }));
-
-            var attribute = new CustomAttribute(attributeConstructor);
-            attribute.ConstructorArguments.Add(new CustomAttributeArgument(MainModule.TypeSystem.String, "SnapAwareVersion"));
-            attribute.ConstructorArguments.Add(new CustomAttributeArgument(MainModule.TypeSystem.String, "1"));
-
-            _assemblyDefinition.CustomAttributes.Add(attribute);
         }
 
         public void AddCustomAttribute([NotNull] CustomAttribute attribute)

@@ -1,12 +1,12 @@
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
-using Mono.Cecil;
 using Moq;
 using NuGet.Packaging;
 using Snap.AnyOS;
 using Snap.Core;
-using Snap.Core.IO;
+using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Shared.Tests;
 using Xunit;
@@ -14,9 +14,9 @@ using Snap.Shared.Tests.Extensions;
 
 namespace Snap.Tests.Core
 {
-    public class SnapCryptoProviderTests : IClassFixture<BaseFixture>
+    public class SnapCryptoProviderTests : IClassFixture<BaseFixturePackaging>
     {
-        readonly BaseFixture _baseFixture;
+        readonly BaseFixturePackaging _baseFixture;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapOs _snapOs;
         readonly SnapAppReader _snapAppReader;
@@ -25,7 +25,7 @@ namespace Snap.Tests.Core
         readonly ISnapPack _snapPack;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
 
-        public SnapCryptoProviderTests(BaseFixture baseFixture)
+        public SnapCryptoProviderTests(BaseFixturePackaging baseFixture)
         {
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
@@ -38,29 +38,43 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task TestSha512_Checksum_Is_Equal_If_Checksummed_Twice()
+        public async Task TestSha512_PackageArchiveReader_Central_Directory_Corrupt()
         {
-            var snapApp = _baseFixture.BuildSnapApp();
-            var mainAssemblyDefinition = _baseFixture.BuildSnapAwareEmptyExecutable(snapApp);
-            var snapFileSystem = _snapOs.Filesystem;
-
-            var nuspecLayout = new Dictionary<string, object>
+            using (var rootDir = _baseFixture.WithDisposableTempDirectory(_snapOs.Filesystem))
             {
-                {mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition},
-            };
+                var snapReleases = new SnapAppsReleases();
+                var snapApp = _baseFixture.BuildSnapApp();
+                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(snapApp);
+                var snapFileSystem = _snapOs.Filesystem;
 
-            var (nupkgMemoryStream, _, _) = await _baseFixture
-                .BuildInMemoryFullPackageAsync(snapApp, _coreRunLibMock.Object, snapFileSystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
+                var nuspecLayout = new Dictionary<string, object>
+                {
+                    {mainAssemblyDefinition.BuildRelativeFilename(), mainAssemblyDefinition},
+                };
 
-            using (mainAssemblyDefinition)
-            using (nupkgMemoryStream)
-            using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgMemoryStream))
-            {
-                var checksum1 = _snapCryptoProvider.Sha512(asyncPackageCoreReader, Encoding.UTF8);
-                var checksum2 = _snapCryptoProvider.Sha512(asyncPackageCoreReader, Encoding.UTF8);
-                Assert.NotNull(checksum1);
-                Assert.True(checksum1.Length == 128);
-                Assert.Equal(checksum1, checksum2);
+                var (nupkgMemoryStream, _) = await _baseFixture
+                    .BuildPackageAsync(rootDir, snapReleases, snapApp, _coreRunLibMock.Object, snapFileSystem, _snapPack, _snapEmbeddedResources, nuspecLayout);
+
+                void Checksum(SnapRelease snapRelease)
+                {
+                    if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+                    using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgMemoryStream, true))
+                    {
+                        var checksum1 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
+                        var checksum2 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
+                        Assert.NotNull(checksum1);
+                        Assert.True(checksum1.Length == 128);
+                        Assert.Equal(checksum1, checksum2);
+                    }
+                }
+        
+                using (mainAssemblyDefinition)
+                using (nupkgMemoryStream)
+                {
+                    var snapRelease = snapReleases.GetReleases(snapApp).Single();
+                    Checksum(snapRelease);
+                    Checksum(snapRelease);
+                }
             }
         }
     }

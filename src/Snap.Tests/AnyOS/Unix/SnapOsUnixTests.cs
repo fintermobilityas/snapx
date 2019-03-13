@@ -1,12 +1,10 @@
 ﻿#if PLATFORM_UNIX
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Snap.AnyOS;
 using Snap.AnyOS.Unix;
 using Snap.Core;
-using Snap.Core.IO;
 using Snap.Shared.Tests;
 using Xunit;
 

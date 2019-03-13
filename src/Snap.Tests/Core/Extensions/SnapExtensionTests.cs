@@ -122,7 +122,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                DeltaSummary = isDelta ? new SnapAppDeltaSummary() : null,
+                IsGenisis = !isDelta,
                 Target = new SnapTarget
                 {
                     Os = OSPlatform.Windows,
@@ -136,48 +136,7 @@ namespace Snap.Tests.Core.Extensions
             var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
-        
-        [Fact]
-        public void TestBuildNugetUpstreamPackageId_Genisis()
-        {
-            var snapApp = new SnapApp
-            {
-                Id = "demoapp",
-                Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                Target = new SnapTarget
-                {
-                    Os = OSPlatform.Windows,
-                    Framework = "netcoreapp2.1",
-                    Rid = "win7-x64"
-                }
-            };
-            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
-            
-            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
-            Assert.Equal(expectedPackageId, actualPackageId);
-        }
-        
-        [Fact]
-        public void TestBuildNugetUpstreamPackageId_Delta()
-        {
-            var snapApp = new SnapApp
-            {
-                Id = "demoapp",
-                Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                Target = new SnapTarget
-                {
-                    Os = OSPlatform.Windows,
-                    Framework = "netcoreapp2.1",
-                    Rid = "win7-x64"
-                }
-            };
-
-            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
-            
-            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
-            Assert.Equal(expectedPackageId, actualPackageId);
-        }
-        
+       
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -187,7 +146,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                DeltaSummary = isDelta ? new SnapAppDeltaSummary() : null,
+                IsGenisis = !isDelta,
                 Target = new SnapTarget
                 {
                     Os = OSPlatform.Windows,
@@ -196,7 +155,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var fullOrDelta = !snapApp.Delta ? "full" : "delta";
+            var fullOrDelta = snapApp.IsDelta ? "delta" : "full";
 
             var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
@@ -211,6 +170,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsGenisis = true,
                 Target = new SnapTarget
                 {
                     Os = OSPlatform.Windows,
@@ -232,7 +192,6 @@ namespace Snap.Tests.Core.Extensions
             {
                 Id = "demoapp",
                 Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                DeltaSummary = new SnapAppDeltaSummary(),
                 Target = new SnapTarget
                 {
                     Os = OSPlatform.Windows,

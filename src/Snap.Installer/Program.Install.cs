@@ -86,23 +86,24 @@ namespace Snap.Installer
                     try
                     {
                         var snapApp = environment.Io.ThisExeWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
-                        var (snapReleases, packageSource) = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken, mainWindowLogger);
-                        if (snapReleases == null)
+                        var (snapsReleases, packageSource) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
+                        if (snapsReleases == null)
                         {
                             mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
                             goto done;
                         }
 
-                        if (!snapReleases.Apps.Any())
+                        var snapAppReleases = snapsReleases.GetReleases(snapApp);
+                        if (!snapAppReleases.Any())
                         {
                             mainWindowLogger.Error("Downloaded releases manifest but could not find any available installer assets.");
                             goto done;
                         }
 
                         var channel = snapApp.GetCurrentChannelOrThrow();
-                        var newestVersion = snapReleases.Apps.Last();
+                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(channel);
 
-                        mainWindowLogger.Info($"Current version: {newestVersion.Version}. Channel: {channel.Name}.");
+                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {channel.Name}.");
 
                         // ReSharper disable once MethodSupportsCancellation
                         await Task.Delay(TimeSpan.FromSeconds(3));
@@ -191,8 +192,8 @@ namespace Snap.Installer
                                     releasesRestored: x.releasesRestored)
                             };
 
-                            if (!await snapPackageManager.RestoreAsync(diskLogger,
-                                tmpRestoreDir.WorkingDirectory, snapReleases, snapApp.Target, channel, packageSource, snapPackageManagerProgressSource, cancellationToken))
+                            if (!await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppReleases, channel,
+                                 packageSource, snapPackageManagerProgressSource, diskLogger, cancellationToken))
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");
                                 goto done;
@@ -200,7 +201,7 @@ namespace Snap.Installer
 
                             mainWindowLogger.Info("Preparing to install payload");
 
-                            var setupNupkgAbsolutePath = snapOs.Filesystem.PathCombine(tmpRestoreDir.WorkingDirectory, newestVersion.FullFilename);
+                            var setupNupkgAbsolutePath = snapOs.Filesystem.PathCombine(tmpRestoreDir.WorkingDirectory, mostRecentRelease.Filename);
                             if (!snapFilesystem.FileExists(setupNupkgAbsolutePath))
                             {
                                 mainWindowLogger.Error($"Payload does not exist on disk: {setupNupkgAbsolutePath}.");

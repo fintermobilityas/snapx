@@ -18,7 +18,7 @@ namespace Snap.Tests.Core
         {
             _baseFixture = baseFixture;
 
-            SnapAwareApp.Current = null;
+            SnapAwareApp._current = null;
         }
 
         [Fact]

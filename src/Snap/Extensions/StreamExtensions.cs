@@ -20,13 +20,13 @@ namespace Snap.Extensions
             #endif
         }
 
-        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Task<Stream> srcStreamTask, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = false)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Task<Stream> srcStreamTask, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = true)
         {
             var srcStream = await srcStreamTask;
             return await srcStream.ReadToEndAsync(cancellationToken, leaveSrcStreamOpen);
         }
 
-        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = false)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = true)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             var outputStream = new MemoryStream();
@@ -37,19 +37,6 @@ namespace Snap.Extensions
                 srcStream.Dispose();
             }
             return outputStream;
-        }
-
-        public static MemoryStream DuplicateStream([NotNull] this MemoryStream srcStream)
-        {
-            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
-            var dupedStream = new MemoryStream();
-            
-            srcStream.Seek(0, SeekOrigin.Begin);
-            srcStream.CopyTo(dupedStream);
-            
-            dupedStream.Seek(0, SeekOrigin.Begin);
-            
-            return dupedStream;
         }
     }
 }

@@ -17,6 +17,8 @@ namespace Snap.Core
     {
         static readonly ILog Logger = LogProvider.GetLogger(nameof(SnapAwareApp));
         static readonly object SyncRoot = new object();
+        // ReSharper disable once InconsistentNaming
+        internal static SnapApp _current;
         
         internal static ISnapOs SnapOs { get; set; }
 
@@ -34,7 +36,7 @@ namespace Snap.Core
             {     
                 SnapOs = AnyOS.SnapOs.AnyOs;
                 WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
-                Current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
+                _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
             }
             catch (Exception e)
             {
@@ -45,7 +47,7 @@ namespace Snap.Core
         /// <summary>
         /// Current application release information.
         /// </summary>
-        public static SnapApp Current { get; internal set; }
+        public static SnapApp Current => new SnapApp(_current);
         
         /// <summary>
         /// Current application working directory.

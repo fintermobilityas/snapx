@@ -17,22 +17,13 @@ namespace snapx
 {
     internal partial class Program
     {
-        static async Task<int> CommandRestoreAsync([JetBrains.Annotations.NotNull] [NotNull]
-            RestoreOptions restoreOptions,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            ISnapFilesystem filesystem,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            ISnapAppReader snapAppReader, [JetBrains.Annotations.NotNull] [NotNull]
-            INuGetPackageSources nuGetPackageSources,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            INugetService nugetService,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            ISnapExtractor snapExtractor, [JetBrains.Annotations.NotNull] [NotNull]
-            ISnapPackageManager snapPackageManager,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            ILog logger,
-            [JetBrains.Annotations.NotNull] [NotNull]
-            string workingDirectory, CancellationToken cancellationToken)
+        static async Task<int> CommandRestoreAsync([NotNull] RestoreOptions restoreOptions,
+            [NotNull] ISnapFilesystem filesystem,
+            [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] INugetService nugetService,
+            [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapPackageManager snapPackageManager,
+            [NotNull] ILog logger,
+            [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (restoreOptions == null) throw new ArgumentNullException(nameof(restoreOptions));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -65,23 +56,23 @@ namespace snapx
 
             logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}.");
 
-            var releaseManifests = new Dictionary<string, (SnapReleases snapReleases, PackageSource packageSource)>();
+            var releaseManifests = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
 
             foreach (var snapApp in snapAppTargets)
             {
                 var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
                 filesystem.DirectoryCreateIfNotExists(packagesDirectory);
-                
+
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 logger.Info($"Id: {snapApp.Id}.");
                 logger.Info($"Rid: {snapApp.Target.Rid}");
                 logger.Info($"Packages directory: {packagesDirectory}");
 
-                SnapReleases snapReleases;
+                SnapAppsReleases snapAppsReleases;
                 PackageSource packageSource;
                 if (releaseManifests.TryGetValue(snapApp.Id, out var cached))
                 {
-                    snapReleases = cached.snapReleases;
+                    snapAppsReleases = cached.snapReleases;
                     packageSource = cached.packageSource;
                 }
                 else
@@ -89,36 +80,35 @@ namespace snapx
                     logger.Info("Downloading releases manifest");
 
                     // ReSharper disable once UseDeconstruction
-                    var uncached = await snapPackageManager.GetSnapReleasesAsync(snapApp, cancellationToken);
-                    if(uncached.snapReleases == null)
+                    var uncached = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+                    if (uncached.snapsReleases == null)
                     {
                         logger.Error("Failed to download releases manifest");
                         return 1;
                     }
 
-                    snapReleases = uncached.snapReleases;
+                    snapAppsReleases = uncached.snapsReleases;
                     packageSource = uncached.packageSource;
                     releaseManifests.Add(snapApp.Id, uncached);
-                    
+
                     logger.Info("Downloaded releases manifest");
                 }
-                               
+
+                var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
+
                 foreach (var channel in snapApp.Channels)
                 {
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     logger.Info($"Restoring channel: {channel.Name}.");
 
-                    var latestRelease = snapReleases.Apps
-                        .LastOrDefault(x => x.IsAvailableFor(snapApp.Target, channel));
-                            
-                    if (latestRelease == null)
+                    if (!snapAppReleases.HasAnyReleasesIn(channel))
                     {
                         logger.Info("No releases has been published to this channel.");
                         continue;
                     }
-                    
-                    await snapPackageManager.RestoreAsync(logger, packagesDirectory, snapReleases,
-                         snapApp.Target, channel, packageSource, null, cancellationToken);
+
+                    await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, channel,
+                        packageSource, logger: logger, cancellationToken: cancellationToken);
                 }
             }
 

@@ -9,16 +9,17 @@ using Snap.NuGet;
 using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
-{
+{    
     public sealed class SnapApp
     {
         public string Id { get; set; }
         public SemanticVersion Version { get; set; }
         public SnapTarget Target { get; set; }
         public List<SnapChannel> Channels { get; set; }
+        public bool IsGenisis { get; set; }
         [YamlIgnore]
-        public bool Delta => DeltaSummary != null;
-        public SnapAppDeltaSummary DeltaSummary { get; set; }
+        public bool IsDelta => !IsGenisis;
+        public string ReleaseNotes { get; set; }
         
         [UsedImplicitly]
         public SnapApp()
@@ -31,12 +32,14 @@ namespace Snap.Core.Models
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
             Version = app.Version;
-            DeltaSummary = app.Delta ? new SnapAppDeltaSummary(app.DeltaSummary) : null;
+            // TODO: Can this null check be removed?
             if (app.Target != null)
             {
                 Target = new SnapTarget(app.Target);
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
+            IsGenisis = app.IsGenisis;
+            ReleaseNotes = app.ReleaseNotes;
         }
 
         internal void SetCurrentChannel([NotNull] string channelName)

@@ -120,12 +120,12 @@ namespace snapx
                     continue;
                 }
 
-                SnapReleases releases;
+                SnapAppsReleases snapAppsReleases;
                 
                 using (var packageArchiveReader = new PackageArchiveReader(downloadResourceResult.PackageStream))
                 {
-                    releases = await snapExtractor.ExtractReleasesAsync(packageArchiveReader, appReader, cancellationToken);
-                    if (releases == null)
+                    snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, appReader, cancellationToken);
+                    if (snapAppsReleases == null)
                     {
                         logger.Error($"Failed to unpack releases nupkg for application: {thisSnapApps.Id}");
                         continue;
@@ -139,27 +139,23 @@ namespace snapx
                         target.Rid
                     };
 
-                    var snapApp = snapAppses.Single(x => x.Id == thisSnapApps.Id && x.Target.Rid == target.Rid);
+                    var snapApp = snapAppses.Single(x => x.Id == thisSnapApps.Id && x.Target.Rid == target.Rid);                    
+                    var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
+
                     foreach (var channelName in thisSnapApps.Channels)
-                    {
-                        var snapAppTmp = new SnapApp(snapApp);
-                        snapAppTmp.SetCurrentChannel(channelName);
+                    {         
+                        var genisisRelease = snapAppReleases.GetGenisisRelease(channelName);
+                        var deltaRelease = snapAppReleases.GetMostRecentDeltaRelease(channelName);
 
-                        var fullNupkgPackageId = snapAppTmp.BuildNugetUpstreamPackageId();
-                        var deltaNupkgPackageId = snapAppTmp.BuildNugetUpstreamPackageId();
-
-                        var fullRelease = releases.Apps.FirstOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == fullNupkgPackageId);                        
-                        var deltaRelease = releases.Apps.LastOrDefault(x => x.SupportsChannel(channelName) && x.UpstreamId == deltaNupkgPackageId);
-
-                        var rowValue = fullRelease == null && deltaRelease == null ? "-" : string.Empty;
+                        var rowValue = genisisRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)
                         {
                             goto done;
                         }
 
-                        if (fullRelease != null)
+                        if (genisisRelease != null)
                         {
-                            rowValue += $"Full: {fullRelease.Version} ({fullRelease.FullFilesize.BytesAsHumanReadable()})";
+                            rowValue += $"Full: {genisisRelease.Version} ({genisisRelease.Filesize.BytesAsHumanReadable()})";
                         }
                         else
                         {
@@ -168,7 +164,7 @@ namespace snapx
 
                         if (deltaRelease != null)
                         {
-                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
+                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.Filesize.BytesAsHumanReadable()})";
                         }
                         else
                         {

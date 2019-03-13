@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using JetBrains.Annotations;
 using NuGet.Common;
 using NuGet.Configuration;
@@ -19,8 +21,37 @@ using Snap.NuGet;
 namespace Snap.Extensions
 {
     internal static class NuGetExtensions
-    {        
-        internal static async Task<Uri> BuildDownloadUrlV3Async([NotNull] this DownloadResourceV3 downloadResourceV3, [NotNull] PackageIdentity identity, [NotNull] ILogger logger, CancellationToken token)
+    {
+        public static XElement SingleOrDefault([NotNull] this XDocument xDocument, [NotNull] XName name, bool ignoreCase = true)
+        {
+            if (xDocument == null) throw new ArgumentNullException(nameof(xDocument));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            return xDocument.Descendants().SingleOrDefault(name, ignoreCase);
+        }
+
+        public static XElement SingleOrDefault([NotNull] this XElement xElement, [NotNull] XName name, bool ignoreCase = true)
+        {
+            if (xElement == null) throw new ArgumentNullException(nameof(xElement));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            return xElement.Descendants().SingleOrDefault(name, ignoreCase);
+        }
+
+        public static XElement SingleOrDefault([NotNull] this IEnumerable<XElement> xElements, [NotNull] XName name, bool ignoreCase = true)
+        {
+            if (xElements == null) throw new ArgumentNullException(nameof(xElements));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            return (
+                from node in xElements
+                let comperator = ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture
+                where
+                    string.Equals(node.Name.LocalName, name.LocalName, comperator)
+                    && string.Equals(node.Name.NamespaceName, name.NamespaceName, comperator)
+                select node)
+            .FirstOrDefault();
+        }
+
+        internal static async Task<Uri> BuildDownloadUrlV3Async([NotNull] this DownloadResourceV3 downloadResourceV3, [NotNull] PackageIdentity identity,
+            [NotNull] ILogger logger, CancellationToken token)
         {
             if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
             if (identity == null) throw new ArgumentNullException(nameof(identity));
@@ -28,7 +59,7 @@ namespace Snap.Extensions
             if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
 
             var type = downloadResourceV3.GetType();
-            
+
             const string getDownloadUrlMethodName = "GetDownloadUrl";
             var getDownloadUrlMethod = type.GetMethod(getDownloadUrlMethodName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (getDownloadUrlMethod == null)
@@ -45,9 +76,9 @@ namespace Snap.Extensions
         internal static HttpSource BuildHttpSource([NotNull] this DownloadResourceV3 downloadResourceV3)
         {
             if (downloadResourceV3 == null) throw new ArgumentNullException(nameof(downloadResourceV3));
-            
+
             var type = downloadResourceV3.GetType();
-            
+
             const string httpSourcePrivateReadonlyFieldName = "_client";
             var httpSource = type.GetField(httpSourcePrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (httpSource == null)
@@ -55,15 +86,15 @@ namespace Snap.Extensions
                 throw new MissingFieldException(httpSourcePrivateReadonlyFieldName);
             }
 
-            return httpSource.GetValue(downloadResourceV3) as HttpSource;            
+            return httpSource.GetValue(downloadResourceV3) as HttpSource;
         }
-        
+
         internal static HttpSource BuildHttpSource([NotNull] this V2FeedParser v2FeedParser)
         {
             if (v2FeedParser == null) throw new ArgumentNullException(nameof(v2FeedParser));
-            
+
             var type = v2FeedParser.GetType();
-            
+
             const string httpSourcePrivateReadonlyFieldName = "_httpSource";
             var httpSource = type.GetField(httpSourcePrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (httpSource == null)
@@ -71,7 +102,7 @@ namespace Snap.Extensions
                 throw new MissingFieldException(httpSourcePrivateReadonlyFieldName);
             }
 
-            return httpSource.GetValue(v2FeedParser) as HttpSource;            
+            return httpSource.GetValue(v2FeedParser) as HttpSource;
         }
 
         internal static string BuildDownloadUrlV2([NotNull] this PackageIdentity packageIdentity)
@@ -80,13 +111,13 @@ namespace Snap.Extensions
             var dependencyInfo = packageIdentity as SourcePackageDependencyInfo;
             return dependencyInfo?.DownloadUri?.ToString();
         }
-        
+
         internal static V2FeedParser BuildV2FeedParser([NotNull] this DownloadResourceV2Feed downloadResourceV2Feed)
         {
             if (downloadResourceV2Feed == null) throw new ArgumentNullException(nameof(downloadResourceV2Feed));
 
             var type = downloadResourceV2Feed.GetType();
-            
+
             const string feedParserPrivateReadonlyFieldName = "_feedParser";
             var v2FeedParser = type.GetField(feedParserPrivateReadonlyFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (v2FeedParser == null)
@@ -96,7 +127,7 @@ namespace Snap.Extensions
 
             return v2FeedParser.GetValue(downloadResourceV2Feed) as V2FeedParser;
         }
-        
+
         internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
@@ -105,7 +136,7 @@ namespace Snap.Extensions
 
         internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapApp snapApp)
         {
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));            
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return new PackageIdentity(snapApp.BuildNugetUpstreamPackageId(), snapApp.Version.ToNuGetVersion());
         }
 
@@ -115,61 +146,71 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (nugetSources == null) throw new ArgumentNullException(nameof(nugetSources));
 
-            var channel = snapApp.Channels.Single(x => x.Current);
+            var channel = snapApp.GetCurrentChannelOrThrow();
             var updateFeed = (SnapNugetFeed) channel.UpdateFeed;
             var packageSource = nugetSources.Items.Single(x => x.Name == updateFeed.Name && x.SourceUri == updateFeed.Source);
-            
+
             return new NuGetPackageSearchMedatadata(snapApp.BuildPackageIdentity(), packageSource, DateTimeOffset.Now, new List<PackageDependency>());
         }
-               
-        internal static DownloadResourceResult BuildDownloadResourceResult([NotNull] this SnapApp snapApp, 
+
+        internal static DownloadResourceResult BuildDownloadResourceResult([NotNull] this SnapApp snapApp,
             [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nugetSources)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (packageStream == null) throw new ArgumentNullException(nameof(packageStream));
             if (nugetSources == null) throw new ArgumentNullException(nameof(nugetSources));
 
-            var channel = snapApp.Channels.Single(x => x.Current);
+            var channel = snapApp.GetCurrentChannelOrThrow();
             var updateFeed = (SnapNugetFeed) channel.UpdateFeed;
             var packageSource = nugetSources.Items.Single(x => x.Name == updateFeed.Name && x.SourceUri == updateFeed.Source);
 
             return new DownloadResourceResult(new MemoryStream(packageStream.ToArray()), new PackageArchiveReader(packageStream), packageSource.Name);
         }
-        
+
         internal static bool SuccessSafe(this DownloadResourceResult downloadResourceResult)
         {
             return downloadResourceResult != null && downloadResourceResult.Status == DownloadResourceResultStatus.Available;
         }
-        
+
+        public static bool RemovePackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string targetPath)
+        {
+            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
+            if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
+            var packageFile = packageBuilder.GetPackageFile(targetPath);
+            return packageFile != null && packageBuilder.Files.Remove(packageFile);
+        }
+
         public static IPackageFile GetPackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)
         {
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (filename == null) throw new ArgumentNullException(nameof(filename));
 
             return packageBuilder.Files.SingleOrDefault(x => string.Equals(
-                filename.ForwardSlashesSafe(), 
-                x.Path.ForwardSlashesSafe(), 
+                filename.ForwardSlashesSafe(),
+                x.Path.ForwardSlashesSafe(),
                 StringComparison.InvariantCultureIgnoreCase));
         }
 
-        internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
+        internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,
+            CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken, true))
+            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken))
             {
                 return new NuspecReader(nuspecStream);
             }
         }
 
-        internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken)
+        internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,
+            CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken, true))
+            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken))
             {
                 return Manifest.ReadFrom(nuspecStream, false)?.Metadata;
             }
         }
-        
+
         static bool IsPasswordEncryptionSupportedImpl()
         {
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
@@ -180,13 +221,13 @@ namespace Snap.Extensions
             if (nugetFeed == null) throw new ArgumentNullException(nameof(nugetFeed));
             return IsPasswordEncryptionSupportedImpl();
         }
-        
+
         internal static bool IsPasswordEncryptionSupported([NotNull] this ISettings settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             return IsPasswordEncryptionSupportedImpl();
         }
-        
+
         internal static bool IsPasswordEncryptionSupported([NotNull] this INuGetPackageSources packageSources)
         {
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));

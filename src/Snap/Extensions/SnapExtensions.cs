@@ -13,7 +13,6 @@ using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
-using Snap.Logging;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -70,6 +69,17 @@ namespace Snap.Extensions
             return runtimeIdentifier != null && (runtimeIdentifier == "win-x64" || runtimeIdentifier == "linux-x64");
         }
 
+        internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var channel = snapApp.Channels.FirstOrDefault();
+            if (channel == null)
+            {
+                throw new Exception($"Default channel not found. Snap id: {snapApp.Id}");
+            }
+            return channel;
+        }
+        
         internal static SnapChannel GetCurrentChannelOrThrow([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -119,7 +129,7 @@ namespace Snap.Extensions
         internal static string BuildNugetLocalFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var fullOrDelta = snapApp.Delta ? "delta" : "full";
+            var fullOrDelta = snapApp.IsGenisis ? "full" : "delta";
             return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
         
@@ -414,7 +424,8 @@ namespace Snap.Extensions
             {
                 Id = snapApp.Id,
                 Channels = snapAppChannels,
-                Target = new SnapTarget(snapAppTarget)
+                Target = new SnapTarget(snapAppTarget),
+                ReleaseNotes = snapApp.ReleaseNotes
             };
         }
 

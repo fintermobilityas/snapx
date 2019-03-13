@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,7 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using Snap.Core.Models;
 
 namespace Snap.Core
 {
@@ -19,8 +21,8 @@ namespace Snap.Core
         string Sha512(Stream content);
         string Sha512(StringBuilder content, Encoding encoding);
         string Sha512(AssemblyDefinition assemblyDefinition);
-        string Sha512(IPackageCoreReader packageCoreReader, Encoding encoding);
-        string Sha512(PackageBuilder packageBuilder, Encoding encoding);
+        string Sha512(SnapRelease snapRelease, IPackageCoreReader packageCoreReader, ISnapPack snapPack);
+        string Sha512(SnapRelease snapRelease, PackageBuilder packageBuilder);
     }
 
     internal sealed class SnapCryptoProvider : ISnapCryptoProvider
@@ -43,6 +45,8 @@ namespace Snap.Core
             {
                 throw new Exception("Stream must be seekable");
             }
+            
+            content.Seek(0, SeekOrigin.Begin);
 
             var sha512 = SHA512.Create();
             var hash = sha512.ComputeHash(content);
@@ -70,43 +74,37 @@ namespace Snap.Core
             }
         }
 
-        public string Sha512([NotNull] IPackageCoreReader packageCoreReader, [NotNull] Encoding encoding)
+        public string Sha512(SnapRelease snapRelease, [NotNull] IPackageCoreReader packageCoreReader, [NotNull] ISnapPack snapPack)
         {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (packageCoreReader == null) throw new ArgumentNullException(nameof(packageCoreReader));
-            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
-            
-            var checksums = new StringBuilder();
-            foreach (var inMemoryFile in packageCoreReader.GetFiles().Where(x => x.StartsWith(SnapConstants.SnapNuspecTargetPath)))
-            {
-                var srcStream = packageCoreReader.GetStream(inMemoryFile);
-                using (var dstStream = new MemoryStream())
-                {
-                    srcStream.CopyTo(dstStream);
-                    checksums.Append(Sha512(dstStream));
-                }
-            }
-
-            return Sha512(checksums, encoding);
+            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
+            return Sha512(packageCoreReader.GetFiles().Where(targetPath => targetPath.StartsWith(SnapConstants.NuspecRootTargetPath)).Select(packageCoreReader.GetStream));
+        }
+       
+        public string Sha512([NotNull] SnapRelease snapRelease, [NotNull] PackageBuilder packageBuilder)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
+            return Sha512(packageBuilder.Files.Where(x => x.EffectivePath.StartsWith(SnapConstants.NuspecRootTargetPath)).Select(x => x.GetStream()));
         }
 
-        public string Sha512([NotNull] PackageBuilder packageBuilder, [NotNull] Encoding encoding)
+        string Sha512(IEnumerable<Stream> inputStreams)
         {
-            if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
-            if (encoding == null) throw new ArgumentNullException(nameof(encoding));
-            
-            var checksums = new StringBuilder();
-            foreach (var inMemoryFile in packageBuilder.Files.Where(x => x.Path.StartsWith(SnapConstants.SnapNuspecTargetPath)))
+            var sb = new StringBuilder();
+            foreach (var srcStream in inputStreams)
             {
-                var srcStream = inMemoryFile.GetStream();
-                using (var dstStream = new MemoryStream())
+                using (var intermediateStream = new MemoryStream())
                 {
-                    srcStream.CopyTo(dstStream);
-                    checksums.Append(Sha512(dstStream));
+                    srcStream.CopyTo(intermediateStream);
+                    if (srcStream.CanSeek)
+                    {
+                        srcStream.Seek(0, SeekOrigin.Begin);                        
+                    }
+                    sb.Append(Sha512(intermediateStream));
                 }
-                srcStream.Seek(0, SeekOrigin.Begin);
             }
-
-            return Sha512(checksums, encoding);
+            return Sha512(sb, Encoding.UTF8);
         }
 
         static string HashToString([NotNull] byte[] hash)

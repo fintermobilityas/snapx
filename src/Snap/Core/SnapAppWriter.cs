@@ -24,7 +24,7 @@ namespace Snap.Core
         AssemblyDefinition OptimizeSnapDllForPackageArchive(AssemblyDefinition assemblyDefinition, OSPlatform osPlatform);
         string ToSnapAppYamlString(SnapApp snapApp);
         string ToSnapAppsYamlString(SnapApps snapApps);
-        string ToSnapReleasesYamlString(SnapReleases snapApps);
+        string ToSnapReleasesYamlString(SnapAppsReleases snapAppsApps);
     }
 
     internal sealed class SnapAppWriter : ISnapAppWriter
@@ -65,7 +65,7 @@ namespace Snap.Core
                 channel.PushFeed.Username = null;
                 channel.PushFeed.Password = null;
             }
-
+                                                         
             var snapAppYamlStr = ToSnapAppYamlString(snapApp);
             var currentVersion = snapApp.Version;
 
@@ -121,10 +121,10 @@ namespace Snap.Core
             return YamlSerializerSnapApps.Serialize(snapApps);
         }
 
-        public string ToSnapReleasesYamlString([NotNull] SnapReleases snapApps)
+        public string ToSnapReleasesYamlString([NotNull] SnapAppsReleases snapAppsApps)
         {
-            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
-            return YamlSerializerSnapApp.Serialize(snapApps);
+            if (snapAppsApps == null) throw new ArgumentNullException(nameof(snapAppsApps));
+            return YamlSerializerSnapApp.Serialize(snapAppsApps);
         }
     }
 }

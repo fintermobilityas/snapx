@@ -80,7 +80,7 @@ namespace Snap.Tests.Core.Resources
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);
 
-            using (var tempDir = new DisposableTempDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
             {
                 var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);
                 await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, tempDir.WorkingDirectory, osPlatform);

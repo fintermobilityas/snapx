@@ -39,7 +39,7 @@ namespace Snap.NuGet
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             PackageIdentity = snapRelease.BuildPackageIdentity();
-            PackageFileSize = !snapRelease.IsGenisis ? snapRelease.DeltaFilesize : snapRelease.FullFilesize;
+            PackageFileSize = snapRelease.Filesize;
         }
     }
     

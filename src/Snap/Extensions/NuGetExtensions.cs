@@ -172,15 +172,15 @@ namespace Snap.Extensions
             return downloadResourceResult != null && downloadResourceResult.Status == DownloadResourceResultStatus.Available;
         }
 
-        public static bool RemovePackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string targetPath)
+        public static bool RemovePackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string targetPath, StringComparison stringComparisonType)
         {
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
-            var packageFile = packageBuilder.GetPackageFile(targetPath);
+            var packageFile = packageBuilder.GetPackageFile(targetPath, stringComparisonType);
             return packageFile != null && packageBuilder.Files.Remove(packageFile);
         }
 
-        public static IPackageFile GetPackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename)
+        public static IPackageFile GetPackageFile([NotNull] this PackageBuilder packageBuilder, [NotNull] string filename, StringComparison stringComparisonType)
         {
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (filename == null) throw new ArgumentNullException(nameof(filename));
@@ -188,7 +188,7 @@ namespace Snap.Extensions
             return packageBuilder.Files.SingleOrDefault(x => string.Equals(
                 filename.ForwardSlashesSafe(),
                 x.Path.ForwardSlashesSafe(),
-                StringComparison.InvariantCultureIgnoreCase));
+                stringComparisonType));
         }
 
         internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,

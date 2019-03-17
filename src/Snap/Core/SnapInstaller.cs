@@ -77,7 +77,7 @@ namespace Snap.Core
                 return null;
             }
 
-            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgAbsoluteFilename))
             {                
                 return await UpdateAsync(nupkgAbsoluteFilename, baseDirectory, asyncPackageCoreReader, 
                     snapProgressSource, logger, cancellationToken);
@@ -165,7 +165,7 @@ namespace Snap.Core
                 return null;
             }
 
-            using (var asyncPackageCoreReader = _snapExtractor.GetAsyncPackageCoreReader(nupkgAbsoluteFilename))
+            using (var asyncPackageCoreReader = new PackageArchiveReader(nupkgAbsoluteFilename))
             {
                 return await InstallAsync(nupkgAbsoluteFilename, baseDirectory, asyncPackageCoreReader, snapProgressSource, logger, cancellationToken);
             }

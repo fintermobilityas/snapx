@@ -1,6 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -10,6 +12,7 @@ using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using Snap.Core.Models;
+using Snap.Extensions;
 
 namespace Snap.Core
 {
@@ -45,7 +48,7 @@ namespace Snap.Core
             {
                 throw new Exception("Stream must be seekable");
             }
-            
+
             content.Seek(0, SeekOrigin.Begin);
 
             var sha512 = SHA512.Create();
@@ -79,43 +82,95 @@ namespace Snap.Core
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (packageCoreReader == null) throw new ArgumentNullException(nameof(packageCoreReader));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
-            return Sha512(packageCoreReader.GetFiles().Where(targetPath => targetPath.StartsWith(SnapConstants.NuspecRootTargetPath)).Select(packageCoreReader.GetStream));
+
+            var packageArchiveFiles = packageCoreReader.GetFiles();
+            
+            var checksumFiles = GetChecksumFilesForSnapRelease(snapRelease);
+
+            var inputStreams = checksumFiles
+                .Select(checksum => (checksum, targetPath: packageArchiveFiles.SingleOrDefault(targetPath => checksum.NuspecTargetPath == targetPath)))
+                .Select(x =>
+                {
+                    var (checksum, packageArchiveReaderTargetPath) = x;
+                    if (packageArchiveReaderTargetPath == null)
+                    {
+                        throw new FileNotFoundException($"Unable to find file in nupkg: {snapRelease.Filename}.", checksum.NuspecTargetPath);
+                    }
+                    return (checksum, packageCoreReader.GetStream(packageArchiveReaderTargetPath));
+                });
+
+            return Sha512(inputStreams);
         }
-       
+
         public string Sha512([NotNull] SnapRelease snapRelease, [NotNull] PackageBuilder packageBuilder)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
-            return Sha512(packageBuilder.Files.Where(x => x.EffectivePath.StartsWith(SnapConstants.NuspecRootTargetPath)).Select(x => x.GetStream()));
+
+            var checksumFiles = GetChecksumFilesForSnapRelease(snapRelease);
+
+            var enumerable = checksumFiles
+                .Select(checksum => (checksum, packageFile: packageBuilder.GetPackageFile(checksum.NuspecTargetPath, StringComparison.Ordinal)));
+
+            return Sha512(enumerable.Select(x =>
+            {
+                var (checksum, packageFile) = x;
+                if (packageFile == null)
+                {
+                    throw new FileNotFoundException($"Unable to find file in nupkg: {snapRelease.Filename}.", checksum.NuspecTargetPath);
+                }
+
+                return (checksum, packageFile.GetStream());
+            }));
         }
 
-        string Sha512(IEnumerable<Stream> inputStreams)
+        string Sha512(IEnumerable<(SnapReleaseChecksum targetPath, Stream srcStream)> inputStreams)
         {
             var sb = new StringBuilder();
-            foreach (var srcStream in inputStreams)
+            foreach (var (checksum, srcStream) in inputStreams)
             {
                 using (var intermediateStream = new MemoryStream())
                 {
-                    srcStream.CopyTo(intermediateStream);
                     if (srcStream.CanSeek)
                     {
-                        srcStream.Seek(0, SeekOrigin.Begin);                        
+                        srcStream.Seek(0, SeekOrigin.Begin);
                     }
-                    sb.Append(Sha512(intermediateStream));
+
+                    srcStream.CopyTo(intermediateStream);
+
+                    if (srcStream.CanSeek)
+                    {
+                        srcStream.Seek(0, SeekOrigin.Begin);
+                    }
+
+                    var sha512 = Sha512(intermediateStream);
+                    sb.Append(sha512);
                 }
             }
+
             return Sha512(sb, Encoding.UTF8);
         }
 
         static string HashToString([NotNull] byte[] hash)
         {
             if (hash == null) throw new ArgumentNullException(nameof(hash));
-            var builder = new StringBuilder();  
+            var builder = new StringBuilder();
             foreach (var t in hash)
             {
-                builder.Append(t.ToString("x2"));
-            }  
-            return builder.ToString();  
+                builder.Append(t.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString();
+        }
+
+        static List<SnapReleaseChecksum> GetChecksumFilesForSnapRelease(SnapRelease snapRelease)
+        {
+            if (snapRelease.IsDelta)
+            {
+                return snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath).ToList();
+            }
+
+            return snapRelease.Files;
         }
     }
 }

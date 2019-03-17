@@ -28,7 +28,8 @@ namespace Snap.Core.Models
         internal ISnapAppReleases GetReleases([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return new SnapAppReleases(snapApp, Releases.Where(x => x.UpstreamId == snapApp.BuildNugetUpstreamPackageId()).Select(x => x));
+            var upstreamPackageId = snapApp.BuildNugetUpstreamPackageId();
+            return new SnapAppReleases(snapApp, Releases.Where(x => x.UpstreamId == upstreamPackageId).Select(x => x));
         }
         
         internal SnapRelease GetMostRecentRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel)
@@ -42,6 +43,17 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return GetReleases(snapApp).GetMostRecentRelease(channel);
+        }
+
+        public void Add([NotNull] SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            var existingRelease = Releases.SingleOrDefault(x => string.Equals(x.BuildNugetLocalFilename(), snapRelease.Filename)); 
+            if(existingRelease != null)
+            {
+                throw new Exception($"Release already exists: {existingRelease.BuildNugetLocalFilename()}");
+            }
+            Releases.Add(snapRelease);
         }
     }
 }

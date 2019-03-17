@@ -17,8 +17,8 @@ namespace Snap.Core.Models
         public SnapTarget Target { get; set; }
         public List<SnapChannel> Channels { get; set; }
         public bool IsGenisis { get; set; }
-        [YamlIgnore]
-        public bool IsDelta => !IsGenisis;
+        public bool IsFull { get; set; }
+        [YamlIgnore] public bool IsDelta => !IsGenisis && !IsFull;
         public string ReleaseNotes { get; set; }
         
         [UsedImplicitly]
@@ -39,6 +39,7 @@ namespace Snap.Core.Models
             }
             Channels = app.Channels?.Select(x => new SnapChannel(x)).ToList();
             IsGenisis = app.IsGenisis;
+            IsFull = app.IsFull;
             ReleaseNotes = app.ReleaseNotes;
         }
 

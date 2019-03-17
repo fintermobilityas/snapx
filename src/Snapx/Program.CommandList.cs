@@ -155,7 +155,7 @@ namespace snapx
 
                         if (genisisRelease != null)
                         {
-                            rowValue += $"Full: {genisisRelease.Version} ({genisisRelease.Filesize.BytesAsHumanReadable()})";
+                            rowValue += $"Full: {genisisRelease.Version} ({genisisRelease.FullFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {
@@ -164,7 +164,7 @@ namespace snapx
 
                         if (deltaRelease != null)
                         {
-                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.Filesize.BytesAsHumanReadable()})";
+                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {

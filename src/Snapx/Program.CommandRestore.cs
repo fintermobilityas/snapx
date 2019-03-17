@@ -101,14 +101,14 @@ namespace snapx
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     logger.Info($"Restoring channel: {channel.Name}.");
 
-                    if (!snapAppReleases.HasAnyReleasesIn(channel))
+                    if (!snapAppReleases.HasReleasesIn(channel))
                     {
                         logger.Info("No releases has been published to this channel.");
                         continue;
                     }
 
                     await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, channel,
-                        packageSource, logger: logger, cancellationToken: cancellationToken);
+                        packageSource, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken);
                 }
             }
 

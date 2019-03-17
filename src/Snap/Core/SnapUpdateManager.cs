@@ -273,7 +273,7 @@ namespace Snap.Core
             };
 
             if (!await _snapPackageManager.RestoreAsync(_packagesDirectory, releases, channel, 
-                packageSource, snapPackageManagerProgressSource, _logger, cancellationToken))
+                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
                 return null;

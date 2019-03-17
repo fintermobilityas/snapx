@@ -10,16 +10,14 @@ using NuGet.Packaging.Core;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
-using Snap.Logging;
 
 namespace Snap.Core
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapExtractor
     {
-        IAsyncPackageCoreReader GetAsyncPackageCoreReader(string nupkg);
         Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, 
-            CancellationToken cancellationToken = default, ILog logger = null);
+            CancellationToken cancellationToken = default);
         Task<List<string>> ExtractAsync(IAsyncPackageCoreReader asyncPackageCoreReader, string destinationDirectory, CancellationToken cancellationToken = default);
         Task<SnapAppsReleases> GetSnapAppsReleasesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] ISnapAppReader snapAppReader, CancellationToken cancellationToken = default);
     }
@@ -37,20 +35,14 @@ namespace Snap.Core
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         }
 
-        public IAsyncPackageCoreReader GetAsyncPackageCoreReader(string nupkg)
-        {
-            if (string.IsNullOrEmpty(nupkg)) throw new ArgumentException("Value cannot be null or empty.", nameof(nupkg));
-            return new PackageArchiveReader(nupkg);
-        }
-
-        public Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, CancellationToken cancellationToken = default, ILog logger = null)
+        public async Task<List<string>> ExtractAsync(string nupkg, string destinationDirectory, CancellationToken cancellationToken = default)
         {
             if (nupkg == null) throw new ArgumentNullException(nameof(nupkg));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            using (var asyncPackageCoreReader = GetAsyncPackageCoreReader(nupkg))
+            using (var asyncPackageCoreReader = new PackageArchiveReader(nupkg))
             {
-                return ExtractAsync(asyncPackageCoreReader, destinationDirectory, cancellationToken);
+                return await ExtractAsync(asyncPackageCoreReader, destinationDirectory, cancellationToken);
             }
         }
 
@@ -59,11 +51,10 @@ namespace Snap.Core
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
             if (destinationDirectory == null) throw new ArgumentNullException(nameof(destinationDirectory));
 
-            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);
+            var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);                        
             var coreRunExeFilename = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp);
-
             var extractedFiles = new List<string>();
-
+            
             _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
 
             var snapFiles = (await asyncPackageCoreReader.GetFilesAsync(cancellationToken))

@@ -30,8 +30,8 @@ namespace Snap.Core
         string DirectoryGetParent(string path);
         void DirectoryExistsThrowIfNotExists(string directory);
         void SetCurrentDirectory(string path);
-        DisposableTempDirectory WithDisposableTempDirectory(string workingDirectory);
-        DisposableTempDirectory WithDisposableTempDirectory();
+        DisposableDirectory WithDisposableTempDirectory(string workingDirectory);
+        DisposableDirectory WithDisposableTempDirectory();
         IEnumerable<string> EnumerateDirectories(string path);
         IEnumerable<FileInfo> EnumerateFiles(string path);
         IEnumerable<string> DirectoryGetAllFilesRecursively(string rootPath);
@@ -284,13 +284,13 @@ namespace Snap.Core
             Directory.SetCurrentDirectory(path);
         }
 
-        public DisposableTempDirectory WithDisposableTempDirectory([NotNull] string workingDirectory)
+        public DisposableDirectory WithDisposableTempDirectory([NotNull] string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            return new DisposableTempDirectory(workingDirectory, this);
+            return new DisposableDirectory(workingDirectory, this);
         }
 
-        public DisposableTempDirectory WithDisposableTempDirectory()
+        public DisposableDirectory WithDisposableTempDirectory()
         {
             return WithDisposableTempDirectory(Path.GetTempPath());
         }

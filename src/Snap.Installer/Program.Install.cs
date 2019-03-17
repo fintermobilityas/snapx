@@ -108,7 +108,7 @@ namespace Snap.Installer
                         // ReSharper disable once MethodSupportsCancellation
                         await Task.Delay(TimeSpan.FromSeconds(3));
 
-                        using (var tmpRestoreDir = new DisposableTempDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
+                        using (var tmpRestoreDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
                         {
                             mainWindowLogger.Info("Downloading required assets");
 
@@ -193,7 +193,7 @@ namespace Snap.Installer
                             };
 
                             if (!await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppReleases, channel,
-                                 packageSource, snapPackageManagerProgressSource, diskLogger, cancellationToken))
+                                 packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken))
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");
                                 goto done;

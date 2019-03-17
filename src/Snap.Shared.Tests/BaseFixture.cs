@@ -8,15 +8,13 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using NuGet.Configuration;
-using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests.Extensions;
-using Xunit;
 
 namespace Snap.Shared.Tests
 {
@@ -31,10 +29,16 @@ namespace Snap.Shared.Tests
         public string WorkingDirectory => Directory.GetCurrentDirectory();
         public string NugetTempDirectory => Path.Combine(WorkingDirectory, "nuget");
 
-        internal DisposableTempDirectory WithDisposableTempDirectory([NotNull] ISnapFilesystem filesystem)
+        internal DisposableDirectory WithDisposableTempDirectory([NotNull] ISnapFilesystem filesystem)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            return new DisposableTempDirectory(WorkingDirectory, filesystem);
+            return new DisposableDirectory(WorkingDirectory, filesystem);
+        }
+
+        public SnapApp Bump([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return new SnapApp(snapApp) { Version = snapApp.Version.BumpMajor() };
         }
 
         public SnapApp BuildSnapApp(string id = "demoapp", bool isGenisis = false, string rid = null, OSPlatform osPlatform = default)
@@ -105,6 +109,7 @@ namespace Snap.Shared.Tests
                 Id = id,
                 Version = new SemanticVersion(1, 0, 0),
                 IsGenisis = isGenisis,
+                IsFull = isGenisis,
                 Channels = new List<SnapChannel>
                 {
                     testChannel,
@@ -316,7 +321,7 @@ namespace Snap.Shared.Tests
             return assembly;
         }
 
-        public AssemblyDefinition BuildSnapExecutable([NotNull] SnapApp snapApp, bool randomVersion = false, List<AssemblyDefinition> references = null)
+        public AssemblyDefinition BuildSnapExecutable([NotNull] SnapApp snapApp, bool randomVersion = true, List<AssemblyDefinition> references = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return BuildExecutable(snapApp.Id, randomVersion, references);
@@ -349,58 +354,6 @@ namespace Snap.Shared.Tests
 
             return assembly;
         }
-
-        internal void VerifyChecksums([NotNull] ISnapCryptoProvider snapCryptoProvider, ISnapEmbeddedResources snapEmbeddedResources, 
-            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapPack snapPack, PackageArchiveReader packageArchiveReader, [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease,
-            [NotNull] string baseDirectory, string appDirectory, [NotNull] List<string> expectedDiskLayout)
-        {
-            if (snapCryptoProvider == null) throw new ArgumentNullException(nameof(snapCryptoProvider));
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
-            if (expectedDiskLayout == null) throw new ArgumentNullException(nameof(expectedDiskLayout));
-            if (expectedDiskLayout.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(expectedDiskLayout));
-            
-            Assert.Equal(expectedDiskLayout.Count, snapRelease.Files.Count);
-
-            var coreRunExe = snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp);
-                                 
-            var snapReleaseChecksum = snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, snapPack);
-            Assert.Equal(snapRelease.Sha512Checksum, snapReleaseChecksum);
-                                 
-            for (var i = 0; i < expectedDiskLayout.Count; i++)
-            {
-                var expectedChecksum = snapRelease.Files[i];
-
-                string diskAbsoluteFilename;
-                var targetPath = expectedChecksum.NuspecTargetPath;
-                if (targetPath.StartsWith(SnapConstants.NuspecAssetsTargetPath))
-                {
-                    targetPath = targetPath.Substring(SnapConstants.NuspecAssetsTargetPath.Length + 1);
-                    var isCoreRunExe = targetPath.EndsWith(coreRunExe);                      
-                    diskAbsoluteFilename = filesystem.PathCombine(isCoreRunExe ? baseDirectory : appDirectory, targetPath);
-                } else if (targetPath.StartsWith(SnapConstants.NuspecRootTargetPath))
-                {
-                    targetPath = targetPath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
-                    diskAbsoluteFilename = filesystem.PathCombine(appDirectory, targetPath);
-                }
-                else
-                {
-                    throw new Exception($"Unexpected file: {targetPath}");
-                }
-                
-                Assert.NotNull(diskAbsoluteFilename);
-                Assert.True(filesystem.FileExists(diskAbsoluteFilename), $"File does not exist: {diskAbsoluteFilename}");
-
-                using (var fileStream = filesystem.FileRead(diskAbsoluteFilename))                
-                {
-                    var diskSha512Checksum = snapCryptoProvider.Sha512(fileStream);
-                    
-                    Assert.Equal(expectedChecksum.DeltaSha512Checksum ?? expectedChecksum.FullSha512Checksum, diskSha512Checksum);
-                }
-            }
-        }
+        
     }
 }

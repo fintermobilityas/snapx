@@ -10,7 +10,7 @@ namespace Snap.NuGet
 {
     internal sealed class InMemoryPackageFile : IPackageFile
     {
-        readonly MemoryStream _memoryStream;
+        readonly Stream _memoryStream;
 
         public string Path { get; }
         public string EffectivePath { get; }
@@ -18,7 +18,7 @@ namespace Snap.NuGet
         public DateTimeOffset LastWriteTime { get; }
         public string Filename { get; }
 
-        public InMemoryPackageFile([NotNull] MemoryStream memoryStream, [NotNull] NuGetFramework nuGetFramework, [NotNull] string targetPath, [NotNull] string filename)
+        public InMemoryPackageFile([NotNull] Stream memoryStream, [NotNull] NuGetFramework nuGetFramework, [NotNull] string targetPath, [NotNull] string filename)
         {
             if (nuGetFramework == null) throw new ArgumentNullException(nameof(nuGetFramework));
             if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));

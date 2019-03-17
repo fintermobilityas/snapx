@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Versioning;
+using Snap.Extensions;
 using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
@@ -48,10 +49,13 @@ namespace Snap.Core.Models
         public List<string> Channels { get; set; }
         public SnapTarget Target { get; set; }
         public bool IsGenisis { get; set; }
-        [YamlIgnore] public bool IsDelta => !IsGenisis;
+        public bool IsFull { get; set; }
+        [YamlIgnore] public bool IsDelta => !IsGenisis && !IsFull;
         public string Filename { get; set; }
-        public long Filesize { get; set; }
-        public string Sha512Checksum { get; set; }
+        public long FullFilesize { get; set; }
+        public string FullSha512Checksum { get; set; }
+        public long DeltaFilesize { get; set; }
+        public string DeltaSha512Checksum { get; set; }
         public List<SnapReleaseChecksum> New { get; set; }
         public List<SnapReleaseChecksum> Modified { get; set; }
         public List<SnapReleaseChecksum> Unmodified { get; set; }
@@ -80,16 +84,20 @@ namespace Snap.Core.Models
             Channels = release.Channels;
             Target = new SnapTarget(release.Target);
             IsGenisis = release.IsGenisis;
+            IsFull = release.IsFull;
             Filename = release.Filename;
-            Filesize = release.Filesize;
-            Sha512Checksum = release.Sha512Checksum;
+            FullFilesize = release.FullFilesize;
+            FullSha512Checksum = release.FullSha512Checksum;
+            DeltaFilesize = release.DeltaFilesize;
+            DeltaSha512Checksum = release.DeltaSha512Checksum;
+            CreatedDateUtc = release.CreatedDateUtc;
+            ReleaseNotes = release.ReleaseNotes;
+
             Files = release.Files.Select(x => new SnapReleaseChecksum(x)).ToList();
             New = release.New.Select(x => new SnapReleaseChecksum(x)).ToList();
             Modified = release.Modified.Select(x => new SnapReleaseChecksum(x)).ToList();
             Unmodified = release.Unmodified.Select(x => new SnapReleaseChecksum(x)).ToList();
             Deleted = release.Deleted.Select(x => new SnapReleaseChecksum(x)).ToList();
-            CreatedDateUtc = release.CreatedDateUtc;
-            ReleaseNotes = release.ReleaseNotes;
         }
             
         public void Sort()
@@ -100,6 +108,26 @@ namespace Snap.Core.Models
             Unmodified = Unmodified.OrderBy(x => x.NuspecTargetPath).ToList();
             Deleted = Deleted.OrderBy(x => x.NuspecTargetPath).ToList();
         }
+
+        public static SnapRelease AsFull(SnapRelease snapRelease)
+        {
+            var fullRelease = new SnapRelease(snapRelease)
+            {
+                Filename = snapRelease.BuildNugetFullLocalFilename(),
+                IsGenisis = false,
+                IsFull = true
+            };
+
+            fullRelease.Files.Clear();
+            fullRelease.New.Clear();
+            fullRelease.Modified.Clear();
+            fullRelease.Unmodified.Clear();
+            fullRelease.Deleted.Clear();
+            
+            fullRelease.Files.AddRange(snapRelease.Files.Select(x => new SnapReleaseChecksum(x)));
+
+            return fullRelease;
+        }
     }
 
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
@@ -107,20 +135,28 @@ namespace Snap.Core.Models
     public interface ISnapAppReleases : IEnumerable<SnapRelease>
     {
         SnapApp SnapApp { get; }
-        bool HasAnyReleasesIn([NotNull] SnapChannel channel);
-        bool HasAnyReleasesIn([NotNull] string channelName);
-        bool HasAnyDeltaReleasesIn([NotNull] SnapChannel channel);
-        bool HasAnyDeltaReleasesIn([NotNull] string channelName);
+        bool HasGenisisRelease();
+        bool HasDeltaReleases();
+        bool HasReleases();
+        bool HasReleasesIn([NotNull] SnapChannel channel);
+        bool HasReleasesIn([NotNull] string channelName);
+        bool HasDeltaReleasesIn([NotNull] SnapChannel channel);
+        bool HasDeltaReleasesIn([NotNull] string channelName);
+        SnapRelease GetMostRecentRelease();
         SnapRelease GetMostRecentRelease([NotNull] SnapChannel channel);
         SnapRelease GetMostRecentRelease([NotNull] string channelName);
         SnapRelease GetMostRecentDeltaRelease([NotNull] SnapChannel channel);
         SnapRelease GetMostRecentDeltaRelease([NotNull] string channelName);
+        SnapRelease GetGenisisRelease();
         SnapRelease GetGenisisRelease([NotNull] SnapChannel channel);
         SnapRelease GetGenisisRelease([NotNull] string channelName);
+        IEnumerable<SnapRelease> GetDeltaReleasesNewerThan([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetDeltaReleasesNewerThan([NotNull] SnapChannel channel, [NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetDeltaReleasesNewerThan([NotNull] string channelName, [NotNull] SemanticVersion version);
-        IEnumerable<SnapRelease> GetDeltaReleasesOlderThan([NotNull] SnapChannel channel, [NotNull] SemanticVersion version);
-        IEnumerable<SnapRelease> GetDeltaReleasesOlderThan([NotNull] string channelName, [NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo([NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo([NotNull] SnapChannel channel, [NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo([NotNull] string channelName, [NotNull] SemanticVersion version);
+        SnapRelease GetPreviousRelease(SemanticVersion version);
         SnapRelease GetPreviousRelease([NotNull] SnapChannel channel, SemanticVersion version);
         SnapRelease GetPreviousRelease([NotNull] string channelName, SemanticVersion version);
     }
@@ -137,16 +173,31 @@ namespace Snap.Core.Models
             if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
 
             SnapApp = new SnapApp(snapApp);
-            Releases = snapReleases.Select(x => new SnapRelease(x)).ToList();
+            Releases = snapReleases.Select(x => new SnapRelease(x)).OrderBy(x => x.Version).ToList();
         }
 
-        public bool HasAnyReleasesIn(SnapChannel channel)
+        public bool HasGenisisRelease()
+        {
+            return Releases.Count(x => x.IsGenisis) == 1;
+        }
+
+        public bool HasDeltaReleases()
+        {
+            return Releases.Count(x => x.IsDelta) >= 1;
+        }
+
+        public bool HasReleases()
+        {
+            return Releases.Count > 0;
+        }
+
+        public bool HasReleasesIn(SnapChannel channel)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
-            return HasAnyReleasesIn(channel.Name);
+            return HasReleasesIn(channel.Name);
         }
 
-        public bool HasAnyReleasesIn(string channelName)
+        public bool HasReleasesIn(string channelName)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
             foreach (var release in this)
@@ -160,16 +211,21 @@ namespace Snap.Core.Models
             return false;
         }
 
-        public bool HasAnyDeltaReleasesIn(SnapChannel channel)
+        public bool HasDeltaReleasesIn(SnapChannel channel)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
-            return HasAnyReleasesIn(channel.Name);
+            return HasReleasesIn(channel.Name);
         }
 
-        public bool HasAnyDeltaReleasesIn(string channelName)
+        public bool HasDeltaReleasesIn(string channelName)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
             return this.Where(x => x.IsDelta).Any(release => release.Channels.Contains(channelName));
+        }
+
+        public SnapRelease GetMostRecentRelease()
+        {
+            return this.LastOrDefault();
         }
 
         public SnapRelease GetMostRecentRelease(SnapChannel channel)
@@ -196,6 +252,11 @@ namespace Snap.Core.Models
             return this.LastOrDefault(release => release.IsDelta && release.Channels.Contains(channelName));
         }
 
+        public SnapRelease GetGenisisRelease()
+        {
+            return Releases.FirstOrDefault();
+        }
+
         public SnapRelease GetGenisisRelease(SnapChannel channel)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
@@ -205,7 +266,13 @@ namespace Snap.Core.Models
         public SnapRelease GetGenisisRelease(string channelName)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
-            return this.FirstOrDefault(x => x.IsGenisis && x.Channels.Contains(channelName));
+            return this.FirstOrDefault(x => x.IsFull && x.IsGenisis && x.Channels.Contains(channelName));
+        }
+
+        public IEnumerable<SnapRelease> GetDeltaReleasesNewerThan(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return this.Where(x => x.IsDelta && x.Version > version);
         }
 
         public IEnumerable<SnapRelease> GetDeltaReleasesNewerThan(SnapChannel channel, SemanticVersion version)
@@ -223,18 +290,30 @@ namespace Snap.Core.Models
             return this.Where(x => x.IsDelta && x.Channels.Contains(channelName) && x.Version > version);
         }
 
-        public IEnumerable<SnapRelease> GetDeltaReleasesOlderThan(SnapChannel channel, SemanticVersion version)
+        public IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return this.Where(x => x.IsDelta && x.Version <= version);
+        }
+
+        public IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo(SnapChannel channel, SemanticVersion version)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
             if (version == null) throw new ArgumentNullException(nameof(version));
-            return GetDeltaReleasesOlderThan(channel.Name, version);
+            return GetDeltaReleasesOlderThanOrEqualTo(channel.Name, version);
         }
 
-        public IEnumerable<SnapRelease> GetDeltaReleasesOlderThan(string channelName, SemanticVersion version)
+        public IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo(string channelName, SemanticVersion version)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
             if (version == null) throw new ArgumentNullException(nameof(version));
-            return this.Where(x => x.IsDelta && x.Channels.Contains(channelName) && x.Version < version);
+            return this.Where(x => x.IsDelta && x.Channels.Contains(channelName) && x.Version <= version);
+        }
+
+        public SnapRelease GetPreviousRelease([NotNull] SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return this.LastOrDefault(x => x.Version < version);
         }
 
         public SnapRelease GetPreviousRelease(SnapChannel channel, [NotNull] SemanticVersion version)

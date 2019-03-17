@@ -66,6 +66,7 @@ namespace Snap.Tests.Core
             snapAppBefore.Channels.Clear();
             snapAppBefore.Channels.Add(new SnapChannel
             {
+                Name = "test",
                 PushFeed = new SnapNugetFeed
                 {
                     Source = new Uri("https://nuget.org"),
@@ -84,7 +85,7 @@ namespace Snap.Tests.Core
                 var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
                 Assert.NotNull(snapAppAfter);
 
-                var snapAppAfterChannel = snapAppAfter.GetCurrentChannelOrThrow();
+                var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
                 Assert.Null(snapAppAfterChannel.PushFeed.ApiKey);
                 Assert.Null(snapAppAfterChannel.PushFeed.Username);
                 Assert.Null(snapAppAfterChannel.PushFeed.Password);

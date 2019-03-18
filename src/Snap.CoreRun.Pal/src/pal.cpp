@@ -376,7 +376,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_o
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 {
-    auto process_exists = FALSE;
 #if defined(PAL_PLATFORM_WINDOWS)
     const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
 
@@ -393,20 +392,21 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
                 {
                     continue;
                 }
-                process_exists = TRUE;
-                break;
+                return TRUE;
             }
         }
         assert(0 != CloseHandle(pss));
     }
+
+    return FALSE;
 #elif defined(PAL_PLATFORM_LINUX)
     struct stat dontcare = { 0 };
     std::string proc_path("/proc/" + std::to_string(pid));
     if (stat(proc_path.c_str(), &dontcare) != -1)
     {
-        process_exists = TRUE;
+        return TRUE;
     }
-    return process_exists == TRUE ? TRUE : FALSE;
+    return FALSE;
 #else
     return FALSE;
 #endif

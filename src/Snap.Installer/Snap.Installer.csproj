@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
     <Import Project="Snap.Installer.Deps.targets" />
@@ -9,11 +9,12 @@
         <AssemblyName>Snap.Installer</AssemblyName>
         <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
+        <TargetFrameworks>netcoreapp2.2</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="**\*.xaml" SubType="Designer" />        
-        <EmbeddedResource Include="Assets\**\*" />        
+        <EmbeddedResource Include="**\*.xaml" SubType="Designer" />
+        <EmbeddedResource Include="Assets\**\*" />
         <EmbeddedResource Remove="Assets\AssetsTypeRoot.cs" />
         <EmbeddedResource Include="../Snap.CoreRun/src/resources/CoreRun.ico" Link="Assets\snap.ico" />
         <Compile Update="**\*.xaml.cs" DependentUpon="%(Filename)" />
@@ -23,8 +24,8 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-     <ItemGroup>
-      <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1841731" />
-    </ItemGroup> 
+    <ItemGroup>
+        <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1841731" />
+    </ItemGroup>
 
 </Project>

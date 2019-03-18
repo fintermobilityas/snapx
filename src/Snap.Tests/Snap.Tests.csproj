@@ -1,10 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp2.2</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -39,8 +41,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Snap.Shared.Tests\Snap.Shared.Tests.csproj" />
-      <ProjectReference Include="..\Snap\Snap.csproj" />
-    </ItemGroup>          
+        <ProjectReference Include="..\Snap.Shared.Tests\Snap.Shared.Tests.csproj" />
+        <ProjectReference Include="..\Snap\Snap.csproj" />
+    </ItemGroup>
 
 </Project>

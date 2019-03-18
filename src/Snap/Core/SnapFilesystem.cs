@@ -20,6 +20,7 @@ namespace Snap.Core
     internal interface ISnapFilesystem
     {
         char FixedNewlineChar { get; }
+        string DirectorySeparator { get; }
         char DirectorySeparatorChar { get; }
         void DirectoryCreate(string directory);
         bool DirectoryCreateIfNotExists(string directory);
@@ -74,7 +75,13 @@ namespace Snap.Core
         static readonly ILog Logger = LogProvider.For<SnapFilesystem>();
 
         public char FixedNewlineChar => '\n';
+        public string DirectorySeparator { get; }
         public char DirectorySeparatorChar => Path.DirectorySeparatorChar;
+
+        public SnapFilesystem()
+        {
+            DirectorySeparator = char.ToString(DirectorySeparatorChar);
+        }
 
         public string PathNormalize(string path)
         {

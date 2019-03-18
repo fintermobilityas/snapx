@@ -1218,11 +1218,11 @@ namespace Snap.Core
 
             if (packageDetails.NuspecProperties != null)
             {
-                foreach (var (key, value) in packageDetails.NuspecProperties)
+                foreach (var kv in packageDetails.NuspecProperties)
                 {
-                    if (!nuspecProperties.ContainsKey(key.ToLowerInvariant()))
+                    if (!nuspecProperties.ContainsKey(kv.Key.ToLowerInvariant()))
                     {
-                        nuspecProperties.Add(key, value);
+                        nuspecProperties.Add(kv.Key, kv.Value);
                     }
                 }
             }

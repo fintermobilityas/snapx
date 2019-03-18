@@ -46,12 +46,6 @@
 
     <PropertyGroup>
         <LangVersion>7.3</LangVersion>
-        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>
-        <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.2</TargetFrameworks>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <NugetVersion>5.0.0-rtm.5856</NugetVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(SnapBootstrap)">

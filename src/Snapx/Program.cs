@@ -101,9 +101,9 @@ namespace snapx
             }
 
             var workingDirectory = Environment.CurrentDirectory;
-            if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparatorChar))
+            if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparator))
             {
-                workingDirectory += snapOs.Filesystem.DirectorySeparatorChar;
+                workingDirectory += snapOs.Filesystem.DirectorySeparator;
             }
             
             var toolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);

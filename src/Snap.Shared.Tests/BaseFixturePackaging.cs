@@ -77,8 +77,8 @@ namespace Snap.Shared.Tests
         public SnapReleaseBuilder AddNuspecItem([NotNull] SnapReleaseBuilder releaseBuilder, int index)
         {
             if (releaseBuilder == null) throw new ArgumentNullException(nameof(releaseBuilder));
-            var (key, value) = releaseBuilder._nuspec.ElementAt(index);
-            _nuspec.Add(key, value);
+            var kv = releaseBuilder._nuspec.ElementAt(index);
+            _nuspec.Add(kv.Key, kv.Value);
             return this;
         }
 
@@ -307,9 +307,9 @@ namespace Snap.Shared.Tests
 
         public void Dispose()
         {
-            foreach (var (_, obj) in _nuspec)
+            foreach (var kv in _nuspec)
             {
-                obj?.Dispose();
+                kv.Value?.Dispose();
             }
 
             _nuspec.Clear();
@@ -317,9 +317,9 @@ namespace Snap.Shared.Tests
 
         public IEnumerator<string> GetEnumerator()
         {
-            foreach (var (targetPath, _) in _nuspec)
+            foreach (var kv in _nuspec)
             {
-                yield return targetPath;
+                yield return kv.Key;
             }
         }
 
@@ -439,8 +439,10 @@ namespace Snap.Shared.Tests
                 NuspecProperties = new Dictionary<string, string>()
             };
 
-            foreach (var (targetPath, value) in releaseBuilder.GetNuspecItems())
+            foreach (var kv in releaseBuilder.GetNuspecItems())
             {
+                var targetPath = kv.Key;
+                var value = kv.Value;
                 var destinationFilename = releaseBuilder.SnapFilesystem.PathCombine(snapPackDetails.NuspecBaseDirectory, targetPath);
                 var destinationDirectory = releaseBuilder.SnapFilesystem.PathGetDirectoryName(destinationFilename);
                 releaseBuilder.SnapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);

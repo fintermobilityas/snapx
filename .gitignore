@@ -13,7 +13,10 @@ TestResults/
 .idea/
 .vscode/
 
-src/Snap\.sln\.DotSettings\.user
-packages-microsoft-prod.deb*
 *.txt
 *.log
+packages-microsoft-prod.deb*
+
+src/Snap\.sln\.DotSettings\.user
+src/Backup/
+src/UpgradeLog.htm

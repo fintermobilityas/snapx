@@ -674,7 +674,6 @@ namespace Snap.Tests.Core
             
             var packageIdentity = snapApp.BuildPackageIdentity();
             var downloadResourceResult = snapApp.BuildDownloadResourceResult(packageStream, nuGetPackageSources);
-
             nugetServiceMock
                 .Setup(x => x.DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),

@@ -7,18 +7,18 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapProgressSource
     {
-        event EventHandler<int> Progress;
+        Action<int> Progress { get; set; }
         void Raise(int i);
         void Raise(int i, [NotNull] Action action);
     }
 
     public sealed class SnapProgressSource : ISnapProgressSource
     {
-        public event EventHandler<int> Progress;
+        public Action<int> Progress { get; set; }
 
         public void Raise(int i)
         {
-            Progress?.Invoke(this, i);
+            Progress?.Invoke(i);
         }
 
         public void Reset()

@@ -209,7 +209,7 @@ namespace snapx
                 SnapProgressSource = new SnapProgressSource()
             };
 
-            snapPackageDetails.SnapProgressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
+            snapPackageDetails.SnapProgressSource.Progress = percentage => { logger.Info($"Progress: {percentage}%."); };
 
             logger.Info($"Building nupkg: {snapApp.Version}.");
             
@@ -319,8 +319,7 @@ namespace snapx
 
             logger.Info($"Preparing to build {installerPrefix} installer");
 
-            var progressSource = new SnapProgressSource();
-            progressSource.Progress += (sender, percentage) => { logger.Info($"Progress: {percentage}%."); };
+            var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); }};
 
             using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory))
             {

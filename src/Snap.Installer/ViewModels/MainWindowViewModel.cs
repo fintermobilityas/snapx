@@ -58,7 +58,7 @@ namespace Snap.Installer.ViewModels
             StatusText = string.Empty;
             Progress = 0;
 
-            progressSource.Progress += (sender, installationProgressPercentage) =>
+            progressSource.Progress = installationProgressPercentage =>
             {
                Dispatcher.UIThread.InvokeAsync(() => Progress = installationProgressPercentage);
             };

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -148,7 +147,7 @@ namespace Snap.Core
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
 
             var (fullNupkgPackageBuilder, _, fullSnapRelease, deltaNupkgPackageBuilder, _, deltaSnapRelease) =
-                await BuildPackageAsyncInternal(packageDetails, coreRunLib, logger, cancellationToken);
+                await BuildPackageAsyncInternal(packageDetails, coreRunLib, cancellationToken);
 
             fullSnapRelease.Sort();            
             
@@ -189,7 +188,7 @@ namespace Snap.Core
         async Task<(PackageBuilder fullNupkgPackageBuilder, SnapApp fullSnapApp, SnapRelease fullSnapRelease, PackageBuilder deltaNupkgBuilder, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)>
             BuildPackageAsyncInternal(
                 [NotNull] ISnapPackageDetails packageDetails, 
-                [NotNull] ICoreRunLib coreRunLib, ILog logger = null,
+                [NotNull] ICoreRunLib coreRunLib,
                 CancellationToken cancellationToken = default)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
@@ -225,7 +224,7 @@ namespace Snap.Core
                 genisisSnapRelease.Filename = genisisSnapRelease.BuildNugetLocalFilename();
             
                 var (genisisPackageBuilder, nuspecMemoryStream, _, genisisSnapApp, _) =
-                    await BuildFullPackageAsyncInternal(packageDetails, genisisSnapRelease, coreRunLib, logger, cancellationToken);
+                    await BuildFullPackageAsyncInternal(packageDetails, genisisSnapRelease, coreRunLib, cancellationToken);
                 using (nuspecMemoryStream)
                 {
                     return (genisisPackageBuilder, genisisSnapApp, fullSnapRelease: genisisSnapRelease, null, null, null);                    
@@ -243,11 +242,11 @@ namespace Snap.Core
             var previousSnapRelease = snapAppReleases.GetMostRecentRelease(snapChannel);
 
             var (previousNupkgPackageBuilder, _, _) = await RebuildFullPackageAsyncInternal(
-                packagesDirectory, snapAppReleases, previousSnapRelease, snapChannel, logger, cancellationToken);
+                packagesDirectory, snapAppReleases, previousSnapRelease, snapChannel, cancellationToken);
 
             var (currentFullNupkgPackageBuilder, currentNuspecMemoryStream, currentNuspecPropertiesResolver, 
                 currentFullSnapApp, currentFullSnapRelease) = await BuildFullPackageAsyncInternal(
-                    packageDetails, deltaSnapRelease, coreRunLib, logger, cancellationToken);
+                    packageDetails, deltaSnapRelease, coreRunLib, cancellationToken);
 
             using (currentNuspecMemoryStream)
             {
@@ -260,8 +259,7 @@ namespace Snap.Core
                     previousNupkgPackageBuilder,
                     currentFullNupkgPackageBuilder, 
                     currentNuspecMemoryStream,
-                    currentNuspecPropertiesResolver,
-                    logger, 
+                    currentNuspecPropertiesResolver, 
                     cancellationToken
                 );
                 
@@ -275,8 +273,7 @@ namespace Snap.Core
         }
 
         async Task<(PackageBuilder packageBuilder, MemoryStream nuspecStream, Func<string, string> nuspecPropertiesResolver, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> 
-            BuildFullPackageAsyncInternal([NotNull] ISnapPackageDetails packageDetails, [NotNull] SnapRelease snapRelease, ICoreRunLib coreRunLib, 
-                ILog logger = null, CancellationToken cancellationToken = default)
+            BuildFullPackageAsyncInternal([NotNull] ISnapPackageDetails packageDetails, [NotNull] SnapRelease snapRelease, ICoreRunLib coreRunLib, CancellationToken cancellationToken = default)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
            
@@ -317,7 +314,7 @@ namespace Snap.Core
 
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.RemovePackageFile(targetPath, pathComparisonType));
 
-                await AddPackageAssetsAsync(coreRunLib, packageBuilder, packageDetails.SnapApp, snapRelease, logger, cancellationToken);
+                await AddPackageAssetsAsync(coreRunLib, packageBuilder, packageDetails.SnapApp, snapRelease, cancellationToken);
 
                 var fullSnapApp = new SnapApp(packageDetails.SnapApp)
                 {
@@ -345,8 +342,7 @@ namespace Snap.Core
             [NotNull] PackageBuilder previousFullNupkgPackageBuilder,
             [NotNull] PackageBuilder currentFullNupkgPackageBuilder,
             [NotNull] MemoryStream currentFullNupkgNuspecMemoryStream,
-            [NotNull] Func<string, string> currentFullNupkgNuspecPropertiesResolverFn,
-            ILog logger = null, CancellationToken cancellationToken = default)
+            [NotNull] Func<string, string> currentFullNupkgNuspecPropertiesResolverFn, CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
@@ -484,7 +480,7 @@ namespace Snap.Core
             var outputStream = new MemoryStream();
 
             var (packageBuilder, fullSnapApp, fullSnapRelease) =
-                await RebuildFullPackageAsyncInternal(packagesDirectory, existingAppReleases, snapRelease, snapChannel, logger, cancellationToken);
+                await RebuildFullPackageAsyncInternal(packagesDirectory, existingAppReleases, snapRelease, snapChannel, cancellationToken);
             packageBuilder.Save(outputStream);
             outputStream.Seek(0, SeekOrigin.Begin);
 
@@ -494,7 +490,7 @@ namespace Snap.Core
         }
 
         async Task<(PackageBuilder packageBuilder, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildFullPackageAsyncInternal(string packagesDirectory,
-            ISnapAppReleases snapAppReleases, SnapRelease snapRelease, [NotNull] SnapChannel snapChannel, ILog logger = null,
+            ISnapAppReleases snapAppReleases, SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
@@ -521,7 +517,7 @@ namespace Snap.Core
             }
 
             var (packageBuilder, genisisSnapApp) =
-                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppReleases, genisisSnapRelease, logger, cancellationToken);
+                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppReleases, genisisSnapRelease, cancellationToken);
 
             var pathComparisonType = GetPathStringComparisonType(genisisSnapRelease);
 
@@ -726,7 +722,7 @@ namespace Snap.Core
         }
 
         async Task<(PackageBuilder packageBuilder, SnapApp snapApp)> BuildPackageFromReleaseAsync([NotNull] string packagesDirectory,
-            [NotNull] ISnapAppReleases appReleases, [NotNull] SnapRelease snapRelease, ILog logger = null, CancellationToken cancellationToken = default)
+            [NotNull] ISnapAppReleases appReleases, [NotNull] SnapRelease snapRelease, CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (appReleases == null) throw new ArgumentNullException(nameof(appReleases));
@@ -765,7 +761,7 @@ namespace Snap.Core
         }
 
         async Task AddPackageAssetsAsync([NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder,
-            [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease, ILog logger = null, CancellationToken cancellationToken = default)
+            [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease, CancellationToken cancellationToken = default)
         {
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));

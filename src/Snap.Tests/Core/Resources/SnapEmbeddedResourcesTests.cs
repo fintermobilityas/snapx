@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Moq;
 using Snap.Core;
-using Snap.Core.IO;
 using Snap.Core.Resources;
 using Snap.Shared.Tests;
 using Xunit;
@@ -54,7 +53,7 @@ namespace Snap.Tests.Core.Resources
         [Fact]
         public void TestGetCoreRunForSnapApp_Throws_PlatformNotSupportedException()
         {
-            var snapApp = _baseFixture.BuildSnapApp("demoapp");
+            var snapApp = _baseFixture.BuildSnapApp();
             snapApp.Target.Os = OSPlatform.OSX;
             Assert.Throws<PlatformNotSupportedException>(() => _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, _coreRunLibMock.Object));
         }

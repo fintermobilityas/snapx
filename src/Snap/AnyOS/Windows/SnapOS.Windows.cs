@@ -169,7 +169,7 @@ namespace Snap.AnyOS.Windows
                     shellLink.SetAppUserModelId(appUserModelId);
                     shellLink.SetToastActivatorCLSID(toastActivatorClsid);
 
-                    logger?.Info($"Saving shortcut: {file}. " +
+                    logger.Info($"Saving shortcut: {file}. " +
                                 $"Target: {shellLink.Target}. " +
                                 $"Working directory: {shellLink.WorkingDirectory}. " +
                                 $"Arguments: {shellLink.Arguments}. " +

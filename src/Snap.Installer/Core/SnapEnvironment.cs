@@ -20,8 +20,6 @@ namespace Snap.Installer.Core
 
     internal interface ISnapInstallerEnvironment
     {
-        LogLevel LogLevel { get; }
-        IServiceContainer Container { get; }
         ISnapInstallerIoEnvironment Io { get; }
         CancellationToken CancellationToken { get; }
         ILog BuildLogger<T>();

@@ -4,7 +4,6 @@ using System.Runtime.Versioning;
 using JetBrains.Annotations;
 using NuGet.Frameworks;
 using NuGet.Packaging;
-using Snap.Core.Models;
 
 namespace Snap.NuGet
 {

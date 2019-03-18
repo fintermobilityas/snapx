@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Versioning;
@@ -8,6 +9,7 @@ using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapAppsReleases
     {
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }

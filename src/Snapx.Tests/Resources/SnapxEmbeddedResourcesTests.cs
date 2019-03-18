@@ -1,9 +1,11 @@
-﻿using snapx.Core;
+﻿using System.Diagnostics.CodeAnalysis;
+using snapx.Core;
 using Snap.Shared.Tests;
 using Xunit;
 
 namespace Snapx.Tests.Resources
 {
+    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapxEmbeddedResourcesTests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;

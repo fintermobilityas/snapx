@@ -44,6 +44,7 @@ namespace Snap.Tests.Core
         [Fact]
         public void Test_ProcessEvents_Throws_If_Arguments_Parameter_Is_Null()
         {
+            // ReSharper disable once AssignNullToNotNullAttribute
             var ex = Assert.Throws<ArgumentNullException>(() => SnapAwareApp.ProcessEvents(null));
             Assert.Equal("arguments", ex.ParamName);
         }

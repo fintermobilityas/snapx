@@ -6,6 +6,7 @@ using System.Text;
 namespace Snap.AnyOS.Windows
 {
     [Flags]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal enum ProcessAccess : uint {
         All = 0x001F0FFF,
         Terminate = 0x00000001,
@@ -30,6 +31,7 @@ namespace Snap.AnyOS.Windows
         StdErrorHandle = -12
     }
 
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class NativeMethodsWindows
     {        
         [DllImport("version.dll", SetLastError = true)]

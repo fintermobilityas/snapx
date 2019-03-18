@@ -19,6 +19,7 @@ using Xunit;
 namespace Snap.Tests.Core
 {
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
+    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapUpdateManagerTests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;

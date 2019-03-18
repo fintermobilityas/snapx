@@ -9,6 +9,7 @@ using Snap.Reflection.Exceptions;
 namespace Snap.Reflection
 {
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IResourceReflector
     {
         IEnumerable<Resource> GetResources();

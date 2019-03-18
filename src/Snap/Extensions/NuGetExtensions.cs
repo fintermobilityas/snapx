@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -103,13 +102,6 @@ namespace Snap.Extensions
             }
 
             return httpSource.GetValue(v2FeedParser) as HttpSource;
-        }
-
-        internal static string BuildDownloadUrlV2([NotNull] this PackageIdentity packageIdentity)
-        {
-            if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
-            var dependencyInfo = packageIdentity as SourcePackageDependencyInfo;
-            return dependencyInfo?.DownloadUri?.ToString();
         }
 
         internal static V2FeedParser BuildV2FeedParser([NotNull] this DownloadResourceV2Feed downloadResourceV2Feed)

@@ -1,28 +1,15 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Moq;
 using Snap.AnyOS;
-using Snap.AnyOS.Windows;
 using Snap.Core;
-using Snap.Core.IO;
-using Snap.Core.Models;
 using Snap.Core.Resources;
-using Snap.Extensions;
-using Snap.Logging;
 using Snap.Shared.Tests;
-using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.Core
 {
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
+    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapInstallerTests : IClassFixture<BaseFixturePackaging>
     {
         readonly BaseFixturePackaging _baseFixture;

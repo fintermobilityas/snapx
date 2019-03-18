@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Snap.Core;
-using Snap.Core.IO;
 using Snap.Shared.Tests;
 using Xunit;
 

@@ -15,12 +15,10 @@ namespace Snap.Core
 {
     internal interface ISnapAppReader
     {
-        SnapApps BuildSnapAppsFromStream(MemoryStream stream);
         SnapApps BuildSnapAppsFromYamlString(string yamlString);
         SnapApp BuildSnapAppFromStream(MemoryStream stream);
         SnapApp BuildSnapAppFromYamlString(string yamlString);
         SnapAppsReleases BuildSnapAppsReleasesFromStream(MemoryStream stream);
-        SnapAppsReleases BuildSnapAppsReleasesFromYamlString(string yamlString);
     }
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -127,7 +126,7 @@ namespace Snap.Core
         string Sha512(IEnumerable<(SnapReleaseChecksum targetPath, Stream srcStream)> inputStreams)
         {
             var sb = new StringBuilder();
-            foreach (var (checksum, srcStream) in inputStreams)
+            foreach (var (_, srcStream) in inputStreams)
             {
                 using (var intermediateStream = new MemoryStream())
                 {

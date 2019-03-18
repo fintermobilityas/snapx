@@ -11,7 +11,6 @@ namespace Snap.NuGet
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface INugetConfigFileReader
     {
-        NuGetPackageSources ReadNugetSources(string workingDirectory);
     }
 
     internal class NuGetConfigFileReader : INugetConfigFileReader

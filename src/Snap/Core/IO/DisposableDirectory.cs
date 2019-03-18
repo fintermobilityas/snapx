@@ -11,12 +11,9 @@ namespace Snap.Core.IO
         public DisposableDirectory(string workingDirectory, ISnapFilesystem filesystem, bool createRandomSubdirectory = true)
         {
             _filesystem = filesystem;
-            if (!createRandomSubdirectory)
-            {
-                WorkingDirectory = workingDirectory;
-                return;
-            }
-            WorkingDirectory = filesystem.PathCombine(workingDirectory, Guid.NewGuid().ToString());
+            WorkingDirectory = !createRandomSubdirectory ? workingDirectory : filesystem.PathCombine(workingDirectory, Guid.NewGuid().ToString());
+
+            filesystem.DirectoryCreateIfNotExists(WorkingDirectory);
         }
         
         public void Dispose()

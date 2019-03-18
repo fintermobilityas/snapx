@@ -910,7 +910,7 @@ namespace Snap.Core
                         continue;
                     }
 
-                    packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath)));
+                    packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath).ForwardSlashesSafe()));
                 }
 
                 var rewrittenNuspecStream = new MemoryStream();
@@ -1120,7 +1120,7 @@ namespace Snap.Core
 
             if (!targetPath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
-                throw new Exception($"Invalid {nameof(targetPath)}: {targetPath}. Must begin with: {SnapConstants.NuspecRootTargetPath}");
+                throw new Exception($"Invalid {nameof(targetPath)}: {targetPath}. Must start with: {SnapConstants.NuspecRootTargetPath}");
             }
 
             var nuGetFramework = NuGetFramework.Parse(SnapConstants.NuspecTargetFrameworkMoniker);

@@ -33,7 +33,7 @@ jobs:
       testResultsFiles: '**/*.xml'
       testRunTitle: GoogleTest_Ubuntu_1604
       mergeTestResults: false
-- job: Windows_Visual_Studio_2017
+- job: Windows_Visual_Studio_2019
   pool: 
     name: Youpark
     vmImage: 'win1803'
@@ -43,20 +43,20 @@ jobs:
       packageType: 'sdk' 
       version: '2.2.104' 
     displayName: Install .NET Core 2.2.104
-  - script: powershell -f $(buildScript) -VisualStudioVersion "15"
+  - script: powershell -f $(buildScript) -VisualStudioVersion "16"
   - task: PublishTestResults@2
     displayName: Publish .NET test results
     inputs:
       testRunner: VSTest
       testResultsFiles: '**/*.trx'
-      testRunTitle: Dotnet_Windows_Visual_Studio_2017
+      testRunTitle: Dotnet_Windows_Visual_Studio_2019
       mergeTestResults: false
   - task: PublishTestResults@2
     displayName: Publish google test results
     inputs:
       testRunner: JUnit
       testResultsFiles: '**/googletestsummary.xml'
-      testRunTitle: GoogleTest_Windows_Visual_Studio_2017
+      testRunTitle: GoogleTest_Windows_Visual_Studio_2019
       mergeTestResults: false
   - task: NuGetCommand@2
     displayName: Publish nuget packages to snapx myget feed

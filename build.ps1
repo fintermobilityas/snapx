@@ -9,7 +9,7 @@ param(
     [Parameter(Position = 3, ValueFromPipeline = $true)]
     [string] $CIBuild,
     [Parameter(Position = 4, ValueFromPipeline = $true)]
-    [string] $VisualStudioVersionStr = "15",
+    [string] $VisualStudioVersionStr = "16",
     [Parameter(Position = 5, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
     [string] $NetCoreAppVersion = "netcoreapp2.2"

@@ -5,8 +5,8 @@ param(
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
     [Parameter(Position = 2, ValueFromPipeline = $true)]
-    [Validateset(15, 16)]
-    [int] $VisualStudioVersion = 15,
+    [Validateset(16)]
+    [int] $VisualStudioVersion = 16,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
     [string] $NetCoreAppVersion = "netcoreapp2.2"

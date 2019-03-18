@@ -129,9 +129,17 @@ function Get-Msvs-Toolchain-Instance
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [ValidateSet(15, 16)]
+        [ValidateSet(16)]
         [int] $VisualStudioVersion
     )
+
+    $PreRelease = ""
+
+    # TODO: REMOVE ME
+    if($VisualStudioVersion -eq 16)
+    {
+        $PreRelease = "-prerelease"
+    }
 
     $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | ForEach-Object { 'Microsoft.VisualStudio.Product.' + $_ }
     $Instance = & $CommandVsWhere -version $VisualStudioVersion $PreRelease -products $ids -requires 'Microsoft.Component.MSBuild' -format json `

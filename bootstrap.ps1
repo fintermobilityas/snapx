@@ -12,8 +12,8 @@ param(
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $DotNetRid = $null,
     [Parameter(Position = 5, ValueFromPipeline = $true)]
-    [Validateset(15, 16)]
-    [int] $VisualStudioVersion = 15,
+    [Validateset(16)]
+    [int] $VisualStudioVersion = 16,
     [Parameter(Position = 6, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
     [string] $NetCoreAppVersion = "netcoreapp2.2"

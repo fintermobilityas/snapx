@@ -1,9 +1,19 @@
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Moq;
 using Snap.AnyOS;
+using Snap.AnyOS.Windows;
 using Snap.Core;
+using Snap.Core.IO;
+using Snap.Core.Models;
 using Snap.Core.Resources;
+using Snap.Extensions;
+using Snap.Logging;
 using Snap.Shared.Tests;
+using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.Core
@@ -44,443 +54,271 @@ namespace Snap.Tests.Core
             _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
 
-    /*
-        [Fact]
-        public async Task TestUpdateAsync()
-        {
-            var snapAppsReleases = new SnapAppsReleases();
-            var genisisSnapApp = _baseFixture.BuildSnapApp();
-            var snapChannel = genisisSnapApp.GetDefaultChannelOrThrow();
-            var loggerMock = new Mock<ILog>();
-
-            var progressSource = new Mock<ISnapProgressSource>();
-            progressSource.Setup(x => x.Raise(It.IsAny<int>()));
-
-            var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
-
-            var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
-            snapOsProcessManager
-                .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
-                {
-                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
-                    if (result.exitCode != 0)
-                    {
-                        failedRunAsyncReturnValues.Add(result);
-                    }
-
-                    return result;
-                });
-            snapOsProcessManager
-                .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
-                .Returns((ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
-            snapOsProcessManager
-                .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));
-            _snapOsMock
-                .Setup(x => x.Filesystem)
-                .Returns(_snapFilesystem);
-            _snapOsMock
-                .Setup(x => x.ProcessManager)
-                .Returns(snapOsProcessManager.Object);
-            _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutableAsync(
-                    It.IsAny<SnapOsShortcutDescription>(),
-                    It.IsAny<ILog>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var testDllAssemblyDefinition = _baseFixture.BuildLibrary("mylibrary");
-            var snapAppExeAssemblyDefinition = _baseFixture.BuildSnapExecutable(genisisSnapApp);
-
-            using (var genisisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
-            using (var updateCts = new CancellationTokenSource())
-            {
-                genisisSnapReleaseBuilder = genisisSnapReleaseBuilder
-                        .AddNuspecItem(snapAppExeAssemblyDefinition)
-                        .AddDelayLoadedNuspecItem(snapAppExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename())
-                        .AddNuspecItem(testDllAssemblyDefinition)
-                        .AddNuspecItem("subdirectory", testDllAssemblyDefinition)
-                        .AddNuspecItem("subdirectory/subdirectory2", testDllAssemblyDefinition);
-
-                var (genisisNupkgMemoryStream, _, _, _) = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder, cancellationToken: updateCts.Token);
-
-                var genisisNupkgAbsoluteFilename =
-                    await WriteNupkgAsync(packagingDir.WorkingDirectory, genisisSnapApp, genisisNupkgMemoryStream, updateCts.Token);
-
-                var updatedSnapApp = new SnapApp(genisisSnapApp)
-                {
-                    Version = genisisSnapApp.Version.BumpMajor()                    
-                };
-
-                var (updateNupkgMemoryStream, _, _, _) = await _baseFixture
-                    .BuildPackageAsync(genisisSnapReleaseBuilder, cancellationToken: updateCts.Token);
-
-                await WriteNupkgAsync(packagingDir.WorkingDirectory, updatedSnapApp, updateNupkgMemoryStream, updateCts.Token);
-
-                var snapAppReleases = snapAppsReleases.GetReleases(updatedSnapApp);
-                var mostRecentRelease = snapAppsReleases.GetMostRecentRelease(updatedSnapApp, snapChannel);
-
-                var (updateFullNupkgMemoryStream, updatedFullSnapApp, updatedFullSnapRelease) =
-                    await _snapPack.RebuildPackageAsync(packagingDir.PackagesDirectory, snapAppReleases,
-                     mostRecentRelease, snapChannel, cancellationToken: updateCts.Token);
-
-                var updateFullNupkgAbsoluteFilename =
-                    await WriteNupkgAsync(packagingDir.WorkingDirectory, updatedSnapApp, updateFullNupkgMemoryStream, updateCts.Token);
-                    
-                using (genisisNupkgMemoryStream)
-                using (updateNupkgMemoryStream)
-                using (updateFullNupkgMemoryStream)
-                {
-                    var installAppDirName = $"app-{genisisSnapApp.Version}";
-                    var installAppDir = _snapFilesystem.PathCombine(installDir.WorkingDirectory, installAppDirName);
-
-                    // 1. Install
-
-                    await _snapInstaller.InstallAsync(genisisNupkgAbsoluteFilename, installDir.WorkingDirectory,
-                        logger: loggerMock.Object, cancellationToken: updateCts.Token);
-
-                    _snapOsMock.Invocations.Clear();
-                    snapOsProcessManager.Invocations.Clear();
-
-                    // 2. Update
-
-                    var updateAppDirName = $"app-{updatedSnapApp.Version}";
-                    var updateAppDir = _snapFilesystem.PathCombine(installDir.WorkingDirectory, updateAppDirName);
-
-                    await _snapInstaller.UpdateAsync(updateFullNupkgAbsoluteFilename, installDir.WorkingDirectory,
-                        progressSource.Object, loggerMock.Object, updateCts.Token);
-
-                    var expectedInstallFiles = genisisSnapReleaseBuilder
-                        .Select(x => _snapFilesystem.PathCombine(installAppDir, x))
-                        .ToList();
-
-                    var expectedUpdatedFiles = genisisSnapReleaseBuilder
-                        .Select(x => _snapFilesystem.PathCombine(updateAppDir, x))
-                        .ToList();
-
-                    var expectedLayout = new List<string>
-                        {
-                            // Corerun
-                            _snapFilesystem.PathCombine(installDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp)),
-                            // Install
-                            _snapFilesystem.PathCombine(installAppDir, SnapConstants.SnapAppDllFilename),
-                            _snapFilesystem.PathCombine(installAppDir, SnapConstants.SnapDllFilename),
-                            // Update
-                            _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapAppDllFilename),
-                            _snapFilesystem.PathCombine(updateAppDir, SnapConstants.SnapDllFilename),
-                            // Packages
-                            _snapFilesystem.PathCombine(installDir.PackagesDirectory, _snapFilesystem.PathGetFileName(genisisNupkgAbsoluteFilename)),
-                            _snapFilesystem.PathCombine(installDir.PackagesDirectory, _snapFilesystem.PathGetFileName(updateFullNupkgAbsoluteFilename)),
-                        }
-                        .Concat(expectedInstallFiles)
-                        .Concat(expectedUpdatedFiles)
-                        .OrderBy(x => x)
-                        .ToList();
-
-                    var extractedLayout = _snapFilesystem
-                        .DirectoryGetAllFilesRecursively(installDir.WorkingDirectory)
-                        .OrderBy(x => x)
-                        .ToList();
-
-                    Assert.Equal(expectedLayout.Count, extractedLayout.Count);
-
-                    expectedLayout.ForEach(x =>
-                    {
-                        var stat = _snapFilesystem.FileStat(x);
-                        Assert.NotNull(stat);
-                        Assert.True(stat.Length > 0);
-                    });
-
-                    for (var i = 0; i < expectedLayout.Count; i++)
-                    {
-                        Assert.Equal(expectedLayout[i], extractedLayout[i]);
-                    }
-
-                    Assert.Empty(failedRunAsyncReturnValues);
-
-                    var coreRunExe = _snapFilesystem.PathCombine(installDir.WorkingDirectory,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(updatedSnapApp));
-                    var appExe = _snapFilesystem.PathCombine(updateAppDir, snapAppExeAssemblyDefinition.BuildRelativeFilename());
-                    var snapUpdatedArguments = $"--snapx-updated {updatedSnapApp.Version.ToNormalizedString()}";
-
-                    progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
-
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
-                    }
-
-                    _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                        It.IsAny<string>(),
-                        It.IsAny<CancellationToken>()), Times.Never);
-
-                    _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                        It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
-                        It.IsAny<CancellationToken>()), Times.Once);
-
-                    _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                        It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
-                        It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
-
-                    snapOsProcessManager.Verify(x => x.RunAsync(It.Is<ProcessStartInfoBuilder>(
-                            v => v.Filename == coreRunExe && v.Arguments == snapUpdatedArguments),
-                        It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
-
-                    snapOsProcessManager.Verify(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()), Times.Never);
-                }
-            }
-        }
-
         [Fact]
         public async Task TestInstallAsync()
         {
             var snapAppsReleases = new SnapAppsReleases();
+            var genisisSnapApp = _baseFixture.BuildSnapApp();
 
-            var anyOs = SnapOs.AnyOs;
-            Assert.NotNull(anyOs);
-
-            var loggerMock = new Mock<ILog>();
-
-            var progressSource = new Mock<ISnapProgressSource>();
-            progressSource.Setup(x => x.Raise(It.IsAny<int>()));
-
-            var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
-
-            var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
-            snapOsProcessManager
-                .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
-                {
-                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
-                    if (result.exitCode != 0)
-                    {
-                        failedRunAsyncReturnValues.Add(result);
-                    }
-
-                    return result;
-                });
-            snapOsProcessManager
-                .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
-                .Returns((ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
-            snapOsProcessManager
-                .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));
-            _snapOsMock
-                .Setup(x => x.Filesystem)
-                .Returns(_snapFilesystem);
-            _snapOsMock
-                .Setup(x => x.ProcessManager)
-                .Returns(snapOsProcessManager.Object);
-            _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutableAsync(
-                    It.IsAny<SnapOsShortcutDescription>(),
-                    It.IsAny<ILog>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var installSnapApp = _baseFixture.BuildSnapApp();
-            var testExeAssemblyDefinition = _baseFixture.BuildSnapExecutable(installSnapApp);
-            var testDllAssemblyDefinition = _baseFixture.BuildLibrary("mylibrary");
-
-            using (var packagingDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
-            using (var installDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
-            using (var installCts = new CancellationTokenSource())
+            using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var genisisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
             {
-            
-                var nuspecBuilder = 
-                    new SnapReleaseBuilder(snapAppsReleases, installSnapApp, _coreRunLibMock.Object, _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack, installDir)
-                        .AddNuspecItem(testExeAssemblyDefinition)
-                        .AddDelayLoadedNuspecItem(testExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename())
-                        .AddNuspecItem("subdirectory", testDllAssemblyDefinition)
-                        .AddNuspecItem("subdirectory/subdirectory2", testDllAssemblyDefinition);
-                        
-                var (installNupkgMemoryStream, _, _, _) = await _baseFixture
-                    .BuildPackageAsync(installDir, snapAppsReleases, installSnapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources,
-                        nuspecBuilder.GetNuspecItems(), cancellationToken: installCts.Token);
+                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genisisSnapApp);
+                genisisSnapReleaseBuilder
+                    .AddNuspecItem(mainAssemblyDefinition)
+                    .AddNuspecItem(mainAssemblyDefinition.BuildRuntimeSettingsRelativeFilename(), mainAssemblyDefinition.BuildRuntimeSettings())
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
 
-                using (installNupkgMemoryStream)
+                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
                 {
-                    var nupkgAbsoluteFilename = await WriteNupkgAsync(packagingDir.WorkingDirectory, installSnapApp, installNupkgMemoryStream, installCts.Token);
+                    var anyOs = SnapOs.AnyOs;
+                    Assert.NotNull(anyOs);
 
-                    var appDirName = $"app-{installSnapApp.Version}";
-                    var appDir = _snapFilesystem.PathCombine(installDir.WorkingDirectory, appDirName);
-                    var packagesDir = _snapFilesystem.PathCombine(installDir.WorkingDirectory, "packages");
+                    var loggerMock = new Mock<ILog>();
 
-                    await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, installDir.WorkingDirectory, progressSource.Object, loggerMock.Object,
-                        installCts.Token);
+                    var progressSource = new Mock<ISnapProgressSource>();
+                    progressSource.
+                        Setup(x => x.Raise(It.IsAny<int>()));
 
-                    var expectedLayout = new List<string>
+                    var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+
+                    var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
+                    snapOsProcessManager
+                        .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
+                       {
+                           var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                           if (result.exitCode != 0)
+                           {
+                               failedRunAsyncReturnValues.Add(result);
+                           }
+                           return result;
+                       });
+                    snapOsProcessManager
+                        .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
+                        .Returns((ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
+                    snapOsProcessManager
+                        .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                        .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));
+                    _snapOsMock
+                        .Setup(x => x.Filesystem)
+                        .Returns(_snapFilesystem);
+                    _snapOsMock
+                        .Setup(x => x.ProcessManager)
+                        .Returns(snapOsProcessManager.Object);
+                    _snapOsMock
+                        .Setup(x => x.CreateShortcutsForExecutableAsync(
+                            It.IsAny<SnapOsShortcutDescription>(),
+                            It.IsAny<ILog>(),
+                            It.IsAny<CancellationToken>()))
+                        .Returns(Task.CompletedTask);
+
+                    using (var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
+                    using (var installCts = new CancellationTokenSource())
+                    {
+                        await _snapInstaller.InstallAsync(
+                            genisisPackageContext.FullPackageAbsolutePath,
+                            baseDirectory.WorkingDirectory,
+                            genisisPackageContext.FullPackageSnapRelease,
+                            progressSource.Object,
+                            loggerMock.Object,
+                            installCts.Token);
+
+                        Assert.Empty(failedRunAsyncReturnValues);
+
+                        var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
+                            _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genisisPackageContext.FullPackageSnapApp));
+                        var snapInstalledArguments = $"--snapx-installed {genisisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
+                        var snapFirstRunArguments = $"--snapx-first-run {genisisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
+
+                        progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+
+                        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         {
-                            // Snap assemblies
-                            _snapFilesystem.PathCombine(installDir.WorkingDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(installSnapApp)),
-                            _snapFilesystem.PathCombine(appDir, SnapConstants.SnapAppDllFilename),
-                            _snapFilesystem.PathCombine(appDir, SnapConstants.SnapDllFilename),
-                            // App assemblies
-                            _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename()),
-                            _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRuntimeSettingsRelativeFilename()),
-                            _snapFilesystem.PathCombine(appDir, $"subdirectory/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
-                            _snapFilesystem.PathCombine(appDir, $"subdirectory/subdirectory2/{testDllAssemblyDefinition.BuildRelativeFilename()}"),
-                            // Nupkg
-                            _snapFilesystem.PathCombine(packagesDir, _snapFilesystem.PathGetFileName(nupkgAbsoluteFilename))
+                            var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
+                                $"app-{genisisSnapReleaseBuilder.SnapApp.Version}", genisisSnapReleaseBuilder.CoreRunExe);
+
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
                         }
-                        .OrderBy(x => x)
-                        .ToList();
 
-                    var extractedLayout = _snapFilesystem
-                        .DirectoryGetAllFilesRecursively(installDir.WorkingDirectory)
-                        .OrderBy(x => x)
-                        .ToList();
+                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
+                            It.Is<string>(v => v == baseDirectory.WorkingDirectory),
+                            It.Is<CancellationToken>(v => v != default)), Times.Once);
 
-                    Assert.Equal(expectedLayout.Count, extractedLayout.Count);
+                        _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                            It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
+                            It.IsAny<CancellationToken>()), Times.Once);
 
-                    expectedLayout.ForEach(x =>
-                    {
-                        var stat = _snapFilesystem.FileStat(x);
-                        Assert.NotNull(stat);
-                        Assert.True(stat.Length > 0);
-                    });
+                        _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                            It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
+                            It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
 
-                    for (var i = 0; i < expectedLayout.Count; i++)
-                    {
-                        Assert.Equal(expectedLayout[i], extractedLayout[i]);
+                        snapOsProcessManager.Verify(x => x.RunAsync(
+                            It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()), Times.Once);
+
+                        snapOsProcessManager.Verify(x => x.RunAsync(
+                            It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe
+                                                                && v.Arguments == snapInstalledArguments),
+                            It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+
+                        snapOsProcessManager.Verify(x => x.StartNonBlocking(
+                            It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe
+                                                                & v.Arguments == snapFirstRunArguments)), Times.Once);
+                        snapOsProcessManager.Verify(x => x.StartNonBlocking(
+                            It.IsAny<ProcessStartInfoBuilder>()), Times.Once);
                     }
-
-                    Assert.Empty(failedRunAsyncReturnValues);
-
-                    var coreRunExe = _snapFilesystem.PathCombine(installDir.WorkingDirectory,
-                        _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(installSnapApp));
-                    var appExe = _snapFilesystem.PathCombine(appDir, testExeAssemblyDefinition.BuildRelativeFilename());
-                    var snapInstalledArguments = $"--snapx-installed {installSnapApp.Version.ToNormalizedString()}";
-                    var snapFirstRunArguments = $"--snapx-first-run {installSnapApp.Version.ToNormalizedString()}";
-
-                    progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
-
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
-                        snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                            It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
-                    }
-
-                    _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                        It.Is<string>(v => v == installDir.WorkingDirectory),
-                        It.Is<CancellationToken>(v => v != default)), Times.Once);
-
-                    _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                        It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
-                        It.IsAny<CancellationToken>()), Times.Once);
-
-                    _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                        It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
-                        It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
-
-                    snapOsProcessManager.Verify(x => x.RunAsync(
-                        It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()), Times.Once);
-
-                    snapOsProcessManager.Verify(x => x.RunAsync(
-                        It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe
-                                                            && v.Arguments == snapInstalledArguments),
-                        It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
-
-                    snapOsProcessManager.Verify(x => x.StartNonBlocking(
-                        It.Is<ProcessStartInfoBuilder>(v => v.Filename == coreRunExe
-                                                            & v.Arguments == snapFirstRunArguments)), Times.Once);
-                    snapOsProcessManager.Verify(x => x.StartNonBlocking(
-                        It.IsAny<ProcessStartInfoBuilder>()), Times.Once);
                 }
             }
         }
 
         [Fact]
-        public async Task TestInstallAsync_Excludes_Persistent_Assets_On_Full_Install()
+        public async Task TestUpdateAsync()
         {
             var snapAppsReleases = new SnapAppsReleases();
 
-            var anyOs = SnapOs.AnyOs;
-            Assert.NotNull(anyOs);
+            var genisisSnapApp = _baseFixture.BuildSnapApp();
+            var update1SnapApp = _baseFixture.Bump(genisisSnapApp);
+            var update2SnapApp = _baseFixture.Bump(update1SnapApp);
 
-            _snapOsMock
-                .Setup(x => x.Filesystem)
-                .Returns(_snapFilesystem);
-
-            _snapOsMock
-                .Setup(x => x.ProcessManager)
-                .Returns(_snapOsProcessManager);
-
-            _snapOsMock
-                .Setup(x => x.CreateShortcutsForExecutableAsync(
-                    It.IsAny<SnapOsShortcutDescription>(),
-                    It.IsAny<ILog>(),
-                    It.IsAny<CancellationToken>()));
-
-            var snapApp = _baseFixture.BuildSnapApp();
-            var testExeAssemblyDefinition = _baseFixture.BuildSnapExecutable(snapApp);
-
-            var nuspecBuilder =
-                new SnapReleaseBuilder(_snapFilesystem)
-                .AddNuspecItem(testExeAssemblyDefinition);
-
-            using(nuspecBuilder)
-            using (var tmpNupkgDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
-            using (var rootDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
+            using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var genisisSnapReleaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
+            using (var update1SnapReleaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext))
+            using (var update2SnapReleaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update2SnapApp, _snapReleaseBuilderContext))
             {
-                var excludedDirectory = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "excludedDirectory");
-                var excludedFile = _snapFilesystem.PathCombine(rootDir.WorkingDirectory, "excludeFile.txt");
-                var excludedFileInsideDirectory = _snapFilesystem.PathCombine(excludedDirectory, "excludedFileInsideDirectory.txt");
+                genisisSnapReleaseBuilder
+                    .AddNuspecItem(_baseFixture.BuildSnapExecutable(genisisSnapApp))
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
 
-                _snapFilesystem.DirectoryCreate(excludedDirectory);
-                await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFile), excludedFile, default);
-                await _snapFilesystem.FileWriteUtf8StringAsync(nameof(excludedFileInsideDirectory), excludedFileInsideDirectory, default);
+                update1SnapReleaseBuilder
+                    .AddNuspecItem(genisisSnapReleaseBuilder, 0)
+                    .AddNuspecItem(genisisSnapReleaseBuilder, 1)
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test2"));
 
-                snapApp.Target.PersistentAssets = new List<string>
+                update2SnapReleaseBuilder
+                    .AddNuspecItem(update1SnapReleaseBuilder, 0)
+                    .AddNuspecItem(update1SnapReleaseBuilder, 1)
+                    .AddNuspecItem(update1SnapReleaseBuilder, 2)
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test3"));
+
+                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
+                using (var update2PackageContext = await _baseFixture.BuildPackageAsync(update2SnapReleaseBuilder))
                 {
-                    nameof(excludedDirectory),
-                    _snapFilesystem.PathGetFileName(excludedFile),
-                    _snapFilesystem.PathCombine(nameof(excludedDirectory), _snapFilesystem.PathGetFileName(excludedFileInsideDirectory))
-                };
+                    var anyOs = SnapOs.AnyOs;
+                    Assert.NotNull(anyOs);
 
-                var (installNupkgMemoryStream, _, _, _) = await _baseFixture
-                    .BuildPackageAsync(rootDir, snapAppsReleases, snapApp, _coreRunLibMock.Object, _snapFilesystem, _snapPack, _snapEmbeddedResources,
-                        nuspecBuilder.GetNuspecItems());
-                        
-                using (installNupkgMemoryStream)
-                {
-                    var nupkgAbsoluteFilename = await WriteNupkgAsync(tmpNupkgDir.WorkingDirectory, snapApp, installNupkgMemoryStream);
+                    var loggerMock = new Mock<ILog>();
 
-                    await _snapInstaller.InstallAsync(nupkgAbsoluteFilename, rootDir.WorkingDirectory);
+                    var progressSource = new Mock<ISnapProgressSource>();
+                    progressSource.
+                        Setup(x => x.Raise(It.IsAny<int>()));
 
-                    Assert.True(_snapFilesystem.DirectoryExists(excludedDirectory));
-                    Assert.True(_snapFilesystem.FileExists(excludedFile));
-                    Assert.True(_snapFilesystem.FileExists(excludedFileInsideDirectory));
+                    var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
 
-                    Assert.Equal(nameof(excludedFile), await _snapFilesystem.FileReadAllTextAsync(excludedFile));
-                    Assert.Equal(nameof(excludedFileInsideDirectory), await _snapFilesystem.FileReadAllTextAsync(excludedFileInsideDirectory));
+                    var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
+                    snapOsProcessManager
+                        .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
+                        .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
+                       {
+                           var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                           if (result.exitCode != 0)
+                           {
+                               failedRunAsyncReturnValues.Add(result);
+                           }
+                           return result;
+                       });
+                    snapOsProcessManager
+                        .Setup(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()))
+                        .Returns((ProcessStartInfoBuilder builder) => _snapOsProcessManager.StartNonBlocking(builder));
+                    snapOsProcessManager
+                        .Setup(x => x.ChmodExecuteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                        .Returns((string filename, CancellationToken cancellationToken) => _snapOsProcessManager.ChmodExecuteAsync(filename, cancellationToken));
+                    _snapOsMock
+                        .Setup(x => x.Filesystem)
+                        .Returns(_snapFilesystem);
+                    _snapOsMock
+                        .Setup(x => x.ProcessManager)
+                        .Returns(snapOsProcessManager.Object);
+                    _snapOsMock
+                        .Setup(x => x.CreateShortcutsForExecutableAsync(
+                            It.IsAny<SnapOsShortcutDescription>(),
+                            It.IsAny<ILog>(),
+                            It.IsAny<CancellationToken>()))
+                        .Returns(Task.CompletedTask);
+
+                    using (var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
+                    using (var updateCts = new CancellationTokenSource())
+                    {
+                        await _snapInstaller.InstallAsync(
+                            genisisPackageContext.FullPackageAbsolutePath,
+                            baseDirectory.WorkingDirectory,
+                            genisisPackageContext.FullPackageSnapRelease,
+                            cancellationToken: updateCts.Token);
+
+                        _snapOsMock.Invocations.Clear();
+                        snapOsProcessManager.Invocations.Clear();
+
+                        var update2FullNupkgAbsolutePath = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, "packages",
+                            update2PackageContext.FullPackageSnapRelease.BuildNugetLocalFilename());
+
+                        await _snapFilesystem.FileCopyAsync(update2PackageContext.FullPackageAbsolutePath,
+                            update2FullNupkgAbsolutePath, default);
+
+                        await _snapInstaller.UpdateAsync(
+                            baseDirectory.WorkingDirectory,
+                            update2PackageContext.FullPackageSnapRelease,
+                            progressSource.Object,
+                            loggerMock.Object,
+                            updateCts.Token);
+
+                        Assert.Empty(failedRunAsyncReturnValues);
+
+                        var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, update2SnapReleaseBuilder.CoreRunExe);
+                        var snapUpdatedArguments = $"--snapx-updated {update2SnapReleaseBuilder.SnapApp.Version.ToNormalizedString()}";
+
+                        progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
+
+                        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
+                                $"app-{update2SnapReleaseBuilder.SnapApp.Version}", update2SnapReleaseBuilder.CoreRunExe);
+
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                            snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
+                                It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                        }
+
+                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
+                            It.IsAny<string>(),
+                            It.IsAny<CancellationToken>()), Times.Never);
+
+                        _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                            It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
+                            It.IsAny<CancellationToken>()), Times.Once);
+
+                        _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
+                            It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
+                            It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+
+                        snapOsProcessManager.Verify(x => x.RunAsync(It.Is<ProcessStartInfoBuilder>(
+                            v => v.Filename == coreRunExe && v.Arguments == snapUpdatedArguments),
+                            It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+
+                        snapOsProcessManager.Verify(x => x.StartNonBlocking(It.IsAny<ProcessStartInfoBuilder>()), Times.Never);
+                    }
                 }
             }
         }
-
-        async Task<string> WriteNupkgAsync([NotNull] string packagesDirectory,[NotNull] SnapApp snapApp, [NotNull] Stream nupkgMemoryStream, CancellationToken cancellationToken = default)
-        {
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (nupkgMemoryStream == null) throw new ArgumentNullException(nameof(nupkgMemoryStream));
-            if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
-
-            var nupkgFilename = snapApp.BuildNugetLocalFilename();
-            var nupkgAbsoluteFilename = _snapFilesystem.PathCombine(packagesDirectory, nupkgFilename);
-            await _snapFilesystem.FileWriteAsync(nupkgMemoryStream, nupkgAbsoluteFilename, cancellationToken);
-            
-            return nupkgAbsoluteFilename;
-        }
-    */
     }
-    
 }

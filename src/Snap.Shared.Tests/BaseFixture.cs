@@ -96,9 +96,9 @@ namespace Snap.Shared.Tests
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     osPlatform = OSPlatform.Linux;
-                }                
+                }
             }
-            
+
             if (osPlatform != OSPlatform.Windows && osPlatform != OSPlatform.Linux)
             {
                 throw new NotSupportedException($"Unsupported OS platform: {osPlatform}");
@@ -146,7 +146,7 @@ namespace Snap.Shared.Tests
             {
                 Schema = 1,
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> {new SnapsApp(snapApp)},
+                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
                 Generic = new SnapAppsGeneric
                 {
                     Nuspecs = "snap/nuspecs",
@@ -261,7 +261,7 @@ namespace Snap.Shared.Tests
 
             var il = ctor.Body.GetILProcessor();
             il.Append(il.Create(OpCodes.Ldarg_0));
-            il.Append(il.Create(OpCodes.Call, mainModule.ImportReference(method: typeof(object).GetConstructor(Array.Empty<Type>()))));
+            il.Append(il.Create(OpCodes.Call, mainModule.ImportReference(typeof(object).GetConstructor(Array.Empty<Type>()))));
             il.Append(il.Create(OpCodes.Nop));
             il.Append(il.Create(OpCodes.Ret));
             programType.Methods.Add(ctor);
@@ -354,6 +354,6 @@ namespace Snap.Shared.Tests
 
             return assembly;
         }
-        
+
     }
 }

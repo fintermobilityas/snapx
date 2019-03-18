@@ -113,13 +113,15 @@ namespace Snap.Installer
             var snapFilesystem = snapInstallerEnvironment.Container.GetInstance<ISnapFilesystem>();
             snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);
             var snapPackageManager = snapInstallerEnvironment.Container.GetInstance<ISnapPackageManager>();
+            var snapExtractor = snapInstallerEnvironment.Container.GetInstance<ISnapExtractor>();
             var nugetServiceCommandInstall = new NugetService(snapOs.Filesystem, new NugetLogger(snapInstallerLogger));
 
             int RunInstaller(InstallOptions opts)
             {
                 if (opts == null) throw new ArgumentNullException(nameof(opts));
                 return Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader, snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapInstallerLogger);
+                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
+                    snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger);
             }
 
             try

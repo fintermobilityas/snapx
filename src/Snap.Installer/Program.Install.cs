@@ -9,6 +9,7 @@ using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Logging;
+using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Installer.Options;
@@ -24,7 +25,7 @@ namespace Snap.Installer
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
             [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
-            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ILog diskLogger)
+            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (environment == null) throw new ArgumentNullException(nameof(environment));
@@ -38,6 +39,7 @@ namespace Snap.Installer
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (diskLogger == null) throw new ArgumentNullException(nameof(diskLogger));
 
             // NB! All filesystem operations has to be readonly until check that verifies
@@ -78,6 +80,9 @@ namespace Snap.Installer
 
                 var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
                 var nupkgAbsolutePath = options.Filename != null ? snapFilesystem.PathGetFullPath(options.Filename) : null;
+                SnapApp snapApp;
+                SnapChannel snapAppChannel;
+
                 if (nupkgAbsolutePath == null
                     && snapFilesystem.FileExists(snapAppDllAbsolutePath))
                 {
@@ -85,7 +90,7 @@ namespace Snap.Installer
 
                     try
                     {
-                        var snapApp = environment.Io.ThisExeWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
+                        snapApp = environment.Io.ThisExeWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
                         var (snapsReleases, packageSource) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
                         if (snapsReleases == null)
                         {
@@ -100,10 +105,11 @@ namespace Snap.Installer
                             goto done;
                         }
 
-                        var channel = snapApp.GetCurrentChannelOrThrow();
-                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(channel);
+                        snapAppChannel = snapApp.GetCurrentChannelOrThrow();
 
-                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {channel.Name}.");
+                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(snapAppChannel);
+
+                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {snapAppChannel.Name}.");
 
                         // ReSharper disable once MethodSupportsCancellation
                         await Task.Delay(TimeSpan.FromSeconds(3));
@@ -118,11 +124,11 @@ namespace Snap.Installer
                                 long releasesToRestore = 0, long releasesRestored = 0,
                                 long totalBytesDownloaded = 0, long totalBytesToDownload = 0)
                             {
-                            
+
                                 void SetProgressText(long current, long total, string defaultText, string pluralText)
                                 {
                                     var outputText = total > 1 ? pluralText : defaultText;
-                                    
+
                                     switch (type)
                                     {
                                         case "Download":
@@ -132,31 +138,31 @@ namespace Snap.Installer
                                                     $"{outputText} ({totalPercentage}%): {current} of {total}. " +
                                                     $"Downloaded so far: {totalBytesDownloaded.BytesAsHumanReadable()}. " +
                                                     $"Total: {totalBytesToDownload.BytesAsHumanReadable()}");
-                                                
+
                                                 goto incrementProgress;
                                             }
-                                    
+
                                             SetStatusText(mainWindowViewModel,
                                                 $"{outputText} ({totalPercentage}%): " +
                                                 $"Downloaded so far: {totalBytesDownloaded.BytesAsHumanReadable()}. " +
                                                 $"Total: {totalBytesToDownload.BytesAsHumanReadable()}");
-                                            
+
                                             goto incrementProgress;
                                         default:
                                             if (total > 1)
                                             {
-                                                SetStatusText(mainWindowViewModel,$"{outputText} ({totalPercentage}%): {current} of {total}.");
+                                                SetStatusText(mainWindowViewModel, $"{outputText} ({totalPercentage}%): {current} of {total}.");
                                                 goto incrementProgress;
                                             }
-                                    
+
                                             SetStatusText(mainWindowViewModel, $"{outputText}: {totalPercentage}%");
                                             goto incrementProgress;
                                     }
-                                    
-                                    incrementProgress:
+
+                                incrementProgress:
                                     installerProgressSource.Raise(totalPercentage);
                                 }
-                                
+
                                 switch (type)
                                 {
                                     case "Checksum":
@@ -178,21 +184,21 @@ namespace Snap.Installer
                             {
                                 ChecksumProgress = x => UpdateProgress("Checksum",
                                     x.progressPercentage,
-                                    x.releasesToChecksum, 
+                                    x.releasesToChecksum,
                                     x.releasesChecksummed),
                                 DownloadProgress = x => UpdateProgress("Download",
-                                    x.progressPercentage,                                     
-                                    releasesDownloaded: x.releasesDownloaded, 
-                                    releasesToDownload: x.releasesToDownload, 
-                                    totalBytesDownloaded: x.totalBytesDownloaded, 
+                                    x.progressPercentage,
+                                    releasesDownloaded: x.releasesDownloaded,
+                                    releasesToDownload: x.releasesToDownload,
+                                    totalBytesDownloaded: x.totalBytesDownloaded,
                                     totalBytesToDownload: x.totalBytesToDownload),
                                 RestoreProgress = x => UpdateProgress("Restore",
-                                    x.progressPercentage, 
-                                    releasesToRestore: x.releasesToRestore, 
+                                    x.progressPercentage,
+                                    releasesToRestore: x.releasesToRestore,
                                     releasesRestored: x.releasesRestored)
                             };
 
-                            if (!await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppReleases, channel,
+                            if (!await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppReleases, snapAppChannel,
                                  packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken))
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");
@@ -254,45 +260,61 @@ namespace Snap.Installer
 
                     mainWindowLogger.Info($"Preparing to unpack payload: {nupkgRelativeFilename}.");
 
-                    var snapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
+                    snapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
                     if (snapApp == null)
                     {
                         mainWindowLogger.Error("Unknown error releading application manifest. Payload corrupt?");
                         goto done;
                     }
+                }
 
-                    var channel = snapApp.Channels.SingleOrDefault(x => x.Current);
-                    if (channel == null)
+                snapAppChannel = snapApp.Channels.SingleOrDefault(x => x.Current);
+                if (snapAppChannel == null)
+                {
+                    mainWindowLogger.Error($"Unknown release channel. Available channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}");
+                    goto done;
+                }
+
+                var releasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesLocalFilename());
+                if (!snapFilesystem.FileExists(releasesAbsolutePath))
+                {
+                    mainWindowLogger.Error($"Unable to find releases nupkg: {releasesAbsolutePath}");
+                    goto done;
+                }
+
+                var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
+
+                mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapAppChannel.Name}");
+
+                try
+                {
+                    SnapRelease snapGenisisRelease;
+                    var releasesFileStream = snapFilesystem.FileRead(releasesAbsolutePath);
+                    using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
                     {
-                        mainWindowLogger.Error($"Unknown release channel. Available channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}");
+                        var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
+                        snapGenisisRelease = snapAppsReleases.GetMostRecentRelease(snapApp, snapAppChannel);
+                    }
+
+                    var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
+                        snapGenisisRelease, installerProgressSource, mainWindowLogger, cancellationToken);
+
+                    if (snapAppInstalled == null)
+                    {
                         goto done;
                     }
 
-                    var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
+                    mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");
 
-                    mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {channel.Name}");
-
-                    try
-                    {
-                        var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                            packageArchiveReader, installerProgressSource, mainWindowLogger, cancellationToken);
-
-                        if (snapAppInstalled == null)
-                        {
-                            goto done;
-                        }
-
-                        mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");
-
-                        exitCode = 0;
-                    }
-                    catch (Exception e)
-                    {
-                        mainWindowLogger.ErrorException("Unknown error during install", e);
-                    }
+                    exitCode = 0;
+                }
+                catch (Exception e)
+                {
+                    mainWindowLogger.ErrorException("Unknown error during install", e);
                 }
 
-                done:
+
+            done:
                 // Give user enough time to read final log message.
                 Thread.Sleep(exitCode == 0 ? 3000 : 10000);
                 environment.Shutdown();

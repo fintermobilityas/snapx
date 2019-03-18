@@ -236,10 +236,10 @@ namespace Snap.Core
                 return null;
             }
 
-            var releases = snapsReleases.GetReleases(_snapApp);
+            var snapAppReleases = snapsReleases.GetReleases(_snapApp);
             var channel = _snapApp.GetCurrentChannelOrThrow();
             
-            var deltaUpdates = releases.GetDeltaReleasesNewerThan(channel, _snapApp.Version);
+            var deltaUpdates = snapAppReleases.GetDeltaReleasesNewerThan(channel, _snapApp.Version);
             if (!deltaUpdates.Any())
             {
                 return null;
@@ -272,7 +272,7 @@ namespace Snap.Core
                 )
             };
 
-            if (!await _snapPackageManager.RestoreAsync(_packagesDirectory, releases, channel, 
+            if (!await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppReleases, channel, 
                 packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken))
             {
                 _logger.Error("Unknown error restoring nuget packages.");
@@ -281,17 +281,17 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var releaseToInstall = releases.GetMostRecentRelease(channel);
-            if (!releaseToInstall.IsDelta)
+            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(channel);
+            if (!snapReleaseToInstall.IsDelta)
             {
-                _logger.Error($"Fatal error! Expected to install delta release but was: {releaseToInstall.Filename}");
+                _logger.Error($"Fatal error! Expected to install delta release but was: {snapReleaseToInstall.Filename}");
                 return null;
             }
             
-            var nupkgToInstall = _snapOs.Filesystem.PathCombine(_packagesDirectory, releaseToInstall.Filename);
-            if (!_snapOs.Filesystem.FileExists(nupkgToInstall))
+            var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
+            if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
             {
-                _logger.Error($"Unable to find full nupkg: {nupkgToInstall}.");
+                _logger.Error($"Unable to find full nupkg: {nupkgToInstallAbsolutePath}.");
                 return null;
             }
 
@@ -300,15 +300,17 @@ namespace Snap.Core
             SnapApp updatedSnapApp;
             try
             {
-                updatedSnapApp = await _snapInstaller.UpdateAsync(nupkgToInstall, _workingDirectory, logger: _logger, cancellationToken: cancellationToken);
+                updatedSnapApp = await _snapInstaller.UpdateAsync(
+                    _workingDirectory, snapReleaseToInstall,
+                    logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {
-                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstall}");
+                    throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
             }
             catch (Exception e)
             {
-                _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstall}.", e);
+                _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
                 return null;
             }
 

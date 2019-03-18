@@ -333,7 +333,7 @@ namespace Snap.Core
                     try
                     {
                         var (fullNupkgMemoryStream, _, fullSnapRelease) =
-                            await _snapPack.RebuildPackageAsync(packagesDirectory, releasesToReassemble, x, snapChannel, logger, restoreCts.Token);
+                            await _snapPack.RebuildPackageAsync(packagesDirectory, releasesToReassemble, x, snapChannel, restoreCts.Token);
                             
                         using (fullNupkgMemoryStream)
                         {

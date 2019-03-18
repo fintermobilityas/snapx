@@ -73,6 +73,15 @@ namespace Snap.Shared.Tests
             _nuspec.Add(targetPath, assemblyDefinition);
             return this;
         }
+
+        public SnapReleaseBuilder AddNuspecItem([NotNull] string targetPath, [NotNull] MemoryStream memoryStream)
+        {
+            if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
+            if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
+            
+            _nuspec.Add(targetPath, memoryStream);
+            return this;
+        }
         
         public SnapReleaseBuilder AddNuspecItem([NotNull] SnapReleaseBuilder releaseBuilder, int index)
         {
@@ -131,6 +140,30 @@ namespace Snap.Shared.Tests
             var path = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.BuildNugetFullLocalFilename());
             await SnapFilesystem.FileWriteAsync(memoryStream, path, cancellationToken);
             return path;
+        }
+
+        internal void AssertSnapAppIsGenisis([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            Assert.True(snapApp.IsGenisis);
+            Assert.True(snapApp.IsFull);
+            Assert.False(snapApp.IsDelta);
+        }
+
+        internal void AssertSnapAppIsFull([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            Assert.False(snapApp.IsGenisis);
+            Assert.True(snapApp.IsFull);
+            Assert.False(snapApp.IsDelta);
+        }
+
+        internal void AssertSnapAppIsDelta([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            Assert.False(snapApp.IsGenisis);
+            Assert.False(snapApp.IsFull);
+            Assert.True(snapApp.IsDelta);
         }
 
         internal void AssertSnapReleaseIsGenisis([NotNull] SnapRelease snapRelease)
@@ -212,8 +245,9 @@ namespace Snap.Shared.Tests
             AssertDeltaChangesetImpl(unmodifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Unmodified);            
         }
 
-        internal void AssertChecksums([NotNull] SnapRelease snapRelease, [NotNull] List<string> extractedFiles)
+        internal void AssertChecksums([NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease, [NotNull] List<string> extractedFiles)
         {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (extractedFiles == null) throw new ArgumentNullException(nameof(extractedFiles));
 
@@ -222,7 +256,7 @@ namespace Snap.Shared.Tests
 
             using (var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename))
             {
-                Assert.Equal(SnapApp.ReleaseNotes, snapRelease.ReleaseNotes);
+                Assert.Equal(snapApp.ReleaseNotes, snapRelease.ReleaseNotes);
 
                 foreach (var releaseChecksum in snapRelease.Files)
                 {
@@ -382,9 +416,11 @@ namespace Snap.Shared.Tests
     internal class BuildPackageContext : IDisposable
     {
         public MemoryStream FullPackageMemoryStream { get; set; }
+        public SnapApp FullPackageSnapApp { get; set; }
         public SnapRelease FullPackageSnapRelease { get; set; }
         public MemoryStream DeltaPackageMemoryStream { get; set; }
-        public SnapRelease DeltaSnapRelease { get; set; }
+        public SnapApp DeltaPackageSnapApp { get; set; }
+        public SnapRelease DeltaPackageSnapRelease { get; set; }
         public string FullPackageAbsolutePath { get; set; }
         public string DeltaPackageAbsolutePath { get; set; }
 
@@ -405,8 +441,7 @@ namespace Snap.Shared.Tests
             return new SnapReleaseBuilder(disposableDirectory, snapAppsReleases, snapApp, builderContext);
         }
     
-        internal async Task<BuildPackageContext> BuildPackageAsync([NotNull] SnapReleaseBuilder releaseBuilder, string releaseNotes = "My Release Notes?", ISnapProgressSource progressSource = null,
-                CancellationToken cancellationToken = default)
+        internal async Task<BuildPackageContext> BuildPackageAsync([NotNull] SnapReleaseBuilder releaseBuilder, string releaseNotes = "My Release Notes?", CancellationToken cancellationToken = default)
         {
             if (releaseBuilder == null) throw new ArgumentNullException(nameof(releaseBuilder));
 
@@ -433,10 +468,8 @@ namespace Snap.Shared.Tests
                 NuspecFilename = nuspecFilename,
                 NuspecBaseDirectory = nuspecBaseDirectory,
                 PackagesDirectory = releaseBuilder.SnapAppPackagesDirectory,
-                SnapProgressSource = progressSource,
                 SnapApp = releaseBuilder.SnapApp,
-                SnapAppsReleases = releaseBuilder.SnapAppsReleases,
-                NuspecProperties = new Dictionary<string, string>()
+                SnapAppsReleases = releaseBuilder.SnapAppsReleases
             };
 
             foreach (var kv in releaseBuilder.GetNuspecItems())
@@ -458,18 +491,20 @@ namespace Snap.Shared.Tests
                         break;
                     default:
                         throw new NotSupportedException($"{targetPath}: {value?.GetType().FullName}");
-                }
-                
+                }                
             }
 
             await releaseBuilder.SnapFilesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
-            var (fullPackageMemoryStream, fullPackageSnapRelease, deltaPackageMemoryStream, deltaSnapRelease) = await releaseBuilder.SnapPack
-                .BuildPackageAsync(snapPackDetails, releaseBuilder.CoreRunLib, cancellationToken: cancellationToken);
+            var (fullPackageMemoryStream, fullSnapApp, fullPackageSnapRelease, deltaPackageMemoryStream, deltaSnapApp, deltaSnapRelease) = await releaseBuilder.SnapPack
+                .BuildPackageAsync(snapPackDetails, releaseBuilder.CoreRunLib, cancellationToken);
 
             var fullPackageAbsolutePath = await releaseBuilder.WritePackageAsync(fullPackageMemoryStream, fullPackageSnapRelease, cancellationToken);
+
             string deltaPackageAbsolutePath = null;
-            if (deltaPackageMemoryStream != null && deltaSnapRelease != null)
+            if (deltaSnapApp != null 
+                && deltaPackageMemoryStream != null 
+                && deltaSnapRelease != null)
             {
                 deltaPackageAbsolutePath = await releaseBuilder.WritePackageAsync(deltaPackageMemoryStream, deltaSnapRelease, cancellationToken);                
             }
@@ -477,10 +512,12 @@ namespace Snap.Shared.Tests
             return new BuildPackageContext
             {
                 FullPackageMemoryStream = fullPackageMemoryStream,
+                FullPackageSnapApp = fullSnapApp,
                 FullPackageSnapRelease = fullPackageSnapRelease,
                 FullPackageAbsolutePath = fullPackageAbsolutePath,
                 DeltaPackageMemoryStream = deltaPackageMemoryStream,
-                DeltaSnapRelease = deltaSnapRelease,
+                DeltaPackageSnapApp = deltaSnapApp,
+                DeltaPackageSnapRelease = deltaSnapRelease,
                 DeltaPackageAbsolutePath = deltaPackageAbsolutePath
             };
         }

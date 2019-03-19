@@ -29,6 +29,7 @@ namespace Snap.Installer
         const string ApplicationName = "Snapx.Installer";
         internal const int UnitTestExitCode = 272151230; // Random value 
         static Mutex _mutexSingleInstanceWorkingDirectory;
+        static bool _mutexIsTaken;
         
         public static int Main(string[] args)
         {
@@ -76,7 +77,10 @@ namespace Snap.Installer
 
             try
             {
-                _mutexSingleInstanceWorkingDirectory.Dispose();
+                if (_mutexIsTaken)
+                {
+                    _mutexSingleInstanceWorkingDirectory.Dispose();                    
+                }
             }
             catch (Exception)
             {
@@ -133,11 +137,12 @@ namespace Snap.Installer
                     snapInstallerLogger.Error("Setup is already running, exiting...");
                     return -1;
                 }
+
+                _mutexIsTaken = true;
             }
             catch (Exception e)
             {
                 snapInstallerLogger.Error("Error creating installer mutex, exiting...", e);
-                _mutexSingleInstanceWorkingDirectory.Dispose();
                 return -1;
             }
             

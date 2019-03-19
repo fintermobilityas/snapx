@@ -47,8 +47,17 @@ namespace Snap.Core
         /// <summary>
         /// Current application release information.
         /// </summary>
-        public static SnapApp Current => _current == null ? null : new SnapApp(_current);
-        
+        public static SnapApp Current
+        {
+            get
+            {
+                lock (SyncRoot)
+                {
+                    return _current == null ? null : new SnapApp(_current);                    
+                }
+            }
+        }
+
         /// <summary>
         /// Current application working directory.
         /// </summary>

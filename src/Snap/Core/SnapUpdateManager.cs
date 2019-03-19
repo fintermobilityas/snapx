@@ -272,8 +272,9 @@ namespace Snap.Core
                 )
             };
 
-            if (!await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppReleases, channel, 
-                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken))
+            var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, deltaUpdates, 
+                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken);
+            if (!restoreSummary.Success)
             {
                 _logger.Error("Unknown error restoring nuget packages.");
                 return null;
@@ -281,12 +282,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(channel);
-            if (!snapReleaseToInstall.IsDelta)
-            {
-                _logger.Error($"Fatal error! Expected to install delta release but was: {snapReleaseToInstall.Filename}");
-                return null;
-            }
+            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(channel).AsFullRelease(false);
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
@@ -307,6 +303,9 @@ namespace Snap.Core
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
+                
+                // Save space by only keeping deltas around.
+                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);                
             }
             catch (Exception e)
             {
@@ -315,7 +314,7 @@ namespace Snap.Core
             }
 
             progressSource?.RaiseTotalProgress(100);
-
+            
             return new SnapApp(updatedSnapApp);
         }
 

@@ -267,7 +267,7 @@ namespace Snap.Tests.Core
                         snapOsProcessManager.Invocations.Clear();
 
                         var update2FullNupkgAbsolutePath = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, "packages",
-                            update2PackageContext.FullPackageSnapRelease.BuildNugetLocalFilename());
+                            update2PackageContext.FullPackageSnapRelease.BuildNugetFilename());
 
                         await _snapFilesystem.FileCopyAsync(update2PackageContext.FullPackageAbsolutePath,
                             update2FullNupkgAbsolutePath, default);

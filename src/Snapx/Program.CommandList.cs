@@ -70,11 +70,11 @@ namespace snapx
                     var packageSource = nuGetPackageSources.Items.Single(x => x.Name == channel.PushFeed.Name
                                                                               && x.SourceUri == channel.PushFeed.Source);
 
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamPackageId(), packageSource));
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamPackageId(), packageSource));
+                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
+                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
 
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamPackageId());
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamPackageId());
+                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamId());
+                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamId());
                 }
 
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);
@@ -99,7 +99,7 @@ namespace snapx
                 try
                 {
                     var downloadResult = await SnapUtility.Retry(async () => 
-                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamPackageId(), x.packageSource, cancellationToken),
+                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamId(), x.packageSource, cancellationToken),
                         retriesPerTask, delayInMilliseconds);
                     downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
                 }

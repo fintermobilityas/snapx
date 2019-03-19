@@ -113,6 +113,7 @@ namespace Snap.Core
                 }
 
                 snapProgressSource?.Raise(30);
+                
                 logger?.Info($"Extracting nupkg to app directory: {appDirectory}");
                 var extractedFiles = await _snapExtractor.ExtractAsync(appDirectory, snapRelease, packageArchiveReader, cancellationToken);
                 if (!extractedFiles.Any())
@@ -198,7 +199,7 @@ namespace Snap.Core
                 _snapOs.Filesystem.DirectoryCreate(packagesDirectory);
 
                 snapProgressSource?.Raise(40);
-                var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
+                var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFilename());
                 logger?.Info($"Copying nupkg to {dstNupkgFilename}");
                 await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
 

@@ -135,18 +135,19 @@ namespace snapx
             {
                 logger.Info("Downloaded releases manifest");
 
-                var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
+                var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
-                if (!await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, snapAppChannel,
-                    pushFeed, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken))
+                var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
+                    pushFeed, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken);
+                if (!restoreSummary.Success)
                 {
                     return 1;
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                var snapAppMostRecentRelease = snapAppReleases.GetMostRecentRelease(snapAppChannel);
+                var snapAppMostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
                 if (snapAppMostRecentRelease != null)
                 {
                     if (snapAppMostRecentRelease.Version == snapApp.Version)
@@ -159,7 +160,7 @@ namespace snapx
 
                     var persistentDisk = filesystem
                         .EnumerateFiles(packagesDirectory)
-                        .Select(x => (nupkg: x.Name.ParseNugetLocalFilename(StringComparison.InvariantCultureIgnoreCase), fullName: x.FullName))
+                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.InvariantCultureIgnoreCase), fullName: x.FullName))
                         .Where(x => x.nupkg.valid
                                     && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCultureIgnoreCase)
                                     && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCultureIgnoreCase))
@@ -218,7 +219,7 @@ namespace snapx
             var fullOrDeltaSnapApp = deltaSnapApp ?? fullSnapApp;
             var fullOrDeltaSnapRelease = fullOrDeltaSnapApp.IsFull ? fullSnapRelease : deltaSnapRelease;
             var fullOrDeltaSnapReleaseFileSize = fullOrDeltaSnapApp.IsFull ? fullOrDeltaSnapRelease.FullFilesize : fullOrDeltaSnapRelease.DeltaFilesize;
-            var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetLocalFilename());
+            var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFilename());
 
             using (fullNupkgMemoryStream)
             using (deltaNupkgMemorystream)
@@ -233,7 +234,7 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info("Building releases manifest");
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);
-            var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesLocalFilename());
+            var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesFilename());
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
             logger.Info("Finished building releases manifest");

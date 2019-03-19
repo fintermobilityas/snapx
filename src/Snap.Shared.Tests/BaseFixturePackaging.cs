@@ -127,7 +127,7 @@ namespace Snap.Shared.Tests
             if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             memoryStream.Seek(0, SeekOrigin.Begin);
-            var path = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.BuildNugetDeltaLocalFilename());
+            var path = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.BuildNugetDeltaFilename());
             await SnapFilesystem.FileWriteAsync(memoryStream, path, cancellationToken);
             return path;
         }
@@ -137,7 +137,7 @@ namespace Snap.Shared.Tests
             if (memoryStream == null) throw new ArgumentNullException(nameof(memoryStream));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             memoryStream.Seek(0, SeekOrigin.Begin);
-            var path = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.BuildNugetFullLocalFilename());
+            var path = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.BuildNugetFullFilename());
             await SnapFilesystem.FileWriteAsync(memoryStream, path, cancellationToken);
             return path;
         }
@@ -172,7 +172,8 @@ namespace Snap.Shared.Tests
             Assert.True(snapRelease.IsGenisis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
-            Assert.Equal(snapRelease.BuildNugetFullLocalFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetFullUpstreamId(), snapRelease.UpstreamId);
             Assert.NotEmpty(snapRelease.Files);
             Assert.Empty(snapRelease.New);
             Assert.Empty(snapRelease.Modified);
@@ -186,7 +187,8 @@ namespace Snap.Shared.Tests
             Assert.False(snapRelease.IsGenisis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
-            Assert.Equal(snapRelease.BuildNugetFullLocalFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetFullUpstreamId(), snapRelease.UpstreamId);
             Assert.NotEmpty(snapRelease.Files);
             Assert.NotNull(snapRelease.New);
             Assert.NotNull(snapRelease.Modified);
@@ -200,7 +202,8 @@ namespace Snap.Shared.Tests
             Assert.False(snapRelease.IsGenisis);
             Assert.False(snapRelease.IsFull);
             Assert.True(snapRelease.IsDelta);
-            Assert.Equal(snapRelease.BuildNugetDeltaLocalFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetDeltaFilename(), snapRelease.Filename);
+            Assert.Equal(snapRelease.BuildNugetDeltaUpstreamId(), snapRelease.UpstreamId);
             Assert.NotEmpty(snapRelease.Files);
             Assert.NotNull(snapRelease.New);
             Assert.NotNull(snapRelease.Modified);
@@ -244,6 +247,34 @@ namespace Snap.Shared.Tests
             AssertDeltaChangesetImpl(modifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Modified);
             AssertDeltaChangesetImpl(unmodifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Unmodified);            
         }
+
+        internal void AssertChannels([NotNull] SnapApp snapApp, [NotNull] params string[] channels)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (channels == null) throw new ArgumentNullException(nameof(channels));
+            Assert.Equal(snapApp.Channels.Count, channels.Length);
+
+            for (var index = 0; index < snapApp.Channels.Count; index++)
+            {
+                var expectedChannelName = snapApp.Channels[index].Name;
+                var actualChannelName = channels[index];
+                Assert.Equal(expectedChannelName, actualChannelName);
+            }
+        } 
+        
+        internal void AssertChannels([NotNull] SnapRelease snapRelease, [NotNull] params string[] channels)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            if (channels == null) throw new ArgumentNullException(nameof(channels));
+            Assert.Equal(snapRelease.Channels.Count, channels.Length);
+
+            for (var index = 0; index < snapRelease.Channels.Count; index++)
+            {
+                var expectedChannelName = snapRelease.Channels[index];
+                var actualChannelName = channels[index];
+                Assert.Equal(expectedChannelName, actualChannelName);
+            }
+        } 
 
         internal void AssertChecksums([NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease, [NotNull] List<string> extractedFiles)
         {

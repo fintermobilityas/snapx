@@ -114,75 +114,159 @@ namespace Snap.Extensions
             return channel.Name.IsValidChannelName();
         }
         
-        internal static string BuildNugetUpstreamPackageId([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetUpstreamId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return snapApp.BuildNugetUpstreamPackageIdImpl();
+            return snapApp.IsFull ? snapApp.BuildNugetFullUpstreamId() : snapApp.BuildNugetDeltaUpstreamId();
+        }
+                
+        internal static string BuildNugetFullUpstreamId([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
         }
         
-        static string BuildNugetUpstreamPackageIdImpl([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetDeltaUpstreamId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            return $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
         }
 
-        internal static string BuildNugetLocalFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetUpstreamId([NotNull] this SnapRelease snapRelease)
         {
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var fullOrDelta = snapApp.IsFull ? "full" : "delta";
-            return $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            return snapRelease.IsFull ? snapRelease.BuildNugetFullUpstreamId() : snapRelease.BuildNugetDeltaUpstreamId();
+        }
+
+        internal static string BuildNugetFullUpstreamId([NotNull] this SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            return $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx".ToLowerInvariant();
         }
         
-        internal static string BuildNugetFullLocalFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetDeltaUpstreamId([NotNull] this SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            return $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx".ToLowerInvariant();
+        }
+
+        internal static string BuildNugetFilename([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return snapApp.IsFull ? snapApp.BuildNugetFullFilename() : snapApp.BuildNugetDeltaFilename();
+        }
+        
+        internal static string BuildNugetFullFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
 
-        internal static string BuildNugetDeltaLocalFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetDeltaFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
         
-        internal static string BuildNugetLocalFilename([NotNull] this SnapRelease snapRelease)
+        internal static string BuildNugetFilename([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            var fullOrDelta = snapRelease.IsFull ? "full" : "delta";
-            return $"{snapRelease.Id}_{fullOrDelta}_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            return snapRelease.IsFull ? snapRelease.BuildNugetFullFilename() : snapRelease.BuildNugetDeltaFilename();
         }
         
-        internal static string BuildNugetFullLocalFilename([NotNull] this SnapRelease snapRelease)
+        internal static string BuildNugetFullFilename([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             return $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
 
-        internal static string BuildNugetDeltaLocalFilename([NotNull] this SnapRelease snapRelease)
+        internal static string BuildNugetDeltaFilename([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             return $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
         }
 
-        internal static string BuildNugetReleasesUpstreamPackageId([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetReleasesUpstreamId([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{snapApp.Id.ToLowerInvariant()}_snapx";
         }
         
-        internal static string BuildNugetReleasesUpstreamPackageId([NotNull] this SnapRelease snapRelease)
+        internal static string BuildNugetReleasesUpstreamId([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             return $"{snapRelease.Id.ToLowerInvariant()}_snapx";
         }
         
-        internal static string BuildNugetReleasesLocalFilename([NotNull] this SnapApp snapApp)
+        internal static string BuildNugetReleasesFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.BuildNugetReleasesUpstreamPackageId()}.nupkg".ToLowerInvariant();
+            return $"{snapApp.BuildNugetReleasesUpstreamId()}.nupkg".ToLowerInvariant();
+        }
+
+        public static SnapApp AsFullSnapApp([NotNull] this SnapApp snapApp, bool isGenisis)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            var fullSnapApp = new SnapApp(snapApp)
+            {
+                IsFull = true,
+                IsGenisis = isGenisis
+            };
+            
+            return fullSnapApp;
         }
         
-        internal static (bool valid, string id, string fullOrDelta, SemanticVersion semanticVersion, string rid) ParseNugetLocalFilename([NotNull] this string filename, StringComparison stringComparisonType)
+        public static SnapApp AsDeltaSnapApp([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            var fullSnapApp = new SnapApp(snapApp)
+            {
+                IsFull = false,
+                IsGenisis = false
+            };
+
+            return fullSnapApp;
+        }
+
+        public static SnapRelease AsFullRelease([NotNull] this SnapRelease snapRelease, bool isGenisis)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            
+            var fullSnapRelease = new SnapRelease(snapRelease)
+            {
+                Filename = snapRelease.BuildNugetFullFilename(),
+                UpstreamId = snapRelease.BuildNugetFullUpstreamId(),
+                IsGenisis = isGenisis,
+                IsFull = true
+            };
+
+            fullSnapRelease.Files.Clear();
+            fullSnapRelease.New.Clear();
+            fullSnapRelease.Modified.Clear();
+            fullSnapRelease.Unmodified.Clear();
+            fullSnapRelease.Deleted.Clear();
+            
+            fullSnapRelease.Files.AddRange(snapRelease.Files.Select(x => new SnapReleaseChecksum(x)));
+
+            return fullSnapRelease;
+        }
+
+        public static SnapRelease AsDeltaRelease([NotNull] this SnapRelease snapRelease)
+        {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+
+            var deltaSnapRelease = new SnapRelease(snapRelease).AsFullRelease(false);
+            deltaSnapRelease.IsFull = false;
+            deltaSnapRelease.Filename = deltaSnapRelease.BuildNugetDeltaFilename();
+            deltaSnapRelease.UpstreamId = deltaSnapRelease.BuildNugetDeltaUpstreamId();
+            
+            return deltaSnapRelease; 
+        }
+        
+        internal static (bool valid, string id, string fullOrDelta, SemanticVersion semanticVersion, string rid) ParseNugetFilename([NotNull] this string filename, 
+            StringComparison stringComparisonType)
         {
             string id = default;
             string fullOrDelta = default;

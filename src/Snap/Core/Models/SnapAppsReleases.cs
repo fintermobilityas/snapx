@@ -10,6 +10,7 @@ using YamlDotNet.Serialization;
 namespace Snap.Core.Models
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public sealed class SnapAppsReleases
     {
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
@@ -30,8 +31,31 @@ namespace Snap.Core.Models
         internal ISnapAppReleases GetReleases([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            var upstreamPackageId = snapApp.BuildNugetUpstreamPackageId();
-            return new SnapAppReleases(snapApp, Releases.Where(x => x.UpstreamId == upstreamPackageId).Select(x => x));
+            var snapReleases = Releases.Where(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid).Select(x => x);
+            return new SnapAppReleases(snapApp, snapReleases);
+        }
+        
+        internal ISnapAppChannelReleases GetReleases([NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
+            return GetReleases(snapApp, snapChannel.Name);
+        }
+        
+        internal ISnapAppChannelReleases GetReleases([NotNull] SnapApp snapApp, [NotNull] string channelName)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (channelName == null) throw new ArgumentNullException(nameof(channelName));
+
+            var channel = snapApp.Channels.SingleOrDefault(x => x.Name == channelName);
+            if (channel == null)
+            {
+                throw new Exception($"Unknown channel: {channelName}");
+            }
+
+            var snapAppReleases = GetReleases(snapApp);
+            var snapReleasesForChannel = snapAppReleases.Where(x => x.Channels.Contains(channelName)).Select(x => x);
+            return new SnapAppChannelReleases(snapApp, channel, snapReleasesForChannel);
         }
         
         internal SnapRelease GetMostRecentRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel)
@@ -44,16 +68,16 @@ namespace Snap.Core.Models
         internal SnapRelease GetMostRecentRelease([NotNull] SnapApp snapApp, string channel)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return GetReleases(snapApp).GetMostRecentRelease(channel);
+            return GetReleases(snapApp, channel).GetMostRecentRelease();
         }
 
         public void Add([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            var existingRelease = Releases.SingleOrDefault(x => string.Equals(x.BuildNugetLocalFilename(), snapRelease.Filename)); 
+            var existingRelease = Releases.SingleOrDefault(x => string.Equals(x.BuildNugetFilename(), snapRelease.Filename)); 
             if(existingRelease != null)
             {
-                throw new Exception($"Release already exists: {existingRelease.BuildNugetLocalFilename()}");
+                throw new Exception($"Release already exists: {existingRelease.BuildNugetFilename()}");
             }
             Releases.Add(snapRelease);
         }

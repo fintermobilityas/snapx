@@ -51,6 +51,7 @@ namespace Snap.Installer
             var exitCode = 1;
 
             // ReSharper disable once ImplicitlyCapturedClosure
+
             async Task InstallInBackgroundAsync(MainWindowViewModel mainWindowViewModel)
             {
                 if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
@@ -81,7 +82,6 @@ namespace Snap.Installer
                 var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
                 var nupkgAbsolutePath = options.Filename != null ? snapFilesystem.PathGetFullPath(options.Filename) : null;
                 SnapApp snapApp;
-                SnapChannel snapAppChannel;
 
                 if (nupkgAbsolutePath == null
                     && snapFilesystem.FileExists(snapAppDllAbsolutePath))
@@ -98,18 +98,16 @@ namespace Snap.Installer
                             goto done;
                         }
 
-                        var snapAppReleases = snapsReleases.GetReleases(snapApp);
-                        if (!snapAppReleases.Any())
+                        var snapAppChannelReleases = snapsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
+                        if (!snapAppChannelReleases.Any())
                         {
                             mainWindowLogger.Error("Downloaded releases manifest but could not find any available installer assets.");
                             goto done;
                         }
 
-                        snapAppChannel = snapApp.GetCurrentChannelOrThrow();
+                        var mostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
 
-                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(snapAppChannel);
-
-                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {snapAppChannel.Name}.");
+                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
 
                         // ReSharper disable once MethodSupportsCancellation
                         await Task.Delay(TimeSpan.FromSeconds(3));
@@ -198,8 +196,9 @@ namespace Snap.Installer
                                     releasesRestored: x.releasesRestored)
                             };
 
-                            if (!await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppReleases, snapAppChannel,
-                                 packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken))
+                            var restoreSummary = await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppChannelReleases,
+                                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken);
+                            if (!restoreSummary.Success)
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");
                                 goto done;
@@ -268,14 +267,14 @@ namespace Snap.Installer
                     }
                 }
 
-                snapAppChannel = snapApp.Channels.SingleOrDefault(x => x.Current);
+                var snapAppChannel = snapApp.Channels.SingleOrDefault(x => x.Current);
                 if (snapAppChannel == null)
                 {
                     mainWindowLogger.Error($"Unknown release channel. Available channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}");
                     goto done;
                 }
 
-                var releasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesLocalFilename());
+                var releasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
                 if (!snapFilesystem.FileExists(releasesAbsolutePath))
                 {
                     mainWindowLogger.Error($"Unable to find releases nupkg: {releasesAbsolutePath}");

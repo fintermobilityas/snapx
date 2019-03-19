@@ -18,23 +18,20 @@ namespace Snap.Extensions
             foreach (var item in source) onNext(item);
         }
 
-        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> body, int degreeOfParallelism = 0)
+        // https://devblogs.microsoft.com/pfxteam/implementing-a-simple-foreachasync-part-2/
+        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> body, int concurrency = 0) 
         {
-            degreeOfParallelism = degreeOfParallelism <= 0 ? Environment.ProcessorCount : degreeOfParallelism;
-            return Task.WhenAll(
-                Partitioner
-                .Create(source)
-                .GetPartitions(degreeOfParallelism)
-                .Select(partition => Task.Run(async () =>
-                {
-                    using (partition)
-                    {
-                        while (partition.MoveNext())
-                        {
-                            await body(partition.Current);
-                        }
-                    }
-                })));
-        }
+            if (concurrency == 0)
+            {
+                concurrency = Environment.ProcessorCount;
+            }
+            return Task.WhenAll( 
+                from partition in Partitioner.Create(source).GetPartitions(concurrency) 
+                select Task.Run(async delegate { 
+                    using (partition) 
+                        while (partition.MoveNext()) 
+                            await body(partition.Current); 
+                })); 
+        }    
     }
 }

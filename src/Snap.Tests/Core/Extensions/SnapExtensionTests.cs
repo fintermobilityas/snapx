@@ -116,7 +116,7 @@ namespace Snap.Tests.Core.Extensions
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestBuildNugetUpstreamPackageId_SnapApp(bool isDelta)
+        public void TestBuildNugetUpstreamId_SnapApp(bool isDelta)
         {
             var snapApp = new SnapApp
             {
@@ -130,17 +130,62 @@ namespace Snap.Tests.Core.Extensions
                     Rid = "win7-x64"
                 }
             };
+
+            var fullOrDelta = snapApp.IsFull ? "full" : "delta";
+            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
             
-            var expectedPackageId = $"{snapApp.Id}_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            var actualPackageId = snapApp.BuildNugetUpstreamId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetFullUpstreamId_SnapApp()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsFull = false,
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildNugetUpstreamPackageId();
+            var actualPackageId = snapApp.BuildNugetFullUpstreamId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetDeltaUpstreamId_SnapApp()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsFull = true,
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetFullUpstreamId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestBuildNugetLocalFilename_SnapApp(bool isDelta)
+        public void TestBuildNugetFilename_SnapApp(bool isDelta)
         {
             var snapApp = new SnapApp
             {
@@ -159,14 +204,83 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildNugetLocalFilename();
+            var actualPackageId = snapApp.BuildNugetFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void TestBuildNugetLocalFilename_SnapRelease(bool isDelta)
+        public void TestBuildNugetUpstreamId_SnapRelease(bool isDelta)
+        {
+            var snapRelease = new SnapRelease
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsFull = !isDelta,
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var fullOrDelta = snapRelease.IsFull ? "full" : "delta";
+            var expectedPackageId = $"{snapRelease.Id}_{fullOrDelta}_{snapRelease.Target.Rid}_snapx".ToLowerInvariant();
+            
+            var actualPackageId = snapRelease.BuildNugetUpstreamId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetFullUpstreamId_SnapRelease()
+        {
+            var snapRelease = new SnapRelease
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsFull = false,
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx".ToLowerInvariant();
+            
+            var actualPackageId = snapRelease.BuildNugetFullUpstreamId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Fact]
+        public void TestBuildNugetDeltaUpstreamId_SnapRelease()
+        {
+            var snapRelease = new SnapRelease
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                IsFull = true,
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx".ToLowerInvariant();
+            
+            var actualPackageId = snapRelease.BuildNugetDeltaUpstreamId();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
+        
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TestBuildNugetFilename_SnapRelease(bool isDelta)
         {
             var snapRelease = new SnapRelease
             {
@@ -185,7 +299,7 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapRelease.Id}_{fullOrDelta}_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapRelease.BuildNugetLocalFilename();
+            var actualPackageId = snapRelease.BuildNugetFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
@@ -207,10 +321,30 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapApp.BuildNugetFullLocalFilename();
+            var actualPackageId = snapApp.BuildNugetFullFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
-        
+                
+        [Fact]
+        public void TestBuildNugetDeltaFilename_SnapApp()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0, "preview-123"),
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win7-x64"
+                }
+            };
+
+            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            
+            var actualPackageId = snapApp.BuildNugetFilename();
+            Assert.Equal(expectedPackageId, actualPackageId);
+        }
         [Fact]
         public void TestBuildNugetFullFilename_SnapRelease()
         {
@@ -229,30 +363,10 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapRelease.BuildNugetFullLocalFilename();
+            var actualPackageId = snapRelease.BuildNugetFullFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
-        [Fact]
-        public void TestBuildNugetDeltaFilename_SnapApp()
-        {
-            var snapApp = new SnapApp
-            {
-                Id = "demoapp",
-                Version = new SemanticVersion(1, 0, 0, "preview-123"),
-                Target = new SnapTarget
-                {
-                    Os = OSPlatform.Windows,
-                    Framework = "netcoreapp2.1",
-                    Rid = "win7-x64"
-                }
-            };
-
-            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
-            
-            var actualPackageId = snapApp.BuildNugetDeltaLocalFilename();
-            Assert.Equal(expectedPackageId, actualPackageId);
-        }
         
         [Fact]
         public void TestBuildNugetDeltaFilename_SnapRelease()
@@ -271,12 +385,12 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
             
-            var actualPackageId = snapRelease.BuildNugetDeltaLocalFilename();
+            var actualPackageId = snapRelease.BuildNugetDeltaFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Fact]
-        public void TestBuildNugetReleasesUpstreamPackageId_SnapApp()
+        public void TestBuildNugetReleasesUpstreamId_SnapApp()
         {
             var snapApp = new SnapApp
             {
@@ -285,12 +399,12 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapApp.Id.ToLowerInvariant()}_snapx";
             
-            var actualPackageId = snapApp.BuildNugetReleasesUpstreamPackageId();
+            var actualPackageId = snapApp.BuildNugetReleasesUpstreamId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Fact]
-        public void TestBuildNugetReleasesUpstreamPackageId_SnapRelease()
+        public void TestBuildNugetReleasesUpstreamId_SnapRelease()
         {
             var snapRelease = new SnapRelease
             {
@@ -299,12 +413,12 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedPackageId = $"{snapRelease.Id.ToLowerInvariant()}_snapx";
             
-            var actualPackageId = snapRelease.BuildNugetReleasesUpstreamPackageId();
+            var actualPackageId = snapRelease.BuildNugetReleasesUpstreamId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
         
         [Fact]
-        public void TestBuildNugetReleasesLocalFilename()
+        public void TestBuildNugetReleasesFilename()
         {
             var snapApp = new SnapApp
             {
@@ -313,41 +427,41 @@ namespace Snap.Tests.Core.Extensions
 
             var expectedFilename = $"{snapApp.Id}_snapx.nupkg".ToLowerInvariant();
             
-            var actualFilename = snapApp.BuildNugetReleasesLocalFilename();
+            var actualFilename = snapApp.BuildNugetReleasesFilename();
             Assert.Equal(expectedFilename, actualFilename);
         }
 
         [Fact]
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-        public void ParseNugetLocalFilename_When_Null()
+        public void ParseNugetFilename_When_Null()
         {
             string value = null;
-            var (valid, _, _, _, _) = value.ParseNugetLocalFilename(StringComparison.Ordinal);
+            var (valid, _, _, _, _) = value.ParseNugetFilename(StringComparison.Ordinal);
             Assert.False(valid);
         }
 
         [Fact]
-        public void ParseNugetLocalFilename_When_Incurrent_Delimiter_Count()
+        public void ParseNugetFilename_When_Incurrent_Delimiter_Count()
         {
             const string value = "demoapp_full_linux-x64_snapx1.0.0";
-            var (valid, _, _, _, _) = value.ParseNugetLocalFilename(StringComparison.Ordinal);
+            var (valid, _, _, _, _) = value.ParseNugetFilename(StringComparison.Ordinal);
             Assert.False(valid);
         }
 
         [Fact]
-        public void ParseNugetLocalFilename_When_Empty_Id()
+        public void ParseNugetFilename_When_Empty_Id()
         {
             const string value = "_full_linux-x64_snapx.1.0.0.nupkg";
-            var (valid, id, _, _, _) = value.ParseNugetLocalFilename(StringComparison.Ordinal);
+            var (valid, id, _, _, _) = value.ParseNugetFilename(StringComparison.Ordinal);
             Assert.False(valid);
             Assert.Null(id);
         }
 
         [Fact]
-        public void ParseNugetLocalFilename_When_Not_FullOrDelta()
+        public void ParseNugetFilename_When_Not_FullOrDelta()
         {
             const string value = "demoapp_yolo_linux-x64_snapx.1.0.0.nupkg";
-            var (valid, _, fullOrDelta, _, _) = value.ParseNugetLocalFilename(StringComparison.Ordinal);
+            var (valid, _, fullOrDelta, _, _) = value.ParseNugetFilename(StringComparison.Ordinal);
             Assert.False(valid);
             Assert.Null(fullOrDelta);
         }
@@ -357,10 +471,10 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("demoapp_delta_linux-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-x64", "1.0.0")]
         [InlineData("demoapp_full_win-x64_snapx.1.0.0.nupkg", "demoapp", "full", "win-x64", "1.0.0")]
         [InlineData("demoapp_delta_win-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "win-x64", "1.0.0")]
-        public void ParseNugetLocalFilename(string localFilename, string expectedId, string expectedFullOrDelta,
+        public void ParseNugetFilename(string Filename, string expectedId, string expectedFullOrDelta,
             string expectedRid, string expectedSemanticVersionStr)
         {
-            var (valid, id, fullOrDelta, semanticVersion, rid) = localFilename.ParseNugetLocalFilename(StringComparison.Ordinal);
+            var (valid, id, fullOrDelta, semanticVersion, rid) = Filename.ParseNugetFilename(StringComparison.Ordinal);
             Assert.True(valid);
             Assert.Equal(id, expectedId);
             Assert.Equal(fullOrDelta, expectedFullOrDelta);

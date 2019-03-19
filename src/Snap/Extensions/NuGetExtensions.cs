@@ -129,7 +129,7 @@ namespace Snap.Extensions
         internal static PackageIdentity BuildPackageIdentity([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return new PackageIdentity(snapApp.BuildNugetUpstreamPackageId(), snapApp.Version.ToNuGetVersion());
+            return new PackageIdentity(snapApp.BuildNugetUpstreamId(), snapApp.Version.ToNuGetVersion());
         }
 
         internal static NuGetPackageSearchMedatadata BuildPackageSearchMedatadata([NotNull] this SnapApp snapApp,

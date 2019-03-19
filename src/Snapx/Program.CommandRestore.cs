@@ -94,21 +94,20 @@ namespace snapx
                     logger.Info("Downloaded releases manifest");
                 }
 
-                var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
-
                 foreach (var channel in snapApp.Channels)
                 {
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     logger.Info($"Restoring channel: {channel.Name}.");
 
-                    if (!snapAppReleases.HasReleasesIn(channel))
+                    var snapAppReleases = snapAppsReleases.GetReleases(snapApp, channel);
+                    if (!snapAppReleases.Any())
                     {
                         logger.Info("No releases has been published to this channel.");
                         continue;
                     }
 
-                    await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, channel,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken);
+                    await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource, SnapPackageManagerRestoreType.Packaging,
+                         logger: logger, cancellationToken: cancellationToken);
                 }
             }
 

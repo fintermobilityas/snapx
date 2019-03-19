@@ -650,7 +650,7 @@ namespace Snap.Tests.Core
 
             nugetServiceMock.Setup(x =>
                     x.GetMetadatasAsync(
-                        It.Is<string>(v => string.Equals(v, snapApp.BuildNugetUpstreamPackageId())),
+                        It.Is<string>(v => string.Equals(v, snapApp.BuildNugetUpstreamId())),
                         It.IsAny<bool>(),
                         It.IsAny<NuGetPackageSources>(),
                         It.IsAny<CancellationToken>(),

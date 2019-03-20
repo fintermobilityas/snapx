@@ -42,14 +42,6 @@ namespace Snap.Tests.Core
             _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources);
         }
 
-        [Fact]
-        [SuppressMessage("ReSharper", "ObjectCreationAsStatement")]
-        public void TestCtor_DoesNotThrow()
-        {
-            SnapAwareApp._current = _baseFixture.BuildSnapApp();
-            new SnapUpdateManager();
-        }
-        
         /*
       [Fact]
       public async Task TestUpdateToLatestReleaseAsync()

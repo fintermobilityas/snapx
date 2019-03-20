@@ -29,18 +29,18 @@ namespace Snap.Core
                 if (SnapOs != null)
                 {
                     return;
-                }                               
-            }
-
-            try
-            {     
-                SnapOs = AnyOS.SnapOs.AnyOs;
-                WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
-                _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
-            }
-            catch (Exception e)
-            {
-                Logger.ErrorException("Failed to load snap manifest.", e);
+                }       
+                 
+                try
+                {     
+                    SnapOs = AnyOS.SnapOs.AnyOs;
+                    WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
+                    _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
+                }
+                catch (Exception e)
+                {
+                    Logger.ErrorException("Failed to load snap manifest.", e);
+                }                        
             }
         }
         

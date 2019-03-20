@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Packaging;
 using snapx.Options;
 using Snap.AnyOS;
 using Snap.Core;
@@ -139,21 +140,24 @@ namespace snapx
             }
             else
             {
-                promoteToChannels.AddRange(promotableChannels);
+                if (options.ToAllRemainingChannels)
+                {
+                    promoteToChannels.AddRange(promotableChannels);
+                }
+                else
+                {
+                    promoteToChannels.Add(promotableChannels.First());                    
+                }
             }
 
             var promoteToChannelsStr = string.Join(", ", promoteToChannels.Select(x => x.Name));
 
-            if (promoteToChannels.Count > 1)
+            if (promoteToChannels.Count >= 1)
             {
-                if (!logger.Prompt("y|yes", $"You are about to promote snap to multiple channels: {promoteToChannelsStr}. Do you want to continue? [y|n]"))
+                if (!logger.Prompt("y|yes", $"You are about to promote {snapApp.Id} to the following channels: {promoteToChannelsStr}. Do you want to continue? [y|n]"))
                 {
                     return 1;
                 }
-            }
-            else if(promoteToChannels.Count == 1)
-            {
-                logger.Info($"Promoting to channel: {promoteToChannels[0].Name}.");
             }
             else
             {

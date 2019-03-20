@@ -62,7 +62,7 @@ namespace snapx
             }
             catch (Exception e)
             {
-                SnapLogger.ErrorException("Exception thrown during main.", e);
+                SnapLogger.ErrorException("Exception thrown in Main", e);
             }
 
             return 1;

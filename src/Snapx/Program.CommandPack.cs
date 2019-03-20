@@ -28,7 +28,7 @@ namespace snapx
             [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor,
-            [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ILog logger,
+            [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ILog logger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -43,6 +43,7 @@ namespace snapx
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -206,7 +207,9 @@ namespace snapx
             {
                 SnapApp = snapApp,
                 NuspecBaseDirectory = artifactsDirectory,
-                NuspecFilename = nuspecFilename
+                PackagesDirectory = packagesDirectory,
+                NuspecFilename = nuspecFilename,
+                SnapAppsReleases = snapAppsReleases                
             };
 
             logger.Info($"Building nupkg: {snapApp.Version}.");
@@ -233,10 +236,21 @@ namespace snapx
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info("Building releases manifest");
+            
+            var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
+            if (!nowUtc.HasValue)
+            {
+                logger.Error($"Unknown error while retrieving NTP timestamp from server: {snapNetworkTimeProvider}");
+                return 1;
+            }
+            
+            snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
+            
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);
             var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesFilename());
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
+            
             logger.Info("Finished building releases manifest");
 
             using (releasesMemoryStream)
@@ -586,13 +600,15 @@ namespace snapx
                     throw new FileNotFoundException(packageAbsolutePath);
                 }
 
-                return SnapUtility.Retry(async () =>
+                var packageName = filesystem.PathGetFileName(packageAbsolutePath);
+
+                return SnapUtility.RetryAsync(async () =>
                 {
-                    logger.Info($"Pushing {packageAbsolutePath} to {packageSource.Name}");
+                    logger.Info($"Pushing {packageName} to {packageSource.Name}");
                     var pushStopwatch = new Stopwatch();
                     pushStopwatch.Reset();
                     await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
-                    logger.Info($"Pushed {packageAbsolutePath} to {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
+                    logger.Info($"Pushed {packageName} to {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
                 });
             }
 
@@ -607,32 +623,9 @@ namespace snapx
 
             logger.Info($"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. ");
 
-            var waitForManifestStopwatch = new Stopwatch();
-            waitForManifestStopwatch.Restart();
-
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var (upstreamSnapsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-                if (upstreamSnapsReleases == null)
-                {
-                    goto sleep;
-                }
-
-                if (upstreamSnapsReleases.Version >= snapAppsReleases.Version)
-                {
-                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapsReleases.Version}. " +
-                                $"Completed in {waitForManifestStopwatch.Elapsed.TotalSeconds:0.0}s.");
-                    break;
-                }
-
-                logger.Info(
-                    $"Current {snapChannel.PushFeed.Name} version: {snapAppsReleases.Version}. " +
-                    $"Local version: {snapAppsReleases.Version}. " +
-                    "Retrying in 15 seconds");
-
-            sleep:
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
-            }
+            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, cancellationToken);
         }
+
+        
     }
 }

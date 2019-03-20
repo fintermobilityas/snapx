@@ -8,6 +8,7 @@ using Snap.Core.Models;
 using Snap.Core.Yaml.NodeTypeResolvers;
 using Snap.Core.Yaml.TypeConverters;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.Converters;
 using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization.NodeTypeResolvers;
 
@@ -36,24 +37,25 @@ namespace Snap.Core
             { "http", typeof(SnapsHttpFeed)}
         };
 
-        static readonly Deserializer DeserializerSnapApp = Build(new DeserializerBuilder()
+        static readonly IDeserializer DeserializerSnapApp = Build(new DeserializerBuilder()
             .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappingsSnapApp),
                 selector => selector.After<TagNodeTypeResolver>()
             )
         );
 
-        static readonly Deserializer DeserializerSnapApps = Build(new DeserializerBuilder()
+        static readonly IDeserializer DeserializerSnapApps = Build(new DeserializerBuilder()
             .WithNodeTypeResolver(new AbstractClassTypeResolver(AbstractClassTypeMappingsSnapApps),
                 selector => selector.After<TagNodeTypeResolver>()
             )
         );
  
-        static Deserializer Build(DeserializerBuilder builder)
+        static IDeserializer Build(DeserializerBuilder builder)
         {
             return builder.WithNamingConvention(new CamelCaseNamingConvention())
                 .WithTypeConverter(new SemanticVersionYamlTypeConverter())
                 .WithTypeConverter(new UriYamlTypeConverter())
                 .WithTypeConverter(new OsPlatformYamlTypeConverter())
+                .WithTypeConverter(new DateTimeConverter(DateTimeKind.Utc))     
                 .Build();
         }
 

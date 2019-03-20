@@ -115,15 +115,65 @@ namespace Snap.Tests.Core
                     );
 
                     var extractedFiles = await _snapExtractor.ExtractAsync(
-                        genisisPackageContext.FullPackageAbsolutePath, 
-                        genisisSnapReleaseBuilder.SnapAppInstallDirectory, 
+                        genisisPackageContext.FullPackageAbsolutePath,
+                        genisisSnapReleaseBuilder.SnapAppInstallDirectory,
                         genisisPackageContext.FullPackageSnapRelease);
 
-                    genisisSnapReleaseBuilder.AssertChecksums(genisisPackageContext.FullPackageSnapApp, genisisPackageContext.FullPackageSnapRelease, extractedFiles);
+                    genisisSnapReleaseBuilder.AssertChecksums(genisisPackageContext.FullPackageSnapApp, genisisPackageContext.FullPackageSnapRelease,
+                        extractedFiles);
                 }
             }
         }
-        
+
+        [Fact]
+        public async Task TestBuildPackageAsync_Removes_Snap_Asset_Assemblies()
+        {
+            var snapAppsReleases = new SnapAppsReleases();
+            var genisisSnapApp = _baseFixture.BuildSnapApp();
+
+            using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
+            using (var genisisSnapReleaseBuilder = _baseFixture
+                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext)
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genisisSnapApp)))
+            {
+                foreach (var libraryName in _snapPack.AlwaysRemoveTheseAssemblies.Select(x => _snapFilesystem.PathGetFileNameWithoutExtension(x)))
+                {
+                    var assemblyDefinition = libraryName == "Snap"
+                        ? _baseFixture.BuildLibrary(libraryName, Snapx.Version)
+                        : _baseFixture.BuildLibrary(libraryName);
+                        
+                    genisisSnapReleaseBuilder.AddNuspecItem(assemblyDefinition);
+                }
+
+                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                {
+                    Assert.Null(genisisPackageContext.DeltaPackageSnapApp);
+                    Assert.Null(genisisPackageContext.DeltaPackageAbsolutePath);
+                    Assert.Null(genisisPackageContext.DeltaPackageMemoryStream);
+                    Assert.Null(genisisPackageContext.DeltaPackageSnapRelease);
+
+                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapApp, "test", "staging", "production");
+                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test");
+                    genisisSnapReleaseBuilder.AssertSnapAppIsGenisis(genisisPackageContext.FullPackageSnapApp);
+                    genisisSnapReleaseBuilder.AssertSnapReleaseIsGenisis(genisisPackageContext.FullPackageSnapRelease);
+                    genisisSnapReleaseBuilder.AssertSnapReleaseFiles(genisisPackageContext.FullPackageSnapRelease,
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe()
+                    );
+
+                    var extractedFiles = await _snapExtractor.ExtractAsync(
+                        genisisPackageContext.FullPackageAbsolutePath,
+                        genisisSnapReleaseBuilder.SnapAppInstallDirectory,
+                        genisisPackageContext.FullPackageSnapRelease);
+
+                    genisisSnapReleaseBuilder.AssertChecksums(genisisPackageContext.FullPackageSnapApp, genisisPackageContext.FullPackageSnapRelease,
+                        extractedFiles);
+                }
+            }
+        }
+
         [Fact]
         public async Task TestBuildPackageAsync_Delta_Only_Contains_Default_Channel()
         {
@@ -168,7 +218,8 @@ namespace Snap.Tests.Core
                     var update1Files = genisisFiles.Concat(new string[] { }).ToArray();
 
                     update1SnapReleaseBuilder.AssertChannels(update1PackageContext.FullPackageSnapApp, "test", "staging", "production");
-                    update1SnapReleaseBuilder.AssertChannels(update1PackageContext.FullPackageSnapRelease, "test");                    update1SnapReleaseBuilder.AssertSnapAppIsFull(update1PackageContext.FullPackageSnapApp);
+                    update1SnapReleaseBuilder.AssertChannels(update1PackageContext.FullPackageSnapRelease, "test");
+                    update1SnapReleaseBuilder.AssertSnapAppIsFull(update1PackageContext.FullPackageSnapApp);
                     update1SnapReleaseBuilder.AssertSnapAppIsDelta(update1PackageContext.DeltaPackageSnapApp);
                     update1SnapReleaseBuilder.AssertSnapReleaseIsFull(update1PackageContext.FullPackageSnapRelease);
                     update1SnapReleaseBuilder.AssertSnapReleaseFiles(update1PackageContext.FullPackageSnapRelease, update1Files);
@@ -186,11 +237,12 @@ namespace Snap.Tests.Core
                         });
 
                     var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
-                        update1PackageContext.DeltaPackageAbsolutePath, 
-                        update1SnapReleaseBuilder.SnapAppInstallDirectory, 
+                        update1PackageContext.DeltaPackageAbsolutePath,
+                        update1SnapReleaseBuilder.SnapAppInstallDirectory,
                         update1PackageContext.DeltaPackageSnapRelease);
 
-                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease, update1ExtractedFiles);
+                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease,
+                        update1ExtractedFiles);
                 }
             }
         }
@@ -232,7 +284,7 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "test.dll").ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "subdirectory2", "test.dll").ForwardSlashesSafe()
                     };
-                    
+
                     var update1Files = genisisFiles.Concat(new[]
                     {
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "subdirectory3", "test.dll").ForwardSlashesSafe()
@@ -267,11 +319,12 @@ namespace Snap.Tests.Core
                         });
 
                     var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
-                        update1PackageContext.DeltaPackageAbsolutePath, 
-                        update1SnapReleaseBuilder.SnapAppInstallDirectory, 
+                        update1PackageContext.DeltaPackageAbsolutePath,
+                        update1SnapReleaseBuilder.SnapAppInstallDirectory,
                         update1PackageContext.DeltaPackageSnapRelease);
 
-                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease, update1ExtractedFiles);
+                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease,
+                        update1ExtractedFiles);
                 }
             }
         }
@@ -335,11 +388,12 @@ namespace Snap.Tests.Core
                         });
 
                     var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
-                        update1PackageContext.DeltaPackageAbsolutePath, 
-                        update1SnapReleaseBuilder.SnapAppInstallDirectory, 
+                        update1PackageContext.DeltaPackageAbsolutePath,
+                        update1SnapReleaseBuilder.SnapAppInstallDirectory,
                         update1PackageContext.DeltaPackageSnapRelease);
 
-                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease, update1ExtractedFiles);
+                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease,
+                        update1ExtractedFiles);
                 }
             }
         }
@@ -405,12 +459,13 @@ namespace Snap.Tests.Core
                             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe()
                         });
 
-                    var update1ExtractedFiles =  await _snapExtractor.ExtractAsync(
-                        update1PackageContext.DeltaPackageAbsolutePath, 
-                        update1SnapReleaseBuilder.SnapAppInstallDirectory, 
+                    var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
+                        update1PackageContext.DeltaPackageAbsolutePath,
+                        update1SnapReleaseBuilder.SnapAppInstallDirectory,
                         update1PackageContext.DeltaPackageSnapRelease);
 
-                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease, update1ExtractedFiles);
+                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.FullPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease,
+                        update1ExtractedFiles);
                 }
             }
         }
@@ -480,12 +535,13 @@ namespace Snap.Tests.Core
                             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe()
                         });
 
-                    var update1ExtractedFiles =  await _snapExtractor.ExtractAsync(
-                        update1PackageContext.DeltaPackageAbsolutePath, 
-                        update1SnapReleaseBuilder.SnapAppInstallDirectory, 
+                    var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
+                        update1PackageContext.DeltaPackageAbsolutePath,
+                        update1SnapReleaseBuilder.SnapAppInstallDirectory,
                         update1PackageContext.DeltaPackageSnapRelease);
 
-                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.DeltaPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease, update1ExtractedFiles);
+                    update1SnapReleaseBuilder.AssertChecksums(update1PackageContext.DeltaPackageSnapApp, update1PackageContext.DeltaPackageSnapRelease,
+                        update1ExtractedFiles);
                 }
             }
         }
@@ -547,7 +603,7 @@ namespace Snap.Tests.Core
                     {
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test2.dll").ForwardSlashesSafe()
                     }).ToArray();
-                    
+
                     update1SnapReleaseBuilder.AssertSnapAppIsFull(update1PackageContext.FullPackageSnapApp);
                     update1SnapReleaseBuilder.AssertSnapAppIsDelta(update1PackageContext.DeltaPackageSnapApp);
                     update1SnapReleaseBuilder.AssertSnapReleaseIsFull(update1PackageContext.FullPackageSnapRelease);
@@ -600,12 +656,13 @@ namespace Snap.Tests.Core
                             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test2.dll").ForwardSlashesSafe()
                         });
 
-                    var update2ExtractedFiles =  await _snapExtractor.ExtractAsync(
-                        update2PackageContext.DeltaPackageAbsolutePath, 
-                        update2SnapReleaseBuilder.SnapAppInstallDirectory, 
+                    var update2ExtractedFiles = await _snapExtractor.ExtractAsync(
+                        update2PackageContext.DeltaPackageAbsolutePath,
+                        update2SnapReleaseBuilder.SnapAppInstallDirectory,
                         update2PackageContext.DeltaPackageSnapRelease);
 
-                    update2SnapReleaseBuilder.AssertChecksums(update2PackageContext.FullPackageSnapApp, update2PackageContext.DeltaPackageSnapRelease, update2ExtractedFiles);
+                    update2SnapReleaseBuilder.AssertChecksums(update2PackageContext.FullPackageSnapApp, update2PackageContext.DeltaPackageSnapRelease,
+                        update2ExtractedFiles);
                 }
             }
         }
@@ -664,7 +721,7 @@ namespace Snap.Tests.Core
                     Assert.Null(genisisPackageContext.DeltaPackageAbsolutePath);
                     Assert.Null(genisisPackageContext.DeltaPackageMemoryStream);
                     Assert.Null(genisisPackageContext.DeltaPackageSnapRelease);
-                    
+
                     update1SnapReleaseBuilder.AssertSnapAppIsFull(update1PackageContext.FullPackageSnapApp);
                     update1SnapReleaseBuilder.AssertSnapAppIsDelta(update1PackageContext.DeltaPackageSnapApp);
 
@@ -677,29 +734,30 @@ namespace Snap.Tests.Core
                     update3SnapReleaseBuilder.AssertSnapReleaseIsDelta(update3PackageContext.DeltaPackageSnapRelease);
                     update3SnapReleaseBuilder.AssertSnapReleaseFiles(update3PackageContext.DeltaPackageSnapRelease, update3Files);
                     update3SnapReleaseBuilder.AssertSnapReleaseIsDelta(update3PackageContext.DeltaPackageSnapRelease);
-                    
+
                     update3SnapReleaseBuilder.AssertDeltaChangeset(update3PackageContext.DeltaPackageSnapRelease,
                         new[]
                         {
                             update3Files.Last()
                         },
-                        modifiedNuspecTargetPaths: new []
+                        modifiedNuspecTargetPaths: new[]
                         {
                             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
                         },
-                        unmodifiedNuspecTargetPaths:  new []
+                        unmodifiedNuspecTargetPaths: new[]
                         {
                             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe(),
                             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genisisSnapReleaseBuilder.CoreRunExe).ForwardSlashesSafe()
                         });
 
-                    var update3ExtractedFiles =  await _snapExtractor.ExtractAsync(
-                        update3PackageContext.DeltaPackageAbsolutePath, 
-                        update3SnapReleaseBuilder.SnapAppInstallDirectory, 
+                    var update3ExtractedFiles = await _snapExtractor.ExtractAsync(
+                        update3PackageContext.DeltaPackageAbsolutePath,
+                        update3SnapReleaseBuilder.SnapAppInstallDirectory,
                         update3PackageContext.DeltaPackageSnapRelease);
 
-                    update3SnapReleaseBuilder.AssertChecksums(update3PackageContext.FullPackageSnapApp, update3PackageContext.DeltaPackageSnapRelease, update3ExtractedFiles);
+                    update3SnapReleaseBuilder.AssertChecksums(update3PackageContext.FullPackageSnapApp, update3PackageContext.DeltaPackageSnapRelease,
+                        update3ExtractedFiles);
                 }
             }
         }

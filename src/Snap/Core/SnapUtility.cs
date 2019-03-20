@@ -80,10 +80,10 @@ namespace Snap.Core
                 return null;
             };
 
-            thunk.Retry(retries, delayInMilliseconds, throwException);
+            thunk.RetryAsync(retries, delayInMilliseconds, throwException);
         }
 
-        public static T Retry<T>(this Func<T> block, int retries = 2, int delayInMilliseconds = 250, bool throwException = true)
+        public static T RetryAsync<T>(this Func<T> block, int retries = 2, int delayInMilliseconds = 250, bool throwException = true)
         {
             while (true) {
                 try {

@@ -4,7 +4,7 @@
         <PackageReference Include="NuGet.Packaging" Version="5.0.0-rtm.5856" />
         <PackageReference Include="NuGet.Protocol" Version="5.0.0-rtm.5856" />
         <PackageReference Include="System.Drawing.Common" Version="4.5.1" Condition="!$(IsNetFullFramework)" />
-        <PackageReference Include="YamlDotNet.NetCore" Version="1.0.0" />
+        <PackageReference Include="YamlDotNet" Version="6.0.0" />
         <PackageReference Include="Jetbrains.Annotations" Version="2018.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

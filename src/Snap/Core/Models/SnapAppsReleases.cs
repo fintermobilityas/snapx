@@ -14,12 +14,19 @@ namespace Snap.Core.Models
     public sealed class SnapAppsReleases
     {
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
-        [YamlIgnore] public SemanticVersion Version => new SemanticVersion(Releases.Count, 0, 0);
+        public SemanticVersion Version { get; set; } 
+        public DateTime LastWriteAccessUtc { get; set; }
 
         [UsedImplicitly]
         public SnapAppsReleases()
         {
             Releases = new List<SnapRelease>();
+            Version = SemanticVersion.Parse("0.0.0");
+        }
+
+        public void Bump()
+        {
+            Version = Version.BumpMajor();
         }
 
         internal SnapAppsReleases([NotNull] SnapAppsReleases releases)

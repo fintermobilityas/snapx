@@ -610,7 +610,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestUpdateToLatestReleaseAsync_DoesNotThrow()
         {
-            SnapAwareApp._current = _baseFixture.BuildSnapApp();
+            Snapx._current = _baseFixture.BuildSnapApp();
 
             var updateManager = new SnapUpdateManager(_baseFixture.WorkingDirectory);
             await updateManager.UpdateToLatestReleaseAsync(new SnapUpdateManagerProgressSource());
@@ -619,7 +619,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestUpdateToLatestReleaseAsync_Does_Not_Raise_ProgressSource()
         {
-            SnapAwareApp._current = _baseFixture.BuildSnapApp();
+            Snapx._current = _baseFixture.BuildSnapApp();
 
             var progressSourceMock = new Mock<ISnapUpdateManagerProgressSource>();
             progressSourceMock.Setup(x => x.RaiseTotalProgress(It.IsAny<int>()));

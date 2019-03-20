@@ -13,6 +13,7 @@ using Snap.Extensions;
 using Snap.Reflection;
 using Snap.Resources;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.Converters;
 using YamlDotNet.Serialization.NamingConventions;
 using EmbeddedResource = Mono.Cecil.EmbeddedResource;
 
@@ -29,25 +30,26 @@ namespace Snap.Core
 
     internal sealed class SnapAppWriter : ISnapAppWriter
     {      
-        static readonly Serializer YamlSerializerSnapApp = Build(new SerializerBuilder()
+        static readonly ISerializer YamlSerializerSnapApp = Build(new SerializerBuilder()
             .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter,
                 SnapAppReader.AbstractClassTypeMappingsSnapApp)
             )
         );
 
-        static readonly Serializer YamlSerializerSnapApps = Build(new SerializerBuilder()
+        static readonly ISerializer YamlSerializerSnapApps = Build(new SerializerBuilder()
             .WithEventEmitter(eventEmitter => new AbstractClassTagEventEmitter(eventEmitter,
                 SnapAppReader.AbstractClassTypeMappingsSnapApps)
             )
         );
 
-        static Serializer Build(SerializerBuilder serializerBuilder)
+        static ISerializer Build(SerializerBuilder serializerBuilder)
         {
             return serializerBuilder
                 .WithNamingConvention(new CamelCaseNamingConvention())
                 .WithTypeConverter(new SemanticVersionYamlTypeConverter())
                 .WithTypeConverter(new OsPlatformYamlTypeConverter())
                 .WithTypeConverter(new UriYamlTypeConverter())
+                .WithTypeConverter(new DateTimeConverter(DateTimeKind.Utc))     
                 .DisableAliases()
                 .EmitDefaults()
                 .Build();

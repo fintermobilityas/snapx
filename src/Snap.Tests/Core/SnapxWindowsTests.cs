@@ -1,4 +1,4 @@
-#if PLATFORM_UNIX
+#if PLATFORM_WINDOWS
 using System;
 using Moq;
 using NuGet.Versioning;
@@ -9,12 +9,12 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    public class SnapAwareAppTestsUnix : IClassFixture<BaseFixture>
+    public class SnapxWindowsTests : IClassFixture<BaseFixture>
     {
         // ReSharper disable once NotAccessedField.Local
         readonly BaseFixture _baseFixture;
 
-        public SnapAwareAppTestsUnix(BaseFixture baseFixture)
+        public SnapAwareAppTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
 
@@ -26,6 +26,12 @@ namespace Snap.Tests.Core
         {
             var app = SnapAwareApp.Current;
             Assert.Null(app);
+        }
+        
+        [Fact]
+        public void TestCoreVersion_Is_Not_null()
+        {
+            Assert.NotNull(Snapx.CoreVersion);
         }
 
         [Fact]
@@ -45,7 +51,6 @@ namespace Snap.Tests.Core
         public void Test_ProcessEvents_Throws_If_Arguments_Parameter_Is_Null()
         {
             // ReSharper disable once AssignNullToNotNullAttribute
-            // ReSharper disable once HeapView.BoxingAllocation
             var ex = Assert.Throws<ArgumentNullException>(() => SnapAwareApp.ProcessEvents(null));
             Assert.Equal("arguments", ex.ParamName);
         }
@@ -59,6 +64,7 @@ namespace Snap.Tests.Core
 
             var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
+                "--a",
                 "--b",
                 "--c"
             });
@@ -84,6 +90,7 @@ namespace Snap.Tests.Core
             
             SnapAwareApp.ProcessEvents(new[]
             {
+                "c:\\my.exe",
                 actionName,
                 expectedVersion.ToNormalizedString()
             });
@@ -100,11 +107,12 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             SemanticVersion currentVersion = null;
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
-            var shouldExit = SnapAwareApp.ProcessEvents(new[]
+            var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
+                "c:\\my.exe",
                 "--snapx-first-run",
                 expectedVersion.ToNormalizedString()
-            }, version =>
+            }, onFirstRun: version =>
             {
                 wasInvoked = true;
                 currentVersion = version;
@@ -130,6 +138,7 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
              {
+                "c:\\my.exe",
                 "--snapx-installed",
                 expectedVersion.ToNormalizedString()
             }, onInstalled: version =>
@@ -156,6 +165,7 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
+                "c:\\my.exe",
                 "--snapx-installed",
                 "..."
             }, onInstalled: version =>
@@ -182,6 +192,7 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
+                "c:\\my.exe",
                 "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
@@ -208,6 +219,7 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             var shouldExit = SnapAwareApp.ProcessEvents(arguments: new[]
             {
+                "c:\\my.exe",
                 "--snapx-updated",
                 "..."
             }, onInstalled: version =>
@@ -234,6 +246,7 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = SnapAwareApp.ProcessEvents(new[]
             {
+                "c:\\my.exe",
                 "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>

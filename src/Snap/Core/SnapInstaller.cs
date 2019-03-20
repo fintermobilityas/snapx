@@ -305,10 +305,10 @@ namespace Snap.Core
                 })
                 .ToList();
 
-            await InvokeSnapAwareApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
+            await InvokeSnapApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
         }
 
-        async Task InvokeSnapAwareApps([NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
+        async Task InvokeSnapApps([NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
             TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion,
             ILog logger = null, CancellationToken cancellationToken = default)
         {

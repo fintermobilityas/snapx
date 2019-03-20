@@ -54,7 +54,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task RestoreAsync_Checksums_Genisis()
+        public async Task TestRestoreAsync_Checksums_Genisis()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
@@ -124,7 +124,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task RestoreAsync_Checksums_Genisis_And_Delta()
+        public async Task TestRestoreAsync_Checksums_Genisis_And_Delta()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
@@ -223,7 +223,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task RestoreAsync_Downloads_Genisis()
+        public async Task TestRestoreAsync_Downloads_Genisis()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
@@ -328,7 +328,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task RestoreAsync_Downloads_Genisis_Delta_And_Reassembles_Full_From_Delta()
+        public async Task TestRestoreAsync_Downloads_Genisis_Delta_And_Reassembles_Full_From_Delta()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
@@ -485,7 +485,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task RestoreAsync_Does_Not_Reassemble_Full_Package_If_Delta_Package_Is_Missing_Or_Corrupt()
+        public async Task TestRestoreAsync_Does_Not_Reassemble_Full_Package_If_Delta_Package_Is_Missing_Or_Corrupt()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging;
+using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
@@ -54,7 +55,7 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public async Task GetSnapsReleasesAsync()
+        public async Task TestGetSnapsReleasesAsync()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
@@ -72,11 +73,15 @@ namespace Snap.Tests.Core
                 using (await _baseFixturePackaging.BuildPackageAsync(genisisReleaseBuilder))
                 using (var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genisisSnapApp, snapAppsReleases))
                 {
+                    var expectedVersion = SemanticVersion.Parse("1.0.0");
+
                     _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genisisSnapApp);
 
                     var (snapAppsReleasesAfter, packageSourceAfter) = await _snapPackageManager.GetSnapsReleasesAsync(genisisSnapApp);
                     Assert.NotNull(snapAppsReleasesAfter);
                     Assert.NotNull(packageSourceAfter);
+                    Assert.Equal(expectedVersion, snapAppsReleases.Version);
+                    Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
 
                     var snapAppReleases = snapAppsReleasesAfter.GetReleases(genisisSnapApp);
                     Assert.Single(snapAppReleases);
@@ -87,7 +92,7 @@ namespace Snap.Tests.Core
         [Theory]
         [InlineData(SnapPackageManagerRestoreType.Packaging)]
         [InlineData(SnapPackageManagerRestoreType.InstallOrUpdate)]
-        public void SnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
+        public void TestSnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
         {
             var restoreSummary = new SnapPackageManagerRestoreSummary(restoreType);
             Assert.Equal(restoreType, restoreSummary.RestoreType);
@@ -100,7 +105,7 @@ namespace Snap.Tests.Core
         [Theory]
         [InlineData(SnapPackageManagerRestoreType.Packaging)]
         [InlineData(SnapPackageManagerRestoreType.InstallOrUpdate)]
-        public async Task RestoreAsync_SnapAppReleases_Empty(SnapPackageManagerRestoreType restoreType)
+        public async Task TestRestoreAsync_SnapAppReleases_Empty(SnapPackageManagerRestoreType restoreType)
         {
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
             var snapAppChannel = genisisSnapApp.GetDefaultChannelOrThrow();
@@ -118,7 +123,7 @@ namespace Snap.Tests.Core
                 Assert.Empty(restoreSummary.DownloadSummary);
                 Assert.Empty(restoreSummary.ReassembleSummary);
                 Assert.Equal(restoreType, restoreSummary.RestoreType);
-                Assert.False(restoreSummary.Success);
+                Assert.True(restoreSummary.Success);
             }
         }
         

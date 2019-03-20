@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
@@ -11,18 +12,21 @@ using Snap.Logging;
 
 namespace Snap.Core
 {
+    // This class is only intended for external consumers of Snapx.Core nuget package.
+    
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    public static class SnapAwareApp
+    public static class Snapx
     {
-        static readonly ILog Logger = LogProvider.GetLogger(nameof(SnapAwareApp));
+        static readonly ILog Logger = LogProvider.GetLogger(nameof(Snapx));
+
         static readonly object SyncRoot = new object();
         // ReSharper disable once InconsistentNaming
         internal static SnapApp _current;
         
         internal static ISnapOs SnapOs { get; set; }
 
-        static SnapAwareApp()
+        static Snapx()
         {
             lock (SyncRoot)
             {
@@ -33,13 +37,17 @@ namespace Snap.Core
                  
                 try
                 {     
+                    var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+                    Version = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
+
                     SnapOs = AnyOS.SnapOs.AnyOs;
-                    WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(SnapAwareApp).Assembly.Location);
+                    WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(Snapx).Assembly.Location);
+                    
                     _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
                 }
                 catch (Exception e)
                 {
-                    Logger.ErrorException("Failed to load snap manifest.", e);
+                    Logger.ErrorException("Unknown error during initialization", e);
                 }                        
             }
         }
@@ -62,6 +70,11 @@ namespace Snap.Core
         /// Current application working directory.
         /// </summary>
         public static string WorkingDirectory { get; }
+
+        /// <summary>
+        /// Current Snapx.Core version.
+        /// </summary>
+        public static SemanticVersion Version { get; }
 
         /// <summary>
         /// Call this method as early as possible in app startup. This method

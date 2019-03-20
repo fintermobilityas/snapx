@@ -195,7 +195,7 @@ namespace Snap.Core
             var genisisRelease = snapAppChannelReleases.GetGenisisRelease();
             if (genisisRelease == null)
             {
-                logger?.Error($"{nameof(snapAppChannelReleases)} does not contain a genisis release.");
+                restoreSummary.Success = true;
                 return restoreSummary;
             }
 

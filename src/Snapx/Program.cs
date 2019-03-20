@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using CommandLine;
 using JetBrains.Annotations;
 using snapx.Core;
@@ -38,9 +40,9 @@ namespace snapx
         {
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
-                var process = System.Diagnostics.Process.GetCurrentProcess();
+                var process = Process.GetCurrentProcess();
 
-                while (!System.Diagnostics.Debugger.IsAttached)
+                while (!Debugger.IsAttached)
                 {
                     Console.WriteLine($"Waiting for debugger to attach... Process id: {process.Id}");
                     Thread.Sleep(1000);
@@ -121,6 +123,7 @@ namespace snapx
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
+            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("pool.ntp.org", 123);
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
@@ -132,7 +135,7 @@ namespace snapx
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
-                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, 
+                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger,
                 toolWorkingDirectory, workingDirectory, cancellationToken);
         }
@@ -143,6 +146,7 @@ namespace snapx
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageManager snapPackageManager,
+            [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
             [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, INugetService nugetServiceCommandRestore,
             [NotNull] INugetService nugetServiceNoopLogger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
@@ -160,6 +164,7 @@ namespace snapx
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
@@ -169,13 +174,14 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteNupkgOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions>(args)
+                .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions>(args)
                 .MapResult(
-                    (PromoteNupkgOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
-                        nuGetPackageSources, nugetServiceCommandPromote, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
+                        nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
+                        snapNetworkTimeProvider, snapExtractor, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                         nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapPackageManager, coreRunLib, 
-                        SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                        snapNetworkTimeProvider, SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (Sha512Options opts) => CommandSha512(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
                     (InstallOptions opts) => Snap.Installer.Program.Main(args),
@@ -266,7 +272,7 @@ namespace snapx
             return (null, null, snapsFilename);
         }
 
-        public static string BuildArtifactsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
+        static string BuildArtifactsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
             [NotNull] SnapApp snapApp)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -285,8 +291,8 @@ namespace snapx
                 filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(properties) :
                 filesystem.PathCombine(workingDirectory, snapAppsGeneric.Artifacts.ExpandProperties(properties));           
         }
-        
-        public static string BuildInstallersDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
+
+        static string BuildInstallersDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
             [NotNull] SnapApp snapApp)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -305,7 +311,7 @@ namespace snapx
                 filesystem.PathCombine(workingDirectory, snapAppsGeneric.Artifacts.ExpandProperties(properties));           
         }
 
-        public static string BuildPackagesDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
+        static string BuildPackagesDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
             [NotNull] SnapApp snapApp)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -323,8 +329,8 @@ namespace snapx
                 filesystem.PathCombine(workingDirectory, "snapx", "packages", "$id$/$rid$").ExpandProperties(properties) :
                 filesystem.PathGetFullPath(snapAppsGeneric.Packages).ExpandProperties(properties);            
         }
-        
-        public static string BuildNuspecsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
+
+        static string BuildNuspecsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
             [NotNull] SnapApp snapApp)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -335,6 +341,44 @@ namespace snapx
             return snapAppsGeneric.Nuspecs == null ?
                 filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
                 filesystem.PathGetFullPath(snapAppsGeneric.Nuspecs);           
+        }
+
+        static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
+            [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
+            [NotNull] SnapChannel snapChannel, CancellationToken cancellationToken)
+        {
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (snapAppsReleases == null) throw new ArgumentNullException(nameof(snapAppsReleases));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
+            
+            var waitForManifestStopwatch = new Stopwatch();
+            waitForManifestStopwatch.Restart();
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var (upstreamSnapsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+                if (upstreamSnapsReleases == null)
+                {
+                    goto sleep;
+                }
+
+                if (upstreamSnapsReleases.Version >= snapAppsReleases.Version)
+                {
+                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapsReleases.Version}. " +
+                                $"Completed in {waitForManifestStopwatch.Elapsed.TotalSeconds:0.0}s.");
+                    break;
+                }
+
+                logger.Info(
+                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapsReleases.Version}. " +
+                    $"Local version: {snapAppsReleases.Version}. " +
+                    "Retrying in 15 seconds");
+
+                sleep:
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+            }
         }
        
     }

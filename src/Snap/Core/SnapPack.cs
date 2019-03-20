@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -19,6 +20,7 @@ using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.NuGet;
+using Snap.Reflection;
 
 namespace Snap.Core
 {
@@ -119,6 +121,7 @@ namespace Snap.Core
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly SemanticVersion _snapDllVersion;
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
         {
@@ -139,6 +142,9 @@ namespace Snap.Core
             _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
             _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
+            
+            var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            _snapDllVersion = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
         }
 
         public async Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
@@ -182,6 +188,8 @@ namespace Snap.Core
             deltaSnapRelease.FullFilesize = fullSnapRelease.FullFilesize;
 
             packageDetails.SnapAppsReleases.Add(deltaSnapRelease);
+
+            deltaNupkgMemoryStream.Seek(0, SeekOrigin.Begin);
 
             return (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, deltaNupkgMemoryStream, deltaSnapApp, deltaSnapRelease);
         }
@@ -309,7 +317,56 @@ namespace Snap.Core
                     throw new FileNotFoundException("Main executable is missing in nuspec", mainExecutableTargetPath);
                 }
 
-                AlwaysRemoveTheseAssemblies.ForEach(targetPath => packageBuilder.RemovePackageFile(targetPath, pathComparisonType));
+                AlwaysRemoveTheseAssemblies.ForEach(targetPath =>
+                {
+                    var packageFile = packageBuilder.GetPackageFile(targetPath, pathComparisonType);
+                    if (packageFile == null)
+                    {
+                        return;
+                    }
+
+                    if (!packageBuilder.Files.Remove(packageFile))
+                    {
+                        throw new Exception($"Failed to remove {targetPath} from {nameof(packageBuilder)}.");      
+                    }
+
+                    var removeThisAssembly = fullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == targetPath);
+                    if (removeThisAssembly == null)
+                    {
+                        throw new Exception($"Failed to remove {targetPath} from {nameof(fullSnapRelease)}.");                        
+                    }
+
+                    fullSnapRelease.Files.Remove(removeThisAssembly);
+
+                    if (!targetPath.EndsWith(SnapConstants.SnapDllFilename)) return;
+                    
+                    using (var snapAssemblyDefinition = AssemblyDefinition.ReadAssembly(packageFile.GetStream()))
+                    {
+                        var cecil = new CecilAssemblyReflector(snapAssemblyDefinition);
+                        var snapAssemblyInformationalVersionAttribute = cecil
+                            .GetAttribute<AssemblyInformationalVersionAttribute>();
+
+                        if (snapAssemblyInformationalVersionAttribute == null)
+                        {
+                            throw new Exception($"Failed to get assembly version from {targetPath}.");
+                        }
+
+                        var snapAssemblyInformationVersionValue = snapAssemblyInformationalVersionAttribute.Values.First().Value;
+                        
+                        if (!NuGetVersion.TryParse(snapAssemblyInformationVersionValue, out var snapAssemblyVersion))
+                        {
+                            throw new Exception($"Failed to parse assembly version: {snapAssemblyInformationVersionValue}. Target path: {targetPath}");
+                        }
+
+                        if (snapAssemblyVersion != _snapDllVersion)
+                        {
+                            throw new Exception(
+                                $"Invalid {SnapConstants.SnapDllFilename} version. " +
+                                $"Expected: {Snapx.Version} but was {snapAssemblyInformationVersionValue}. " +
+                                "You must either upgrade snapx dotnet cli tool or the Snapx.Core nuget package in your csproj.");
+                        }
+                    }
+                });
 
                 await AddSnapAssetsAsync(coreRunLib, packageBuilder, fullSnapApp, fullSnapRelease, cancellationToken);
 
@@ -932,53 +989,55 @@ namespace Snap.Core
                 Authors = {"Snapx"}
             };
 
-            foreach (var checksum in snapAppReleases)
+            foreach (var snapRelease in snapAppReleases)
             {
-                if (checksum.IsFull)
+                if (snapRelease.IsFull)
                 {
-                    var genisisOrFull = checksum.IsGenisis ? "genisis" : "full";
+                    var genisisOrFull = snapRelease.IsGenisis ? "genisis" : "full";
                     
-                    var expectedFilename = snapApp.BuildNugetFullFilename();
-                    if (checksum.Filename != expectedFilename)
+                    var expectedFilename = snapRelease.BuildNugetFullFilename();
+                    if (snapRelease.Filename != expectedFilename)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} filename: {checksum.Filename}. Expected: {expectedFilename}");
+                        throw new Exception($"Invalid {genisisOrFull} filename: {snapRelease.Filename}. Expected: {expectedFilename}");
                     }
                     
-                    var expectedUpstreamId = snapApp.BuildNugetFullUpstreamId();
-                    if (checksum.UpstreamId != expectedUpstreamId)
+                    var expectedUpstreamId = snapRelease.BuildNugetFullUpstreamId();
+                    if (snapRelease.UpstreamId != expectedUpstreamId)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} upstream id: {checksum.UpstreamId}. Expected: {expectedUpstreamId}");
+                        throw new Exception($"Invalid {genisisOrFull} upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
                     }
                 }
-                else if (checksum.IsDelta)
+                else if (snapRelease.IsDelta)
                 {
-                    var expectedFilename = snapApp.BuildNugetDeltaFilename();
-                    if (checksum.Filename != expectedFilename)
+                    var expectedFilename = snapRelease.BuildNugetDeltaFilename();
+                    if (snapRelease.Filename != expectedFilename)
                     {
-                        throw new Exception($"Invalid delta filename: {checksum.Filename}. Expected: {expectedFilename}");
+                        throw new Exception($"Invalid delta filename: {snapRelease.Filename}. Expected: {expectedFilename}");
                     }
 
-                    var expectedUpstreamId = snapApp.BuildNugetDeltaUpstreamId();
-                    if (checksum.UpstreamId != expectedUpstreamId)
+                    var expectedUpstreamId = snapRelease.BuildNugetDeltaUpstreamId();
+                    if (snapRelease.UpstreamId != expectedUpstreamId)
                     {
-                        throw new Exception($"Invalid upstream id: {checksum.UpstreamId}. Expected: {expectedUpstreamId}");
+                        throw new Exception($"Invalid upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
                     }
                 }
                 else
                 {
-                    throw new NotSupportedException($"Expected either delta or genisis release. Filename: {checksum.Filename}");
+                    throw new NotSupportedException($"Expected either delta or genisis release. Filename: {snapRelease.Filename}");
                 }
 
-                if (checksum.FullFilesize <= 0)
+                if (snapRelease.FullFilesize <= 0)
                 {
-                    throw new Exception($"Invalid file size: {checksum.FullSha512Checksum}. Must be greater than zero! Filename: {checksum.Filename}");
+                    throw new Exception($"Invalid file size: {snapRelease.FullSha512Checksum}. Must be greater than zero! Filename: {snapRelease.Filename}");
                 }
 
-                if (checksum.FullSha512Checksum == null || checksum.FullSha512Checksum.Length != 128)
+                if (snapRelease.FullSha512Checksum == null || snapRelease.FullSha512Checksum.Length != 128)
                 {
-                    throw new Exception($"Invalid checksum: {checksum.FullSha512Checksum}. Filename: {checksum.Filename}");
+                    throw new Exception($"Invalid checksum: {snapRelease.FullSha512Checksum}. Filename: {snapRelease.Filename}");
                 }
             }
+
+            snapAppsReleases.Bump();
 
             var yamlString = _snapAppWriter.ToSnapReleasesYamlString(snapAppsReleases);
 

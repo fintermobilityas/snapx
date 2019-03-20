@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,7 +86,10 @@ namespace snapx
                     "Rid"
                 }.Concat(snapApp.Channels.Select(x => $"Channel: {x.Name}")).ToArray();
 
-                tables.Add((snapApp, new ConsoleTable(tableColumns) { Header = $"Release summary: {snapApp.Id}" }));
+                tables.Add((snapApp, new ConsoleTable(tableColumns)
+                {
+                    Header = $"Release summary: {snapApp.Id}\nF = Full / D = Delta"
+                }));
             }
 
             const int maxConcurrentMetadataTasks = 2;
@@ -98,7 +102,7 @@ namespace snapx
             {
                 try
                 {
-                    var downloadResult = await SnapUtility.Retry(async () => 
+                    var downloadResult = await SnapUtility.RetryAsync(async () => 
                         await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamId(), x.packageSource, cancellationToken),
                         retriesPerTask, delayInMilliseconds);
                     downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
@@ -131,6 +135,8 @@ namespace snapx
                         continue;
                     }                    
                 }
+
+                table.Header += $"\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    
@@ -155,20 +161,20 @@ namespace snapx
 
                         if (genisisRelease != null)
                         {
-                            rowValue += $"Full: {genisisRelease.Version} ({genisisRelease.FullFilesize.BytesAsHumanReadable()})";
+                            rowValue += $"F: {genisisRelease.Version} ({genisisRelease.FullFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {
-                            rowValue += "Full: -";
+                            rowValue += "F: -";
                         }
 
                         if (deltaRelease != null)
                         {
-                            rowValue += $" / Delta: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
+                            rowValue += $" - D: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {
-                            rowValue += " / Delta: -";
+                            rowValue += " - D: -";
                         }
 
                         done:

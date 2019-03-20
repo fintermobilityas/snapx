@@ -5,9 +5,9 @@ using JetBrains.Annotations;
 namespace snapx.Options
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [Verb("promote", HelpText = "Promote a previous release. Typical flow: test -> staging -> production")]
+    [Verb("promote", HelpText = "Promote a snap to next release channel. E.g.: test -> staging -> production")]
     [UsedImplicitly]
-    internal class PromoteNupkgOptions : BaseSubOptions
+    internal class PromoteOptions : BaseSubOptions
     {
         [Option("id", HelpText = "Application id", Required = true)]
         public string AppId { get; [UsedImplicitly] set; }

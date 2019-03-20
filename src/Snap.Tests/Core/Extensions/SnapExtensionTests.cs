@@ -11,6 +11,7 @@ using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
 using Snap.Shared.Tests;
+using Snap.Shared.Tests.Extensions;
 using Xunit;
 
 namespace Snap.Tests.Core.Extensions
@@ -628,13 +629,15 @@ namespace Snap.Tests.Core.Extensions
         [Fact]
         public void TestGetSnapAppFromDirectory()
         {
-            var appSpec = _baseFixture.BuildSnapApp();
-            var workingDirectory = _baseFixture.WorkingDirectory;
+            var snapApp = _baseFixture.BuildSnapApp();
 
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(appSpec))
-            using (_baseFixture.WithDisposableAssemblies(workingDirectory, _fileSystem, assemblyDefinition))
+            using (var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem))
+            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
             {
-                var appSpecAfter = workingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
+                var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
+                assemblyDefinition.Write(snapAppDllAbsolutePath); 
+                               
+                var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
                 Assert.NotNull(appSpecAfter);
             }
         }

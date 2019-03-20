@@ -108,7 +108,7 @@ namespace Snap.Core
         }
 
         [UsedImplicitly]
-        internal SnapUpdateManager([NotNull] string workingDirectory, ILog logger = null) : this(workingDirectory, SnapAwareApp.Current, logger)
+        internal SnapUpdateManager([NotNull] string workingDirectory, ILog logger = null) : this(workingDirectory, Snapx.Current, logger)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }

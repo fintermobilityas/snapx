@@ -91,6 +91,25 @@ namespace Snap.Extensions
             return channel;
         }
         
+        internal static SnapChannel GetNextChannel([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            var channelsCount = snapApp.Channels.Count;
+            
+            for (var index = 0; index < channelsCount; index++)
+            {
+                var currentSnapChannel = snapApp.Channels[index];
+                var nextSnapChannel = index + 1 < channelsCount ? snapApp.Channels[index + 1] : null;
+                if (currentSnapChannel.Current && nextSnapChannel != null)
+                {
+                    return nextSnapChannel;
+                }
+            }
+
+            return null;
+        }
+        
         internal static bool IsValidAppId([NotNull] this string value)
         {
             return AppIdRegex.IsMatch(value);

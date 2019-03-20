@@ -113,7 +113,10 @@ namespace snapx.Core
             if (Header != null)
             {
                 var dividerHeader = string.Join("", Enumerable.Repeat("=", longestLine));
-                logger.Info(Header);
+                foreach (var line in Header.Split("\n") ?? new[] {Header})
+                {
+                    logger.Info(line);
+                }
                 logger.Info(dividerHeader);
             }
             else

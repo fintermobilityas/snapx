@@ -28,7 +28,7 @@ namespace Snap.NuGet
     {
         public PackageIdentity PackageIdentity { get; set; }
         public long PackageFileSize { get; set; }
-        public int MaxRetries { get; set; }
+        public int MaxTries { get; set; }
         
         public DownloadContext()
         {
@@ -75,7 +75,6 @@ namespace Snap.NuGet
 
         Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken,
             bool noCache = false);
-
 
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
@@ -204,7 +203,6 @@ namespace Snap.NuGet
             
             var downloadContext = new DownloadContext
             {
-                MaxRetries = 3,
                 PackageIdentity = packageIdentity,
                 PackageFileSize = 0
             };
@@ -282,7 +280,7 @@ namespace Snap.NuGet
                     var request = new HttpSourceRequest(downloadUrl, _nugetLogger)
                     {
                         IgnoreNotFounds = true,
-                        MaxTries = Math.Max(1, downloadContext.MaxRetries)
+                        MaxTries = Math.Max(1, downloadContext.MaxTries)
                     };
                     
                     async Task<DownloadResourceResult> ProcessAsync(Stream packageStream)
@@ -291,7 +289,7 @@ namespace Snap.NuGet
                         
                         var inputStream = new MemoryStream();
                         var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
-                       
+                        
                         var totalBytesToDownload = downloadContext.PackageFileSize;
                         progressSource?.Raise(0, 0, 0, totalBytesToDownload);
 

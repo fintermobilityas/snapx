@@ -103,7 +103,7 @@ namespace Snap.Tests.NuGet
             {
                 PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
                 PackageFileSize = 64196,
-                MaxRetries = 3
+                MaxTries = 3
             };
 
             using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
@@ -146,7 +146,7 @@ namespace Snap.Tests.NuGet
             {
                 PackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.6")),
                 PackageFileSize = 0,
-                MaxRetries = 3
+                MaxTries = 3
             };
 
             using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 

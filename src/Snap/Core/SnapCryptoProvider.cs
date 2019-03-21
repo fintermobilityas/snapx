@@ -128,20 +128,17 @@ namespace Snap.Core
             var sb = new StringBuilder();
             foreach (var (_, srcStream) in inputStreams)
             {
+                if (srcStream.CanSeek)
+                {
+                    srcStream.Seek(0, SeekOrigin.Begin);
+                    var sha512 = Sha512(srcStream);
+                    sb.Append(sha512);
+                    srcStream.Seek(0, SeekOrigin.Begin);
+                    continue;
+                }                
                 using (var intermediateStream = new MemoryStream())
                 {
-                    if (srcStream.CanSeek)
-                    {
-                        srcStream.Seek(0, SeekOrigin.Begin);
-                    }
-
                     srcStream.CopyTo(intermediateStream);
-
-                    if (srcStream.CanSeek)
-                    {
-                        srcStream.Seek(0, SeekOrigin.Begin);
-                    }
-
                     var sha512 = Sha512(intermediateStream);
                     sb.Append(sha512);
                 }
@@ -162,14 +159,9 @@ namespace Snap.Core
             return builder.ToString();
         }
 
-        static List<SnapReleaseChecksum> GetChecksumFilesForSnapRelease(SnapRelease snapRelease)
+        static IEnumerable<SnapReleaseChecksum> GetChecksumFilesForSnapRelease(SnapRelease snapRelease)
         {
-            if (snapRelease.IsDelta)
-            {
-                return snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath).ToList();
-            }
-
-            return snapRelease.Files;
+            return snapRelease.IsDelta ? snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath).ToList() : snapRelease.Files;
         }
     }
 }

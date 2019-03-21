@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -221,6 +222,7 @@ namespace Snap.Core
             stopwatch.Restart();
             restoreSummary.Success = await ReassembleAsync();
             restoreSummary.Sort();
+            
             return restoreSummary;
 
             async Task ChecksumAsync()
@@ -297,7 +299,7 @@ namespace Snap.Core
                     }, cancellationToken);
                 }, checksumConcurrency);
 
-                logger?.Info($"Verified {snapReleasesChecksummed} packages in {stopwatch.Elapsed.TotalSeconds:0.0}s. ");
+                logger?.Info($"Checksummed {snapReleasesChecksummed} packages in {stopwatch.Elapsed.TotalSeconds:0.0}s. ");
             }
 
             async Task<bool> DownloadAsync()
@@ -383,7 +385,7 @@ namespace Snap.Core
                 var allReleasesDownloaded = releasesToDownload.Count == downloadedReleases.Count;
                 if (!allReleasesDownloaded)
                 {
-                    logger?.Error("Error downloading all packages. " +
+                    logger?.Error("Error downloading one or multiple packages. " +
                                   $"Downloaded {downloadedReleases.Count} of {releasesToDownload.Count}. " +
                                   $"Operation completed in {stopwatch.Elapsed.TotalSeconds:0.0}s.");
                     return false;
@@ -487,10 +489,11 @@ namespace Snap.Core
             var restoreStopwatch = new Stopwatch();
             restoreStopwatch.Restart();
 
-            var fileSize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
+            var nupkgFileSize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
+            var nupkgChecksum = snapRelease.IsFull ? snapRelease.FullSha512Checksum : snapRelease.DeltaSha512Checksum;
 
             logger?.Debug($"Downloading nupkg: {snapRelease.Filename}. " +
-                          $"File size: {fileSize.BytesAsHumanReadable()}. " +
+                          $"File size: {nupkgFileSize.BytesAsHumanReadable()}. " +
                           $"Nuget feed name: {packageSource.Name}.");
 
             try
@@ -507,11 +510,24 @@ namespace Snap.Core
                         logger?.Error($"Failed to download nupkg: {snapRelease.Filename}.");
                         return false;
                     }
+                                        
+                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}. Verifying checksum!");
+
+                    using (var packageArchiveReader = new PackageArchiveReader(downloadResult.PackageStream, true))
+                    {
+                        var downloadChecksum = _snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, _snapPack);
+                        if (downloadChecksum != nupkgChecksum)
+                        {
+                            logger?.Error($"Checksum mismatch for downloaded nupkg: {snapRelease.Filename}");
+                            return false;
+                        }                        
+                        downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);                    
+                    }
+                    
+                    logger?.Debug($"Verified checksum for downloaded nupkg: {snapRelease.Filename}.");
 
                     var dstFilename = _filesystem.PathCombine(packagesDirectory, snapRelease.Filename);
                     await _filesystem.FileWriteAsync(downloadResult.PackageStream, dstFilename, cancellationToken);
-
-                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}");
 
                     return true;
                 }

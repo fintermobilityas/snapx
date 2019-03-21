@@ -16,6 +16,8 @@ using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
+using SharpCompress.Common;
+using SharpCompress.Writers;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -1040,17 +1042,24 @@ namespace Snap.Core
             snapAppsReleases.Bump();
 
             var yamlString = _snapAppWriter.ToSnapReleasesYamlString(snapAppsReleases);
-
+            var snapsReleasesCompressedStream = new MemoryStream();
+            
             using (var snapsReleasesStream = new MemoryStream(Encoding.UTF8.GetBytes(yamlString)))
+            using (var writer = WriterFactory.Open(snapsReleasesCompressedStream, ArchiveType.Tar, new WriterOptions(CompressionType.BZip2)
             {
-                AddPackageFile(packageBuilder, snapsReleasesStream, SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
-
-                var outputStream = new MemoryStream();
-                packageBuilder.Save(outputStream);
-
-                outputStream.Seek(0, SeekOrigin.Begin);
-                return outputStream;
+                LeaveStreamOpen = true
+            }))
+            {
+                writer.Write(SnapConstants.ReleasesFilename, snapsReleasesStream);
             }
+            
+            AddPackageFile(packageBuilder, snapsReleasesCompressedStream, SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
+
+            var outputStream = new MemoryStream();
+            packageBuilder.Save(outputStream);
+
+            outputStream.Seek(0, SeekOrigin.Begin);
+            return outputStream;            
         }
 
         public async Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default)
@@ -1136,6 +1145,11 @@ namespace Snap.Core
             else
             {
                 nuspecTargetPath = _snapFilesystem.PathCombine(nuspecTargetPath, filename).ForwardSlashesSafe();
+            }
+
+            if (srcStream.CanSeek)
+            {
+                srcStream.Seek(0, SeekOrigin.Begin);
             }
 
             snapRelease?.Files.Add(new SnapReleaseChecksum

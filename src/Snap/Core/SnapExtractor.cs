@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
+using SharpCompress.Readers;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
@@ -106,12 +108,19 @@ namespace Snap.Core
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
 
             var snapReleasesFilename = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
-            using (var snapReleasesStream =
+            using (var snapReleasesCompressedStream =
                 await asyncPackageCoreReader
                     .GetStreamAsync(snapReleasesFilename, cancellationToken)
                     .ReadToEndAsync(cancellationToken))
-            {                
-                return snapAppReader.BuildSnapAppsReleasesFromStream(snapReleasesStream);
+            {
+                using (var snapReleasesUncompressedStream = new MemoryStream())
+                using (var reader = ReaderFactory.Open(snapReleasesCompressedStream))
+                {
+                    reader.MoveToNextEntry();
+                    reader.WriteEntryTo(snapReleasesUncompressedStream);
+                    snapReleasesUncompressedStream.Seek(0, SeekOrigin.Begin);
+                    return snapAppReader.BuildSnapAppsReleasesFromStream(snapReleasesUncompressedStream);
+                }
             }
         }
     }

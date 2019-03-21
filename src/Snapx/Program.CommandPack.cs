@@ -306,12 +306,13 @@ namespace snapx
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
-            logger.Info($"Completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
-            logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Fetching releases overview from feed {pushFeed.Name}.");
+            logger.Info('-'.Repeat(TerminalDashesWidth));
 
             await CommandListAsync(new ListOptions { Id = fullOrDeltaSnapApp.Id }, filesystem, snapAppReader,
                 nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
+
+            logger.Info($"Completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;
         }

@@ -228,7 +228,7 @@ namespace Snap.Shared.Tests
         internal void AssertDeltaChangeset(SnapRelease snapRelease, string[] newNuspecTargetPaths = null, string[] deletedNuspecTargetPaths = null,
              string[] modifiedNuspecTargetPaths = null, string[] unmodifiedNuspecTargetPaths = null)
         {
-            void AssertDeltaChangesetImpl(string[] expectedTargetPaths, List<SnapReleaseChecksum> actualChecksums)
+            void AssertDeltaChangesetSnapReleaseImpl(string[] expectedTargetPaths, List<SnapReleaseChecksum> actualChecksums)
             {
                 if (actualChecksums == null) throw new ArgumentNullException(nameof(actualChecksums));
                 if (expectedTargetPaths == null) throw new ArgumentNullException(nameof(expectedTargetPaths));
@@ -241,11 +241,25 @@ namespace Snap.Shared.Tests
                     Assert.Equal(expectedTargetPath, actualChecksum.NuspecTargetPath);
                 }
             }
+            
+            void AssertDeltaChangesetNuspecTargetPathImpl(string[] expectedTargetPaths, List<string> actualTargetPaths)
+            {
+                if (actualTargetPaths == null) throw new ArgumentNullException(nameof(actualTargetPaths));
+                if (expectedTargetPaths == null) throw new ArgumentNullException(nameof(expectedTargetPaths));
+                Assert.Equal(expectedTargetPaths.Length, actualTargetPaths.Count);
 
-            AssertDeltaChangesetImpl(newNuspecTargetPaths ?? new string[] {}, snapRelease.New);
-            AssertDeltaChangesetImpl(deletedNuspecTargetPaths ?? new string[] {}, snapRelease.Deleted);
-            AssertDeltaChangesetImpl(modifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Modified);
-            AssertDeltaChangesetImpl(unmodifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Unmodified);            
+                for (var index = 0; index < actualTargetPaths.Count; index++)
+                {
+                    var expectedTargetPath = expectedTargetPaths[index];
+                    var actualChecksumNuspecTargetPath = actualTargetPaths[index];
+                    Assert.Equal(expectedTargetPath, actualChecksumNuspecTargetPath);
+                }
+            }
+
+            AssertDeltaChangesetSnapReleaseImpl(newNuspecTargetPaths ?? new string[] {}, snapRelease.New);
+            AssertDeltaChangesetNuspecTargetPathImpl(deletedNuspecTargetPaths ?? new string[] {}, snapRelease.Deleted);
+            AssertDeltaChangesetSnapReleaseImpl(modifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Modified);
+            AssertDeltaChangesetNuspecTargetPathImpl(unmodifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Unmodified);            
         }
 
         internal void AssertChannels([NotNull] SnapApp snapApp, [NotNull] params string[] channels)
@@ -296,14 +310,14 @@ namespace Snap.Shared.Tests
 
                     if (snapRelease.IsDelta)
                     {
-                        var deletedChecksum = snapRelease.Deleted.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
+                        var deletedChecksum = snapRelease.Deleted.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
                         if (deletedChecksum != null)
                         {
                             Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));
                             continue;
                         }
 
-                        var unmodifiedChecksum = snapRelease.Unmodified.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
+                        var unmodifiedChecksum = snapRelease.Unmodified.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
                         if (unmodifiedChecksum != null)
                         {
                             Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));

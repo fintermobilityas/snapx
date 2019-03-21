@@ -49,9 +49,9 @@ namespace Snap.Core.Models
         [Key(14)]
         public List<SnapReleaseChecksum> Modified { get; set; }
         [Key(15)]
-        public List<SnapReleaseChecksum> Unmodified { get; set; }
+        public List<string> Unmodified { get; set; }
         [Key(16)]
-        public List<SnapReleaseChecksum> Deleted { get; set; }
+        public List<string> Deleted { get; set; }
         [Key(17)]
         public List<SnapReleaseChecksum> Files { get; set; }
         [Key(18)]
@@ -65,8 +65,8 @@ namespace Snap.Core.Models
             Channels = new List<string>();
             New = new List<SnapReleaseChecksum>();
             Modified = new List<SnapReleaseChecksum>();
-            Unmodified = new List<SnapReleaseChecksum>();
-            Deleted = new List<SnapReleaseChecksum>();
+            Unmodified = new List<string>();
+            Deleted = new List<string>();
             Files = new List<SnapReleaseChecksum>();
         }
 
@@ -91,8 +91,8 @@ namespace Snap.Core.Models
             Files = release.Files.Select(x => new SnapReleaseChecksum(x)).ToList();
             New = release.New.Select(x => new SnapReleaseChecksum(x)).ToList();
             Modified = release.Modified.Select(x => new SnapReleaseChecksum(x)).ToList();
-            Unmodified = release.Unmodified.Select(x => new SnapReleaseChecksum(x)).ToList();
-            Deleted = release.Deleted.Select(x => new SnapReleaseChecksum(x)).ToList();
+            Unmodified = release.Unmodified.ToList();
+            Deleted = release.Deleted.ToList();
         }
             
         public void Sort()
@@ -100,8 +100,8 @@ namespace Snap.Core.Models
             Files = Files.OrderBy(x => x.NuspecTargetPath).ToList();
             New = New.OrderBy(x => x.NuspecTargetPath).ToList();
             Modified = Modified.OrderBy(x => x.NuspecTargetPath).ToList();
-            Unmodified = Unmodified.OrderBy(x => x.NuspecTargetPath).ToList();
-            Deleted = Deleted.OrderBy(x => x.NuspecTargetPath).ToList();
+            Unmodified = Unmodified.OrderBy(x => x).ToList();
+            Deleted = Deleted.OrderBy(x => x).ToList();
         }        
     }
 }

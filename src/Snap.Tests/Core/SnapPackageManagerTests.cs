@@ -59,18 +59,32 @@ namespace Snap.Tests.Core
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
+            var update1SnapApp = _baseFixturePackaging.Bump(genisisSnapApp);
+            var update2SnapApp = _baseFixturePackaging.Bump(update1SnapApp);
 
             using (var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem))
             using (var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory))
             using (var genisisReleaseBuilder =
                 _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genisisSnapApp, _releaseBuilderContext))
+            using (var update1ReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext))
+            using (var update2ReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update2SnapApp, _releaseBuilderContext))
             {
                 var nugetPackageSources = genisisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
                 genisisReleaseBuilder
                     .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genisisSnapApp));
 
+                update1ReleaseBuilder
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp));
+                    
+                update2ReleaseBuilder
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp));
+                    
                 using (await _baseFixturePackaging.BuildPackageAsync(genisisReleaseBuilder))
+                using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
+                using (await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder))
                 using (var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genisisSnapApp, snapAppsReleases))
                 {
                     var expectedVersion = SemanticVersion.Parse("1.0.0");
@@ -84,7 +98,7 @@ namespace Snap.Tests.Core
                     Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
 
                     var snapAppReleases = snapAppsReleasesAfter.GetReleases(genisisSnapApp);
-                    Assert.Single(snapAppReleases);
+                    Assert.Equal(3, snapAppReleases.Count());
                 }
             }
         }

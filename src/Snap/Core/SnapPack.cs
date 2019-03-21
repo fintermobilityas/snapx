@@ -266,7 +266,7 @@ namespace Snap.Core
                     currentNuspecPropertiesResolver, 
                     cancellationToken
                 );
-
+ 
                 return (currentFullNupkgPackageBuilder, currentFullSnapApp, currentFullSnapRelease, deltaNupkgBuilder, deltaSnapApp, deltaSnapRelease);                
             }
         }
@@ -456,7 +456,7 @@ namespace Snap.Core
                 if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, pathComparisonType)
                     && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, pathComparisonType))
                 {
-                    currentDeltaSnapRelease.Unmodified.Add(currentChecksum);
+                    currentDeltaSnapRelease.Unmodified.Add(currentChecksum.NuspecTargetPath);
                     deletedChecksums.Remove(previousChecksum);
                     continue;
                 }
@@ -488,7 +488,7 @@ namespace Snap.Core
 
             foreach (var deletedChecksum in deletedChecksums)
             {
-                currentDeltaSnapRelease.Deleted.Add(deletedChecksum);
+                currentDeltaSnapRelease.Deleted.Add(deletedChecksum.NuspecTargetPath);
             }
    
             if (currentDeltaSnapRelease.Files.Count != currentFullSnapRelease.Files.Count)
@@ -624,15 +624,15 @@ namespace Snap.Core
                 var deltaNupkgMemoryStream = _snapFilesystem.FileRead(deltaAbsolutePath);
                 using (var packageArchiveReader = new PackageArchiveReader(deltaNupkgMemoryStream))
                 {
-                    foreach (var checksum in deltaRelease.Deleted)
+                    foreach (var checksumNuspecTargetPath in deltaRelease.Deleted)
                     {
-                        var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == checksum.NuspecTargetPath);
+                        var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == checksumNuspecTargetPath);
                         if (existingFullChecksum == null)
                         {
                             throw new FileNotFoundException(
                                 $"Unable to remove 'Deleted' file from full release: {reassembledFullSnapRelease.Filename}. " +
-                                $"Filename: {checksum.NuspecTargetPath}. " +
-                                $"Nupkg: {checksum.Filename}.");
+                                $"Target path: {checksumNuspecTargetPath}. " +
+                                $"Nupkg: {deltaRelease.Filename}.");
                         }
 
                         reassembledFullSnapRelease.Files.Remove(existingFullChecksum);

@@ -398,29 +398,49 @@ namespace Snap.Core
             async Task<bool> ReassembleAsync()
             {
                 SnapAppChannelReleases releasesToReassemble;
-
+                List<SnapRelease> deltaSnapReleases;
+                
                 switch (restoreType)
                 {
                     case SnapPackageManagerRestoreType.Packaging:
-                        var fullSnapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
+                    
+                        // Reassemble full nupkgs for delta packages that has been downloaded
+                        deltaSnapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
                             {
                                 var fullFilename = downloadStatus.SnapRelease.BuildNugetFullFilename();
                                 var fullSnapReleaseChecksum = restoreSummary.ChecksumSummary.Single(checksumStatus => checksumStatus.SnapRelease.Filename == fullFilename);
                                 return downloadStatus.SnapRelease.IsDelta && downloadStatus.Ok && !fullSnapReleaseChecksum.Ok;
                             })
                             .Select(x => x.SnapRelease)
-                            .OrderBy(x => x.Version)
                             .ToList();
+
+                        // Reassemble missing full packages for existing delta packages but only if they have a valid checksum.
+                        deltaSnapReleases.AddRange(restoreSummary.ChecksumSummary.Where(deltaChecksumStatus =>
+                        {
+                            if (!deltaChecksumStatus.SnapRelease.IsDelta)
+                            {
+                                return false;
+                            }
+
+                            var fullChecksumStatus =
+                                restoreSummary.ChecksumSummary.Single(x => 
+                                    x.SnapRelease.IsFull 
+                                    && x.SnapRelease.Version == deltaChecksumStatus.SnapRelease.Version);
+
+                            return !fullChecksumStatus.Ok && deltaSnapReleases.All(x => x.Filename != deltaChecksumStatus.SnapRelease.Filename);
+                        })
+                        .Select(x => x.SnapRelease)
+                        .ToList());
                             
-                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, fullSnapReleases.OrderBy(x => x.Version));
+                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases.OrderBy(x => x.Version));
                         break;
                     case SnapPackageManagerRestoreType.InstallOrUpdate:
-                        var deltaSnapReleases = restoreSummary.DownloadSummary
+                        deltaSnapReleases = restoreSummary.DownloadSummary
                             .Where(x => x.SnapRelease.IsDelta)
                             .OrderByDescending(x => x.SnapRelease.Version)
                             .Take(1)
                             .Select(x => x.SnapRelease)
-                            .ToArray();                      
+                            .ToList();                      
                               
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases);
                         break;
@@ -433,7 +453,7 @@ namespace Snap.Core
                     return true;
                 }
                 
-                logger?.Info($"Reassembling {releasesToReassemble.Count()} packages.");
+                logger?.Info($"Reassembling {releasesToReassemble.Count()} packages: {string.Join(", ", releasesToReassemble.Select(x => x.BuildNugetFullFilename()))}.");
 
                 progressSource?.RaiseRestoreProgress(0, 0, releasesToReassemble.Count());
 

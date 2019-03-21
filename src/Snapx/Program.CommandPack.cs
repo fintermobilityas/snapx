@@ -218,22 +218,24 @@ namespace snapx
 
             var (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, deltaNupkgMemorystream, deltaSnapApp, deltaSnapRelease) =
                 await snapPack.BuildPackageAsync(snapPackageDetails, coreRunLib, cancellationToken);
-
-            var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
-            var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapRelease.Filename);
-
+            
             using (fullNupkgMemoryStream)
             using (deltaNupkgMemorystream)
             {
+                var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
                 logger.Info($"Writing full nupkg to disk: {fullSnapRelease.Filename}. File size: {fullSnapRelease.FullFilesize.BytesAsHumanReadable()}");
                 await filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, default);
 
-                logger.Info($"Writing delta nupkg to disk: {deltaSnapRelease.Filename}. File size: {deltaSnapRelease.DeltaFilesize.BytesAsHumanReadable()}");
-                await filesystem.FileWriteAsync(deltaNupkgMemorystream, deltaNupkgAbsolutePath, default);
+                if (!fullSnapRelease.IsGenisis)
+                {
+                    var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapRelease.Filename);
+                    logger.Info($"Writing delta nupkg to disk: {deltaSnapRelease.Filename}. File size: {deltaSnapRelease.DeltaFilesize.BytesAsHumanReadable()}");
+                    await filesystem.FileWriteAsync(deltaNupkgMemorystream, deltaNupkgAbsolutePath, default);                    
+                }            
             }
 
-            var fullOrDeltaSnapApp = deltaSnapApp ?? fullSnapApp;
-            var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFilename());
+            var fullOrDeltaSnapApp = fullSnapApp.IsGenisis ? fullSnapApp : deltaSnapApp;
+            var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullOrDeltaSnapApp.BuildNugetFilename());
             pushPackages.Add(fullOrDeltaNupkgAbsolutePath);
 
             logger.Info('-'.Repeat(TerminalDashesWidth));

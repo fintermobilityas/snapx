@@ -287,7 +287,7 @@ namespace Snap.NuGet
                     {
                         if (packageStream == null) throw new ArgumentNullException(nameof(packageStream));
                         
-                        var inputStream = new MemoryStream();
+                        var outputStream = new MemoryStream();
                         var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
                         
                         var totalBytesToDownload = downloadContext.PackageFileSize;
@@ -309,8 +309,8 @@ namespace Snap.NuGet
                                                         
                             progressSource?.Raise(thisProgressPercentage, bytesRead, totalBytesDownloadedSoFar, totalBytesToDownload);
                             
-                            await inputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
-                        }
+                            await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                        }    
 
                         if (downloadContext.PackageFileSize <= 0)
                         {
@@ -319,9 +319,9 @@ namespace Snap.NuGet
                         
                         ArrayPool<byte>.Shared.Return(buffer);
 
-                        inputStream.Seek(0, SeekOrigin.Begin);
+                        outputStream.Seek(0, SeekOrigin.Begin);
                         
-                        return new DownloadResourceResult(inputStream, packageSource.Source);
+                        return new DownloadResourceResult(outputStream, packageSource.Source);
                     }
 
                     return await httpSource.ProcessStreamAsync(request, ProcessAsync, cacheContext, _nugetLogger, cancellationToken);

@@ -358,6 +358,9 @@ namespace snapx
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                sleep:
+                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+ 
                 var (upstreamSnapsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
                 if (upstreamSnapsReleases == null)
                 {
@@ -375,9 +378,6 @@ namespace snapx
                     $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapsReleases.Version}. " +
                     $"Local version: {snapAppsReleases.Version}. " +
                     "Retrying in 15 seconds");
-
-                sleep:
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
             }
         }
        

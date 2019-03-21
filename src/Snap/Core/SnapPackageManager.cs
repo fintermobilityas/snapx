@@ -225,8 +225,6 @@ namespace Snap.Core
 
             async Task ChecksumAsync()
             {
-                logger?.Info($"Verifying checksums for {snapAppChannelReleases.Count()} packages in channel: {snapAppChannelReleases.Channel.Name}.");
-
                 List<SnapRelease> snapReleasesToChecksum;
 
                 switch (restoreType)
@@ -259,6 +257,8 @@ namespace Snap.Core
                         throw new NotSupportedException(restoreType.ToString());
                 }
                 
+                logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages in channel: {snapAppChannelReleases.Channel.Name}.");
+
                 const int checksumConcurrency = 2;
                 long snapReleasesChecksummed = 0;
                 long snapReleasesChecksumOk = 0;

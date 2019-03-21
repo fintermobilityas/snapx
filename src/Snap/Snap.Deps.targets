@@ -1,19 +1,23 @@
 <Project>
     <ItemGroup>
-        <PackageReference Include="Mono.Cecil" Version="0.10.3" />
-        <PackageReference Include="NuGet.Packaging" Version="5.0.0-rtm.5856" />
-        <PackageReference Include="NuGet.Protocol" Version="5.0.0-rtm.5856" />
-        <PackageReference Include="System.Drawing.Common" Version="4.5.1" Condition="!$(IsNetFullFramework)" />
-        <PackageReference Include="YamlDotNet" Version="6.0.0" />
+        <PackageReference Include="Mono.Cecil" Version="0.10.3"/>
+        <PackageReference Include="NuGet.Packaging" Version="5.0.0-rtm.5856"/>
+        <PackageReference Include="NuGet.Protocol" Version="5.0.0-rtm.5856"/>
+        <PackageReference Include="System.Drawing.Common" Version="4.5.1" Condition="!$(IsNetFullFramework)"/>
+        <PackageReference Include="YamlDotNet" Version="6.0.0"/>
+        <PackageReference Include="SharpCompress" Version="0.22.0"/>
+        <PackageReference Include="DotNet.Glob" Version="2.1.1"/>
+        <PackageReference Include="MessagePack" Version="1.7.3.4"/>
         <PackageReference Include="Jetbrains.Annotations" Version="2018.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="SharpCompress" Version="0.22.0" />
-        <PackageReference Include="DotNet.Glob" Version="2.1.1" />
+        <PackageReference Include="MessagePackAnalyzer" Version="1.6.0">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
     </ItemGroup>
     <ItemGroup Condition="$(IsNetFullFramework)">
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
-        <PackageReference Include="System.Buffers" Version="4.5.0" />
-        <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0"/>
+        <PackageReference Include="System.Buffers" Version="4.5.0"/>
+        <PackageReference Include="Microsoft.CSharp" Version="4.5.0"/>
     </ItemGroup>
 </Project>

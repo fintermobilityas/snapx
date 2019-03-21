@@ -1041,10 +1041,10 @@ namespace Snap.Core
 
             snapAppsReleases.Bump();
 
-            var yamlString = _snapAppWriter.ToSnapReleasesYamlString(snapAppsReleases);
+            var messagePackBytes = _snapAppWriter.ToSnapReleasesMessagePackBytes(snapAppsReleases);
             var snapsReleasesCompressedStream = new MemoryStream();
             
-            using (var snapsReleasesStream = new MemoryStream(Encoding.UTF8.GetBytes(yamlString)))
+            using (var snapsReleasesStream = new MemoryStream(messagePackBytes))
             using (var writer = WriterFactory.Open(snapsReleasesCompressedStream, ArchiveType.Tar, new WriterOptions(CompressionType.BZip2)
             {
                 LeaveStreamOpen = true
@@ -1155,7 +1155,6 @@ namespace Snap.Core
             snapRelease?.Files.Add(new SnapReleaseChecksum
             {
                 NuspecTargetPath = nuspecTargetPath,
-                Filename = filename,
                 FullFilesize = srcStream.Length,
                 FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
             });

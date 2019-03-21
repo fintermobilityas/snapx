@@ -3,35 +3,60 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
+using MessagePack;
 using NuGet.Versioning;
 using YamlDotNet.Serialization;
+using Snap.Core.MessagePack.Formatters;
 
 namespace Snap.Core.Models
 {
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [MessagePackObject]
     public class SnapRelease
     {
+        [Key(0)]
         public string Id { get; set; }
+        [Key(1)]
         public string UpstreamId { get; set; }
+        [Key(2)]
+        [MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
         public SemanticVersion Version { get; set; }
+        [Key(3)]
         public List<string> Channels { get; set; }
+        [Key(4)]
         public SnapTarget Target { get; set; }
+        [Key(5)]
         public bool IsGenisis { get; set; }
+        [Key(6)]
         public bool IsFull { get; set; }
-        [YamlIgnore] public bool IsDelta => !IsGenisis && !IsFull;
+        [YamlIgnore]
+        [Key(7)]
+        public bool IsDelta => !IsGenisis && !IsFull;
+        [Key(8)]
         public string Filename { get; set; }
+        [Key(9)]
         public long FullFilesize { get; set; }
+        [Key(10)]
         public string FullSha512Checksum { get; set; }
+        [Key(11)]
         public long DeltaFilesize { get; set; }
+        [Key(12)]
         public string DeltaSha512Checksum { get; set; }
+        [Key(13)]
         public List<SnapReleaseChecksum> New { get; set; }
+        [Key(14)]
         public List<SnapReleaseChecksum> Modified { get; set; }
+        [Key(15)]
         public List<SnapReleaseChecksum> Unmodified { get; set; }
+        [Key(16)]
         public List<SnapReleaseChecksum> Deleted { get; set; }
-        public List<SnapReleaseChecksum> Files { get; set; }  
-        public DateTime CreatedDateUtc { get; set; }      
+        [Key(17)]
+        public List<SnapReleaseChecksum> Files { get; set; }
+        [Key(18)]
+        public DateTime CreatedDateUtc { get; set; }
+        [Key(19)]
         public string ReleaseNotes { get; set; }
 
         [UsedImplicitly]

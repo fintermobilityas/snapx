@@ -4,7 +4,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
+using MessagePack;
 using NuGet.Versioning;
+using Snap.Core.MessagePack.Formatters;
 using Snap.NuGet;
 using YamlDotNet.Serialization;
 
@@ -136,15 +138,25 @@ namespace Snap.Core.Models
         }
     }
 
+    [MessagePackObject]
     public sealed class SnapTarget
     {
+        [Key(0)]
+        [MessagePackFormatter(typeof(OsPlatformMessagePackFormatter))]
         public OSPlatform Os { get; set; }
+        [Key(1)]
         public string Framework { get; set; }
+        [Key(2)]
         public string Rid { get; set; }
+        [Key(3)]
         public string Nuspec { get; set; }
+        [Key(4)]
         public string Icon { get; set; }
+        [Key(5)]
         public List<SnapShortcutLocation> Shortcuts { get; set; }
+        [Key(6)]
         public List<string> PersistentAssets { get; set; }
+        [Key(7)]
         public List<SnapInstallerType> Installers { get; set; }
 
         [UsedImplicitly]

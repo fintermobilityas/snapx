@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
+using MessagePack;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Snap.Attributes;
@@ -25,7 +26,7 @@ namespace Snap.Core
         AssemblyDefinition OptimizeSnapDllForPackageArchive(AssemblyDefinition assemblyDefinition, OSPlatform osPlatform);
         string ToSnapAppYamlString(SnapApp snapApp);
         string ToSnapAppsYamlString(SnapApps snapApps);
-        string ToSnapReleasesYamlString(SnapAppsReleases snapAppsApps);
+        byte[] ToSnapReleasesMessagePackBytes(SnapAppsReleases snapAppsApps);
     }
 
     internal sealed class SnapAppWriter : ISnapAppWriter
@@ -123,10 +124,10 @@ namespace Snap.Core
             return YamlSerializerSnapApps.Serialize(snapApps);
         }
 
-        public string ToSnapReleasesYamlString([NotNull] SnapAppsReleases snapAppsApps)
+        public byte[] ToSnapReleasesMessagePackBytes([NotNull] SnapAppsReleases snapAppsApps)
         {
             if (snapAppsApps == null) throw new ArgumentNullException(nameof(snapAppsApps));
-            return YamlSerializerSnapApp.Serialize(snapAppsApps);
+            return MessagePackSerializer.Serialize(snapAppsApps);
         }
     }
 }

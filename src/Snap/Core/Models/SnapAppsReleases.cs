@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
+using MessagePack;
 using NuGet.Versioning;
+using Snap.Core.MessagePack.Formatters;
 using Snap.Extensions;
 using YamlDotNet.Serialization;
 
@@ -11,10 +13,15 @@ namespace Snap.Core.Models
 {
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [MessagePackObject]
     public sealed class SnapAppsReleases
     {
+        [Key(0)]
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
-        public SemanticVersion Version { get; set; } 
+        [Key(1)]
+        [MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
+        public SemanticVersion Version { get; set; }
+        [Key(2)]
         public DateTime LastWriteAccessUtc { get; set; }
 
         [UsedImplicitly]

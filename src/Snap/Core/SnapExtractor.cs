@@ -119,7 +119,7 @@ namespace Snap.Core
                     reader.MoveToNextEntry();
                     reader.WriteEntryTo(snapReleasesUncompressedStream);
                     snapReleasesUncompressedStream.Seek(0, SeekOrigin.Begin);
-                    return snapAppReader.BuildSnapAppsReleasesFromStream(snapReleasesUncompressedStream);
+                    return await snapAppReader.BuildSnapAppsReleasesFromStreamAsync(snapReleasesUncompressedStream);
                 }
             }
         }

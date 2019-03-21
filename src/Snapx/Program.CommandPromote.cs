@@ -212,7 +212,9 @@ namespace snapx
                         return 1;
                     }
 
-                    await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, channel, cancellationToken);
+                    var retryInterval = TimeSpan.FromSeconds(15);
+                    
+                    await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, channel, retryInterval, cancellationToken);
 
                     logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
                     logger.Info('-'.Repeat(TerminalDashesWidth));

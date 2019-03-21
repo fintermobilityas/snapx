@@ -348,7 +348,7 @@ namespace snapx
 
         static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
-            [NotNull] SnapChannel snapChannel, CancellationToken cancellationToken)
+            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
@@ -362,7 +362,7 @@ namespace snapx
             while (!cancellationToken.IsCancellationRequested)
             {
                 sleep:
-                await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+                await Task.Delay(retryInterval, cancellationToken);
  
                 var (upstreamSnapsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
                 if (upstreamSnapsReleases == null)
@@ -380,7 +380,7 @@ namespace snapx
                 logger.Info(
                     $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapsReleases.Version}. " +
                     $"Local version: {snapAppsReleases.Version}. " +
-                    "Retrying in 15 seconds");
+                    $"Retry in {retryInterval.TotalSeconds:0.0}s.");
             }
         }
        

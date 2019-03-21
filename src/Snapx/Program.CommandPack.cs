@@ -626,9 +626,11 @@ namespace snapx
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-            logger.Info($"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. ");
+            var retryInterval = TimeSpan.FromSeconds(15);
+            
+            logger.Info($"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
 
-            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, cancellationToken);
+            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, retryInterval, cancellationToken);
         }
 
         

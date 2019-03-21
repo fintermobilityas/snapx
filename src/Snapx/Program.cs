@@ -174,9 +174,12 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions>(args)
+                .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions, GcOptions>(args)
                 .MapResult(
                     (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
+                        nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
+                        snapNetworkTimeProvider, snapExtractor, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (GcOptions opts) => CommandGcAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
                         snapNetworkTimeProvider, snapExtractor, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,

@@ -433,10 +433,16 @@ namespace Snap.Core
             }
             
             currentFullNupkgNuspecMemoryStream.Seek(0, SeekOrigin.Begin);
+
+            var deltaNupkgPackageBuilder = new PackageBuilder(
+                currentFullNupkgNuspecMemoryStream, 
+                snapNuspecDetails.NuspecBaseDirectory,
+                currentFullNupkgNuspecPropertiesResolverFn)
+            {
+                Id = currentDeltaSnapRelease.UpstreamId,
+                Version = currentDeltaSnapRelease.Version.ToNuGetVersion()
+            };
             
-            var deltaNupkgPackageBuilder = new PackageBuilder(currentFullNupkgNuspecMemoryStream, snapNuspecDetails.NuspecBaseDirectory, currentFullNupkgNuspecPropertiesResolverFn);
-            deltaNupkgPackageBuilder.Id = currentDeltaSnapRelease.UpstreamId;
-            deltaNupkgPackageBuilder.Version = currentDeltaSnapRelease.Version.ToNuGetVersion();
             deltaNupkgPackageBuilder.Files.Clear(); // NB! We are _NOT_ loading files twice into memory.
 
             var deletedChecksums = previousFullSnapRelease.Files.ToList();

@@ -233,6 +233,8 @@ namespace Snap.Core
                     await BuildFullPackageAsyncInternal(packageDetails, snapAppChannelReleases, snapAppMetadataOnly, 
                         snapReleaseMetadataOnly, coreRunLib, cancellationToken);
 
+                genisisSnapRelease.Channels = genisisSnapApp.Channels.Select(x => x.Name).ToList();
+
                 using (nuspecMemoryStream)
                 {
                     return (genisisPackageBuilder, genisisSnapApp, genisisSnapRelease, null, null, null);                    

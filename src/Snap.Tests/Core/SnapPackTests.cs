@@ -100,9 +100,9 @@ namespace Snap.Tests.Core
                     Assert.Null(genisisPackageContext.DeltaPackageAbsolutePath);
                     Assert.Null(genisisPackageContext.DeltaPackageMemoryStream);
                     Assert.Null(genisisPackageContext.DeltaPackageSnapRelease);
-
+                    
                     genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapApp, "test", "staging", "production");
-                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test");
+                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test", "staging", "production");
                     genisisSnapReleaseBuilder.AssertSnapAppIsGenisis(genisisPackageContext.FullPackageSnapApp);
                     genisisSnapReleaseBuilder.AssertSnapReleaseIsGenisis(genisisPackageContext.FullPackageSnapRelease);
                     genisisSnapReleaseBuilder.AssertSnapReleaseFiles(genisisPackageContext.FullPackageSnapRelease,
@@ -153,7 +153,7 @@ namespace Snap.Tests.Core
                     Assert.Null(genisisPackageContext.DeltaPackageSnapRelease);
 
                     genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapApp, "test", "staging", "production");
-                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test");
+                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test", "staging", "production");
                     genisisSnapReleaseBuilder.AssertSnapAppIsGenisis(genisisPackageContext.FullPackageSnapApp);
                     genisisSnapReleaseBuilder.AssertSnapReleaseIsGenisis(genisisPackageContext.FullPackageSnapRelease);
                     genisisSnapReleaseBuilder.AssertSnapReleaseFiles(genisisPackageContext.FullPackageSnapRelease,
@@ -210,7 +210,7 @@ namespace Snap.Tests.Core
                     Assert.Null(genisisPackageContext.DeltaPackageMemoryStream);
                     Assert.Null(genisisPackageContext.DeltaPackageSnapRelease);
                     genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapApp, "test", "staging", "production");
-                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test");
+                    genisisSnapReleaseBuilder.AssertChannels(genisisPackageContext.FullPackageSnapRelease, "test", "staging", "production");
                     genisisSnapReleaseBuilder.AssertSnapAppIsGenisis(genisisPackageContext.FullPackageSnapApp);
                     genisisSnapReleaseBuilder.AssertSnapReleaseIsGenisis(genisisPackageContext.FullPackageSnapRelease);
                     genisisSnapReleaseBuilder.AssertSnapReleaseFiles(genisisPackageContext.FullPackageSnapRelease, genisisFiles);

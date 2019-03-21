@@ -280,7 +280,7 @@ namespace Snap.Shared.Tests
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (channels == null) throw new ArgumentNullException(nameof(channels));
-            Assert.Equal(snapRelease.Channels.Count, channels.Length);
+            Assert.Equal(channels.Length, snapRelease.Channels.Count);
 
             for (var index = 0; index < snapRelease.Channels.Count; index++)
             {

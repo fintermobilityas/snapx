@@ -219,10 +219,11 @@ namespace snapx
             var (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, deltaNupkgMemorystream, deltaSnapApp, deltaSnapRelease) =
                 await snapPack.BuildPackageAsync(snapPackageDetails, coreRunLib, cancellationToken);
             
+            var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
+
             using (fullNupkgMemoryStream)
             using (deltaNupkgMemorystream)
             {
-                var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
                 logger.Info($"Writing full nupkg to disk: {fullSnapRelease.Filename}. File size: {fullSnapRelease.FullFilesize.BytesAsHumanReadable()}");
                 await filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, default);
 
@@ -234,7 +235,7 @@ namespace snapx
                 }            
             }
 
-            var fullOrDeltaSnapApp = fullSnapApp.IsGenisis ? fullSnapApp : deltaSnapApp;
+            var fullOrDeltaSnapApp = deltaSnapApp ?? fullSnapApp;
             var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullOrDeltaSnapApp.BuildNugetFilename());
             pushPackages.Add(fullOrDeltaNupkgAbsolutePath);
 
@@ -266,7 +267,7 @@ namespace snapx
                     if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
                         var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullOrDeltaNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
+                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
 
                         if (!installerOfflineSuccess)
                         {
@@ -283,7 +284,7 @@ namespace snapx
                     if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
                         var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullOrDeltaNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
+                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
 
                         if (!installerWebSuccess)
                         {

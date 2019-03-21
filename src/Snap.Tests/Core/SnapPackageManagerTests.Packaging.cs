@@ -116,6 +116,7 @@ namespace Snap.Tests.Core
 
                     using (var packageArchiveReader = new PackageArchiveReader(genisisPackageAbsolutePath))
                     {
+                        Assert.Equal(genisisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(genisisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
@@ -203,18 +204,21 @@ namespace Snap.Tests.Core
 
                     using (var packageArchiveReader = new PackageArchiveReader(genisisPackageAbsolutePath))
                     {
+                        Assert.Equal(genisisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(genisisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
                             _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
@@ -320,6 +324,7 @@ namespace Snap.Tests.Core
 
                     using (var packageArchiveReader = new PackageArchiveReader(genisisPackageAbsolutePath))
                     {
+                        Assert.Equal(genisisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(genisisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
@@ -444,7 +449,6 @@ namespace Snap.Tests.Core
                         It.IsAny<INugetServiceProgressSource>(),
                         It.IsAny<CancellationToken>()), Times.Once);
 
-
                     _nugetServiceMock.Verify(x => x.DownloadAsyncWithProgressAsync(
                         It.IsAny<PackageSource>(),
                         It.Is<DownloadContext>(v => v.PackageIdentity.Equals(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity())),
@@ -465,18 +469,21 @@ namespace Snap.Tests.Core
 
                     using (var packageArchiveReader = new PackageArchiveReader(genisisPackageAbsolutePath))
                     {
+                        Assert.Equal(genisisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(genisisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
                             _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
@@ -605,18 +612,21 @@ namespace Snap.Tests.Core
                     
                     using (var packageArchiveReader = new PackageArchiveReader(genisisPackageAbsolutePath))
                     {
+                        Assert.Equal(genisisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(genisisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(genisisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha512Checksum,
                             _snapCryptoProvider.Sha512(update1PackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
                     }
 
                     using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
                     {
+                        Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
                         Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
                             _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
                     }

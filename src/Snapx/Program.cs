@@ -206,14 +206,14 @@ namespace snapx
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var (snapApps, snapAppTargets, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
+            var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
             var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase)
                                                             && string.Equals(x.Target.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
         }
 
-        static (SnapApps snapApps, List<SnapApp> snapAppTargets, string snapsAbsoluteFilename) BuildSnapAppsFromDirectory(
+        static (SnapApps snapApps, List<SnapApp> snapAppTargets, bool error, string snapsAbsoluteFilename) BuildSnapAppsFromDirectory(
             [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] string workingDirectory)
         {
@@ -256,7 +256,7 @@ namespace snapx
                     snapApps.Generic = new SnapAppsGeneric();
                 }
 
-                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), snapsFilename);
+                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), false, snapsFilename);
             }
             catch (YamlException yamlException)
             {
@@ -269,7 +269,7 @@ namespace snapx
             }
 
             error:
-            return (null, null, snapsFilename);
+            return (null, null, true, snapsFilename);
         }
 
         static string BuildArtifactsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,

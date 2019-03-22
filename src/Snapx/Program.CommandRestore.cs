@@ -4,9 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DynamicData.Annotations;
+using JetBrains.Annotations;
 using NuGet.Configuration;
+using snapx.Core;
 using snapx.Options;
+using Snap;
+using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Models;
 using Snap.Logging;
@@ -18,11 +21,10 @@ namespace snapx
     internal partial class Program
     {
         static async Task<int> CommandRestoreAsync([NotNull] RestoreOptions restoreOptions,
-            [NotNull] ISnapFilesystem filesystem,
-            [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] INugetService nugetService,
-            [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapPackageManager snapPackageManager,
-            [NotNull] ILog logger,
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapPackageManager snapPackageManager,
+            [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
+            [NotNull] ISnapPack snapPack, [NotNull] ILog logger,
             [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (restoreOptions == null) throw new ArgumentNullException(nameof(restoreOptions));
@@ -32,6 +34,10 @@ namespace snapx
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
+            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
 
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -44,6 +50,12 @@ namespace snapx
             {
                 snapAppTargets.RemoveAll(x =>
                     !string.Equals(x.Id, restoreOptions.AppId, StringComparison.InvariantCultureIgnoreCase));
+
+                if (restoreOptions.Rid != null)
+                {
+                    snapAppTargets.RemoveAll(x =>
+                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.InvariantCultureIgnoreCase));
+                }
 
                 if (!snapAppTargets.Any())
                 {
@@ -61,7 +73,9 @@ namespace snapx
             foreach (var snapApp in snapAppTargets)
             {
                 var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+                var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
                 filesystem.DirectoryCreateIfNotExists(packagesDirectory);
+                filesystem.DirectoryCreateIfNotExists(installersDirectory);
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 logger.Info($"Id: {snapApp.Id}.");
@@ -102,9 +116,43 @@ namespace snapx
                     logger.Info("No packages has been published.");
                     continue;
                 }
-                            
-                await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource, SnapPackageManagerRestoreType.Packaging,
+
+                var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource,
+                    SnapPackageManagerRestoreType.Packaging,
                     logger: logger, cancellationToken: cancellationToken);
+
+                if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
+                {
+                    continue;
+                }
+
+                foreach (var snapChannel in snapApp.Channels)
+                {
+                    snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                    if (!snapAppReleases.Any())
+                    {
+                        continue;
+                    }
+                    
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+
+                    snapApp.Version = snapAppReleases.GetMostRecentRelease().Version;
+
+                    var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetFullFilename());
+                    var releasesNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetReleasesFilename());
+
+                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
+                    {
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
+                            installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
+                    }
+                    
+                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
+                    {
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
+                            installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
+                    }
+                }                                
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));

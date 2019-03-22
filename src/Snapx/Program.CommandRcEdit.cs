@@ -29,7 +29,7 @@ namespace snapx
             
             if (opts.ConvertSubSystemToWindowsGui)
             {
-                logger.Info($"Attempting to change subsystem to Windows GUI for executable: {opts.Filename}.");
+                logger.Info($"Attempting to change subsystem to Windows GUI for executable: {snapFilesystem.PathGetFileName(opts.Filename)}.");
 
                 using (var srcStream = snapFilesystem.FileReadWrite(opts.Filename, false))
                 {

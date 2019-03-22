@@ -9,7 +9,7 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PackOptions : BaseSubOptions
     {
-        [Option("id", HelpText = "Application id", Required = true)]
+        [Option('a', "app", HelpText = "Application id", Required = true)]
         public string AppId { get; [UsedImplicitly] set; }
         [Option('r', "rid", HelpText = "Runtime identifier target name, e.g win-x64", Required = true)]
         public string Rid { get; [UsedImplicitly] set; }

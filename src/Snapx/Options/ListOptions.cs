@@ -7,7 +7,7 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class ListOptions : BaseSubOptions
     {
-        [Option("id", HelpText = "Application id")]
+        [Option('a', "app", HelpText = "Application id")]
         public string Id { get; [UsedImplicitly] set; }
     }
 }

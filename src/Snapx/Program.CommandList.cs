@@ -189,7 +189,7 @@ namespace snapx
                 table.Write(logger);
             }
             
-            logger.Info($"Completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
+            logger.Info($"List completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;
         }

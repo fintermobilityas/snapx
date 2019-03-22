@@ -9,13 +9,13 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PromoteOptions : BaseSubOptions
     {
-        [Option("id", HelpText = "Application id", Required = true)]
+        [Option('a', "app", HelpText = "Application id", Required = true)]
         public string AppId { get; [UsedImplicitly] set; }
         [Option('r', "rid", HelpText = "Runtime identifier target name, e.g win-x64", Required = true)]
         public string Rid { get; [UsedImplicitly] set; }
         [Option('c', "channel", HelpText = "Channel name", Required = true)]
         public string Channel { get; [UsedImplicitly] set; }
-        [Option('a', "all", HelpText = "Promote to remaining channels")]
+        [Option("all", HelpText = "Promote to remaining channels")]
         public bool ToAllRemainingChannels { get; [UsedImplicitly] set; }
     }
 }

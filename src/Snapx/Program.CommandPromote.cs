@@ -5,7 +5,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using snapx.Core;
 using snapx.Options;
+using Snap;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
@@ -21,7 +23,8 @@ namespace snapx
         static async Task<int> CommandPromoteAsync([NotNull] PromoteOptions options, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
             [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack, [NotNull] ISnapOsSpecialFolders specialFolders,
-            [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor,
+            [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
+            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
             [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -34,6 +37,9 @@ namespace snapx
             if (specialFolders == null) throw new ArgumentNullException(nameof(specialFolders));
             if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
+            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
+            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -50,7 +56,7 @@ namespace snapx
                 return 1;
             }
 
-            var (_, snapApp, error, _) = BuildSnapAppFromDirectory(filesystem, snapAppReader,
+            var (snapApps, snapApp, error, _) = BuildSnapAppFromDirectory(filesystem, snapAppReader,
                 nuGetPackageSources, options.AppId, options.Rid, workingDirectory);
             if (snapApp == null)
             {
@@ -61,6 +67,9 @@ namespace snapx
 
                 return 1;
             }
+            
+            var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+            var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
 
             var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.InvariantCultureIgnoreCase));
             if (promoteSrcChannel == null)
@@ -107,6 +116,7 @@ namespace snapx
                     {
                         return null;
                     }
+
                     return channel;
                 })
                 .Where(x => x != null)
@@ -131,7 +141,7 @@ namespace snapx
             if (!logger.Prompt("y|yes",
                 $"You are about to promote {snapApp.Id} ({snapApp.Version}) to the following " +
                 $"channel{(promoteToChannels.Count > 1 ? "s" : string.Empty)}: {promoteToChannelsStr}. " +
-                $"Do you want to continue? [y|n]")
+                "Do you want to continue? [y|n]")
             )
             {
                 return 1;
@@ -153,6 +163,24 @@ namespace snapx
             var releasesPackageMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapAppsReleases);
             logger.Info("Finished building releases nupkg.");
 
+            var restoreOptions = new RestoreOptions
+            {
+                AppId = options.AppId,
+                Rid = options.Rid,
+                BuildInstallers = false
+            };
+            
+            var restoreSuccess = 0 == await CommandRestoreAsync(
+                                     restoreOptions, filesystem, snapAppReader, nuGetPackageSources, nugetService, snapExtractor,
+                                     snapPackageManager, snapOs, snapxEmbeddedResources, coreRunLib, snapPack,
+                                     logger, workingDirectory, cancellationToken
+                                );
+
+            if (!restoreSuccess)
+            {
+                return 1;
+            }
+
             const int pushRetries = 3;
 
             using (releasesPackageMemoryStream)
@@ -162,13 +190,62 @@ namespace snapx
                 var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
                 await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);
 
+                if (snapApp.Target.Installers.Any())
+                {                    
+                    foreach (var channel in promoteToChannels)
+                    {
+                        logger.Info('-'.Repeat(TerminalDashesWidth));
+
+                        var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFullFilename());
+
+                        if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
+                        {
+                            var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
+                                snapxEmbeddedResources,
+                                snapPack,
+                                snapAppReader, snapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                                true, cancellationToken);
+
+                            if (!installerOfflineSuccess)
+                            {
+                                logger.Info('-'.Repeat(TerminalDashesWidth));
+                                logger.Error("Unknown error building offline installer.");
+                                return 1;
+                            }
+
+                            var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
+                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            logger.Info('-'.Repeat(TerminalDashesWidth));
+                        }
+
+                        if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
+                        {
+                            var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                                snapPack,
+                                snapAppReader, snapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                                false, cancellationToken);
+
+                            if (!installerWebSuccess)
+                            {
+                                logger.Info('-'.Repeat(TerminalDashesWidth));
+                                logger.Error("Unknown error building web installer.");
+                                return 1;
+                            }
+
+                            var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
+                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                        }    
+                    }
+                }
+
+                logger.Info('-'.Repeat(TerminalDashesWidth));
+
                 foreach (var (channel, packageSource) in promoteToChannels.Select(snapChannel =>
                 {
                     var packageSource = nuGetPackageSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
                     return (snapChannel, packageSource);
                 }).DistinctBy(x => x.packageSource.SourceUri))
-                {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                {                   
                     logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
 
                     var success = await SnapUtility.RetryAsync(
@@ -194,7 +271,7 @@ namespace snapx
                 }
             }
 
-            logger.Info($"Completed in {stopWatch.Elapsed.TotalSeconds:0.0}s.");
+            logger.Info($"Promote completed in {stopWatch.Elapsed.TotalSeconds:0.0}s.");
 
             await CommandListAsync(new ListOptions {Id = snapApp.Id}, filesystem, snapAppReader,
                 nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);

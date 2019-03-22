@@ -28,7 +28,8 @@ namespace snapx
             [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor,
-            [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ILog logger,
+            [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
+            [NotNull] ILog logger,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -209,7 +210,7 @@ namespace snapx
                 NuspecBaseDirectory = artifactsDirectory,
                 PackagesDirectory = packagesDirectory,
                 NuspecFilename = nuspecFilename,
-                SnapAppsReleases = snapAppsReleases                
+                SnapAppsReleases = snapAppsReleases
             };
 
             logger.Info($"Building nupkg: {snapApp.Version}.");
@@ -218,7 +219,7 @@ namespace snapx
 
             var (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, deltaNupkgMemorystream, deltaSnapApp, deltaSnapRelease) =
                 await snapPack.BuildPackageAsync(snapPackageDetails, coreRunLib, cancellationToken);
-            
+
             var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
 
             using (fullNupkgMemoryStream)
@@ -230,9 +231,10 @@ namespace snapx
                 if (!fullSnapRelease.IsGenisis)
                 {
                     var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapRelease.Filename);
-                    logger.Info($"Writing delta nupkg to disk: {deltaSnapRelease.Filename}. File size: {deltaSnapRelease.DeltaFilesize.BytesAsHumanReadable()}");
-                    await filesystem.FileWriteAsync(deltaNupkgMemorystream, deltaNupkgAbsolutePath, default);                    
-                }            
+                    logger.Info(
+                        $"Writing delta nupkg to disk: {deltaSnapRelease.Filename}. File size: {deltaSnapRelease.DeltaFilesize.BytesAsHumanReadable()}");
+                    await filesystem.FileWriteAsync(deltaNupkgMemorystream, deltaNupkgAbsolutePath, default);
+                }
             }
 
             var fullOrDeltaSnapApp = deltaSnapApp ?? fullSnapApp;
@@ -241,60 +243,70 @@ namespace snapx
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info("Building releases manifest");
-            
+
             var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
             if (!nowUtc.HasValue)
             {
                 logger.Error($"Unknown error while retrieving NTP timestamp from server: {snapNetworkTimeProvider}");
                 return 1;
             }
-            
+
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
-            
+
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);
             var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesFilename());
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
-            
+
             logger.Info("Finished building releases manifest");
 
             using (releasesMemoryStream)
             {
                 if (fullOrDeltaSnapApp.Target.Installers.Any())
                 {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    var channels = fullOrDeltaSnapApp.IsGenisis ? fullSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
 
-                    if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
+                    foreach (var channel in channels)
                     {
-                        var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
-
-                        if (!installerOfflineSuccess)
+                        if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
-                            logger.Error("Unknown error building offline installer.");
-                            return 1;
+
+                            var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                                snapPack,
+                                snapAppReader, fullSnapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                true, cancellationToken);
+
+                            if (!installerOfflineSuccess)
+                            {
+                                logger.Info('-'.Repeat(TerminalDashesWidth));
+                                logger.Error("Unknown error building offline installer.");
+                                return 1;
+                            }
+
+                            var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
+                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            logger.Info('-'.Repeat(TerminalDashesWidth));
                         }
 
-                        var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
-                        logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
-                        logger.Info('-'.Repeat(TerminalDashesWidth));
-                    }
-
-                    if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
-                    {
-                        var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                            snapAppReader, fullSnapApp, snapAppChannel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
-
-                        if (!installerWebSuccess)
+                        if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
-                            logger.Error("Unknown error building web installer.");
-                            return 1;
-                        }
 
-                        var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
-                        logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
+                                snapAppReader, fullSnapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                false, cancellationToken);
+
+                            if (!installerWebSuccess)
+                            {
+                                logger.Info('-'.Repeat(TerminalDashesWidth));
+                                logger.Error("Unknown error building web installer.");
+                                return 1;
+                            }
+
+                            var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
+                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                        }
                     }
                 }
             }
@@ -309,246 +321,12 @@ namespace snapx
             logger.Info($"Fetching releases overview from feed {pushFeed.Name}.");
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-            await CommandListAsync(new ListOptions { Id = fullOrDeltaSnapApp.Id }, filesystem, snapAppReader,
+            await CommandListAsync(new ListOptions {Id = fullOrDeltaSnapApp.Id}, filesystem, snapAppReader,
                 nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
 
-            logger.Info($"Completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
+            logger.Info($"Pack completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;
-        }
-
-        static async Task<(bool success, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
-            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapPack snapPack, [NotNull] ISnapAppReader snapAppReader,
-            [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel, ICoreRunLib coreRunLib, [NotNull] string installersWorkingDirectory,
-            [NotNull] string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, CancellationToken cancellationToken)
-        {
-            if (logger == null) throw new ArgumentNullException(nameof(logger));
-            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
-            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
-            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
-            if (installersWorkingDirectory == null) throw new ArgumentNullException(nameof(installersWorkingDirectory));
-            if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
-            if (releasesNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(releasesNupkgAbsolutePath));
-
-            var installerPrefix = offline ? "offline" : "web";
-
-            logger.Info($"Preparing to build {installerPrefix} installer");
-
-            var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); } };
-
-            using (var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory))
-            {
-                MemoryStream installerZipMemoryStream;
-                MemoryStream warpPackerMemoryStream;
-
-                string snapAppTargetRid;
-                string warpPackerRid;
-                string warpPackerArch;
-                string installerFilename;
-                string setupExtension;
-                string setupIcon = null;
-                var chmod = false;
-                var changeSubSystemToWindowsGui = false;
-                var installerIconSupported = false;
-
-                if (snapOs.OsPlatform == OSPlatform.Windows)
-                {
-                    warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindows;
-                    warpPackerRid = "win-x64";
-                    installerIconSupported = true;
-                }
-                else if (snapOs.OsPlatform == OSPlatform.Linux)
-                {
-                    warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinux;
-                    warpPackerRid = "linux-x64";
-                    chmod = true;
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException();
-                }
-
-                switch (snapApp.Target.Rid)
-                {
-                    case "win-x64":
-                        installerZipMemoryStream = snapxEmbeddedResources.SetupWindows;
-                        warpPackerArch = "windows-x64";
-                        snapAppTargetRid = "win-x64";
-                        installerFilename = "Snap.Installer.exe";
-                        changeSubSystemToWindowsGui = true;
-                        setupExtension = ".exe";
-                        if (installerIconSupported && snapApp.Target.Icon != null)
-                        {
-                            setupIcon = snapApp.Target.Icon;
-                        }
-
-                        break;
-                    case "linux-x64":
-                        installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;
-                        warpPackerArch = "linux-x64";
-                        snapAppTargetRid = "linux-x64";
-                        installerFilename = "Snap.Installer";
-                        setupExtension = ".bin";
-                        break;
-                    default:
-                        throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
-                }
-
-                var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
-                snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
-
-                var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{warpPackerRid}.exe");
-                var installerRepackageAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
-
-                async Task BuildOfflineInstallerAsync()
-                {
-                    var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, "Setup.nupkg");
-                    var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,
-                        snapOs.Filesystem.PathGetFileName(releasesNupkgAbsolutePath));
-
-                    using (installerZipMemoryStream)
-                    using (warpPackerMemoryStream)
-                    using (var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath))
-                    using (var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read))
-                    {
-                        progressSource.Raise(10);
-
-                        logger.Info("Extracting installer to temp directory.");
-                        zipArchive.ExtractToDirectory(repackageTempDir);
-
-                        progressSource.Raise(20);
-
-                        logger.Info("Copying assets to temp directory.");
-
-                        await Task.WhenAll(
-                            warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
-                            snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken),
-                            snapOs.Filesystem.FileCopyAsync(releasesNupkgAbsolutePath, repackageDirReleasesNupkgAbsolutePath, cancellationToken));
-
-                        if (installerIconSupported && setupIcon != null)
-                        {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
-
-                            var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
-
-                            var rcEditOptions = new RcEditOptions
-                            {
-                                Filename = zipArchiveInstallerFilename,
-                                IconFilename = setupIcon
-                            };
-
-                            CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
-                        }
-                    }
-                }
-
-                async Task BuildWebInstallerAsync()
-                {
-                    var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
-
-                    using (installerZipMemoryStream)
-                    using (warpPackerMemoryStream)
-                    using (var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath))
-                    using (var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read))
-                    using (var fullPackageArchiveReader = new PackageArchiveReader(fullNupkgAbsolutePath))
-                    using (var snapAppDllSrcMemoryStream = await snapPack.GetSnapAssetAsync(fullPackageArchiveReader, SnapConstants.SnapAppDllFilename, cancellationToken))
-                    using (var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath))
-                    {
-                        progressSource.Raise(10);
-
-                        logger.Info("Extracting installer to temp directory.");
-                        zipArchive.ExtractToDirectory(repackageTempDir);
-
-                        progressSource.Raise(20);
-
-                        logger.Info("Copying assets to temp directory.");
-
-                        await Task.WhenAll(
-                            warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
-                            snapAppDllSrcMemoryStream.CopyToAsync(snapAppDllDstMemoryStream, cancellationToken));
-
-                        if (installerIconSupported && setupIcon != null)
-                        {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
-
-                            var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
-
-                            var rcEditOptions = new RcEditOptions
-                            {
-                                Filename = zipArchiveInstallerFilename,
-                                IconFilename = setupIcon
-                            };
-
-                            CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
-                        }
-                    }
-                }
-
-                var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory,
-                    $"Setup-{snapAppTargetRid}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
-
-                if (offline)
-                {
-                    await BuildOfflineInstallerAsync();
-                }
-                else
-                {
-                    await BuildWebInstallerAsync();
-                }
-
-                progressSource.Raise(50);
-
-                var processStartInfoBuilder = new ProcessStartInfoBuilder(rootTempDirWarpPackerAbsolutePath)
-                    .Add($"--arch {warpPackerArch}")
-                    .Add($"--exec {installerFilename}")
-                    .Add($"--output {installerFinalAbsolutePath.ForwardSlashesSafe()}")
-                    .Add($"--input_dir {repackageTempDir.ForwardSlashesSafe()}");
-
-                if (chmod)
-                {
-                    await snapOs.ProcessManager.ChmodExecuteAsync(rootTempDirWarpPackerAbsolutePath, cancellationToken);
-                    await snapOs.ProcessManager.ChmodExecuteAsync(installerRepackageAbsolutePath, cancellationToken);
-                }
-
-                logger.Info($"Building {installerPrefix} installer.");
-
-                var (exitCode, stdout) = await snapOs.ProcessManager.RunAsync(processStartInfoBuilder, cancellationToken);
-                if (exitCode != 0)
-                {
-                    logger.Error(
-                        $"Warp packer exited with error code: {exitCode}. Warp packer executable path: {rootTempDirWarpPackerAbsolutePath}. Stdout: {stdout}.");
-                    return (false, null);
-                }
-
-                progressSource.Raise(80);
-
-                if (changeSubSystemToWindowsGui)
-                {
-                    // NB! Unable to set icon on warped executable. Please refer to the following issue:
-                    // https://github.com/electron/rcedit/issues/70
-
-                    var rcEditOptions = new RcEditOptions
-                    {
-                        ConvertSubSystemToWindowsGui = true,
-                        Filename = installerFinalAbsolutePath,
-                        //IconFilename = setupIcon 
-                    };
-
-                    CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
-                }
-
-                if (chmod)
-                {
-                    await snapOs.ProcessManager.ChmodExecuteAsync(installerFinalAbsolutePath, cancellationToken);
-                }
-
-                progressSource.Raise(100);
-
-                return (true, installerFinalAbsolutePath);
-            }
         }
 
         static async Task PushPackagesAsync([NotNull] PackOptions packOptions, [NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
@@ -630,12 +408,11 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             var retryInterval = TimeSpan.FromSeconds(15);
-            
-            logger.Info($"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
+
+            logger.Info(
+                $"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
 
             await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, retryInterval, cancellationToken);
         }
-
-        
     }
 }

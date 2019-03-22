@@ -179,9 +179,10 @@ namespace snapx
                 .Default
                 .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, InstallOptions, ListOptions, RestoreOptions, GcOptions>(args)
                 .MapResult(
-                    (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader,
+                    (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader, snapAppWriter,
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
-                        snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                        snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
+                         SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (GcOptions opts) => CommandGcAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
                         snapNetworkTimeProvider, snapExtractor, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
@@ -193,7 +194,7 @@ namespace snapx
                     (InstallOptions opts) => Snap.Installer.Program.Main(args),
                     (ListOptions opts) => CommandListAsync(opts, snapFilesystem,  snapAppReader,
                         nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
-                        (RestoreOptions opts) => CommandRestoreAsync(opts, snapFilesystem, snapAppReader,nuGetPackageSources,
+                        (RestoreOptions opts) => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
                             nugetServiceCommandRestore, snapExtractor, snapPackageManager, snapOs, snapXEmbeddedResources, coreRunLib, snapPack,
                              SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     errs =>

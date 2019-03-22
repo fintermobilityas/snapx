@@ -1053,12 +1053,10 @@ namespace Snap.Core
                 }
             }
 
-            snapAppsReleases.Bump();
-
-            var messagePackBytes = _snapAppWriter.ToSnapReleasesMessagePackBytes(snapAppsReleases);
-            var snapsReleasesCompressedStream = new MemoryStream();
+            var snapsReleasesCompressedStream = new MemoryStream();            
+            var snapAppsReleasesBytes = _snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
             
-            using (var snapsReleasesStream = new MemoryStream(messagePackBytes))
+            using (var snapsReleasesStream = new MemoryStream(snapAppsReleasesBytes))
             using (var writer = WriterFactory.Open(snapsReleasesCompressedStream, ArchiveType.Tar, new WriterOptions(CompressionType.BZip2)
             {
                 LeaveStreamOpen = true

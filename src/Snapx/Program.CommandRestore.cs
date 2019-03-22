@@ -21,7 +21,8 @@ namespace snapx
     internal partial class Program
     {
         static async Task<int> CommandRestoreAsync([NotNull] RestoreOptions restoreOptions,
-            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader, ISnapAppWriter snapAppWriter,
+            [NotNull] INuGetPackageSources nuGetPackageSources,
             [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
             [NotNull] ISnapPack snapPack, [NotNull] ILog logger,
@@ -74,6 +75,8 @@ namespace snapx
             {
                 var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
                 var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
+                var releasesNupkgAbsolutePath = filesystem.PathCombine(filesystem.DirectoryGetParent(packagesDirectory), snapApp.BuildNugetReleasesFilename());
+
                 filesystem.DirectoryCreateIfNotExists(packagesDirectory);
                 filesystem.DirectoryCreateIfNotExists(installersDirectory);
 
@@ -95,13 +98,15 @@ namespace snapx
 
                     // ReSharper disable once UseDeconstruction
                     var uncached = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-                    if (uncached.snapsReleases == null)
+                    if (uncached.snapAppsReleases == null)
                     {
                         logger.Error("Failed to download releases manifest");
                         return 1;
                     }
 
-                    snapAppsReleases = uncached.snapsReleases;
+                    await filesystem.FileWriteAsync(snapAppWriter.ToSnapAppsReleases(uncached.snapAppsReleases), releasesNupkgAbsolutePath, cancellationToken);
+
+                    snapAppsReleases = uncached.snapAppsReleases;
                     packageSource = uncached.packageSource;
                     releaseManifests.Add(snapApp.Id, uncached);
 
@@ -134,21 +139,22 @@ namespace snapx
                         continue;
                     }
                     
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
-
                     snapApp.Version = snapAppReleases.GetMostRecentRelease().Version;
 
                     var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetFullFilename());
-                    var releasesNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetReleasesFilename());
 
                     if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
+                        logger.Info('-'.Repeat(TerminalDashesWidth));
+
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
                     }
                     
                     if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
+                        logger.Info('-'.Repeat(TerminalDashesWidth));
+
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                     }

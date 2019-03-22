@@ -21,7 +21,7 @@ namespace snapx
     internal partial class Program
     {
         static async Task<int> CommandPromoteAsync([NotNull] PromoteOptions options, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] ISnapAppReader snapAppReader, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
+            [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
             [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack, [NotNull] ISnapOsSpecialFolders specialFolders,
             [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
@@ -30,6 +30,7 @@ namespace snapx
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+            if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
@@ -171,7 +172,7 @@ namespace snapx
             };
             
             var restoreSuccess = 0 == await CommandRestoreAsync(
-                                     restoreOptions, filesystem, snapAppReader, nuGetPackageSources, nugetService, snapExtractor,
+                                     restoreOptions, filesystem, snapAppReader, snapAppWriter, nuGetPackageSources, nugetService, snapExtractor,
                                      snapPackageManager, snapOs, snapxEmbeddedResources, coreRunLib, snapPack,
                                      logger, workingDirectory, cancellationToken
                                 );

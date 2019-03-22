@@ -286,7 +286,6 @@ namespace snapx
 
                             var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
                             logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
                         }
 
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))

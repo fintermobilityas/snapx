@@ -259,7 +259,7 @@ namespace Snap.Core
                         throw new NotSupportedException(restoreType.ToString());
                 }
                 
-                logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages in channel: {snapAppChannelReleases.Channel.Name}.");
+                logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages.");
 
                 const int checksumConcurrency = 2;
                 long snapReleasesChecksummed = 0;

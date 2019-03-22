@@ -40,6 +40,7 @@ namespace Snap.Core
         void FileWrite(Stream srcStream, string destFilename, bool overwrite = true);
         Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true);
         Task FileWriteAsync(Stream srcStream, string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
+        Task FileWriteAsync(byte[] bytes, string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
         Task FileWriteUtf8StringAsync([NotNull] string utf8Text, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true);
         Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken);
         Task<string> FileReadAllTextAsync(string fileName);
@@ -112,6 +113,7 @@ namespace Snap.Core
             throw new PlatformNotSupportedException();
         }
 
+ 
         public async Task FileWriteUtf8StringAsync(string utf8Text, string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (utf8Text == null) throw new ArgumentNullException(nameof(utf8Text));
@@ -356,6 +358,16 @@ namespace Snap.Core
             using (var dstStream = FileWrite(dstFilename, overwrite))
             {
                 await srcStream.CopyToAsync(dstStream, cancellationToken);
+            }
+        }
+        
+        public async Task FileWriteAsync([NotNull] byte[] bytes, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
+        {
+            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+            if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
+            using (var dstStream = FileWrite(dstFilename, overwrite))
+            {                
+                await dstStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
             }
         }
 

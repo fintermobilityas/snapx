@@ -107,7 +107,9 @@ namespace Snap.Installer
 
                         var mostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
 
-                        mainWindowLogger.Info($"Current version: {mostRecentRelease.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
+                        snapApp.Version = mostRecentRelease.Version;
+
+                        mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
 
                         // ReSharper disable once MethodSupportsCancellation
                         await Task.Delay(TimeSpan.FromSeconds(3));

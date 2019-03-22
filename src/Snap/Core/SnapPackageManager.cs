@@ -69,7 +69,7 @@ namespace Snap.Core
 
     internal interface ISnapPackageManager
     {
-        Task<(SnapAppsReleases snapsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+        Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
 
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
@@ -136,7 +136,7 @@ namespace Snap.Core
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         }
 
-        public async Task<(SnapAppsReleases snapsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));

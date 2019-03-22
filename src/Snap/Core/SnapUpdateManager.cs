@@ -154,8 +154,8 @@ namespace Snap.Core
         /// <returns></returns>
         public async Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
         {
-            var (snapsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
-            return snapsReleases?.GetReleases(_snapApp);
+            var (snapAppsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            return snapAppsReleases?.GetReleases(_snapApp);
         }
 
         /// <summary>
@@ -230,13 +230,13 @@ namespace Snap.Core
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
             CancellationToken cancellationToken = default)
         {
-            var (snapsReleases, packageSource) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
-            if (snapsReleases == null)
+            var (snapAppsReleases, packageSource) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            if (snapAppsReleases == null)
             {
                 return null;
             }
 
-            var snapAppReleases = snapsReleases.GetReleases(_snapApp);
+            var snapAppReleases = snapAppsReleases.GetReleases(_snapApp);
             var channel = _snapApp.GetCurrentChannelOrThrow();
             
             var deltaUpdates = snapAppReleases.GetDeltaReleasesNewerThan(channel, _snapApp.Version);

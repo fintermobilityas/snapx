@@ -368,21 +368,21 @@ namespace snapx
                 sleep:
                 await Task.Delay(retryInterval, cancellationToken);
  
-                var (upstreamSnapsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-                if (upstreamSnapsReleases == null)
+                var (upstreamSnapAppsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+                if (upstreamSnapAppsReleases == null)
                 {
                     goto sleep;
                 }
 
-                if (upstreamSnapsReleases.Version >= snapAppsReleases.Version)
+                if (upstreamSnapAppsReleases.Version >= snapAppsReleases.Version)
                 {
-                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapsReleases.Version}. " +
+                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapAppsReleases.Version}. " +
                                 $"Completed in {waitForManifestStopwatch.Elapsed.TotalSeconds:0.0}s.");
                     break;
                 }
 
                 logger.Info(
-                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapsReleases.Version}. " +
+                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapAppsReleases.Version}. " +
                     $"Local version: {snapAppsReleases.Version}. " +
                     $"Retry in {retryInterval.TotalSeconds:0.0}s.");
             }

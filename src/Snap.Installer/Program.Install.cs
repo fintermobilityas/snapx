@@ -99,53 +99,60 @@ namespace Snap.Installer
 
                 var nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg");
                 var nupkgReleasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
+                var offlineInstaller = false;
 
-                SnapRelease snapReleaseToInstall;
-                
-                // Offline installer
-                if (snapFilesystem.FileExists(nupkgAbsolutePath))
+                using (var webInstallerDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
                 {
-                    var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
-                    using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
+                    ISnapAppChannelReleases snapAppChannelReleases;
+                    SnapRelease snapReleaseToInstall;
+                    
+                    // Offline installer
+                    if (snapFilesystem.FileExists(nupkgAbsolutePath))
                     {
-                        var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
-                        snapReleaseToInstall = snapAppsReleases.GetMostRecentRelease(snapApp, snapChannel);
-                    }                    
-                // Web installer
-                } else if(snapFilesystem.FileExists(snapAppDllAbsolutePath))
-                {
-                    mainWindowLogger.Info("Downloading releases manifest");
-
-                    try
-                    {
-                        var (snapAppsReleases, packageSource) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
-                        if (snapAppsReleases == null)
+                        var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
+                        using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
                         {
-                            mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
-                            goto done;
-                        }
-                        
-                        var snapAppsReleasesBytes = snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
-                        await snapFilesystem.FileWriteAsync(snapAppsReleasesBytes, nupkgReleasesAbsolutePath, cancellationToken);
-
-                        var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
-                        if (!snapAppChannelReleases.Any())
-                        {
-                            mainWindowLogger.Error($"Unable to find any releases in channel: {snapAppChannelReleases.Channel.Name}.");
-                            goto done;
+                            var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
+                            snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
                         }
 
-                        var isGenisis = snapAppChannelReleases.Count() == 1;
-                        snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenisis);
-                        snapApp.Version = snapReleaseToInstall.Version;
-                        
-                        mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
+                        offlineInstaller = true;
+                        // Web installer
+                    }
+                    else if (snapFilesystem.FileExists(snapAppDllAbsolutePath))
+                    {
+                        mainWindowLogger.Info("Downloading releases manifest");
 
-                        // ReSharper disable once MethodSupportsCancellation
-                        await Task.Delay(TimeSpan.FromSeconds(3));
-
-                        using (var tmpRestoreDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
+                        try
                         {
+                            var (snapAppsReleases, packageSource) =
+                                await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
+                            if (snapAppsReleases == null)
+                            {
+                                mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
+                                goto done;
+                            }
+
+                            var snapAppsReleasesBytes = snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
+                            await snapFilesystem.FileWriteAsync(snapAppsReleasesBytes, nupkgReleasesAbsolutePath, cancellationToken);
+
+                            snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
+                            if (!snapAppChannelReleases.Any())
+                            {
+                                mainWindowLogger.Error($"Unable to find any releases in channel: {snapAppChannelReleases.Channel.Name}.");
+                                goto done;
+                            }
+
+                            var isGenisis = snapAppChannelReleases.Count() == 1;
+                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenisis);
+                            snapApp.Version = snapReleaseToInstall.Version;
+
+                            mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
+
+                            // ReSharper disable once MethodSupportsCancellation
+                            await Task.Delay(TimeSpan.FromSeconds(3));
+
                             mainWindowLogger.Info("Downloading required assets");
 
                             void UpdateProgress(string type, int totalPercentage,
@@ -189,7 +196,7 @@ namespace Snap.Installer
                                             goto incrementProgress;
                                     }
 
-                                incrementProgress:
+                                    incrementProgress:
                                     installerProgressSource.Raise(totalPercentage);
                                 }
 
@@ -228,7 +235,7 @@ namespace Snap.Installer
                                     releasesRestored: x.releasesRestored)
                             };
 
-                            var restoreSummary = await snapPackageManager.RestoreAsync(tmpRestoreDir.WorkingDirectory, snapAppChannelReleases,
+                            var restoreSummary = await snapPackageManager.RestoreAsync(webInstallerDir.WorkingDirectory, snapAppChannelReleases,
                                 packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken);
                             if (!restoreSummary.Success)
                             {
@@ -238,7 +245,7 @@ namespace Snap.Installer
 
                             mainWindowLogger.Info("Preparing to install payload");
 
-                            var setupNupkgAbsolutePath = snapOs.Filesystem.PathCombine(tmpRestoreDir.WorkingDirectory, snapReleaseToInstall.Filename);
+                            var setupNupkgAbsolutePath = snapOs.Filesystem.PathCombine(webInstallerDir.WorkingDirectory, snapReleaseToInstall.Filename);
                             if (!snapFilesystem.FileExists(setupNupkgAbsolutePath))
                             {
                                 mainWindowLogger.Error($"Payload does not exist on disk: {setupNupkgAbsolutePath}.");
@@ -247,70 +254,101 @@ namespace Snap.Installer
 
                             nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg");
 
-                            mainWindowLogger.Info("Moving payload to installer directory");
+                            mainWindowLogger.Info("Copying payload to installer directory");
 
                             snapOs.Filesystem.FileDeleteIfExists(nupkgAbsolutePath);
-                            snapOs.Filesystem.FileMove(setupNupkgAbsolutePath, nupkgAbsolutePath);
+                            await snapOs.Filesystem.FileCopyAsync(setupNupkgAbsolutePath, nupkgAbsolutePath, cancellationToken);
 
-                            mainWindowLogger.Info("Successfully moved payload");
+                            mainWindowLogger.Info("Successfully copied payload");
 
                             installerProgressSource.Reset();
                         }
+                        catch (Exception e)
+                        {
+                            mainWindowLogger.ErrorException("Unknown error while restoring assets", e);
+                            goto done;
+                        }
+                    }
+                    else
+                    {
+                        mainWindowLogger.Error("Unknown error. Could not find offline or web installer payload.");
+                        goto done;
+                    }
+
+                    diskLogger.Trace($"{nameof(nupkgAbsolutePath)}: {nupkgAbsolutePath}");
+                    diskLogger.Trace($"{nameof(nupkgReleasesAbsolutePath)}: {nupkgReleasesAbsolutePath}");
+
+                    if (!snapFilesystem.FileExists(nupkgAbsolutePath))
+                    {
+                        mainWindowLogger.Error($"Unable to find installer payload: {snapFilesystem.PathGetFileName(nupkgAbsolutePath)}");
+                        goto done;
+                    }
+
+                    mainWindowLogger.Info("Attempting to read payload release details");
+
+                    if (!snapFilesystem.FileExists(nupkgReleasesAbsolutePath))
+                    {
+                        mainWindowLogger.Error($"Unable to find releases nupkg: {snapFilesystem.PathGetFileName(nupkgReleasesAbsolutePath)}");
+                        goto done;
+                    }
+
+                    var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
+
+                    mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
+
+                    try
+                    {
+                        var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
+                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken);
+
+                        if (snapAppInstalled == null)
+                        {
+                            goto done;
+                        }
+
+                        if (!offlineInstaller)
+                        {
+                            var deltaSnapReleases = snapAppChannelReleases.GetDeltaReleases().ToList();
+                            
+                            if (deltaSnapReleases.Any())
+                            {
+                                var totalDeltaSnapReleasesToCopyCount = deltaSnapReleases.Count;
+                                
+                                mainWindowLogger.Info($"Copying 1 of {totalDeltaSnapReleasesToCopyCount} payloads to application directory.");
+
+                                var packagesDirectory = snapFilesystem.PathCombine(baseDirectory, "packages");
+                                var deltasCopied = 1;                                
+                                foreach (var deltaSnapRelease in deltaSnapReleases)
+                                {
+                                    var deltaPackageWebInstallerDirectoryAbsolutePath = snapFilesystem.PathCombine(
+                                        webInstallerDir.WorkingDirectory, deltaSnapRelease.Filename);
+                                        
+                                    var deltaPackagePackagesDirectoryAbsolutePath = snapFilesystem.PathCombine(
+                                        packagesDirectory, deltaSnapRelease.Filename);
+                                        
+                                    await snapFilesystem.FileCopyAsync(
+                                    deltaPackageWebInstallerDirectoryAbsolutePath, 
+                                    deltaPackagePackagesDirectoryAbsolutePath, cancellationToken);
+                                    
+                                    mainWindowLogger.Info($"Copied {deltasCopied} of {totalDeltaSnapReleasesToCopyCount} payloads to application directory.");
+                                    ++deltasCopied;
+                                }
+                                
+                                mainWindowLogger.Info("Successfully copied all payloads.");
+                            }
+                        }
+
+                        mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");
+
+                        exitCode = 0;
                     }
                     catch (Exception e)
                     {
-                        mainWindowLogger.ErrorException("Unknown error while restoring assets", e);
-                        goto done;
+                        mainWindowLogger.ErrorException("Unknown error during install", e);
                     }
                 }
-                else
-                {
-                    mainWindowLogger.Error("Unknown error. Could not find offline or web installer payload.");
-                    goto done;
-                }
-                
-                diskLogger.Trace($"{nameof(nupkgAbsolutePath)}: {nupkgAbsolutePath}");
-                diskLogger.Trace($"{nameof(nupkgReleasesAbsolutePath)}: {nupkgReleasesAbsolutePath}");
-              
-                if (!snapFilesystem.FileExists(nupkgAbsolutePath))
-                {
-                    mainWindowLogger.Error($"Unable to find installer payload: {snapFilesystem.PathGetFileName(nupkgAbsolutePath)}");
-                    goto done;
-                }
 
-                mainWindowLogger.Info("Attempting to read payload release details");
-
-                if (!snapFilesystem.FileExists(nupkgReleasesAbsolutePath))
-                {
-                    mainWindowLogger.Error($"Unable to find releases nupkg: {snapFilesystem.PathGetFileName(nupkgReleasesAbsolutePath)}");
-                    goto done;
-                }
-
-                var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
-
-                mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
-
-                try
-                {
-                    var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                        snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken);
-
-                    if (snapAppInstalled == null)
-                    {
-                        goto done;
-                    }
-
-                    mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");
-
-                    exitCode = 0;
-                }
-                catch (Exception e)
-                {
-                    mainWindowLogger.ErrorException("Unknown error during install", e);
-                }
-
-
-            done:
+                done:
                 // Give user enough time to read final log message.
                 Thread.Sleep(exitCode == 0 ? 3000 : 10000);
                 environment.Shutdown();

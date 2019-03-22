@@ -992,6 +992,8 @@ namespace Snap.Core
             {
                 throw new Exception($"Genisis release must be full release: {genisisRelease.Filename}");
             }
+            
+            snapAppsReleases.Bump();
 
             var packageBuilder = new PackageBuilder
             {

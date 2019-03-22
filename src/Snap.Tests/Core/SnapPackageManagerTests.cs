@@ -1,10 +1,12 @@
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core;
@@ -84,10 +86,21 @@ namespace Snap.Tests.Core
                     
                 using (await _baseFixturePackaging.BuildPackageAsync(genisisReleaseBuilder))
                 using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
-                using (await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder))
+                using (var update2PackageContext = await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder))
                 using (var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genisisSnapApp, snapAppsReleases))
-                {
+                {                                    
                     var expectedVersion = SemanticVersion.Parse("1.0.0");
+                    
+                    var expectedPackageIdentity = new PackageIdentity(
+                        update2PackageContext.FullPackageSnapRelease.BuildNugetReleasesUpstreamId(), 
+                        expectedVersion.ToNuGetVersion());
+                    
+                    using (var releasesPackageArchiveReader = new PackageArchiveReader(releasesNupkgMemoryStream, true))
+                    {
+                        Assert.Equal(expectedPackageIdentity,releasesPackageArchiveReader.GetIdentity());
+                    }
+
+                    releasesNupkgMemoryStream.Seek(0, SeekOrigin.Begin);
 
                     _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genisisSnapApp);
 

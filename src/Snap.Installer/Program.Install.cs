@@ -101,7 +101,7 @@ namespace Snap.Installer
                         var snapAppChannelReleases = snapsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
                         if (!snapAppChannelReleases.Any())
                         {
-                            mainWindowLogger.Error("Downloaded releases manifest but could not find any available installer assets.");
+                            mainWindowLogger.Error($"Unable to find any releases in channel: {snapAppChannelReleases.Channel.Name}.");
                             goto done;
                         }
 

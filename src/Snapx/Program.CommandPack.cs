@@ -264,7 +264,7 @@ namespace snapx
             {
                 if (fullOrDeltaSnapApp.Target.Installers.Any())
                 {
-                    var channels = fullOrDeltaSnapApp.IsGenisis ? fullSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
+                    var channels = fullOrDeltaSnapApp.IsGenisis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
 
                     foreach (var channel in channels)
                     {

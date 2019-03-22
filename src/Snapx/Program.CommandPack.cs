@@ -392,7 +392,7 @@ namespace snapx
                 {
                     logger.Info($"Pushing {packageName} to {packageSource.Name}");
                     var pushStopwatch = new Stopwatch();
-                    pushStopwatch.Reset();
+                    pushStopwatch.Restart();
                     await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
                     logger.Info($"Pushed {packageName} to {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
                 });

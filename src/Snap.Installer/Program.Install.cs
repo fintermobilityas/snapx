@@ -135,7 +135,8 @@ namespace Snap.Installer
                             goto done;
                         }
 
-                        snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(false);
+                        var isGenisis = snapAppChannelReleases.Count() == 1;
+                        snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenisis);
                         snapApp.Version = snapReleaseToInstall.Version;
                         
                         mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");

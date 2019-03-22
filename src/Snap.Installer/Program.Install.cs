@@ -267,6 +267,9 @@ namespace Snap.Installer
                     mainWindowLogger.Error("Unknown error. Could not find offline or web installer payload.");
                     goto done;
                 }
+                
+                diskLogger.Trace($"{nameof(nupkgAbsolutePath)}: {nupkgAbsolutePath}");
+                diskLogger.Trace($"{nameof(nupkgReleasesAbsolutePath)}: {nupkgReleasesAbsolutePath}");
               
                 if (!snapFilesystem.FileExists(nupkgAbsolutePath))
                 {

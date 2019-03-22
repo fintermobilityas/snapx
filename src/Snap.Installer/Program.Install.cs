@@ -91,14 +91,14 @@ namespace Snap.Installer
                     try
                     {
                         snapApp = environment.Io.ThisExeWorkingDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
-                        var (snapsReleases, packageSource) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
-                        if (snapsReleases == null)
+                        var (snapAppsReleases, packageSource) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
+                        if (snapAppsReleases == null)
                         {
                             mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
                             goto done;
                         }
 
-                        var snapAppChannelReleases = snapsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
+                        var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
                         if (!snapAppChannelReleases.Any())
                         {
                             mainWindowLogger.Error($"Unable to find any releases in channel: {snapAppChannelReleases.Channel.Name}.");
@@ -253,8 +253,6 @@ namespace Snap.Installer
                 using (var nupkgStream = snapFilesystem.FileRead(nupkgAbsolutePath))
                 using (var packageArchiveReader = new PackageArchiveReader(nupkgStream))
                 {
-                    mainWindowLogger.Info($"Unpacking manifest - {SnapConstants.SnapAppDllFilename}");
-
                     var nupkgRelativeFilename = snapFilesystem.PathGetFileName(nupkgAbsolutePath);
 
                     mainWindowLogger.Info($"Preparing to unpack payload: {nupkgRelativeFilename}.");
@@ -262,7 +260,7 @@ namespace Snap.Installer
                     snapApp = await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
                     if (snapApp == null)
                     {
-                        mainWindowLogger.Error("Unknown error releading application manifest. Payload corrupt?");
+                        mainWindowLogger.Error($"Unknown error reading {SnapConstants.SnapAppDllFilename}. Payload corrupt?");
                         goto done;
                     }
                 }

@@ -14,6 +14,6 @@ namespace snapx.Options
         [Option('r', "rid", HelpText = "Runtime identifier target name, e.g win-x64. If empty all rid's will be restored")]
         public string Rid { get; [UsedImplicitly] set; }
         [Option('i', "installers", HelpText = "Rebuild installers")]
-        public bool BuildInstallers { get; set; } = true;
+        public bool BuildInstallers { get; set; }
     }
 }

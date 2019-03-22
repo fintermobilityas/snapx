@@ -19,6 +19,12 @@ namespace Snap.Core.Models
         bool HasReleases();
         SnapRelease GetMostRecentRelease();
         SnapRelease GetGenisisRelease();
+        IEnumerable<SnapRelease> GetFullReleases();
+        IEnumerable<SnapRelease> GetDeltaReleases();
+        IEnumerable<SnapRelease> GetFullReleasesNewerThan([NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetFullReleasesNewerThanOrEqualTo([NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetFullReleasesOlderThanOrEqualTo([NotNull] SemanticVersion version);
+        IEnumerable<SnapRelease> GetDeltaReleasesNewerThanOrEqualTo([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetDeltaReleasesNewerThan([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo([NotNull] SemanticVersion version);
     }
@@ -70,13 +76,49 @@ namespace Snap.Core.Models
             return HasGenisisRelease() ? Releases?.First() : null;
         }
 
+        public IEnumerable<SnapRelease> GetFullReleases()
+        {
+            return Releases.Where(x => x.IsFull);
+        }
+
+        public IEnumerable<SnapRelease> GetDeltaReleases()
+        {
+            return Releases.Where(x => x.IsDelta);
+        }
+
+        public IEnumerable<SnapRelease> GetFullReleasesNewerThan(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return Releases.Where(x => x.IsFull && x.Version > version);
+        }
+
+        public IEnumerable<SnapRelease> GetFullReleasesNewerThanOrEqualTo(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return Releases.Where(x => x.IsFull && x.Version >= version);
+        }
+
+        public IEnumerable<SnapRelease> GetFullReleasesOlderThanOrEqualTo(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return Releases.Where(x => x.IsFull && x.Version <= version);
+        }
+
+        public IEnumerable<SnapRelease> GetDeltaReleasesNewerThanOrEqualTo(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return Releases.Where(x => x.IsDelta && x.Version >= version);
+        }
+
         public IEnumerable<SnapRelease> GetDeltaReleasesNewerThan(SemanticVersion version)
         {
+            if (version == null) throw new ArgumentNullException(nameof(version));
             return Releases.Where(x => x.IsDelta && x.Version > version);
         }
 
         public IEnumerable<SnapRelease> GetDeltaReleasesOlderThanOrEqualTo(SemanticVersion version)
         {
+            if (version == null) throw new ArgumentNullException(nameof(version));
             return Releases.Where(x => x.IsDelta && x.Version <= version);
         }
 

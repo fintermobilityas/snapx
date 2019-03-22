@@ -81,6 +81,7 @@ namespace Snap.Installer
 
                 var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
                 var nupkgAbsolutePath = options.Filename != null ? snapFilesystem.PathGetFullPath(options.Filename) : null;
+                string nupkgReleasesAbsolutePath = null;
                 SnapApp snapApp;
 
                 if (nupkgAbsolutePath == null
@@ -97,6 +98,10 @@ namespace Snap.Installer
                             mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
                             goto done;
                         }
+                        
+                        nupkgReleasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
+                        var snapAppsReleasesBytes = snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
+                        await snapFilesystem.FileWriteAsync(snapAppsReleasesBytes, nupkgReleasesAbsolutePath, cancellationToken);
 
                         var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetCurrentChannelOrThrow());
                         if (!snapAppChannelReleases.Any())
@@ -274,10 +279,14 @@ namespace Snap.Installer
                     goto done;
                 }
 
-                var releasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
-                if (!snapFilesystem.FileExists(releasesAbsolutePath))
+                if (nupkgReleasesAbsolutePath == null)
                 {
-                    mainWindowLogger.Error($"Unable to find releases nupkg: {releasesAbsolutePath}");
+                    nupkgReleasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());                    
+                }
+                
+                if (!snapFilesystem.FileExists(nupkgReleasesAbsolutePath))
+                {
+                    mainWindowLogger.Error($"Unable to find releases nupkg: {nupkgReleasesAbsolutePath}");
                     goto done;
                 }
 
@@ -288,7 +297,7 @@ namespace Snap.Installer
                 try
                 {
                     SnapRelease snapGenisisRelease;
-                    var releasesFileStream = snapFilesystem.FileRead(releasesAbsolutePath);
+                    var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
                     using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
                     {
                         var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);

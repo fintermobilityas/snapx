@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -148,7 +148,16 @@ namespace snapx
                 return 1;
             }
 
-            mostRecentRelease.Channels.AddRange(promoteToChannels.Select(x => x.Name));
+            foreach (var snapRelease in snapAppChannelReleases.Where(x => x.Version <= mostRecentRelease.Version))
+            {
+                foreach (var promoteToChannel in promoteToChannels)
+                {
+                    if (!snapRelease.Channels.Contains(promoteToChannel.Name))
+                    {
+                        snapRelease.Channels.Add(promoteToChannel.Name);
+                    }
+                }
+            }
 
             logger.Info("Building releases nupkg.");
 

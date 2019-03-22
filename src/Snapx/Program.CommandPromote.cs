@@ -195,16 +195,18 @@ namespace snapx
                 {                    
                     foreach (var channel in promoteToChannels)
                     {
-                        logger.Info('-'.Repeat(TerminalDashesWidth));
+                        var snapAppInstaller = new SnapApp(snapApp);
+                        snapAppInstaller.SetCurrentChannel(channel.Name);
 
                         var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFullFilename());
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                         {
+                            logger.Info('-'.Repeat(TerminalDashesWidth));
+
                             var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
-                                snapxEmbeddedResources,
-                                snapPack,
-                                snapAppReader, snapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                                snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                                installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
@@ -216,14 +218,15 @@ namespace snapx
 
                             var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
                             logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
                         }
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
+                            logger.Info('-'.Repeat(TerminalDashesWidth));
+
                             var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
-                                snapPack,
-                                snapAppReader, snapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                                snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                                installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)

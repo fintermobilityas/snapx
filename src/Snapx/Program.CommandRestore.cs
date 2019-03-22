@@ -139,15 +139,19 @@ namespace snapx
                         continue;
                     }
                     
-                    snapApp.Version = snapAppReleases.GetMostRecentRelease().Version;
-
+                    var snapAppInstaller = new SnapApp(snapAppReleases.App)
+                    {
+                        Version = snapAppReleases.GetMostRecentRelease().Version
+                    };                    
+                    snapAppInstaller.SetCurrentChannel(snapChannel.Name);
+                    
                     var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetFullFilename());
 
                     if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
                     }
                     
@@ -155,7 +159,7 @@ namespace snapx
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppReleases.App, snapAppReleases.Channel, coreRunLib,
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                     }
                 }                                

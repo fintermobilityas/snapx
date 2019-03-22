@@ -135,7 +135,7 @@ namespace Snap.Core
             _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
             _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, snapEmbeddedResources);
             _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
-            _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources);
+            _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources, _snapAppWriter);
             _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
                                       _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapCryptoProvider,
                                       _snapExtractor, _snapAppReader, _snapPack);
@@ -237,9 +237,9 @@ namespace Snap.Core
             }
 
             var snapAppReleases = snapAppsReleases.GetReleases(_snapApp);
-            var channel = _snapApp.GetCurrentChannelOrThrow();
+            var snapChannel = _snapApp.GetCurrentChannelOrThrow();
             
-            var deltaUpdates = snapAppReleases.GetDeltaReleasesNewerThan(channel, _snapApp.Version);
+            var deltaUpdates = snapAppReleases.GetDeltaReleasesNewerThan(snapChannel, _snapApp.Version);
             if (!deltaUpdates.Any())
             {
                 return null;
@@ -282,7 +282,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(channel).AsFullRelease(false);
+            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(snapChannel).AsFullRelease(false);
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
@@ -297,7 +297,7 @@ namespace Snap.Core
             try
             {
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
-                    _workingDirectory, snapReleaseToInstall,
+                    _workingDirectory, snapReleaseToInstall, snapChannel,
                     logger: _logger, cancellationToken: cancellationToken);
                 if (updatedSnapApp == null)
                 {

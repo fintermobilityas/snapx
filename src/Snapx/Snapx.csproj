@@ -35,7 +35,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
-        <ProjectReference Include="..\Snap.Installer\Snap.Installer.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap)">

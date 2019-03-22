@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Avalonia;
-using CommandLine;
 using JetBrains.Annotations;
 using LightInject;
 using NLog;
@@ -16,7 +15,6 @@ using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Resources;
 using Snap.Installer.Core;
-using Snap.Installer.Options;
 using Snap.Logging;
 using Snap.NuGet;
 using LogLevel = Snap.Logging.LogLevel;
@@ -120,10 +118,9 @@ namespace Snap.Installer
             var snapExtractor = snapInstallerEnvironment.Container.GetInstance<ISnapExtractor>();
             var nugetServiceCommandInstall = new NugetService(snapOs.Filesystem, new NugetLogger(snapInstallerLogger));
 
-            int RunInstaller(InstallOptions opts)
+            int RunInstaller()
             {
-                if (opts == null) throw new ArgumentNullException(nameof(opts));
-                return Install(opts, snapInstallerEnvironment, snapInstallerEmbeddedResources,
+                return Install(snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
                     snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger);
             }
@@ -145,13 +142,8 @@ namespace Snap.Installer
                 snapInstallerLogger.Error("Error creating installer mutex, exiting...", e);
                 return -1;
             }
-            
-            return Parser
-                .Default
-                .ParseArguments<InstallOptions>(args)
-                .MapResult(
-                    RunInstaller,
-                    notParsedFunc: errs => RunInstaller(new InstallOptions()));                      
+
+            return RunInstaller();
         }
 
         static SnapInstallerEnvironment BuildEnvironment(ISnapOs snapOs, CancellationTokenSource globalCts, LogLevel logLevel, ILog logger)
@@ -190,7 +182,8 @@ namespace Snap.Installer
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapPack>(),
                 c.GetInstance<ISnapOs>(),
-                c.GetInstance<ISnapEmbeddedResources>()
+                c.GetInstance<ISnapEmbeddedResources>(),
+                c.GetInstance<ISnapAppWriter>()
             ));
             container.Register<ISnapNugetLogger>(c => new NugetLogger(logger));
             container.Register<INugetService>(c => new NugetService(

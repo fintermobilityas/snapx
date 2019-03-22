@@ -268,13 +268,16 @@ namespace snapx
 
                     foreach (var channel in channels)
                     {
+                        var snapAppInstaller = new SnapApp(fullOrDeltaSnapApp);
+                        snapAppInstaller.SetCurrentChannel(channel.Name);
+                        
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
                             var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
-                                snapPack,
-                                snapAppReader, fullSnapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
+                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
@@ -293,7 +296,8 @@ namespace snapx
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
                             var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                                snapAppReader, fullSnapApp, channel, coreRunLib, installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
+                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)

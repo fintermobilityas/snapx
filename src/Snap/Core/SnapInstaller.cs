@@ -36,9 +36,9 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapInstaller
     {
-        Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, [NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease,
+        Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, [NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
-        Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease,
+        Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
     }
 
@@ -48,21 +48,24 @@ namespace Snap.Core
         readonly ISnapPack _snapPack;
         readonly ISnapOs _snapOs;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly ISnapAppWriter _snapAppWriter;
 
         public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack,
-            [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
+            [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] ISnapAppWriter snapAppWriter)
         {
             _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
             _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
+            _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
         }
 
-        public async Task<SnapApp> UpdateAsync(string baseDirectory, SnapRelease snapRelease,
+        public async Task<SnapApp> UpdateAsync(string baseDirectory, SnapRelease snapRelease,  SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
 
             if (!_snapOs.Filesystem.DirectoryExists(baseDirectory))
             {
@@ -89,7 +92,9 @@ namespace Snap.Core
                     logger?.Error($"You can only update from a full nupkg. Snap id: {snapApp.Id}. Filename: {nupkgAbsoluteFilename}");
                     return null;
                 }
-
+                
+                snapApp.SetCurrentChannel(snapChannel.Name);
+                               
                 logger?.Info($"Updating snap id: {snapApp.Id}. Version: {snapApp.Version}. ");
 
                 var appDirectory = GetApplicationDirectory(baseDirectory, snapApp.Version);
@@ -137,10 +142,11 @@ namespace Snap.Core
             }
         }
 
-        public async Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, string baseDirectory, SnapRelease snapRelease,
+        public async Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, string baseDirectory, SnapRelease snapRelease, SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+            if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
 
             snapProgressSource?.Raise(0);
 
@@ -160,6 +166,8 @@ namespace Snap.Core
                     logger?.Error($"You can only install full nupkg. Snap id: {snapApp.Id}. Filename: {nupkgAbsoluteFilename}");
                     return null;
                 }
+                
+                snapApp.SetCurrentChannel(snapChannel.Name);
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Os != OSPlatform.Windows)
                 {
@@ -243,6 +251,7 @@ namespace Snap.Core
                 .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
             var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ?
                 _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
+            var snapChannel = snapApp.GetCurrentChannelOrThrow();
 
             logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
             logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
@@ -291,6 +300,23 @@ namespace Snap.Core
                 {
                     logger?.ErrorException($"Exception thrown while creating shortcut for exe: {coreRunExeFilename}", e);
                 }
+            }
+
+            var snapAppDllAbsolutePath = _snapOs.Filesystem.PathCombine(appDirectory, SnapConstants.SnapAppDllFilename);
+
+            try
+            {
+                logger?.Info($"Updating {snapAppDllAbsolutePath}. Current channel is: {snapChannel.Name}.");
+
+                using (var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(snapApp))
+                using (var snapAPpDllDestinationStream = _snapOs.Filesystem.FileWrite(snapAppDllAbsolutePath))
+                {
+                    snapAppDllAssemblyDefinition.Write(snapAPpDllDestinationStream);
+                }
+            }
+            catch(Exception e)
+            {
+                logger?.Error($"Unknown error updating {snapAppDllAbsolutePath}", e);
             }
 
             var allSnapAwareApps = new List<string>

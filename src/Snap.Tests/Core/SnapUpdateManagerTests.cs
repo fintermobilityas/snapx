@@ -29,6 +29,7 @@ namespace Snap.Tests.Core
         readonly ISnapOs _snapOs;
         readonly SnapInstaller _snapInstaller;
         readonly ISnapExtractor _snapExtractor;
+        readonly ISnapAppWriter _snapAppWriter;
 
         public SnapUpdateManagerTests(BaseFixture baseFixture)
         {
@@ -37,9 +38,10 @@ namespace Snap.Tests.Core
             var snapCryptoProvider = new SnapCryptoProvider();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapOs = SnapOs.AnyOs;
+            _snapAppWriter = new SnapAppWriter();
             _snapPack = new SnapPack(_snapOs.Filesystem, new SnapAppReader(), new SnapAppWriter(), snapCryptoProvider, _snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapOs.Filesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources);
+            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources, _snapAppWriter);
         }
 
         /*

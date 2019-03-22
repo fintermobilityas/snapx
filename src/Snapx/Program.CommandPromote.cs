@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -152,7 +152,7 @@ namespace snapx
 
             logger.Info("Building releases nupkg.");
 
-            var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
+            var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3, 1500);
             if (!nowUtc.HasValue)
             {
                 logger.Error($"Unknown error while retrieving NTP timestamp from server: {snapNetworkTimeProvider}");

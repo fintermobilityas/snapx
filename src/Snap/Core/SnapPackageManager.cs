@@ -71,7 +71,6 @@ namespace Snap.Core
     {
         Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
-
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
             [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType,
             ISnapPackageManagerProgressSource progressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
@@ -214,9 +213,8 @@ namespace Snap.Core
             }
 
             // Download
-            restoreSummary.Success = false;
             stopwatch.Restart();
-            await DownloadAsync();
+            restoreSummary.Success = await DownloadAsync();
 
             // Reassamble
             stopwatch.Restart();
@@ -435,13 +433,37 @@ namespace Snap.Core
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases.OrderBy(x => x.Version));
                         break;
                     case SnapPackageManagerRestoreType.InstallOrUpdate:
+                    
                         deltaSnapReleases = restoreSummary.DownloadSummary
                             .Where(x => x.SnapRelease.IsDelta)
                             .OrderByDescending(x => x.SnapRelease.Version)
                             .Take(1)
                             .Select(x => x.SnapRelease)
-                            .ToList();                      
-                              
+                            .ToList();
+
+                        if (!deltaSnapReleases.Any())
+                        {
+                            var mostRecentDeltaSnapRelease = restoreSummary.ChecksumSummary
+                                .Where(x => x.SnapRelease.IsDelta)
+                                .OrderByDescending(x => x.SnapRelease.Version)
+                                .FirstOrDefault();
+                                
+                            if (mostRecentDeltaSnapRelease != null
+                                && mostRecentDeltaSnapRelease.Ok)
+                            {
+                                var mostRecentFullSnapRelease = restoreSummary.ChecksumSummary.SingleOrDefault(x =>
+                                        x.Ok 
+                                        && x.SnapRelease.IsFull 
+                                        && x.SnapRelease.Version == mostRecentDeltaSnapRelease.SnapRelease.Version
+                                );
+                                    
+                                if (mostRecentFullSnapRelease != null)
+                                {
+                                    deltaSnapReleases.Add(mostRecentDeltaSnapRelease.SnapRelease);
+                                }
+                            }
+                        }
+                                                    
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases);
                         break;
                     default:

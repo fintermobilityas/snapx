@@ -73,13 +73,10 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
-
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-
         Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
             CancellationToken cancellationToken = default);
-
         string GetStubExecutableAbsolutePath();
     }
 
@@ -236,10 +233,10 @@ namespace Snap.Core
                 return null;
             }
 
-            var snapAppReleases = snapAppsReleases.GetReleases(_snapApp);
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
+            var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             
-            var deltaUpdates = snapAppReleases.GetDeltaReleasesNewerThan(snapChannel, _snapApp.Version);
+            var deltaUpdates = snapAppChannelReleases.GetDeltaReleasesNewerThan(_snapApp.Version);
             if (!deltaUpdates.Any())
             {
                 return null;
@@ -272,7 +269,7 @@ namespace Snap.Core
                 )
             };
 
-            var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, deltaUpdates, 
+            var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppChannelReleases, 
                 packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken);
             if (!restoreSummary.Success)
             {
@@ -282,7 +279,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var snapReleaseToInstall = snapAppReleases.GetMostRecentRelease(snapChannel).AsFullRelease(false);
+            var snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(false);
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))

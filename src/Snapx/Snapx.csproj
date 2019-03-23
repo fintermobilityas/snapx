@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
-    <Import Project="..\Snap.Installer\Snap.Installer.Deps.targets" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>

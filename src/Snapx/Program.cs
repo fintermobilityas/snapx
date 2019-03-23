@@ -506,7 +506,7 @@ namespace snapx
 
                         if (installerIconSupported && setupIcon != null)
                         {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
+                            logger.Debug($"Writing installer icon: {setupIcon}.");
 
                             var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
@@ -548,7 +548,7 @@ namespace snapx
 
                         if (installerIconSupported && setupIcon != null)
                         {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
+                            logger.Debug($"Writing installer icon: {setupIcon}.");
 
                             var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 

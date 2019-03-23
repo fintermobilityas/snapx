@@ -60,16 +60,16 @@ namespace Snap.Shared.Tests
                 });
         }
         
-        internal void SetupDownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp genisisSnapApp, 
+        internal void SetupDownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 
             [NotNull] MemoryStream packageStream, [NotNull] INuGetPackageSources nuGetPackageSources)
         {
             if (nugetServiceMock == null) throw new ArgumentNullException(nameof(nugetServiceMock));
-            if (genisisSnapApp == null) throw new ArgumentNullException(nameof(genisisSnapApp));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (packageStream == null) throw new ArgumentNullException(nameof(packageStream));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             
-            var packageIdentity = genisisSnapApp.BuildPackageIdentity();
-            var downloadResourceResult = genisisSnapApp.BuildDownloadResourceResult(packageStream, nuGetPackageSources);
+            var packageIdentity = snapApp.BuildPackageIdentity();
+            var downloadResourceResult = snapApp.BuildDownloadResourceResult(packageStream, nuGetPackageSources);
             
             nugetServiceMock
                 .Setup(x => x.DownloadAsyncWithProgressAsync(

@@ -64,7 +64,7 @@ namespace snapx
                     goto done;
                 }
 
-                logger.Info($"Icon has been successfully updated. Filename: {opts.Filename}. Icon filename: {opts.IconFilename}.");                
+                logger.Info("Icon has been successfully updated.");                
                 exitCode = 0;
             }
 

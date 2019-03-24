@@ -251,9 +251,10 @@ namespace snapx
                     goto error;
                 }
 
-                if (snapApps.Schema != 1)
+                const int expectedSchemaVersion = 1;
+                if (snapApps.Schema != expectedSchemaVersion)
                 {
-                    throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {snapApps.Schema}.");
+                    throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {expectedSchemaVersion}.");
                 }
 
                 if (snapApps.Generic == null)
@@ -506,7 +507,7 @@ namespace snapx
 
                         if (installerIconSupported && setupIcon != null)
                         {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
+                            logger.Debug($"Writing installer icon: {setupIcon}.");
 
                             var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
@@ -548,7 +549,7 @@ namespace snapx
 
                         if (installerIconSupported && setupIcon != null)
                         {
-                            logger.Info($"Writing installer icon: {setupIcon}.");
+                            logger.Debug($"Writing installer icon: {setupIcon}.");
 
                             var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 

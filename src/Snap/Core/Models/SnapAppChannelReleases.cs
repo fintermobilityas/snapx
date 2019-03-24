@@ -21,6 +21,7 @@ namespace Snap.Core.Models
         SnapRelease GetGenisisRelease();
         IEnumerable<SnapRelease> GetFullReleases();
         IEnumerable<SnapRelease> GetDeltaReleases();
+        IEnumerable<SnapRelease> GetReleasesNewerThan([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetFullReleasesNewerThan([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetFullReleasesNewerThanOrEqualTo([NotNull] SemanticVersion version);
         IEnumerable<SnapRelease> GetFullReleasesOlderThanOrEqualTo([NotNull] SemanticVersion version);
@@ -84,6 +85,12 @@ namespace Snap.Core.Models
         public IEnumerable<SnapRelease> GetDeltaReleases()
         {
             return Releases.Where(x => x.IsDelta);
+        }
+
+        public IEnumerable<SnapRelease> GetReleasesNewerThan(SemanticVersion version)
+        {
+            if (version == null) throw new ArgumentNullException(nameof(version));
+            return Releases.Where(x => x.Version > version);
         }
 
         public IEnumerable<SnapRelease> GetFullReleasesNewerThan(SemanticVersion version)

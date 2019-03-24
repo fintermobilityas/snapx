@@ -236,9 +236,9 @@ namespace Snap.Core
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
             var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             
-            var deltaUpdates = snapAppChannelReleases.GetDeltaReleasesNewerThan(_snapApp.Version);
-            if (!deltaUpdates.Any())
-            {
+            var snapReleases = snapAppChannelReleases.GetReleasesNewerThan(_snapApp.Version);
+            if (!snapReleases.Any())
+            {                
                 return null;
             }
 
@@ -279,7 +279,13 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(false);
+            var snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
+
+            if (!snapReleaseToInstall.IsFull)
+            {
+                // A delta package always has a corresponding full package after restore. 
+                snapReleaseToInstall = snapReleaseToInstall.AsFullRelease(false);
+            }
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))

@@ -84,8 +84,12 @@ namespace Snap.Tests.Core
                 {
                     _baseFixtureNuget.SetupReleases(_nugetServiceMock, snapAppsReleasesMemoryStream,
                         nugetPackageSources, update1PackageContext.FullPackageSnapApp);                     
+                    
+                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, genisisPackageContext.FullPackageSnapApp);
                     _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
                         genisisPackageContext.FullPackageSnapApp, genisisPackageContext.FullPackageMemoryStream, nugetPackageSources);
+                    
+                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, update1PackageContext.DeltaPackageSnapApp);
                     _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
                         update1PackageContext.DeltaPackageSnapApp, update1PackageContext.DeltaPackageMemoryStream, nugetPackageSources);
                     

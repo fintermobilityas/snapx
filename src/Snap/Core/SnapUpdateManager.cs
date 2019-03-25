@@ -227,7 +227,37 @@ namespace Snap.Core
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
             CancellationToken cancellationToken = default)
         {
-            var (snapAppsReleases, packageSource) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            var packageSource = _snapPackageManager.GetPackageSource(_snapApp, _logger);
+            if (packageSource == null)
+            {
+                return null;
+            }
+
+            NuGetPackageSearchMedatadata[] medatadatas;
+
+            try
+            {
+                var fullUpstreamId = _snapApp.BuildNugetFullUpstreamId();
+                var deltaUpstreamId = _snapApp.BuildNugetDeltaUpstreamId();
+
+                medatadatas = await Task.WhenAll(
+                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, cancellationToken),
+                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, cancellationToken)
+                );
+            }
+            catch (Exception e)
+            {
+                _logger.ErrorException("Unknown error retrieving full / delta metadatas.", e);
+                return null;
+            }
+
+            var hasUpdates = medatadatas.Any(x => x?.Identity?.Version > _snapApp.Version);
+            if (!hasUpdates)
+            {
+                return null;
+            }
+
+            var (snapAppsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
             if (snapAppsReleases == null)
             {
                 return null;

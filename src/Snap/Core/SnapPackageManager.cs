@@ -69,6 +69,7 @@ namespace Snap.Core
 
     internal interface ISnapPackageManager
     {
+        PackageSource GetPackageSource(SnapApp snapApp, ILog logger = null);
         Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
@@ -135,8 +136,7 @@ namespace Snap.Core
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         }
 
-        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
-            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
+        public PackageSource GetPackageSource([NotNull] SnapApp snapApp, ILog logger = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
@@ -145,14 +145,30 @@ namespace Snap.Core
                 var channel = snapApp.GetCurrentChannelOrThrow();
                 if (!(channel.UpdateFeed is SnapNugetFeed snapNugetFeed))
                 {
-                    logger?.Error("Todo: Retrieve update feed credentials using a http feed.");
-                    return (null, null);
+                    return null;
                 }
 
                 var nugetPackageSources = snapApp.BuildNugetSources(_specialFolders.NugetCacheDirectory);
 
                 var packageSource = nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name
                                                                           && x.SourceUri == snapNugetFeed.Source);
+                return packageSource;
+            }
+            catch(Exception e)
+            {
+                logger?.ErrorException("Unknown error building package source", e);  
+                return null;
+            }
+        }
+
+        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            try
+            {
+                var packageSource = GetPackageSource(snapApp, logger);
 
                 var snapReleasesDownloadResult =
                     await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken);

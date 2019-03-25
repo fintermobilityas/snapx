@@ -8,7 +8,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
-        <DefineConstants>$(DefineConstants);LIBLOG_PUBLIC;</DefineConstants>
+        <DefineConstants>$(DefineConstants);</DefineConstants>
         <IsPackable Condition="$(SnapNupkg)">true</IsPackable>
         <IsTestProject>false</IsTestProject>
         <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>

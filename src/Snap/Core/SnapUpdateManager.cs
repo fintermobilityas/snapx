@@ -98,9 +98,9 @@ namespace Snap.Core
         readonly ISnapAppWriter _snapAppWriter;
 
         [UsedImplicitly]
-        public SnapUpdateManager(ILog logger = null) : this(
+        public SnapUpdateManager() : this(
             Directory.GetParent(
-                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName, logger)
+                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName)
         {
         }
 

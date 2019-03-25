@@ -18,7 +18,7 @@ using Snap.Extensions;
 namespace Snap.Tests.Core
 {
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
-    public class SnapPackageManagerPackagingTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
+    public class SnapPackageManagerFullTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
     {
         readonly Mock<INugetService> _nugetServiceMock;
         readonly BaseFixturePackaging _baseFixturePackaging;
@@ -34,7 +34,7 @@ namespace Snap.Tests.Core
         readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
 
-        public SnapPackageManagerPackagingTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
+        public SnapPackageManagerFullTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
         {
             _nugetServiceMock = new Mock<INugetService>();
             _coreRunLibMock = new Mock<ICoreRunLib>();
@@ -90,7 +90,7 @@ namespace Snap.Tests.Core
                     await _snapFilesystem.FileCopyAsync(genisisPackageContext.FullPackageAbsolutePath, genisisPackageAbsolutePath, default);
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.Full, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -104,7 +104,7 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 1),
                         It.Is<long>(v => v == 1)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.Packaging, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.Full, restoreSummary.RestoreType);
 
                     Assert.Single(restoreSummary.ChecksumSummary);
                     Assert.True(restoreSummary.ChecksumSummary[0].Ok);
@@ -174,7 +174,7 @@ namespace Snap.Tests.Core
                     );
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.Full, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -188,7 +188,7 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 3),
                         It.Is<long>(v => v == 3)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.Packaging, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.Full, restoreSummary.RestoreType);
 
                     Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
                     Assert.True(restoreSummary.ChecksumSummary[0].Ok);
@@ -274,7 +274,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>()));
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.Full, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -300,7 +300,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>(),
                         It.IsAny<long>()), Times.Never);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.Packaging, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.Full, restoreSummary.RestoreType);
 
                     Assert.Single(restoreSummary.ChecksumSummary);
                     Assert.False(restoreSummary.ChecksumSummary[0].Ok);
@@ -393,7 +393,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>()));
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.Full, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -427,7 +427,7 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 1),
                         It.Is<long>(v => v == 1)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.Packaging, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.Full, restoreSummary.RestoreType);
 
                     Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
                     Assert.False(restoreSummary.ChecksumSummary[0].Ok);
@@ -558,7 +558,7 @@ namespace Snap.Tests.Core
                     );
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.Packaging, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.Full, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -586,7 +586,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>(),
                         It.IsAny<long>()), Times.Never);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.Packaging, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.Full, restoreSummary.RestoreType);
 
                     Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
                     Assert.True(restoreSummary.ChecksumSummary[0].Ok);

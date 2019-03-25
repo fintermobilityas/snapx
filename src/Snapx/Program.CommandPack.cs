@@ -141,7 +141,7 @@ namespace snapx
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                    pushFeed, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken);
+                    pushFeed, SnapPackageManagerRestoreType.Delta, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
                 {
                     return 1;

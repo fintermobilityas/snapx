@@ -63,8 +63,8 @@ namespace Snap.Core
 
     public enum SnapPackageManagerRestoreType
     {
-        Packaging,
-        InstallOrUpdate
+        Full,
+        Delta
     }
 
     internal interface ISnapPackageManager
@@ -229,7 +229,7 @@ namespace Snap.Core
 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.Packaging:
+                    case SnapPackageManagerRestoreType.Full:
                         snapReleasesToChecksum = snapAppChannelReleases.SelectMany(x =>
                         {
                             var snapReleases = new List<SnapRelease>();
@@ -250,7 +250,7 @@ namespace Snap.Core
                             return snapReleases;
                         }).ToList();
                         break;
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:
+                    case SnapPackageManagerRestoreType.Delta:
                         snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenisis || x.IsDelta).ToList();
                         break;
                     default:
@@ -400,7 +400,7 @@ namespace Snap.Core
                 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.Packaging:
+                    case SnapPackageManagerRestoreType.Full:
                     
                         // Reassemble full nupkgs for delta packages that has been downloaded
                         deltaSnapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
@@ -432,7 +432,7 @@ namespace Snap.Core
                             
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases.OrderBy(x => x.Version));
                         break;
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:
+                    case SnapPackageManagerRestoreType.Delta:
                     
                         deltaSnapReleases = restoreSummary.DownloadSummary
                             .Where(x => x.SnapRelease.IsDelta)

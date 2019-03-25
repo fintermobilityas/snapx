@@ -117,8 +117,8 @@ namespace Snap.Tests.Core
         }
 
         [Theory]
-        [InlineData(SnapPackageManagerRestoreType.Packaging)]
-        [InlineData(SnapPackageManagerRestoreType.InstallOrUpdate)]
+        [InlineData(SnapPackageManagerRestoreType.Full)]
+        [InlineData(SnapPackageManagerRestoreType.Delta)]
         public void TestSnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
         {
             var restoreSummary = new SnapPackageManagerRestoreSummary(restoreType);
@@ -130,8 +130,8 @@ namespace Snap.Tests.Core
         }
 
         [Theory]
-        [InlineData(SnapPackageManagerRestoreType.Packaging)]
-        [InlineData(SnapPackageManagerRestoreType.InstallOrUpdate)]
+        [InlineData(SnapPackageManagerRestoreType.Full)]
+        [InlineData(SnapPackageManagerRestoreType.Delta)]
         public async Task TestRestoreAsync_SnapAppReleases_Empty(SnapPackageManagerRestoreType restoreType)
         {
             var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();

@@ -123,7 +123,7 @@ namespace snapx
                 }
 
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource,
-                    SnapPackageManagerRestoreType.Packaging,
+                    SnapPackageManagerRestoreType.Full,
                     logger: logger, cancellationToken: cancellationToken);
 
                 if (!restoreSummary.Success || !restoreOptions.BuildInstallers)

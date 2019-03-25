@@ -236,7 +236,7 @@ namespace Snap.Installer
                             };
 
                             var restoreSummary = await snapPackageManager.RestoreAsync(webInstallerDir.WorkingDirectory, snapAppChannelReleases,
-                                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken);
+                                packageSource, SnapPackageManagerRestoreType.Delta, snapPackageManagerProgressSource, diskLogger, cancellationToken);
                             if (!restoreSummary.Success)
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");

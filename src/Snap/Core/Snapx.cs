@@ -9,6 +9,7 @@ using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
+using Snap.Logging.LogProviders;
 
 namespace Snap.Core
 {
@@ -51,7 +52,27 @@ namespace Snap.Core
                 }                        
             }
         }
+
+        public static void EnableNLogLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new NLogLogProvider());
+        }
+
+        public static void EnableSerilogLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new SerilogLogProvider());
+        }
+
+        public static void EnableLog4NetLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new Log4NetLogProvider());
+        }
         
+        public static void EnableLoupeLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new LoupeLogProvider());
+        }
+
         /// <summary>
         /// Current application release information.
         /// </summary>

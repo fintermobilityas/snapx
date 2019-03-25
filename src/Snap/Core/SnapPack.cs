@@ -808,7 +808,7 @@ namespace Snap.Core
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
 
             // Icon (Windows has native platform support for icons)
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            if (snapApp.Target.Os != OSPlatform.Windows 
                 && snapApp.Target.Icon != null)
             {
                 var iconExt = _snapFilesystem.PathGetExtension(snapApp.Target.Icon);

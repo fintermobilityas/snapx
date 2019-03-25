@@ -236,11 +236,13 @@ namespace Snap.Core
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
             var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             
-            var snapReleases = snapAppChannelReleases.GetReleasesNewerThan(_snapApp.Version);
+            var snapReleases = snapAppChannelReleases.GetReleasesNewerThan(_snapApp.Version).ToList();
             if (!snapReleases.Any())
             {                
                 return null;
             }
+
+            _logger.Info($"Found new releases({snapReleases.Count}): {string.Join(",", snapReleases.Select(x => x.Filename))}");
 
             progressSource?.RaiseTotalProgress(0);
 
@@ -288,6 +290,9 @@ namespace Snap.Core
             }
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
+
+            _logger.Info($"Installing {nupkgToInstallAbsolutePath}");
+
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
             {
                 _logger.Error($"Unable to find full nupkg: {nupkgToInstallAbsolutePath}.");
@@ -317,6 +322,8 @@ namespace Snap.Core
             }
 
             progressSource?.RaiseTotalProgress(100);
+
+            _logger.Info($"Successfully updated to {updatedSnapApp.Version}");
             
             return new SnapApp(updatedSnapApp);
         }

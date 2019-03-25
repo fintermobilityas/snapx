@@ -341,12 +341,9 @@ namespace Snap.Core
 
                         var mainExecutableByteArray = await _snapFilesystem.FileReadAllBytesAsync(mainExecutableTempFilename, cancellationToken);
                         var mainExecutableStreamWithIcon = new MemoryStream(mainExecutableByteArray);
-                        if (!packageBuilder.RemovePackageFile(mainExecutablePackageFile.EffectivePath, pathComparisonType))
-                        {
-                            throw new Exception($"Failed to remove: {mainExecutablePackageFile.EffectivePath}");
-                        }
-
-                        AddPackageFile(packageBuilder, mainExecutableStreamWithIcon, mainExecutablePackageFile.EffectivePath, string.Empty, fullSnapRelease);
+                       
+                        AddPackageFile(packageBuilder, mainExecutableStreamWithIcon, 
+                            mainExecutablePackageFile.EffectivePath, string.Empty, fullSnapRelease, true);
                     }
                 }
 
@@ -1157,7 +1154,7 @@ namespace Snap.Core
         }
 
         void AddPackageFile([NotNull] PackageBuilder packageBuilder, [NotNull] Stream srcStream,
-            [NotNull] string nuspecTargetPath, [NotNull] string filename, SnapRelease snapRelease = null)
+            [NotNull] string nuspecTargetPath, [NotNull] string filename, SnapRelease snapRelease = null, bool replace = false)
         {
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
@@ -1167,6 +1164,29 @@ namespace Snap.Core
             if (!nuspecTargetPath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
                 throw new Exception($"Invalid {nameof(nuspecTargetPath)}: {nuspecTargetPath}. Must start with: {SnapConstants.NuspecRootTargetPath}");
+            }
+
+            if (replace)
+            {
+                if (snapRelease == null)
+                {
+                    throw new ArgumentNullException(nameof(snapRelease));
+                }
+
+                var pathComparisonType = GetPathStringComparisonType(snapRelease);
+
+                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, pathComparisonType))
+                {
+                    throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(packageBuilder)}");
+                }
+
+                var existingSnapReleaseChecksum = snapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == nuspecTargetPath);
+                if (existingSnapReleaseChecksum == null)
+                {
+                    throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(snapRelease)}");
+                }
+
+                snapRelease.Files.Remove(existingSnapReleaseChecksum);
             }
 
             var nuGetFramework = NuGetFramework.Parse(SnapConstants.NuspecTargetFrameworkMoniker);

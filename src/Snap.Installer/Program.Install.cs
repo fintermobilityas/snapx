@@ -336,6 +336,8 @@ namespace Snap.Installer
                                 
                                 mainWindowLogger.Info("Successfully copied all payloads.");
                             }
+
+                            snapFilesystem.FileDeleteIfExists(nupkgAbsolutePath);
                         }
 
                         mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");

@@ -321,6 +321,35 @@ namespace Snap.Core
                     throw new FileNotFoundException("Main executable is missing in nuspec", mainExecutableTargetPath);
                 }
 
+                if (fullSnapApp.Target.Icon != null
+                    && fullSnapApp.Target.Os == OSPlatform.Windows
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    using (var tmpDir = _snapFilesystem.WithDisposableTempDirectory())
+                    using (var mainExecutableStream = await mainExecutablePackageFile.GetStream().ReadToEndAsync(cancellationToken))
+                    {
+                        var mainExecutableTempFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, mainExecutableFileName);
+                        using (var mainExecutableTmpStream = _snapFilesystem.FileWrite(mainExecutableTempFilename))
+                        {
+                            await mainExecutableStream.CopyToAsync(mainExecutableTmpStream, cancellationToken);                                        
+                        }
+
+                        if (!coreRunLib.SetIcon(mainExecutableTempFilename, fullSnapApp.Target.Icon))
+                        {
+                            throw new Exception($"Failed to update icon for executable {mainExecutableTempFilename}. Icon: {fullSnapApp.Target.Icon}.");
+                        }
+
+                        var mainExecutableByteArray = await _snapFilesystem.FileReadAllBytesAsync(mainExecutableTempFilename, cancellationToken);
+                        var mainExecutableStreamWithIcon = new MemoryStream(mainExecutableByteArray);
+                        if (!packageBuilder.RemovePackageFile(mainExecutablePackageFile.EffectivePath, pathComparisonType))
+                        {
+                            throw new Exception($"Failed to remove: {mainExecutablePackageFile.EffectivePath}");
+                        }
+
+                        AddPackageFile(packageBuilder, mainExecutableStreamWithIcon, mainExecutablePackageFile.EffectivePath, string.Empty, fullSnapRelease);
+                    }
+                }
+
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath =>
                 {
                     var packageFile = packageBuilder.GetPackageFile(targetPath, pathComparisonType);

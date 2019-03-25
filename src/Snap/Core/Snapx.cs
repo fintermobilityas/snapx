@@ -101,9 +101,7 @@ namespace Snap.Core
             Action<SemanticVersion> onUpdated = null)
         {
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
-            var skipNArguments = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 0;
-            var args = arguments.Skip(skipNArguments).ToArray();
-            if (args.Length != 2)
+            if (arguments.Length != 2)
             {
                 return false;
             }
@@ -114,7 +112,7 @@ namespace Snap.Core
                 new { Key = "--snapx-updated", Value = onUpdated ??  DefaultAction }
             }.ToDictionary(k => k.Key, v => v.Value);
 
-            var actionName = args[0];
+            var actionName = arguments[0];
             if (!invoke.ContainsKey(actionName))
             {
                 return false;
@@ -129,7 +127,7 @@ namespace Snap.Core
             {
                 Logger.Trace($"Handling event: {actionName}.");
 
-                var currentVersion = SemanticVersion.Parse(args[1]);
+                var currentVersion = SemanticVersion.Parse(arguments[1]);
 
                 invoke[actionName](currentVersion);
 

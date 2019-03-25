@@ -90,7 +90,6 @@ namespace Snap.Tests.Core
             
             Snapx.ProcessEvents(new[]
             {
-                "c:\\my.exe",
                 actionName,
                 expectedVersion.ToNormalizedString()
             });
@@ -109,7 +108,6 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = Snapx.ProcessEvents(arguments: new[]
             {
-                "c:\\my.exe",
                 "--snapx-first-run",
                 expectedVersion.ToNormalizedString()
             }, onFirstRun: version =>
@@ -138,7 +136,6 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = Snapx.ProcessEvents(arguments: new[]
              {
-                "c:\\my.exe",
                 "--snapx-installed",
                 expectedVersion.ToNormalizedString()
             }, onInstalled: version =>
@@ -165,7 +162,6 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             var shouldExit = Snapx.ProcessEvents(new[]
             {
-                "c:\\my.exe",
                 "--snapx-installed",
                 "..."
             }, onInstalled: version =>
@@ -192,7 +188,6 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = Snapx.ProcessEvents(arguments: new[]
             {
-                "c:\\my.exe",
                 "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>
@@ -219,7 +214,6 @@ namespace Snap.Tests.Core
             var wasInvoked = false;
             var shouldExit = Snapx.ProcessEvents(arguments: new[]
             {
-                "c:\\my.exe",
                 "--snapx-updated",
                 "..."
             }, onInstalled: version =>
@@ -246,7 +240,6 @@ namespace Snap.Tests.Core
             var expectedVersion = SemanticVersion.Parse("21212.0.0");
             var shouldExit = Snapx.ProcessEvents(new[]
             {
-                "c:\\my.exe",
                 "--snapx-updated",
                 expectedVersion.ToNormalizedString()
             }, onUpdated: version =>

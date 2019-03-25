@@ -850,7 +850,7 @@ namespace Snap.Core
             }
         }
 
-        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packgeFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider,
+        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packageFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider,
             [NotNull] string baseDirectory, [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease)
         {
             if (nuspecStream == null) throw new ArgumentNullException(nameof(nuspecStream));

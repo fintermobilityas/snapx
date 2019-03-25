@@ -72,8 +72,8 @@ namespace Snap.Core
         Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
-            [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType,
-            ISnapPackageManagerProgressSource progressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
+            [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
+            ILog logger = null, CancellationToken cancellationToken = default, int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
     }
 
     internal class SnapPackageManagerReleaseStatus
@@ -183,12 +183,15 @@ namespace Snap.Core
         }
 
         public async Task<SnapPackageManagerRestoreSummary> RestoreAsync(string packagesDirectory, ISnapAppChannelReleases snapAppChannelReleases,
-            PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null,
-            ILog logger = null, CancellationToken cancellationToken = default)
+            PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
+            ILog logger = null, CancellationToken cancellationToken = default,  int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (checksumConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(checksumConcurrency));
+            if (downloadConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(downloadConcurrency));
+            if (restoreConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(restoreConcurrency));
 
             var restoreSummary = new SnapPackageManagerRestoreSummary(restoreType);
 
@@ -259,7 +262,6 @@ namespace Snap.Core
                 
                 logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages.");
 
-                const int checksumConcurrency = 4;
                 long snapReleasesChecksummed = 0;
                 long snapReleasesChecksumOk = 0;
                 long totalSnapReleasesToChecksum = snapReleasesToChecksum.Count;
@@ -327,7 +329,6 @@ namespace Snap.Core
                 long totalBytesDownloadedSoFar = default;
                 long downloadProgressPercentage = default;
                 var previousProgressReportDateTime = DateTime.UtcNow;
-                const int downloadConcurrency = 4;
 
                 progressSource?.RaiseDownloadProgress(0, 0,
                     totalReleasesToDownload, 0, totalBytesToDownload);
@@ -478,9 +479,7 @@ namespace Snap.Core
                 logger?.Info($"Reassembling {releasesToReassemble.Count()} packages: {string.Join(", ", releasesToReassemble.Select(x => x.BuildNugetFullFilename()))}.");
 
                 progressSource?.RaiseRestoreProgress(0, 0, releasesToReassemble.Count());
-
-                const int restoreConcurrency = 2;
-
+                
                 var success = true;
                 long releasesReassembled = default;
 

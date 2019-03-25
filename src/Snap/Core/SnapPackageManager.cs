@@ -259,7 +259,7 @@ namespace Snap.Core
                 
                 logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages.");
 
-                const int checksumConcurrency = 2;
+                const int checksumConcurrency = 4;
                 long snapReleasesChecksummed = 0;
                 long snapReleasesChecksumOk = 0;
                 long totalSnapReleasesToChecksum = snapReleasesToChecksum.Count;

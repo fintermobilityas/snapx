@@ -603,11 +603,8 @@ namespace Snap.Core
                 throw new Exception($"Unable to rebuild full nupkg because release is not of type delta: {snapRelease.Filename}");
             }
 
-            var reassembledFullSnapRelease = genisisSnapRelease.AsFullRelease(false);                        
-            var reassembledSnapApp = new SnapApp(genisisSnapApp)
-            {
-                IsGenisis = false
-            };
+            var reassembledFullSnapRelease = genisisSnapRelease.AsFullRelease(false);
+            var reassembledFullSnapApp = genisisSnapApp.AsFullSnapApp(false);
 
             foreach (var deltaSnapRelease in deltaSnapReleasesToApply)
             {
@@ -624,7 +621,7 @@ namespace Snap.Core
 
             packageBuilder.Id = reassembledFullSnapRelease.UpstreamId;
             
-            return (packageBuilder, reassembledSnapApp, reassembledFullSnapRelease);
+            return (packageBuilder, reassembledFullSnapApp, reassembledFullSnapRelease);
 
             async Task ApplyDeltaPackageAsync(SnapRelease deltaRelease)
             {
@@ -761,7 +758,7 @@ namespace Snap.Core
                         packageBuilder.Populate(await packageArchiveReader.GetManifestMetadataAsync(cancellationToken));
                     }
                     
-                    reassembledFullSnapRelease.Version = reassembledSnapApp.Version = packageBuilder.Version = deltaRelease.Version.ToNuGetVersion();
+                    reassembledFullSnapRelease.Version = reassembledFullSnapApp.Version = packageBuilder.Version = deltaRelease.Version.ToNuGetVersion();
                     reassembledFullSnapRelease.Filename = deltaRelease.BuildNugetFullFilename();
                     reassembledFullSnapRelease.FullSha512Checksum = deltaRelease.FullSha512Checksum;
                     reassembledFullSnapRelease.FullFilesize = deltaRelease.FullFilesize;

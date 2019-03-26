@@ -161,7 +161,7 @@ namespace Snap.Core
 
         static IEnumerable<SnapReleaseChecksum> GetChecksumFilesForSnapRelease(SnapRelease snapRelease)
         {
-            return snapRelease.IsDelta ? snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath).ToList() : snapRelease.Files;
+            return snapRelease.IsDelta ? snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath, new CaseInsensitiveCultureInvariantComparer()).ToList() : snapRelease.Files;
         }
     }
 }

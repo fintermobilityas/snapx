@@ -287,7 +287,6 @@ namespace Snap.Core
             var fullSnapApp = snapAppMetadataOnly.AsFullSnapApp(isGenisis);
             var fullSnapRelease = snapReleaseMetadataOnly.AsFullRelease(isGenisis);
 
-            var pathComparisonType = GetPathStringComparisonType(fullSnapRelease);
             var alwaysRemoveTheseAssemblies = AlwaysRemoveTheseAssemblies.ToList();
             alwaysRemoveTheseAssemblies.Add(_snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp));
 
@@ -315,7 +314,7 @@ namespace Snap.Core
 
                 var mainExecutableFileName = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp);
                 var mainExecutableTargetPath = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();
-                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, pathComparisonType);
+                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, StringComparison.InvariantCultureIgnoreCase);
                 if (mainExecutablePackageFile == null)
                 {
                     throw new FileNotFoundException("Main executable is missing in nuspec", mainExecutableTargetPath);
@@ -349,7 +348,7 @@ namespace Snap.Core
 
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath =>
                 {
-                    var packageFile = packageBuilder.GetPackageFile(targetPath, pathComparisonType);
+                    var packageFile = packageBuilder.GetPackageFile(targetPath, StringComparison.InvariantCultureIgnoreCase);
                     if (packageFile == null)
                     {
                         return;
@@ -424,8 +423,6 @@ namespace Snap.Core
             if (currentFullNupkgNuspecMemoryStream == null) throw new ArgumentNullException(nameof(currentFullNupkgNuspecMemoryStream));
             if (currentFullNupkgNuspecPropertiesResolverFn == null) throw new ArgumentNullException(nameof(currentFullNupkgNuspecPropertiesResolverFn));
 
-            var pathComparisonType = GetPathStringComparisonType(currentFullSnapRelease);
-
             async Task AddNoBsDiffPackageFileAsync(PackageBuilder packageBuilder, SnapReleaseChecksum checksum, IPackageFile packageFile)
             {
                 if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
@@ -456,7 +453,7 @@ namespace Snap.Core
                 if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
                 var targetPath = NeverGenerateBsDiffsTheseAssemblies
                     .SingleOrDefault(x =>
-                        string.Equals(x, packageFile.EffectivePath, pathComparisonType));
+                        string.Equals(x, packageFile.EffectivePath, StringComparison.InvariantCultureIgnoreCase));
                 return targetPath == null;
             }
             
@@ -477,9 +474,9 @@ namespace Snap.Core
             
             foreach (var currentChecksum in currentFullSnapRelease.Files)
             {
-                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, pathComparisonType);    
+                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);    
                 var previousChecksum =
-                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, pathComparisonType));
+                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase));
                     
                 if (previousChecksum == null)
                 {
@@ -489,8 +486,8 @@ namespace Snap.Core
                     continue;
                 }
                 
-                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, pathComparisonType)
-                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, pathComparisonType))
+                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, StringComparison.InvariantCultureIgnoreCase)
+                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, StringComparison.InvariantCultureIgnoreCase))
                 {
                     currentDeltaSnapRelease.Unmodified.Add(currentChecksum.NuspecTargetPath);
                     deletedChecksums.Remove(previousChecksum);
@@ -506,7 +503,7 @@ namespace Snap.Core
                     continue;
                 }
 
-                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, pathComparisonType);
+                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);
                 
                 using (var oldDataStream = await previousPackageFile.GetStream().ReadToEndAsync(cancellationToken))
                 using (var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken))
@@ -594,8 +591,6 @@ namespace Snap.Core
 
             var (packageBuilder, genisisSnapApp) =
                 await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genisisSnapRelease, cancellationToken);
-
-            var pathComparisonType = GetPathStringComparisonType(genisisSnapRelease);
 
             var deltaSnapReleasesToApply = snapAppChannelReleases.GetDeltaReleasesOlderThanOrEqualTo(snapRelease.Version).ToList();
             if (!deltaSnapReleasesToApply.Any())
@@ -710,13 +705,13 @@ namespace Snap.Core
 
                         reassembledFullSnapRelease.Files.Remove(existingChecksum);
 
-                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, pathComparisonType);
+                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);
                         var packageFileStream = packageFile.GetStream();
                         packageFileStream.Seek(0, SeekOrigin.Begin);
 
                         var neverGenerateBsDiffThisAssembly =
                             NeverGenerateBsDiffsTheseAssemblies.SingleOrDefault(x =>
-                                string.Equals(x, deltaChecksum.NuspecTargetPath, pathComparisonType));
+                                string.Equals(x, deltaChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase));
 
                         var outputStream = new MemoryStream((int) deltaChecksum.FullFilesize);
                         using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken))
@@ -1173,9 +1168,7 @@ namespace Snap.Core
                     throw new ArgumentNullException(nameof(snapRelease));
                 }
 
-                var pathComparisonType = GetPathStringComparisonType(snapRelease);
-
-                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, pathComparisonType))
+                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, StringComparison.InvariantCultureIgnoreCase))
                 {
                     throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(packageBuilder)}");
                 }
@@ -1300,12 +1293,6 @@ namespace Snap.Core
 
             return (nuspecProperties, NuspecPropertyProvider);
         }
-        
-        static StringComparison GetPathStringComparisonType([NotNull] SnapRelease snapRelease)
-        {
-            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            return snapRelease.Target.Os == OSPlatform.Windows ? 
-                StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
-        }
+             
     }
 }

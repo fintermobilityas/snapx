@@ -97,11 +97,19 @@ namespace Snap.Core.Models
             
         public void Sort()
         {
-            Files = Files.OrderBy(x => x.NuspecTargetPath).ToList();
-            New = New.OrderBy(x => x.NuspecTargetPath).ToList();
-            Modified = Modified.OrderBy(x => x.NuspecTargetPath).ToList();
-            Unmodified = Unmodified.OrderBy(x => x).ToList();
-            Deleted = Deleted.OrderBy(x => x).ToList();
+            Files = Files.OrderBy(x => x.NuspecTargetPath, new CaseInsensitiveCultureInvariantComparer()).ToList();
+            New = New.OrderBy(x => x.NuspecTargetPath, new CaseInsensitiveCultureInvariantComparer()).ToList();
+            Modified = Modified.OrderBy(x => x.NuspecTargetPath, new CaseInsensitiveCultureInvariantComparer()).ToList();
+            Unmodified = Unmodified.OrderBy(x => x, new CaseInsensitiveCultureInvariantComparer()).ToList();
+            Deleted = Deleted.OrderBy(x => x, new CaseInsensitiveCultureInvariantComparer()).ToList();
         }        
+    }
+    
+    internal class CaseInsensitiveCultureInvariantComparer : IComparer<string> 
+    { 
+        public int Compare(string x, string y) 
+        { 
+            return string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase); 
+        } 
     }
 }

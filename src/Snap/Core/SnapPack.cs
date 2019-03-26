@@ -1200,12 +1200,20 @@ namespace Snap.Core
                 srcStream.Seek(0, SeekOrigin.Begin);
             }
 
-            snapRelease?.Files.Add(new SnapReleaseChecksum
+            if (snapRelease != null)
             {
-                NuspecTargetPath = nuspecTargetPath,
-                FullFilesize = srcStream.Length,
-                FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
-            });
+                if (snapRelease.Files.Any(x => string.Equals(x.NuspecTargetPath, nuspecTargetPath, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    throw new Exception($"File already added to {nameof(snapRelease)}. Target path: {nuspecTargetPath}");
+                }
+
+                snapRelease.Files.Add(new SnapReleaseChecksum
+                {
+                    NuspecTargetPath = nuspecTargetPath,
+                    FullFilesize = srcStream.Length,
+                    FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
+                });
+            }
 
             packageBuilder.Files.Add(new InMemoryPackageFile(srcStream, nuGetFramework, nuspecTargetPath, filename));
         }

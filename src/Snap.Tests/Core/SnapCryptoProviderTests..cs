@@ -63,22 +63,22 @@ namespace Snap.Tests.Core
         public async Task TestSha512_PackageArchiveReader_Central_Directory_Corrupt()
         {
             var snapAppsReleases = new SnapAppsReleases();
-            var genisisSnapApp = _baseFixture.BuildSnapApp();
+            var genesisSnapApp = _baseFixture.BuildSnapApp();
 
             using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapOs.Filesystem))
-            using (var genisisSnapReleaseBuilder = _baseFixture
-                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext)
-                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genisisSnapApp)))
+            using (var genesisSnapReleaseBuilder = _baseFixture
+                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp)))
             {
-                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {
-                    Checksum(genisisPackageContext.FullPackageSnapRelease);
-                    Checksum(genisisPackageContext.FullPackageSnapRelease);
+                    Checksum(genesisPackageContext.FullPackageSnapRelease);
+                    Checksum(genesisPackageContext.FullPackageSnapRelease);
 
                     void Checksum(SnapRelease snapRelease)
                     {
                         if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-                        using (var asyncPackageCoreReader = new PackageArchiveReader(genisisPackageContext.FullPackageMemoryStream, true))
+                        using (var asyncPackageCoreReader = new PackageArchiveReader(genesisPackageContext.FullPackageMemoryStream, true))
                         {
                             var checksum1 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
                             var checksum2 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);

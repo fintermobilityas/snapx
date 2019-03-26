@@ -150,18 +150,18 @@ namespace snapx
 
                     foreach (var channelName in thisSnapApps.Channels)
                     {         
-                        var genisisRelease = snapAppReleases.GetGenisisRelease(channelName);
+                        var genesisRelease = snapAppReleases.GetGenesisRelease(channelName);
                         var deltaRelease = snapAppReleases.GetMostRecentDeltaRelease(channelName);
 
-                        var rowValue = genisisRelease == null && deltaRelease == null ? "-" : string.Empty;
+                        var rowValue = genesisRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)
                         {
                             goto done;
                         }
 
-                        if (genisisRelease != null)
+                        if (genesisRelease != null)
                         {
-                            rowValue += $"F: {genisisRelease.Version} ({genisisRelease.FullFilesize.BytesAsHumanReadable()})";
+                            rowValue += $"F: {genesisRelease.Version} ({genesisRelease.FullFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {

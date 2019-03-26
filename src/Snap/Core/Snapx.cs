@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;

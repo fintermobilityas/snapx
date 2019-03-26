@@ -7,7 +7,6 @@ using MessagePack;
 using NuGet.Versioning;
 using Snap.Core.MessagePack.Formatters;
 using Snap.Extensions;
-using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {

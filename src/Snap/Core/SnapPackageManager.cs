@@ -212,8 +212,8 @@ namespace Snap.Core
 
             var restoreSummary = new SnapPackageManagerRestoreSummary(restoreType);
 
-            var genisisRelease = snapAppChannelReleases.GetGenisisRelease();
-            if (genisisRelease == null)
+            var genesisRelease = snapAppChannelReleases.GetGenesisRelease();
+            if (genesisRelease == null)
             {
                 restoreSummary.Success = true;
                 return restoreSummary;
@@ -253,7 +253,7 @@ namespace Snap.Core
                         snapReleasesToChecksum = snapAppChannelReleases.SelectMany(x =>
                         {
                             var snapReleases = new List<SnapRelease>();
-                            if (x.IsGenisis)
+                            if (x.IsGenesis)
                             {
                                 snapReleases.Add(x);
                                 return snapReleases;
@@ -272,7 +272,7 @@ namespace Snap.Core
                         break;
                     case SnapPackageManagerRestoreType.DeltaAndNewestFull:
                     case SnapPackageManagerRestoreType.GenesisAndDelta:
-                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenisis || x.IsDelta).ToList();
+                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
                         break;
                     default:
                         throw new NotSupportedException(restoreType.ToString());
@@ -323,7 +323,7 @@ namespace Snap.Core
             async Task<bool> DownloadAsync()
             {
                 var releasesToDownload = restoreSummary.ChecksumSummary
-                    .Where(x => !x.Ok && (x.SnapRelease.IsGenisis || x.SnapRelease.IsDelta))
+                    .Where(x => !x.Ok && (x.SnapRelease.IsGenesis || x.SnapRelease.IsDelta))
                     .Select(x => x.SnapRelease)
                     .OrderBy(x => x.Version)
                     .ToList();                    

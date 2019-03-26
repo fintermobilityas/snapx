@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -58,36 +56,36 @@ namespace Snap.Tests.Core
         public async Task TestUpdateToLatestReleaseAsync()
         {
             var snapAppsReleases = new SnapAppsReleases();
-            var genisisSnapApp = _baseFixturePackaging.BuildSnapApp();
-            var update1SnapApp = _baseFixturePackaging.Bump(genisisSnapApp);
+            var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
+            var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
 
             using (var nugetPackageSourcesDirectory = _snapOs.Filesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory))
             using (var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem))
             using (var installDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem))
-            using (var genisisReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genisisSnapApp, _releaseBuilderContext))
+            using (var genesisReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext))
             using (var update1ReleaseBuilder =
                 _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext))
             {
                 var packagesDirectory = _snapOs.Filesystem.PathCombine(installDirectory.WorkingDirectory, "packages");
-                var nugetPackageSources = genisisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
+                var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
-                genisisReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genisisSnapApp));
+                genesisReleaseBuilder
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp));
                     
                 update1ReleaseBuilder
                     .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp));
 
-                using (var genisisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genisisReleaseBuilder))
+                using (var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
                 using (var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
                 using (var snapAppsReleasesMemoryStream = _snapPack.BuildReleasesPackage(update1PackageContext.FullPackageSnapApp, snapAppsReleases))
                 {
                     _baseFixtureNuget.SetupReleases(_nugetServiceMock, snapAppsReleasesMemoryStream,
                         nugetPackageSources, update1PackageContext.FullPackageSnapApp);                     
                     
-                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, genisisPackageContext.FullPackageSnapApp);
+                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, genesisPackageContext.FullPackageSnapApp);
                     _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
-                        genisisPackageContext.FullPackageSnapApp, genisisPackageContext.FullPackageMemoryStream, nugetPackageSources);
+                        genesisPackageContext.FullPackageSnapApp, genesisPackageContext.FullPackageMemoryStream, nugetPackageSources);
                     
                     _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, update1PackageContext.DeltaPackageSnapApp);
                     _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
@@ -97,7 +95,7 @@ namespace Snap.Tests.Core
                     SetupUpdateManagerProgressSource(progressSourceMock);
 
                     var snapUpdateManager = BuildUpdateManager(installDirectory.WorkingDirectory,
-                        genisisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object);
+                        genesisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object);
 
                     var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
                     Assert.NotNull(updatedSnapApp);
@@ -144,8 +142,8 @@ namespace Snap.Tests.Core
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 100)), Times.Once);
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.IsAny<int>()), Times.Exactly(4));
 
-                    var genisisFullNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory,
-                        genisisPackageContext.FullPackageSnapApp.BuildNugetFullFilename());
+                    var genesisFullNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory,
+                        genesisPackageContext.FullPackageSnapApp.BuildNugetFullFilename());
 
                     var update1FullNupkgAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
                         update1PackageContext.FullPackageSnapApp.BuildNugetFullFilename());
@@ -153,7 +151,7 @@ namespace Snap.Tests.Core
                     var update1DeltaAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
                         update1PackageContext.DeltaPackageSnapApp.BuildNugetDeltaFilename());
 
-                    Assert.True(_snapOs.Filesystem.FileExists(genisisFullNupkgAbsolutePath));
+                    Assert.True(_snapOs.Filesystem.FileExists(genesisFullNupkgAbsolutePath));
                     Assert.False(_snapOs.Filesystem.FileExists(update1FullNupkgAbsolutePathAfter));
                     Assert.True(_snapOs.Filesystem.FileExists(update1DeltaAbsolutePathAfter));
                 }

@@ -58,20 +58,20 @@ namespace Snap.Tests.Core
         public async Task TestInstallAsync()
         {
             var snapAppsReleases = new SnapAppsReleases();
-            var genisisSnapApp = _baseFixture.BuildSnapApp();
+            var genesisSnapApp = _baseFixture.BuildSnapApp();
             
-            Assert.True(genisisSnapApp.Channels.Count >= 2);
+            Assert.True(genesisSnapApp.Channels.Count >= 2);
 
             using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            using (var genisisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
+            using (var genesisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext))
             {
-                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genisisSnapApp);
-                genisisSnapReleaseBuilder
+                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genesisSnapApp);
+                genesisSnapReleaseBuilder
                     .AddNuspecItem(mainAssemblyDefinition)
                     .AddNuspecItem(mainAssemblyDefinition.BuildRuntimeSettingsRelativeFilename(), mainAssemblyDefinition.BuildRuntimeSettings())
                     .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
 
-                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {
                     var anyOs = SnapOs.AnyOs;
                     Assert.NotNull(anyOs);
@@ -118,18 +118,18 @@ namespace Snap.Tests.Core
                     using (var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
                     using (var installCts = new CancellationTokenSource())
                     {
-                        var snapCurrentChannel = genisisPackageContext.FullPackageSnapApp.GetCurrentChannelOrThrow();
+                        var snapCurrentChannel = genesisPackageContext.FullPackageSnapApp.GetCurrentChannelOrThrow();
                         
                         await _snapInstaller.InstallAsync(
-                            genisisPackageContext.FullPackageAbsolutePath,
+                            genesisPackageContext.FullPackageAbsolutePath,
                             baseDirectory.WorkingDirectory,
-                            genisisPackageContext.FullPackageSnapRelease,
+                            genesisPackageContext.FullPackageSnapRelease,
                             snapCurrentChannel,
                             progressSource.Object,
                             loggerMock.Object,
                             installCts.Token);           
                             
-                        var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genisisPackageContext.FullPackageSnapApp.Version}");
+                        var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genesisPackageContext.FullPackageSnapApp.Version}");
                         var snapAppUpdated = appDirectory.GetSnapAppFromDirectory(_snapFilesystem, _snapAppReader);
                         var snapAppUpdatedChannel = snapAppUpdated.GetCurrentChannelOrThrow();
                         Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);                 
@@ -137,16 +137,16 @@ namespace Snap.Tests.Core
                         Assert.Empty(failedRunAsyncReturnValues);
 
                         var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                            _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genisisPackageContext.FullPackageSnapApp));
-                        var snapInstalledArguments = $"--snapx-installed {genisisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
-                        var snapFirstRunArguments = $"--snapx-first-run {genisisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
+                            _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genesisPackageContext.FullPackageSnapApp));
+                        var snapInstalledArguments = $"--snapx-installed {genesisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
+                        var snapFirstRunArguments = $"--snapx-first-run {genesisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
 
                         progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
 
                         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         {
                             var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                                $"app-{genisisSnapReleaseBuilder.SnapApp.Version}", genisisSnapReleaseBuilder.CoreRunExe);
+                                $"app-{genesisSnapReleaseBuilder.SnapApp.Version}", genesisSnapReleaseBuilder.CoreRunExe);
 
                             snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
                                 It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
@@ -190,18 +190,18 @@ namespace Snap.Tests.Core
         public async Task TestInstallAsync_Different_Channel()
         {
             var snapAppsReleases = new SnapAppsReleases();
-            var genisisSnapApp = _baseFixture.BuildSnapApp();
+            var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            Assert.True(genisisSnapApp.Channels.Count >= 2);
+            Assert.True(genesisSnapApp.Channels.Count >= 2);
 
             using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            using (var genisisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
+            using (var genesisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext))
             {
-                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genisisSnapApp);
-                genisisSnapReleaseBuilder
+                var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genesisSnapApp);
+                genesisSnapReleaseBuilder
                     .AddNuspecItem(mainAssemblyDefinition);
 
-                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {
                     var loggerMock = new Mock<ILog>();
 
@@ -235,18 +235,18 @@ namespace Snap.Tests.Core
                     using (var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
                     using (var installCts = new CancellationTokenSource())
                     {
-                        var nextSnapChannel = genisisSnapApp.GetNextChannel();
+                        var nextSnapChannel = genesisSnapApp.GetNextChannel();
                         
                         await _snapInstaller.InstallAsync(
-                            genisisPackageContext.FullPackageAbsolutePath,
+                            genesisPackageContext.FullPackageAbsolutePath,
                             baseDirectory.WorkingDirectory,
-                            genisisPackageContext.FullPackageSnapRelease,
+                            genesisPackageContext.FullPackageSnapRelease,
                             nextSnapChannel,
                             null,
                             loggerMock.Object,
                             installCts.Token);
                             
-                        var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genisisPackageContext.FullPackageSnapApp.Version}");
+                        var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genesisPackageContext.FullPackageSnapApp.Version}");
                         var snapAppUpdated = appDirectory.GetSnapAppFromDirectory(_snapFilesystem, _snapAppReader);
                         var snapAppUpdatedChannel = snapAppUpdated.GetCurrentChannelOrThrow();
                         Assert.Equal(nextSnapChannel.Name, snapAppUpdatedChannel.Name);
@@ -260,25 +260,25 @@ namespace Snap.Tests.Core
         {
             var snapAppsReleases = new SnapAppsReleases();
 
-            var genisisSnapApp = _baseFixture.BuildSnapApp();
-            var update1SnapApp = _baseFixture.Bump(genisisSnapApp);
+            var genesisSnapApp = _baseFixture.BuildSnapApp();
+            var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
 
             using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem))
-            using (var genisisSnapReleaseBuilder =
-                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genisisSnapApp, _snapReleaseBuilderContext))
+            using (var genesisSnapReleaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext))
             using (var update1SnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext))
             using (var update2SnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update2SnapApp, _snapReleaseBuilderContext))
             {
-                genisisSnapReleaseBuilder
-                    .AddNuspecItem(_baseFixture.BuildSnapExecutable(genisisSnapApp))
+                genesisSnapReleaseBuilder
+                    .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                     .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
 
                 update1SnapReleaseBuilder
-                    .AddNuspecItem(genisisSnapReleaseBuilder, 0)
-                    .AddNuspecItem(genisisSnapReleaseBuilder, 1)
+                    .AddNuspecItem(genesisSnapReleaseBuilder, 0)
+                    .AddNuspecItem(genesisSnapReleaseBuilder, 1)
                     .AddNuspecItem(_baseFixture.BuildLibrary("test2"));
 
                 update2SnapReleaseBuilder
@@ -287,7 +287,7 @@ namespace Snap.Tests.Core
                     .AddNuspecItem(update1SnapReleaseBuilder, 2)
                     .AddNuspecItem(_baseFixture.BuildLibrary("test3"));
 
-                using (var genisisPackageContext = await _baseFixture.BuildPackageAsync(genisisSnapReleaseBuilder))
+                using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
                 using (var update2PackageContext = await _baseFixture.BuildPackageAsync(update2SnapReleaseBuilder))
                 {
@@ -337,10 +337,10 @@ namespace Snap.Tests.Core
                     using (var updateCts = new CancellationTokenSource())
                     {
                         await _snapInstaller.InstallAsync(
-                            genisisPackageContext.FullPackageAbsolutePath,
+                            genesisPackageContext.FullPackageAbsolutePath,
                             baseDirectory.WorkingDirectory,
-                            genisisPackageContext.FullPackageSnapRelease,
-                            genisisPackageContext.FullPackageSnapApp.GetCurrentChannelOrThrow(),
+                            genesisPackageContext.FullPackageSnapRelease,
+                            genesisPackageContext.FullPackageSnapApp.GetCurrentChannelOrThrow(),
                             cancellationToken: updateCts.Token);
 
                         _snapOsMock.Invocations.Clear();

@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -170,7 +168,7 @@ namespace Snap.Core
             
             fullSnapRelease.FullFilesize = fullNupkgMemoryStream.Length;
 
-            if (fullSnapRelease.IsGenisis)
+            if (fullSnapRelease.IsGenesis)
             {
                 packageDetails.SnapAppsReleases.Add(fullSnapRelease);
                 return (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, null, null, null);
@@ -216,7 +214,7 @@ namespace Snap.Core
             var snapAppMetadataOnly = new SnapApp(packageDetails.SnapApp)
             {
                 IsFull = false,
-                IsGenisis = false,
+                IsGenesis = false,
                 ReleaseNotes = null
             };
 
@@ -230,15 +228,15 @@ namespace Snap.Core
 
             if (!snapAppChannelReleases.Any())
             {           
-                var (genisisPackageBuilder, nuspecMemoryStream, _, genisisSnapApp, genisisSnapRelease) = 
+                var (genesisPackageBuilder, nuspecMemoryStream, _, genesisSnapApp, genesisSnapRelease) = 
                     await BuildFullPackageAsyncInternal(packageDetails, snapAppChannelReleases, snapAppMetadataOnly, 
                         snapReleaseMetadataOnly, coreRunLib, cancellationToken);
 
-                genisisSnapRelease.Channels = genisisSnapApp.Channels.Select(x => x.Name).ToList();
+                genesisSnapRelease.Channels = genesisSnapApp.Channels.Select(x => x.Name).ToList();
 
                 using (nuspecMemoryStream)
                 {
-                    return (genisisPackageBuilder, genisisSnapApp, genisisSnapRelease, null, null, null);                    
+                    return (genesisPackageBuilder, genesisSnapApp, genesisSnapRelease, null, null, null);                    
                 }
             }
             
@@ -283,10 +281,10 @@ namespace Snap.Core
             if (snapReleaseMetadataOnly == null) throw new ArgumentNullException(nameof(snapReleaseMetadataOnly));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
 
-            var isGenisis = !snapAppChannelReleases.Any();
+            var isGenesis = !snapAppChannelReleases.Any();
 
-            var fullSnapApp = snapAppMetadataOnly.AsFullSnapApp(isGenisis);
-            var fullSnapRelease = snapReleaseMetadataOnly.AsFullRelease(isGenisis);
+            var fullSnapApp = snapAppMetadataOnly.AsFullSnapApp(isGenesis);
+            var fullSnapRelease = snapReleaseMetadataOnly.AsFullRelease(isGenesis);
 
             var alwaysRemoveTheseAssemblies = AlwaysRemoveTheseAssemblies.ToList();
             alwaysRemoveTheseAssemblies.Add(_snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp));
@@ -592,24 +590,24 @@ namespace Snap.Core
                 throw new ArgumentException("Cannot be empty", nameof(snapAppChannelReleases));
             }
 
-            var genisisSnapRelease = snapAppChannelReleases.GetGenisisRelease();
-            if (!genisisSnapRelease.IsGenisis)
+            var genesisSnapRelease = snapAppChannelReleases.GetGenesisRelease();
+            if (!genesisSnapRelease.IsGenesis)
             {
-                throw new FileNotFoundException("First release must be genisis release.", snapRelease.Filename);
+                throw new FileNotFoundException("First release must be genesis release.", snapRelease.Filename);
             }
 
-            if (!genisisSnapRelease.IsFull || genisisSnapRelease.IsDelta)
+            if (!genesisSnapRelease.IsFull || genesisSnapRelease.IsDelta)
             {
-                throw new FileNotFoundException("Expected genisis to be a full release.", snapRelease.Filename);
+                throw new FileNotFoundException("Expected genesis to be a full release.", snapRelease.Filename);
             }
 
-            var (packageBuilder, genisisSnapApp) =
-                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genisisSnapRelease, cancellationToken);
+            var (packageBuilder, genesisSnapApp) =
+                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genesisSnapRelease, cancellationToken);
 
             var deltaSnapReleasesToApply = snapAppChannelReleases.GetDeltaReleasesOlderThanOrEqualTo(snapRelease.Version).ToList();
             if (!deltaSnapReleasesToApply.Any())
             {
-                return (packageBuilder, genisisSnapApp, snapRelease);
+                return (packageBuilder, genesisSnapApp, snapRelease);
             }
             
             if (!snapRelease.IsDelta)
@@ -617,8 +615,8 @@ namespace Snap.Core
                 throw new Exception($"Unable to rebuild full nupkg because release is not of type delta: {snapRelease.Filename}");
             }
 
-            var reassembledFullSnapRelease = genisisSnapRelease.AsFullRelease(false);
-            var reassembledFullSnapApp = genisisSnapApp.AsFullSnapApp(false);
+            var reassembledFullSnapRelease = genesisSnapRelease.AsFullRelease(false);
+            var reassembledFullSnapApp = genesisSnapApp.AsFullSnapApp(false);
 
             foreach (var deltaSnapRelease in deltaSnapReleasesToApply)
             {
@@ -641,7 +639,7 @@ namespace Snap.Core
             {
                 if (deltaRelease == null) throw new ArgumentNullException(nameof(deltaRelease));
 
-                if (deltaRelease.IsGenisis)
+                if (deltaRelease.IsGenesis)
                 {
                     throw new Exception($"A delta cannot be the full release. Nupkg: {deltaRelease.Filename}");
                 }
@@ -1021,20 +1019,20 @@ namespace Snap.Core
                 throw new Exception("Cannot build an empty release package");
             }
 
-            var genisisRelease = snapAppReleases.GetGenisisRelease(snapApp.GetDefaultChannelOrThrow());
-            if (genisisRelease == null)
+            var genesisRelease = snapAppReleases.GetGenesisRelease(snapApp.GetDefaultChannelOrThrow());
+            if (genesisRelease == null)
             {
-                throw new Exception("Missing genisis release");
+                throw new Exception("Missing genesis release");
             }
 
-            if (!genisisRelease.IsGenisis)
+            if (!genesisRelease.IsGenesis)
             {
-                throw new Exception($"Genisis release is not a genisis release: {genisisRelease.Filename}");
+                throw new Exception($"Genesis release is not a genesis release: {genesisRelease.Filename}");
             }
 
-            if (!genisisRelease.IsFull || genisisRelease.IsDelta)
+            if (!genesisRelease.IsFull || genesisRelease.IsDelta)
             {
-                throw new Exception($"Genisis release must be full release: {genisisRelease.Filename}");
+                throw new Exception($"Genesis release must be full release: {genesisRelease.Filename}");
             }
             
             snapAppsReleases.Bump();
@@ -1053,18 +1051,18 @@ namespace Snap.Core
             {
                 if (snapRelease.IsFull)
                 {
-                    var genisisOrFull = snapRelease.IsGenisis ? "genisis" : "full";
+                    var genesisOrFull = snapRelease.IsGenesis ? "genesis" : "full";
                     
                     var expectedFilename = snapRelease.BuildNugetFullFilename();
                     if (snapRelease.Filename != expectedFilename)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} filename: {snapRelease.Filename}. Expected: {expectedFilename}");
+                        throw new Exception($"Invalid {genesisOrFull} filename: {snapRelease.Filename}. Expected: {expectedFilename}");
                     }
                     
                     var expectedUpstreamId = snapRelease.BuildNugetFullUpstreamId();
                     if (snapRelease.UpstreamId != expectedUpstreamId)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
+                        throw new Exception($"Invalid {genesisOrFull} upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
                     }
                 }
                 else if (snapRelease.IsDelta)
@@ -1083,7 +1081,7 @@ namespace Snap.Core
                 }
                 else
                 {
-                    throw new NotSupportedException($"Expected either delta or genisis release. Filename: {snapRelease.Filename}");
+                    throw new NotSupportedException($"Expected either delta or genesis release. Filename: {snapRelease.Filename}");
                 }
 
                 if (snapRelease.FullFilesize <= 0)

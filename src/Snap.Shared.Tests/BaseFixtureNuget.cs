@@ -31,11 +31,11 @@ namespace Snap.Shared.Tests
                 SetupGetMetadatasAsync(nugetServiceMock, nuGetPackageSources, snapApp);
             }
             
-            var genisisSnapApp = snapAppses.First();
-            var releasesUpstreamPackageId = genisisSnapApp.BuildNugetReleasesUpstreamId();
+            var genesisSnapApp = snapAppses.First();
+            var releasesUpstreamPackageId = genesisSnapApp.BuildNugetReleasesUpstreamId();
 
             SetupDownloadLatestAsync(nugetServiceMock,
-                genisisSnapApp, releasesUpstreamPackageId, releasesMemoryStream, nuGetPackageSources);
+                genesisSnapApp, releasesUpstreamPackageId, releasesMemoryStream, nuGetPackageSources);
         }
         
         internal void SetupGetMetadatasAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] SnapApp snapApp)

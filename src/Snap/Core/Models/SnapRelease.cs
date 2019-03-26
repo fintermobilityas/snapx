@@ -28,12 +28,12 @@ namespace Snap.Core.Models
         [Key(4)]
         public SnapTarget Target { get; set; }
         [Key(5)]
-        public bool IsGenisis { get; set; }
+        public bool IsGenesis { get; set; }
         [Key(6)]
         public bool IsFull { get; set; }
         [YamlIgnore]
         [Key(7)]
-        public bool IsDelta => !IsGenisis && !IsFull;
+        public bool IsDelta => !IsGenesis && !IsFull;
         [Key(8)]
         public string Filename { get; set; }
         [Key(9)]
@@ -78,7 +78,7 @@ namespace Snap.Core.Models
             Version = release.Version;
             Channels = release.Channels;
             Target = new SnapTarget(release.Target);
-            IsGenisis = release.IsGenisis;
+            IsGenesis = release.IsGenesis;
             IsFull = release.IsFull;
             Filename = release.Filename;
             FullFilesize = release.FullFilesize;

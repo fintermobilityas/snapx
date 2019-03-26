@@ -251,8 +251,8 @@ namespace Snap.Core
                 return null;
             }
 
-            var hasUpdates = medatadatas.Any(x => x?.Identity?.Version > _snapApp.Version);
-            if (!hasUpdates)
+            var metadatasThatAreNewerThanCurrentVersion = medatadatas.Where(x => x?.Identity?.Version > _snapApp.Version).Select(x => x.Identity).ToList();
+            if (!metadatasThatAreNewerThanCurrentVersion.Any())
             {
                 return null;
             }
@@ -264,11 +264,16 @@ namespace Snap.Core
             }
 
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
+
+            _logger.Debug($"Channel: {snapChannel.Current}");
+
             var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             
             var snapReleases = snapAppChannelReleases.GetReleasesNewerThan(_snapApp.Version).ToList();
             if (!snapReleases.Any())
-            {                
+            {                                   
+                _logger.Warn($"Unable to find any releases newer than {_snapApp.Version}. " +
+                             $"Is your nuget server caching responses? Metadatas: {string.Join(",", metadatasThatAreNewerThanCurrentVersion)}");
                 return null;
             }
 

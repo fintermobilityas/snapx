@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -228,7 +226,7 @@ namespace snapx
                 logger.Info($"Writing full nupkg to disk: {fullSnapRelease.Filename}. File size: {fullSnapRelease.FullFilesize.BytesAsHumanReadable()}");
                 await filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, default);
 
-                if (!fullSnapRelease.IsGenisis)
+                if (!fullSnapRelease.IsGenesis)
                 {
                     var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapRelease.Filename);
                     logger.Info(
@@ -269,7 +267,7 @@ namespace snapx
             {
                 if (fullOrDeltaSnapApp.Target.Installers.Any())
                 {
-                    var channels = fullOrDeltaSnapApp.IsGenisis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
+                    var channels = fullOrDeltaSnapApp.IsGenesis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
 
                     foreach (var channel in channels)
                     {

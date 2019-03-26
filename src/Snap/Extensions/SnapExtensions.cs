@@ -223,14 +223,14 @@ namespace Snap.Extensions
             return $"{snapApp.BuildNugetReleasesUpstreamId()}.nupkg".ToLowerInvariant();
         }
 
-        public static SnapApp AsFullSnapApp([NotNull] this SnapApp snapApp, bool isGenisis)
+        public static SnapApp AsFullSnapApp([NotNull] this SnapApp snapApp, bool isGenesis)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
             var fullSnapApp = new SnapApp(snapApp)
             {
                 IsFull = true,
-                IsGenisis = isGenisis
+                IsGenesis = isGenesis
             };
             
             return fullSnapApp;
@@ -243,13 +243,13 @@ namespace Snap.Extensions
             var fullSnapApp = new SnapApp(snapApp)
             {
                 IsFull = false,
-                IsGenisis = false
+                IsGenesis = false
             };
 
             return fullSnapApp;
         }
 
-        public static SnapRelease AsFullRelease([NotNull] this SnapRelease snapRelease, bool isGenisis)
+        public static SnapRelease AsFullRelease([NotNull] this SnapRelease snapRelease, bool isGenesis)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             
@@ -257,7 +257,7 @@ namespace Snap.Extensions
             {
                 Filename = snapRelease.BuildNugetFullFilename(),
                 UpstreamId = snapRelease.BuildNugetFullUpstreamId(),
-                IsGenisis = isGenisis,
+                IsGenesis = isGenesis,
                 IsFull = true
             };
 

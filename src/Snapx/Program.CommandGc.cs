@@ -7,10 +7,8 @@ using JetBrains.Annotations;
 using snapx.Options;
 using Snap.AnyOS;
 using Snap.Core;
-using Snap.Core.Models;
 using Snap.Logging;
 using Snap.NuGet;
-using Snap.Extensions;
 
 namespace snapx
 {

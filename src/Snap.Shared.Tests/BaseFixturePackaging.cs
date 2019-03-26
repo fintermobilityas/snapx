@@ -142,10 +142,10 @@ namespace Snap.Shared.Tests
             return path;
         }
 
-        internal void AssertSnapAppIsGenisis([NotNull] SnapApp snapApp)
+        internal void AssertSnapAppIsGenesis([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.True(snapApp.IsGenisis);
+            Assert.True(snapApp.IsGenesis);
             Assert.True(snapApp.IsFull);
             Assert.False(snapApp.IsDelta);
         }
@@ -153,7 +153,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapAppIsFull([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.False(snapApp.IsGenisis);
+            Assert.False(snapApp.IsGenesis);
             Assert.True(snapApp.IsFull);
             Assert.False(snapApp.IsDelta);
         }
@@ -161,15 +161,15 @@ namespace Snap.Shared.Tests
         internal void AssertSnapAppIsDelta([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.False(snapApp.IsGenisis);
+            Assert.False(snapApp.IsGenesis);
             Assert.False(snapApp.IsFull);
             Assert.True(snapApp.IsDelta);
         }
 
-        internal void AssertSnapReleaseIsGenisis([NotNull] SnapRelease snapRelease)
+        internal void AssertSnapReleaseIsGenesis([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.True(snapRelease.IsGenisis);
+            Assert.True(snapRelease.IsGenesis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
@@ -184,7 +184,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapReleaseIsFull([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.False(snapRelease.IsGenisis);
+            Assert.False(snapRelease.IsGenesis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
@@ -199,7 +199,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapReleaseIsDelta([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.False(snapRelease.IsGenisis);
+            Assert.False(snapRelease.IsGenesis);
             Assert.False(snapRelease.IsFull);
             Assert.True(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetDeltaFilename(), snapRelease.Filename);

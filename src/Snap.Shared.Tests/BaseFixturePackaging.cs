@@ -305,7 +305,7 @@ namespace Snap.Shared.Tests
 
                 foreach (var releaseChecksum in snapRelease.Files)
                 {
-                    var (_, _, checksumFileAbsolutePath) = NormalizePath(releaseChecksum.NuspecTargetPath);
+                    var (_, _, checksumFileAbsolutePath) = NormalizePath(snapRelease, releaseChecksum.NuspecTargetPath);
                     Assert.NotNull(checksumFileAbsolutePath);
 
                     if (snapRelease.IsDelta)
@@ -366,7 +366,14 @@ namespace Snap.Shared.Tests
                         var expectedFilesize = useFullChecksum ? targetChecksum.FullFilesize : targetChecksum.DeltaFilesize;
 
                         Assert.NotNull(expectedChecksum);
-                        Assert.True(expectedFilesize > 0);
+                        if (expectedChecksum == SnapConstants.Sha512EmptyFileChecksum)
+                        {
+                            Assert.Equal(0, expectedFilesize);
+                        }
+                        else
+                        {
+                            Assert.True(expectedFilesize > 0);
+                        }
 
                         Assert.Equal(expectedChecksum, diskSha512Checksum);
                         Assert.Equal(expectedFilesize, diskFilesize);
@@ -408,9 +415,12 @@ namespace Snap.Shared.Tests
         }
 
         [SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
-        (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] string relativePath)
+        (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] SnapRelease snapRelease, [NotNull] string relativePath)
         {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
+
+            var snapAppInstallDirectory = SnapFilesystem.PathCombine(SnapAppBaseDirectory, $"app-{snapRelease.Version}");
 
             string diskAbsoluteFilename;
             string targetPath;
@@ -419,13 +429,13 @@ namespace Snap.Shared.Tests
                 relativePath = relativePath.Substring(SnapConstants.NuspecAssetsTargetPath.Length + 1);
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, relativePath);
                 var isCoreRunExe = relativePath.EndsWith(CoreRunExe);
-                diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : SnapAppInstallDirectory, relativePath);
+                diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : snapAppInstallDirectory, relativePath);
             }
             else if (relativePath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
                 relativePath = relativePath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath);
-                diskAbsoluteFilename = SnapFilesystem.PathCombine(SnapAppInstallDirectory, relativePath);
+                diskAbsoluteFilename = SnapFilesystem.PathCombine(snapAppInstallDirectory, relativePath);
             }
             else
             {

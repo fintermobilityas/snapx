@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using NuGet.Packaging;
@@ -37,6 +39,24 @@ namespace Snap.Tests.Core
             _snapPack = new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
             _coreRunLibMock = new Mock<ICoreRunLib>();
             _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapOs.Filesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+        }
+
+        [Fact]
+        public void TestSha512_Empty_StringBuilder()
+        {
+            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new StringBuilder(), Encoding.UTF8));
+        }
+        
+        [Fact]
+        public void TestSha512_Empty_Array()
+        {
+            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new byte[]{ }));
+        }
+
+        [Fact]
+        public void TestSha512_Empty_Stream()
+        {
+            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new MemoryStream()));
         }
 
         [Fact]

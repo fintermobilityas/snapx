@@ -509,11 +509,24 @@ namespace Snap.Core
                 using (var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken))
                 {
                     var patchStream = new MemoryStream();
-                                        
-                    SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream);
+
+                    if (newDataStream.Length > 0
+                        && oldDataStream.Length > 0)
+                    {
+                        SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream);
+                    } else if (newDataStream.Length > 0)
+                    {
+                        await newDataStream.CopyToAsync(patchStream, cancellationToken);
+                    }
             
                     currentChecksum.DeltaSha512Checksum = _snapCryptoProvider.Sha512(patchStream);
                     currentChecksum.DeltaFilesize = patchStream.Length;
+
+                    if (currentChecksum.DeltaFilesize == 0 
+                        && currentChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                    {
+                        throw new Exception($"Expected empty file checksum to equal {SnapConstants.Sha512EmptyFileChecksum}. Target path: {currentChecksum.NuspecTargetPath}.");
+                    }
 
                     AddPackageFile(deltaNupkgPackageBuilder, patchStream, currentChecksum.NuspecTargetPath, string.Empty);
                 }
@@ -716,6 +729,23 @@ namespace Snap.Core
                                 if (deltaChecksum.FullSha512Checksum != sha512Checksum)
                                 {
                                     throw new SnapReleaseFileChecksumDeltaMismatchException(deltaChecksum, snapRelease, patchStream.Length);
+                                }
+
+                                goto done;
+                            }
+
+                            if (patchStream.Length == 0)
+                            {
+                                if (deltaChecksum.DeltaFilesize != 0)
+                                {
+                                    throw new Exception($"Expected delta file size to equal 0 (zero) when {nameof(patchStream)} " +
+                                                        $"length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
+                                }
+
+                                if (deltaChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                                {
+                                    throw new Exception($"Expected delta file checksum to equal {SnapConstants.Sha512EmptyFileChecksum} when " +
+                                                        $"{nameof(patchStream)} length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
                                 }
 
                                 goto done;

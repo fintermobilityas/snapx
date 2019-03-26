@@ -568,7 +568,14 @@ namespace Snap.Core
                         return false;
                     }
                                         
-                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}. Verifying checksum!");
+                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}. Flushing to disk.");
+
+                    var dstFilename = _filesystem.PathCombine(packagesDirectory, snapRelease.Filename);
+                    await _filesystem.FileWriteAsync(downloadResult.PackageStream, dstFilename, cancellationToken);
+
+                    downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);            
+                    
+                    logger?.Debug("Nupkg flushed to disk. Verifying checksum!");
 
                     using (var packageArchiveReader = new PackageArchiveReader(downloadResult.PackageStream, true))
                     {
@@ -578,13 +585,9 @@ namespace Snap.Core
                             logger?.Error($"Checksum mismatch for downloaded nupkg: {snapRelease.Filename}");
                             return false;
                         }                        
-                        downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);                    
                     }
                     
                     logger?.Debug($"Verified checksum for downloaded nupkg: {snapRelease.Filename}.");
-
-                    var dstFilename = _filesystem.PathCombine(packagesDirectory, snapRelease.Filename);
-                    await _filesystem.FileWriteAsync(downloadResult.PackageStream, dstFilename, cancellationToken);
 
                     return true;
                 }

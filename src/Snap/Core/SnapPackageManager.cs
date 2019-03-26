@@ -65,6 +65,7 @@ namespace Snap.Core
     {
         FullAndDelta,
         DeltaAndNewestFull,
+        GenesisAndDelta
     }
 
     internal interface ISnapPackageManager
@@ -270,6 +271,7 @@ namespace Snap.Core
                         }).ToList();
                         break;
                     case SnapPackageManagerRestoreType.DeltaAndNewestFull:
+                    case SnapPackageManagerRestoreType.GenesisAndDelta:
                         snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenisis || x.IsDelta).ToList();
                         break;
                     default:
@@ -482,6 +484,9 @@ namespace Snap.Core
                         }
                                                     
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases);
+                        break;
+                    case SnapPackageManagerRestoreType.GenesisAndDelta:
+                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, new List<SnapRelease>());
                         break;
                     default:
                         throw new NotSupportedException(restoreType.ToString());

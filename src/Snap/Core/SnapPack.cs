@@ -707,8 +707,6 @@ namespace Snap.Core
                                 $"Nupkg: {deltaChecksum.Filename}.");
                         }
 
-                        reassembledFullSnapRelease.Files.Remove(existingChecksum);
-
                         var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
                         var packageFileStream = packageFile.GetStream();
                         packageFileStream.Seek(0, SeekOrigin.Begin);
@@ -777,12 +775,7 @@ namespace Snap.Core
                             }
 
                             done:
-                            if (!packageBuilder.Files.Remove(packageFile))
-                            {
-                                throw new FileNotFoundException($"Unable to replace file. Nupkg: {deltaRelease.Filename}", deltaChecksum.Filename);
-                            }
-
-                            AddPackageFile(packageBuilder, outputStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease);
+                            AddPackageFile(packageBuilder, outputStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease, true);
                         }
 
                         packageBuilder.Populate(await packageArchiveReader.GetManifestMetadataAsync(cancellationToken));

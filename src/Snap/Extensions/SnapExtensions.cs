@@ -427,7 +427,7 @@ namespace Snap.Extensions
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
 
-            var snapApp = snapApps.Apps.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase));
+            var snapApp = snapApps.Apps.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
             if (snapApp == null)
             {
                 throw new Exception($"Unable to find snap with id: {id}");
@@ -439,7 +439,7 @@ namespace Snap.Extensions
                 throw new Exception($"Target runtime identifiers (rids) must be unique: {string.Join(",", snapAppUniqueRuntimeIdentifiers)}. Snap id: {snapApp.Id}");
             }
                         
-            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => string.Equals(x.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
+            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => string.Equals(x.Rid, rid, StringComparison.OrdinalIgnoreCase));
             if (snapAppTarget == null)
             {
                 throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
@@ -493,7 +493,7 @@ namespace Snap.Extensions
                 throw new Exception($"Default channel must be {snapAppsDefaultChannel.Name}. Snap id: {snapApp.Id}");
             }
 
-            var snapAppAvailableChannels = snapApps.Channels.Where(rhs => snapApp.Channels.Any(lhs => lhs.Equals(rhs.Name, StringComparison.InvariantCultureIgnoreCase))).ToList();
+            var snapAppAvailableChannels = snapApps.Channels.Where(rhs => snapApp.Channels.Any(lhs => lhs.Equals(rhs.Name, StringComparison.OrdinalIgnoreCase))).ToList();
             if (!snapAppAvailableChannels.Any())
             {
                 throw new Exception($"Could not find any global channels. Channel list: {string.Join(",", snapAppUniqueChannels)}. Snap id: {snapApp.Id}");
@@ -537,7 +537,7 @@ namespace Snap.Extensions
                 snapAppChannels.Add(new SnapChannel(snapsChannel.Name, currentChannel, pushFeed, updateFeed));
             }
 
-            if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.InvariantCultureIgnoreCase)))
+            if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.OrdinalIgnoreCase)))
             {
                 throw new Exception("Fatal error! A persistent asset starting with 'app-' was detected in manifest. This is a reserved keyword.");
             }

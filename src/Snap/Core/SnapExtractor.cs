@@ -64,7 +64,7 @@ namespace Snap.Core
                 snapRelease
                     .New
                     .Concat(snapRelease.Modified)
-                    .OrderBy(x => x.NuspecTargetPath, new CaseInsensitiveCultureInvariantComparer())
+                    .OrderBy(x => x.NuspecTargetPath, new OrdinalIgnoreCaseComparer())
                     .ToList() : 
                     snapRelease.Files;
 

@@ -38,7 +38,7 @@ namespace snapx
 
             if (options.Id != null)
             {
-                if (!snapApps.Apps.Any(x => string.Equals(x.Id, options.Id, StringComparison.InvariantCultureIgnoreCase)))
+                if (!snapApps.Apps.Any(x => string.Equals(x.Id, options.Id, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger.Error($"Unable to find application with id: {options.Id}");
                     return -1;
@@ -56,7 +56,7 @@ namespace snapx
             foreach (var snapApp in snapAppses)
             {
                 if (options.Id != null 
-                    && !string.Equals(snapApp.Id, options.Id, StringComparison.InvariantCultureIgnoreCase))
+                    && !string.Equals(snapApp.Id, options.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }

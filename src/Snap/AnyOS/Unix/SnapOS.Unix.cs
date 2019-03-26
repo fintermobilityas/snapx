@@ -145,7 +145,7 @@ namespace Snap.AnyOS.Unix
                 if (line == null) throw new ArgumentNullException(nameof(line));
                 if (identifier == null) throw new ArgumentNullException(nameof(identifier));
 
-                if (!line.StartsWith(identifier, StringComparison.InvariantCultureIgnoreCase))
+                if (!line.StartsWith(identifier, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }

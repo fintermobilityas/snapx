@@ -50,12 +50,12 @@ namespace snapx
             if (restoreOptions.AppId != null)
             {
                 snapAppTargets.RemoveAll(x =>
-                    !string.Equals(x.Id, restoreOptions.AppId, StringComparison.InvariantCultureIgnoreCase));
+                    !string.Equals(x.Id, restoreOptions.AppId, StringComparison.OrdinalIgnoreCase));
 
                 if (restoreOptions.Rid != null)
                 {
                     snapAppTargets.RemoveAll(x =>
-                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.InvariantCultureIgnoreCase));
+                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (!snapAppTargets.Any())

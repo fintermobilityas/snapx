@@ -450,7 +450,7 @@ namespace Snap.Core
             {
                 foreach (var excludePath in excludePaths)
                 {
-                    if (string.Equals(excludePath, file, StringComparison.InvariantCultureIgnoreCase))
+                    if (string.Equals(excludePath, file, StringComparison.OrdinalIgnoreCase))
                     {
                         return Task.CompletedTask;
                     }
@@ -482,7 +482,7 @@ namespace Snap.Core
                 {
                     foreach (var excludePath in excludePaths)
                     {
-                        if (string.Equals(excludePath, dir, StringComparison.InvariantCultureIgnoreCase))
+                        if (string.Equals(excludePath, dir, StringComparison.OrdinalIgnoreCase))
                         {
                             return Task.CompletedTask;
                         }

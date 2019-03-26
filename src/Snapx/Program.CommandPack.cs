@@ -162,10 +162,10 @@ namespace snapx
 
                     var persistentDisk = filesystem
                         .EnumerateFiles(packagesDirectory)
-                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.InvariantCultureIgnoreCase), fullName: x.FullName))
+                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.OrdinalIgnoreCase), fullName: x.FullName))
                         .Where(x => x.nupkg.valid
-                                    && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCultureIgnoreCase)
-                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCultureIgnoreCase))
+                                    && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.OrdinalIgnoreCase)
+                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.OrdinalIgnoreCase))
                         .OrderByDescending(x => x.nupkg.semanticVersion)
                         .FirstOrDefault();
 

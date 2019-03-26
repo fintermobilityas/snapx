@@ -314,7 +314,7 @@ namespace Snap.Core
 
                 var mainExecutableFileName = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp);
                 var mainExecutableTargetPath = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();
-                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, StringComparison.InvariantCultureIgnoreCase);
+                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, StringComparison.OrdinalIgnoreCase);
                 if (mainExecutablePackageFile == null)
                 {
                     throw new FileNotFoundException("Main executable is missing in nuspec", mainExecutableTargetPath);
@@ -348,7 +348,7 @@ namespace Snap.Core
 
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath =>
                 {
-                    var packageFile = packageBuilder.GetPackageFile(targetPath, StringComparison.InvariantCultureIgnoreCase);
+                    var packageFile = packageBuilder.GetPackageFile(targetPath, StringComparison.OrdinalIgnoreCase);
                     if (packageFile == null)
                     {
                         return;
@@ -453,7 +453,7 @@ namespace Snap.Core
                 if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
                 var targetPath = NeverGenerateBsDiffsTheseAssemblies
                     .SingleOrDefault(x =>
-                        string.Equals(x, packageFile.EffectivePath, StringComparison.InvariantCultureIgnoreCase));
+                        string.Equals(x, packageFile.EffectivePath, StringComparison.OrdinalIgnoreCase));
                 return targetPath == null;
             }
             
@@ -474,9 +474,9 @@ namespace Snap.Core
             
             foreach (var currentChecksum in currentFullSnapRelease.Files)
             {
-                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);    
+                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);    
                 var previousChecksum =
-                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase));
+                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
                     
                 if (previousChecksum == null)
                 {
@@ -486,8 +486,8 @@ namespace Snap.Core
                     continue;
                 }
                 
-                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, StringComparison.InvariantCultureIgnoreCase)
-                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, StringComparison.InvariantCultureIgnoreCase))
+                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, StringComparison.OrdinalIgnoreCase))
                 {
                     currentDeltaSnapRelease.Unmodified.Add(currentChecksum.NuspecTargetPath);
                     deletedChecksums.Remove(previousChecksum);
@@ -503,7 +503,7 @@ namespace Snap.Core
                     continue;
                 }
 
-                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);
+                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
                 
                 using (var oldDataStream = await previousPackageFile.GetStream().ReadToEndAsync(cancellationToken))
                 using (var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken))
@@ -696,13 +696,13 @@ namespace Snap.Core
 
                         reassembledFullSnapRelease.Files.Remove(existingChecksum);
 
-                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase);
+                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
                         var packageFileStream = packageFile.GetStream();
                         packageFileStream.Seek(0, SeekOrigin.Begin);
 
                         var neverGenerateBsDiffThisAssembly =
                             NeverGenerateBsDiffsTheseAssemblies.SingleOrDefault(x =>
-                                string.Equals(x, deltaChecksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase));
+                                string.Equals(x, deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
 
                         var outputStream = new MemoryStream((int) deltaChecksum.FullFilesize);
                         using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken))
@@ -1159,7 +1159,7 @@ namespace Snap.Core
                     throw new ArgumentNullException(nameof(snapRelease));
                 }
 
-                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, StringComparison.InvariantCultureIgnoreCase))
+                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(packageBuilder)}");
                 }
@@ -1179,7 +1179,7 @@ namespace Snap.Core
 
             if (filename == string.Empty)
             {
-                var lastSlashIndex = nuspecTargetPath.LastIndexOf("/", StringComparison.InvariantCulture);
+                var lastSlashIndex = nuspecTargetPath.LastIndexOf("/", StringComparison.Ordinal);
                 if (lastSlashIndex == -1)
                 {
                     throw new Exception($"Expected target path to contain filename: {nuspecTargetPath}");
@@ -1199,7 +1199,7 @@ namespace Snap.Core
 
             if (snapRelease != null)
             {
-                if (snapRelease.Files.Any(x => string.Equals(x.NuspecTargetPath, nuspecTargetPath, StringComparison.InvariantCultureIgnoreCase)))
+                if (snapRelease.Files.Any(x => string.Equals(x.NuspecTargetPath, nuspecTargetPath, StringComparison.OrdinalIgnoreCase)))
                 {
                     throw new Exception($"File already added to {nameof(snapRelease)}. Target path: {nuspecTargetPath}");
                 }

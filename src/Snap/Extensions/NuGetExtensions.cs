@@ -41,7 +41,7 @@ namespace Snap.Extensions
             if (name == null) throw new ArgumentNullException(nameof(name));
             return (
                 from node in xElements
-                let comperator = ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture
+                let comperator = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
                 where
                     string.Equals(node.Name.LocalName, name.LocalName, comperator)
                     && string.Equals(node.Name.NamespaceName, name.NamespaceName, comperator)

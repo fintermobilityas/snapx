@@ -72,7 +72,7 @@ namespace snapx
             var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
 
-            var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.InvariantCultureIgnoreCase));
+            var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.OrdinalIgnoreCase));
             if (promoteSrcChannel == null)
             {
                 logger.Error($"Unable to find channel: {options.Channel}.");

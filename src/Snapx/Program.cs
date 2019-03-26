@@ -212,8 +212,8 @@ namespace snapx
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
-            var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.InvariantCultureIgnoreCase)
-                                                            && string.Equals(x.Target.Rid, rid, StringComparison.InvariantCultureIgnoreCase));
+            var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
+                                                            && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
         }

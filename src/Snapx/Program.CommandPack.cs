@@ -251,6 +251,11 @@ namespace snapx
                 return 1;
             }
 
+            fullSnapRelease.CreatedDateUtc = nowUtc.Value;
+            if (deltaSnapRelease != null)
+            {
+                deltaSnapRelease.CreatedDateUtc = nowUtc.Value;
+            }
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
 
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);

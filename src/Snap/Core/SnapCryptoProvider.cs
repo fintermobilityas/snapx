@@ -109,7 +109,7 @@ namespace Snap.Core
             var checksumFiles = GetChecksumFilesForSnapRelease(snapRelease);
 
             var enumerable = checksumFiles
-                .Select(checksum => (checksum, packageFile: packageBuilder.GetPackageFile(checksum.NuspecTargetPath, StringComparison.Ordinal)));
+                .Select(checksum => (checksum, packageFile: packageBuilder.GetPackageFile(checksum.NuspecTargetPath, StringComparison.InvariantCultureIgnoreCase)));
 
             return Sha512(enumerable.Select(x =>
             {

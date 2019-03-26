@@ -1177,9 +1177,14 @@ namespace Snap.Core
             if (nuspecTargetPath == null) throw new ArgumentNullException(nameof(nuspecTargetPath));
             if (filename == null) throw new ArgumentNullException(nameof(filename));
 
-            if (!nuspecTargetPath.StartsWith(SnapConstants.NuspecRootTargetPath))
+            if (!nuspecTargetPath.StartsWith(SnapConstants.NuspecRootTargetPath, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception($"Invalid {nameof(nuspecTargetPath)}: {nuspecTargetPath}. Must start with: {SnapConstants.NuspecRootTargetPath}");
+            }
+
+            if (nuspecTargetPath.EndsWith("/", StringComparison.Ordinal))
+            {
+                throw new Exception($"Invalid {nameof(nuspecTargetPath)}: {nuspecTargetPath}. Cannot end with a trailing slash.");
             }
 
             if (replace)

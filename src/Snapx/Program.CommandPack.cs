@@ -280,13 +280,19 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
                             {
+                                if (canContinueIfError
+                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                                {
+                                    return 1;
+                                }
+                                
                                 logger.Info('-'.Repeat(TerminalDashesWidth));
                                 logger.Error("Unknown error building offline installer.");
                                 return 1;
@@ -300,13 +306,19 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
+                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
                                 snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)
                             {
+                                if (canContinueIfError
+                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                                {
+                                    return 1;
+                                }
+
                                 logger.Info('-'.Repeat(TerminalDashesWidth));
                                 logger.Error("Unknown error building web installer.");
                                 return 1;

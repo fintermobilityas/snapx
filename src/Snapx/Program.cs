@@ -387,7 +387,7 @@ namespace snapx
             }
         }
         
-        static async Task<(bool success, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
+        static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapPack snapPack, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ICoreRunLib coreRunLib, 
             [NotNull] string installersWorkingDirectory, [NotNull] string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
@@ -408,6 +408,13 @@ namespace snapx
             var snapChannel = snapApp.GetCurrentChannelOrThrow();
 
             logger.Info($"Preparing to build {installerPrefix} installer for channel: {snapChannel.Name}. Version: {snapApp.Version}.");
+            
+            if (snapApp.Target.Os != OSPlatform.Windows
+                && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                logger.Error("Skipping building installer because of a limitation in warp-packer where file permissions are not preserved: https://github.com/dgiagio/warp/issues/23.");
+                return (false, true, null);
+            }
 
             var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); } };
 
@@ -597,7 +604,7 @@ namespace snapx
                 {
                     logger.Error(
                         $"Warp packer exited with error code: {exitCode}. Warp packer executable path: {rootTempDirWarpPackerAbsolutePath}. Stdout: {stdout}.");
-                    return (false, null);
+                    return (false, false, null);
                 }
 
                 progressSource.Raise(80);
@@ -624,7 +631,7 @@ namespace snapx
 
                 progressSource.Raise(100);
 
-                return (true, installerFinalAbsolutePath);
+                return (true, false, installerFinalAbsolutePath);
             }
         }
        

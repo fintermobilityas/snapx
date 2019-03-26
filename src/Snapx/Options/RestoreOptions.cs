@@ -15,5 +15,9 @@ namespace snapx.Options
         public string Rid { get; [UsedImplicitly] set; }
         [Option('i', "installers", HelpText = "Rebuild installers")]
         public bool BuildInstallers { get; set; }
+        [Option("rc", HelpText = "Restore concurrency (default 4)")]
+        public int RestoreConcurrency { get; set; } = 4;
+        [Option("dc", HelpText = "Download concurrency (default 4)")]
+        public int DownloadConcurrency { get; set; } = 4;
     }
 }

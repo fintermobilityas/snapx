@@ -133,7 +133,7 @@ namespace snapx
             }
             else
             {
-                logger.Info("Downloaded releases manifest");
+                logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
 
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 

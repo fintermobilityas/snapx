@@ -110,7 +110,7 @@ namespace snapx
                     packageSource = uncached.packageSource;
                     releaseManifests.Add(snapApp.Id, uncached);
 
-                    logger.Info("Downloaded releases manifest");
+                    logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));

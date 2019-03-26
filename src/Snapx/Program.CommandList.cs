@@ -136,7 +136,7 @@ namespace snapx
                     }                    
                 }
 
-                table.Header += $"\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
+                table.Header += $"\nVersion:{snapAppsReleases.Version}\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    

@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 using JetBrains.Annotations;
+using Snap.Core;
 
 namespace snapx.Options
 {
@@ -15,9 +16,11 @@ namespace snapx.Options
         public string Rid { get; [UsedImplicitly] set; }
         [Option('i', "installers", HelpText = "Rebuild installers")]
         public bool BuildInstallers { get; set; }
-        [Option("rc", HelpText = "Restore concurrency (default 4)")]
+        [Option("rc", HelpText = "Restore concurrency (default: 4)")]
         public int RestoreConcurrency { get; set; } = 4;
-        [Option("dc", HelpText = "Download concurrency (default 4)")]
+        [Option("dc", HelpText = "Download concurrency (default: 4)")]
         public int DownloadConcurrency { get; set; } = 4;
+        [Option("restore-strategy", HelpText = "Restore strategy (default: GenisisAndDelta)")]
+        public SnapPackageManagerRestoreType RestoreStrategyType { get; set; } = SnapPackageManagerRestoreType.GenesisAndDelta;
     }
 }

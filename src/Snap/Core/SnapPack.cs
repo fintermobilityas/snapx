@@ -595,12 +595,6 @@ namespace Snap.Core
             var deltaSnapReleasesToApply = snapAppChannelReleases.GetDeltaReleasesOlderThanOrEqualTo(snapRelease.Version).ToList();
             if (!deltaSnapReleasesToApply.Any())
             {
-                var genisisReleaseChecksum = _snapCryptoProvider.Sha512(snapRelease, packageBuilder);
-                if (genisisReleaseChecksum != snapRelease.FullSha512Checksum)
-                {
-                    throw new SnapReleaseChecksumMismatchException(snapRelease);
-                }
-
                 return (packageBuilder, genisisSnapApp, snapRelease);
             }
             

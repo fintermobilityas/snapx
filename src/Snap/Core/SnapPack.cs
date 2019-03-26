@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -663,11 +664,19 @@ namespace Snap.Core
                 {
                     foreach (var checksumNuspecTargetPath in deltaRelease.Deleted)
                     {
+                        if (!packageBuilder.RemovePackageFile(checksumNuspecTargetPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new FileNotFoundException(
+                                $"Unable to remove 'Deleted' file from genesis package builder: {reassembledFullSnapRelease.Filename}. " +
+                                $"Target path: {checksumNuspecTargetPath}. " +
+                                $"Nupkg: {deltaRelease.Filename}.");
+                        }
+
                         var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == checksumNuspecTargetPath);
                         if (existingFullChecksum == null)
                         {
                             throw new FileNotFoundException(
-                                $"Unable to remove 'Deleted' file from full release: {reassembledFullSnapRelease.Filename}. " +
+                                $"Unable to remove 'Deleted' file from full release files list: {reassembledFullSnapRelease.Filename}. " +
                                 $"Target path: {checksumNuspecTargetPath}. " +
                                 $"Nupkg: {deltaRelease.Filename}.");
                         }
@@ -1238,6 +1247,12 @@ namespace Snap.Core
                     FullFilesize = srcStream.Length,
                     FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
                 });
+            }
+
+            var duplicatePackageFile = packageBuilder.GetPackageFile(nuspecTargetPath, StringComparison.OrdinalIgnoreCase);
+            if (duplicatePackageFile != null)
+            {
+                throw new Exception($"File already added to {nameof(packageBuilder)}. Target path: {duplicatePackageFile.EffectivePath}");
             }
 
             packageBuilder.Files.Add(new InMemoryPackageFile(srcStream, nuGetFramework, nuspecTargetPath, filename));

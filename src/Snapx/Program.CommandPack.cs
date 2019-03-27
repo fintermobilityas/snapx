@@ -285,19 +285,21 @@ namespace snapx
 
                             if (!installerOfflineSuccess)
                             {
-                                if (canContinueIfError
-                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                                if (!canContinueIfError 
+                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
+                                        infoOnly: packOptions.YesToAllPrompts))
                                 {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
                                     return 1;
-                                }
-                                
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building offline installer.");
-                                return 1;
+                                }                                
+                            }
+                            else
+                            {
+                                var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
+                                logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
                             }
 
-                            var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
-                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
                         }
 
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
@@ -311,19 +313,20 @@ namespace snapx
 
                             if (!installerWebSuccess)
                             {
-                                if (canContinueIfError
-                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                                if (!canContinueIfError 
+                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
+                                        infoOnly: packOptions.YesToAllPrompts))
                                 {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
                                     return 1;
-                                }
-
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building web installer.");
-                                return 1;
+                                }          
                             }
-
-                            var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
-                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
+                                logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }
                     }
                 }

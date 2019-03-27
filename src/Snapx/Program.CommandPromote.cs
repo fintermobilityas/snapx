@@ -220,19 +220,18 @@ namespace snapx
 
                             if (!installerOfflineSuccess)
                             {
-                                if (canContinueIfError
-                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                                 {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
                                     return 1;
                                 }
-
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building offline installer.");
-                                return 1;
                             }
-
-                            var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
-                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
+                                logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
@@ -246,19 +245,19 @@ namespace snapx
 
                             if (!installerWebSuccess)
                             {
-                                if (canContinueIfError
-                                    && !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                if (!canContinueIfError
+                                   || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                                 {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building web installer.");
                                     return 1;
                                 }
-
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building web installer.");
-                                return 1;
                             }
-
-                            var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
-                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
+                                logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }    
                     }
                 }

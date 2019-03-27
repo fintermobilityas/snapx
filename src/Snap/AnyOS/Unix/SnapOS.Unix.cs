@@ -81,7 +81,7 @@ namespace Snap.AnyOS.Unix
             var desktopEnabled = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Desktop);
             var startMenuEnabled = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.StartMenu);
             
-            var desktopShortcutUtf8Content = BuildDesktopShortcut(shortcutDescription, shortcutDescription.NuspecReader.GetDescription(), autoStartEnabled);
+            var desktopShortcutUtf8Content = BuildDesktopShortcut(shortcutDescription, shortcutDescription.NuspecReader.GetDescription());
             if (desktopShortcutUtf8Content == null)
             {
                 _logger?.Warn(
@@ -215,19 +215,16 @@ namespace Snap.AnyOS.Unix
             return (distributorId, description, release, codeName);
         }
 
-        string BuildDesktopShortcut([NotNull] SnapOsShortcutDescription shortcutDescription, string description, bool addToMachineStartup)
+        string BuildDesktopShortcut([NotNull] SnapOsShortcutDescription shortcutDescription, string description)
         {
             if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
             
-            var gnomeAutoStartEnabled = addToMachineStartup ? "true" : "false";
             var workingDirectory = Filesystem.PathGetDirectoryName(shortcutDescription.ExeAbsolutePath);
 
             switch (DistroType)
             {
                 case SnapOsDistroType.Ubuntu:
-                    return $@"
-#!/usr/bin/env xdg-open
-[Desktop Entry]
+                    return $@"[Desktop Entry]
 Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
@@ -235,9 +232,7 @@ Terminal=false
 Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
-Comment={description}
-X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}
-";
+Comment={description}";
                 default:
                     return null;
             }

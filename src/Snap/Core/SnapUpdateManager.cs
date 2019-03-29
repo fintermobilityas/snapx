@@ -75,8 +75,8 @@ namespace Snap.Core
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
-            CancellationToken cancellationToken = default);
+        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null);
+        Task<(string stubExecutableFullPath, string restartArguments)> SuperviseAsync(List<string> arguments = null);
         string GetStubExecutableAbsolutePath();
     }
 
@@ -176,15 +176,24 @@ namespace Snap.Core
         }
 
         /// <summary>
-        /// Restart current application. You should invoke this method after <see cref="UpdateToLatestReleaseAsync"/> has finished.
+        /// Restarts your application upon exit. 
         /// </summary>
         /// <param name="arguments"></param>
-        /// <param name="cancellationToken"></param>
         /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
         /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        /// <exception cref="OperationCanceledException">Is thrown when restart is cancelled by user.</exception>
-        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
-            CancellationToken cancellationToken = default)
+        public Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null)
+        {
+            return SuperviseAsync(arguments);
+        }
+
+        /// <summary>
+        /// Watches your application and if it exits or crashes it will be automatically restarted.
+        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
+        /// </summary>
+        /// <param name="arguments"></param>
+        /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
+        /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
+        public async Task<(string stubExecutableFullPath, string restartArguments)> SuperviseAsync(List<string> arguments = null)
         {
             typeof(SnapUpdateManager).Assembly
                 .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
@@ -209,7 +218,7 @@ namespace Snap.Core
                     $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(1.5));
 
             return (stubExecutableFullPath, shutdownArguments);
         }

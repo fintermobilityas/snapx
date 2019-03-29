@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
@@ -85,16 +89,18 @@ namespace Snap.Core
                 }
             }
         }
-
         /// <summary>
         /// Current application working directory.
         /// </summary>
         public static string WorkingDirectory { get; }
-
         /// <summary>
         /// Current Snapx.Core version.
         /// </summary>
         public static SemanticVersion Version { get; }
+        /// <summary>
+        /// Current supervisor process.
+        /// </summary>
+        public static Process SuperVisorProcess { get; private set; }
 
         /// <summary>
         /// Call this method as early as possible in app startup. This method
@@ -170,6 +176,59 @@ namespace Snap.Core
 
                 return true;
             }
+        }
+        
+        /// <summary>
+        /// Supervises your application and if it exits or crashes it will be automatically restarted.
+        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
+        /// </summary>
+        /// <param name="restartArguments"></param>
+        /// <exception cref="FileNotFoundException">Supervisor executable was not found</exception>
+        /// <exception cref="Exception">Supervisor is unable to start</exception>
+        public static void EnableSupervisor(List<string> restartArguments = null)
+        {
+            TryKillSupervisorProcess();
+
+            typeof(SnapUpdateManager).Assembly
+                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var stubExecutableFullPath);
+
+            if (!SnapOs.Filesystem.FileExists(stubExecutableFullPath))
+            {
+                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
+            }
+
+            var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
+
+            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
+                .AddRange(restartArguments ?? new List<string>())
+                .Add(coreRunArgument)
+            );
+
+            if (SuperVisorProcess.HasExited)
+            {
+                throw new Exception(
+                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
+            }
+        }
+                               
+        public static bool TryKillSupervisorProcess()
+        {
+            if (SuperVisorProcess == null)
+            {
+                return false;
+            }
+            
+            try
+            {
+                SuperVisorProcess.Kill();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess.Id}", e);
+            }
+
+            return false;
         }
 
         static void DefaultAction(SemanticVersion version)

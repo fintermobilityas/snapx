@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -74,14 +74,9 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMethodReturnValue.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
-        Process SuperVisorProcess { get; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-        Task<(string stubExecutableFullPath, string restartArguments)> RestartAsync(List<string> arguments = null);
-        Task<(string stubExecutableFullPath, string restartArguments)> SuperviseAsync(List<string> arguments = null);
-        string GetStubExecutableAbsolutePath();
-        bool TryKillSupervisorProcess();
     }
 
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
@@ -100,8 +95,6 @@ namespace Snap.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapPackageManager _snapPackageManager;
         readonly ISnapAppWriter _snapAppWriter;
-
-        public Process SuperVisorProcess { get; private set; }
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -179,86 +172,6 @@ namespace Snap.Core
                 _logger.Error("Exception thrown when attempting to update to latest release", e);
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Restarts your application upon exit. 
-        /// </summary>
-        /// <param name="arguments"></param>
-        /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
-        /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        public Task<(string stubExecutableFullPath, string restartArguments)> RestartAsync(List<string> arguments = null)
-        {
-            return SuperviseAsync(arguments);
-        }
-
-        /// <summary>
-        /// Watches your application and if it exits or crashes it will be automatically restarted.
-        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
-        /// </summary>
-        /// <param name="arguments"></param>
-        /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
-        /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        public async Task<(string stubExecutableFullPath, string restartArguments)> SuperviseAsync(List<string> arguments = null)
-        {
-            TryKillSupervisorProcess();
-
-            typeof(SnapUpdateManager).Assembly
-                .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
-
-            if (!_snapOs.Filesystem.FileExists(stubExecutableFullPath))
-            {
-                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
-            }
-
-            var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
-
-            var restartArguments = $"{argumentWaitForProcessId}";
-
-            SuperVisorProcess = _snapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
-                .AddRange(arguments ?? new List<string>())
-                .Add(restartArguments)
-            );
-
-            if (SuperVisorProcess.HasExited)
-            {
-                throw new Exception(
-                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(1.5));
-
-            return (stubExecutableFullPath, restartArguments);
-        }
-
-        /// <summary>
-        /// Get absolute path to stub executable.
-        /// </summary>
-        /// <returns></returns>
-        public string GetStubExecutableAbsolutePath()
-        {
-            typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
-            return coreRunFullPath;
-        }
-
-        public bool TryKillSupervisorProcess()
-        {
-            if (SuperVisorProcess == null)
-            {
-                return false;
-            }
-            
-            try
-            {
-                SuperVisorProcess.Kill();
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess.Id}", e);
-            }
-
-            return false;
         }
 
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
@@ -345,7 +258,7 @@ namespace Snap.Core
 
             var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppChannelReleases, 
                 packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, snapPackageManagerProgressSource, _logger, cancellationToken, 
-                checksumConcurrency: 1, downloadConcurrency: 2, restoreConcurrency: 1);
+                1, 2, 1);
             if (!restoreSummary.Success)
             {
                 _logger.Error("Unknown error restoring nuget packages.");
@@ -377,7 +290,7 @@ namespace Snap.Core
             SnapApp updatedSnapApp;
             try
             {
-                TryKillSupervisorProcess();
+                Snapx.TryKillSupervisorProcess();
             
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
@@ -406,5 +319,6 @@ namespace Snap.Core
         public void Dispose()
         {
         }
+
     }
 }

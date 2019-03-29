@@ -11,6 +11,7 @@ set(corerun_SOURCES
 
 include_directories(SYSTEM
         vendor
+        ../Vendor
         )
 
 add_executable(corerun
@@ -28,6 +29,7 @@ add_library(corerun_static
 
 target_include_directories(corerun_demoapp SYSTEM PUBLIC
         ../Vendor/json/include
+        ../Vendor/cxxopts/include
         )
 
 target_link_libraries(corerun_demoapp PUBLIC

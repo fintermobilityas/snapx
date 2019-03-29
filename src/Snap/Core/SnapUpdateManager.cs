@@ -75,7 +75,7 @@ namespace Snap.Core
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null);
+        Task<(string stubExecutableFullPath, string restartArguments)> RestartAsync(List<string> arguments = null);
         Task<(string stubExecutableFullPath, string restartArguments)> SuperviseAsync(List<string> arguments = null);
         string GetStubExecutableAbsolutePath();
     }
@@ -181,7 +181,7 @@ namespace Snap.Core
         /// <param name="arguments"></param>
         /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
         /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        public Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null)
+        public Task<(string stubExecutableFullPath, string restartArguments)> RestartAsync(List<string> arguments = null)
         {
             return SuperviseAsync(arguments);
         }
@@ -205,22 +205,22 @@ namespace Snap.Core
 
             var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
 
-            var shutdownArguments = $"{argumentWaitForProcessId}";
+            var restartArguments = $"{argumentWaitForProcessId}";
 
             var process = _snapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
                 .AddRange(arguments ?? new List<string>())
-                .Add(shutdownArguments)
+                .Add(restartArguments)
             );
 
             if (process.HasExited)
             {
                 throw new Exception(
-                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
+                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
             }
 
             await Task.Delay(TimeSpan.FromSeconds(1.5));
 
-            return (stubExecutableFullPath, shutdownArguments);
+            return (stubExecutableFullPath, restartArguments);
         }
 
         /// <summary>

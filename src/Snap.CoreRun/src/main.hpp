@@ -83,11 +83,11 @@ inline int corerun_command_supervise(const std::basic_string<char> &executable_f
     const auto child_pid = fork();
     if (child_pid == 0)
     {
-        return snap::stubexecutable::run(arguments, process_id);
+        return snap::stubexecutable::run(arguments, -1);
     }
     return 0;
 #else
-    return snap::stubexecutable::run(arguments, process_id);
+    return snap::stubexecutable::run(arguments, cmd_show_windows);
 #endif
 }
 

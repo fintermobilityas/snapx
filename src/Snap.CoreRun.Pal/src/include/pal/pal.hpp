@@ -3,9 +3,14 @@
 #ifdef PAL_PLATFORM_WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-#define STRICT
-#include <windows.h>
 #endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef STRICT
+#define STRICT
+#endif
+#include <windows.h>
 #endif
 
 #ifndef PAL_UNUSED

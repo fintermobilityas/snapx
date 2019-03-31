@@ -15,7 +15,9 @@
 #include <iostream>
 
 inline int corerun_command_supervise(const std::basic_string<char> &executable_full_path,
-                              std::vector<std::string> &arguments, int process_id);
+                              std::vector<std::string> &arguments,
+                              int process_id,
+                              int cmd_show_windows);
 inline void main_wait_for_pid(pal_pid_t pid);
 inline void snapx_maybe_wait_for_debugger();
 
@@ -52,14 +54,15 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     }
 
     if (supervise_process_id > 0) {
-        return corerun_command_supervise(stub_executable_full_path, stub_executable_arguments, supervise_process_id);
+        return corerun_command_supervise(stub_executable_full_path, stub_executable_arguments,
+                supervise_process_id, cmd_show_windows);
     }
 
     return snap::stubexecutable::run(stub_executable_arguments, cmd_show_windows);
 }
 
 inline int corerun_command_supervise(const std::basic_string<char> &executable_full_path,
-        std::vector<std::string> &arguments, int process_id)
+        std::vector<std::string> &arguments, const int process_id, const int cmd_show_windows)
 {
     const auto corerun_dash_dash = "--corerun-";
 
@@ -80,6 +83,7 @@ inline int corerun_command_supervise(const std::basic_string<char> &executable_f
          << this_exe::build_argv_str(arguments);
 
 #if defined(PAL_PLATFORM_LINUX)
+    PAL_UNUSED(cmd_show_windows);
     const auto child_pid = fork();
     if (child_pid == 0)
     {

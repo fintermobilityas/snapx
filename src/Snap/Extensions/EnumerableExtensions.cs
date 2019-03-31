@@ -27,11 +27,14 @@ namespace Snap.Extensions
 
             const int maxConcurrency = 8;
             
-            if (concurrency == 0 
-                || concurrency > maxConcurrency)
+            if (concurrency == 0)
             {
-                var processorCount = Environment.ProcessorCount;
-                concurrency = processorCount > maxConcurrency ? maxConcurrency : processorCount;
+                concurrency = Environment.ProcessorCount;
+            }
+
+            if (concurrency > maxConcurrency)
+            {
+                concurrency = maxConcurrency;
             }
             
             using (var semaphore = new SemaphoreSlim(concurrency, concurrency))

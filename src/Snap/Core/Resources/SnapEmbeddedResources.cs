@@ -101,6 +101,7 @@ namespace Snap.Core.Resources
 
             // Update corerun icon
             if (snapApp.Target.Icon != null 
+                && snapApp.Target.Os == OSPlatform.Windows
                 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 using (var tmpDir = snapFilesystem.WithDisposableTempDirectory())

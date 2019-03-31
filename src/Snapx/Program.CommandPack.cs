@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -135,13 +133,13 @@ namespace snapx
             }
             else
             {
-                logger.Info("Downloaded releases manifest");
+                logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
 
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                    pushFeed, SnapPackageManagerRestoreType.Packaging, logger: logger, cancellationToken: cancellationToken);
+                    pushFeed, SnapPackageManagerRestoreType.GenesisAndDelta, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
                 {
                     return 1;
@@ -162,10 +160,10 @@ namespace snapx
 
                     var persistentDisk = filesystem
                         .EnumerateFiles(packagesDirectory)
-                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.InvariantCultureIgnoreCase), fullName: x.FullName))
+                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.OrdinalIgnoreCase), fullName: x.FullName))
                         .Where(x => x.nupkg.valid
-                                    && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.InvariantCultureIgnoreCase)
-                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.InvariantCultureIgnoreCase))
+                                    && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.OrdinalIgnoreCase)
+                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.OrdinalIgnoreCase))
                         .OrderByDescending(x => x.nupkg.semanticVersion)
                         .FirstOrDefault();
 
@@ -228,7 +226,7 @@ namespace snapx
                 logger.Info($"Writing full nupkg to disk: {fullSnapRelease.Filename}. File size: {fullSnapRelease.FullFilesize.BytesAsHumanReadable()}");
                 await filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, default);
 
-                if (!fullSnapRelease.IsGenisis)
+                if (!fullSnapRelease.IsGenesis)
                 {
                     var deltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, deltaSnapRelease.Filename);
                     logger.Info(
@@ -251,6 +249,11 @@ namespace snapx
                 return 1;
             }
 
+            fullSnapRelease.CreatedDateUtc = nowUtc.Value;
+            if (deltaSnapRelease != null)
+            {
+                deltaSnapRelease.CreatedDateUtc = nowUtc.Value;
+            }
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
 
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);
@@ -264,7 +267,7 @@ namespace snapx
             {
                 if (fullOrDeltaSnapApp.Target.Installers.Any())
                 {
-                    var channels = fullOrDeltaSnapApp.IsGenisis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
+                    var channels = fullOrDeltaSnapApp.IsGenesis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
 
                     foreach (var channel in channels)
                     {
@@ -275,40 +278,55 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
                             {
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building offline installer.");
-                                return 1;
+                                if (!canContinueIfError 
+                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
+                                        infoOnly: packOptions.YesToAllPrompts))
+                                {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
+                                    return 1;
+                                }                                
+                            }
+                            else
+                            {
+                                var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
+                                logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
                             }
 
-                            var installerOfflineExeStat = snapOs.Filesystem.FileStat(installerOfflineExeAbsolutePath);
-                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
                         }
 
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
+                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
                                 snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)
                             {
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building web installer.");
-                                return 1;
+                                if (!canContinueIfError 
+                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
+                                        infoOnly: packOptions.YesToAllPrompts))
+                                {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
+                                    return 1;
+                                }          
                             }
-
-                            var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
-                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerWebExeStat = snapOs.Filesystem.FileStat(installerWebExeAbsolutePath);
+                                logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }
                     }
                 }

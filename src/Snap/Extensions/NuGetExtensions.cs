@@ -41,7 +41,7 @@ namespace Snap.Extensions
             if (name == null) throw new ArgumentNullException(nameof(name));
             return (
                 from node in xElements
-                let comperator = ignoreCase ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture
+                let comperator = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
                 where
                     string.Equals(node.Name.LocalName, name.LocalName, comperator)
                     && string.Equals(node.Name.NamespaceName, name.NamespaceName, comperator)
@@ -132,7 +132,7 @@ namespace Snap.Extensions
             return new PackageIdentity(snapApp.BuildNugetUpstreamId(), snapApp.Version.ToNuGetVersion());
         }
 
-        internal static NuGetPackageSearchMedatadata BuildPackageSearchMedatadata([NotNull] this SnapApp snapApp,
+        internal static NuGetPackageSearchMedatadata BuildPackageSearchMetadata([NotNull] this SnapApp snapApp,
             [NotNull] INuGetPackageSources nugetSources)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));

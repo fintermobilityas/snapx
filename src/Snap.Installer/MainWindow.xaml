@@ -4,7 +4,7 @@
         Height="600"
         FontFamily="resm:Snap.Installer.Assets.Fonts?assembly=Snap.Installer#Roboto"
         HasSystemDecorations="false"
-        FontSize="14">
+        FontSize="14" WindowStartupLocation="CenterScreen">
     <Window.Styles>
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="16"/>

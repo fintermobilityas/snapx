@@ -142,10 +142,10 @@ namespace Snap.Shared.Tests
             return path;
         }
 
-        internal void AssertSnapAppIsGenisis([NotNull] SnapApp snapApp)
+        internal void AssertSnapAppIsGenesis([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.True(snapApp.IsGenisis);
+            Assert.True(snapApp.IsGenesis);
             Assert.True(snapApp.IsFull);
             Assert.False(snapApp.IsDelta);
         }
@@ -153,7 +153,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapAppIsFull([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.False(snapApp.IsGenisis);
+            Assert.False(snapApp.IsGenesis);
             Assert.True(snapApp.IsFull);
             Assert.False(snapApp.IsDelta);
         }
@@ -161,15 +161,15 @@ namespace Snap.Shared.Tests
         internal void AssertSnapAppIsDelta([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            Assert.False(snapApp.IsGenisis);
+            Assert.False(snapApp.IsGenesis);
             Assert.False(snapApp.IsFull);
             Assert.True(snapApp.IsDelta);
         }
 
-        internal void AssertSnapReleaseIsGenisis([NotNull] SnapRelease snapRelease)
+        internal void AssertSnapReleaseIsGenesis([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.True(snapRelease.IsGenisis);
+            Assert.True(snapRelease.IsGenesis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
@@ -184,7 +184,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapReleaseIsFull([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.False(snapRelease.IsGenisis);
+            Assert.False(snapRelease.IsGenesis);
             Assert.True(snapRelease.IsFull);
             Assert.False(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetFullFilename(), snapRelease.Filename);
@@ -199,7 +199,7 @@ namespace Snap.Shared.Tests
         internal void AssertSnapReleaseIsDelta([NotNull] SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            Assert.False(snapRelease.IsGenisis);
+            Assert.False(snapRelease.IsGenesis);
             Assert.False(snapRelease.IsFull);
             Assert.True(snapRelease.IsDelta);
             Assert.Equal(snapRelease.BuildNugetDeltaFilename(), snapRelease.Filename);
@@ -305,7 +305,7 @@ namespace Snap.Shared.Tests
 
                 foreach (var releaseChecksum in snapRelease.Files)
                 {
-                    var (_, _, checksumFileAbsolutePath) = NormalizePath(releaseChecksum.NuspecTargetPath);
+                    var (_, _, checksumFileAbsolutePath) = NormalizePath(snapRelease, releaseChecksum.NuspecTargetPath);
                     Assert.NotNull(checksumFileAbsolutePath);
 
                     if (snapRelease.IsDelta)
@@ -366,7 +366,14 @@ namespace Snap.Shared.Tests
                         var expectedFilesize = useFullChecksum ? targetChecksum.FullFilesize : targetChecksum.DeltaFilesize;
 
                         Assert.NotNull(expectedChecksum);
-                        Assert.True(expectedFilesize > 0);
+                        if (expectedChecksum == SnapConstants.Sha512EmptyFileChecksum)
+                        {
+                            Assert.Equal(0, expectedFilesize);
+                        }
+                        else
+                        {
+                            Assert.True(expectedFilesize > 0);
+                        }
 
                         Assert.Equal(expectedChecksum, diskSha512Checksum);
                         Assert.Equal(expectedFilesize, diskFilesize);
@@ -408,9 +415,12 @@ namespace Snap.Shared.Tests
         }
 
         [SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
-        (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] string relativePath)
+        (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] SnapRelease snapRelease, [NotNull] string relativePath)
         {
+            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (relativePath == null) throw new ArgumentNullException(nameof(relativePath));
+
+            var snapAppInstallDirectory = SnapFilesystem.PathCombine(SnapAppBaseDirectory, $"app-{snapRelease.Version}");
 
             string diskAbsoluteFilename;
             string targetPath;
@@ -419,13 +429,13 @@ namespace Snap.Shared.Tests
                 relativePath = relativePath.Substring(SnapConstants.NuspecAssetsTargetPath.Length + 1);
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, relativePath);
                 var isCoreRunExe = relativePath.EndsWith(CoreRunExe);
-                diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : SnapAppInstallDirectory, relativePath);
+                diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : snapAppInstallDirectory, relativePath);
             }
             else if (relativePath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
                 relativePath = relativePath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath);
-                diskAbsoluteFilename = SnapFilesystem.PathCombine(SnapAppInstallDirectory, relativePath);
+                diskAbsoluteFilename = SnapFilesystem.PathCombine(snapAppInstallDirectory, relativePath);
             }
             else
             {

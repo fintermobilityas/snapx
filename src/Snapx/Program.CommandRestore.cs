@@ -50,12 +50,12 @@ namespace snapx
             if (restoreOptions.AppId != null)
             {
                 snapAppTargets.RemoveAll(x =>
-                    !string.Equals(x.Id, restoreOptions.AppId, StringComparison.InvariantCultureIgnoreCase));
+                    !string.Equals(x.Id, restoreOptions.AppId, StringComparison.OrdinalIgnoreCase));
 
                 if (restoreOptions.Rid != null)
                 {
                     snapAppTargets.RemoveAll(x =>
-                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.InvariantCultureIgnoreCase));
+                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (!snapAppTargets.Any())
@@ -110,7 +110,7 @@ namespace snapx
                     packageSource = uncached.packageSource;
                     releaseManifests.Add(snapApp.Id, uncached);
 
-                    logger.Info("Downloaded releases manifest");
+                    logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
                 }
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -123,8 +123,10 @@ namespace snapx
                 }
 
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource,
-                    SnapPackageManagerRestoreType.Packaging,
-                    logger: logger, cancellationToken: cancellationToken);
+                    restoreOptions.RestoreStrategyType,
+                    logger: logger, cancellationToken: cancellationToken, 
+                    checksumConcurrency: restoreOptions.RestoreConcurrency,
+                    downloadConcurrency: restoreOptions.DownloadConcurrency);
 
                 if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
                 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -25,39 +26,46 @@ namespace Snap.Shared.Tests
             if (snapAppses == null) throw new ArgumentNullException(nameof(snapAppses));
             if (snapAppses.Length == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(snapAppses));
             
-            var genisisSnapApp = snapAppses.First();
-            var releasesUpstreamPackageId = genisisSnapApp.BuildNugetReleasesUpstreamId();
-
-            SetupGetMetadatasAsync(nugetServiceMock, nuGetPackageSources, snapAppses);
+            foreach (var snapApp in snapAppses)
+            {
+                SetupGetMetadatasAsync(nugetServiceMock, nuGetPackageSources, snapApp);
+            }
             
+            var genesisSnapApp = snapAppses.First();
+            var releasesUpstreamPackageId = genesisSnapApp.BuildNugetReleasesUpstreamId();
+
             SetupDownloadLatestAsync(nugetServiceMock,
-                genisisSnapApp, releasesUpstreamPackageId, releasesMemoryStream, nuGetPackageSources);
+                genesisSnapApp, releasesUpstreamPackageId, releasesMemoryStream, nuGetPackageSources);
         }
         
-        internal void SetupGetMetadatasAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] params SnapApp[] snapAppses)
+        internal void SetupGetMetadatasAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] SnapApp snapApp)
         {
             if (nugetServiceMock == null) throw new ArgumentNullException(nameof(nugetServiceMock));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
-            if (snapAppses == null) throw new ArgumentNullException(nameof(snapAppses));
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
-            var genisisSnapApp = snapAppses.First();
-            var releasesUpstreamPackageId = genisisSnapApp.BuildNugetReleasesUpstreamId();
+            var upstreamPackageId = snapApp.BuildNugetUpstreamId();
 
             nugetServiceMock.Setup(x =>
                     x.GetMetadatasAsync(
-                        It.Is<string>(v => string.Equals(v, releasesUpstreamPackageId)),
+                        It.Is<string>(v => string.Equals(v, upstreamPackageId)),
                         It.IsAny<bool>(),
                         It.IsAny<NuGetPackageSources>(),
                         It.IsAny<CancellationToken>(),
                         It.IsAny<bool>()))
                 .ReturnsAsync(() =>
                 {
-                    var nuGetPackageSearchMedatadatas = snapAppses
-                        .Select(x => x.BuildPackageSearchMedatadata(nuGetPackageSources))
-                        .ToList();
-                    return nuGetPackageSearchMedatadatas;
+                    var packageSearchMedatadata = snapApp.BuildPackageSearchMetadata(nuGetPackageSources);
+                    return new List<NuGetPackageSearchMedatadata> { packageSearchMedatadata };
                 });
+
+            nugetServiceMock.Setup(x =>
+                    x.GetLatestMetadataAsync(
+                        It.Is<string>(v => string.Equals(v, upstreamPackageId)),
+                        It.IsAny<PackageSource>(),
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<bool>()))
+                .ReturnsAsync(() => snapApp.BuildPackageSearchMetadata(nuGetPackageSources));
         }
         
         internal void SetupDownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 

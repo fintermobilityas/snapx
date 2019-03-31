@@ -1,14 +1,18 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
+using Snap.Logging.LogProviders;
 
 namespace Snap.Core
 {
@@ -19,12 +23,11 @@ namespace Snap.Core
     public static class Snapx
     {
         static readonly ILog Logger = LogProvider.GetLogger(nameof(Snapx));
-
         static readonly object SyncRoot = new object();
         // ReSharper disable once InconsistentNaming
-        internal static SnapApp _current;
-        
+        internal static SnapApp _current;        
         internal static ISnapOs SnapOs { get; set; }
+        internal static List<string> SupervisorProcessRestartArguments { get; private set; }
 
         static Snapx()
         {
@@ -51,7 +54,27 @@ namespace Snap.Core
                 }                        
             }
         }
+
+        public static void EnableNLogLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new NLogLogProvider());
+        }
+
+        public static void EnableSerilogLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new SerilogLogProvider());
+        }
+
+        public static void EnableLog4NetLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new Log4NetLogProvider());
+        }
         
+        public static void EnableLoupeLogProvider()
+        {
+            LogProvider.SetCurrentLogProvider(new LoupeLogProvider());
+        }
+
         /// <summary>
         /// Current application release information.
         /// </summary>
@@ -65,16 +88,18 @@ namespace Snap.Core
                 }
             }
         }
-
         /// <summary>
         /// Current application working directory.
         /// </summary>
         public static string WorkingDirectory { get; }
-
         /// <summary>
         /// Current Snapx.Core version.
         /// </summary>
         public static SemanticVersion Version { get; }
+        /// <summary>
+        /// Current supervisor process.
+        /// </summary>
+        public static Process SuperVisorProcess { get; private set; }
 
         /// <summary>
         /// Call this method as early as possible in app startup. This method
@@ -101,9 +126,7 @@ namespace Snap.Core
             Action<SemanticVersion> onUpdated = null)
         {
             if (arguments == null) throw new ArgumentNullException(nameof(arguments));
-            var skipNArguments = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 0;
-            var args = arguments.Skip(skipNArguments).ToArray();
-            if (args.Length != 2)
+            if (arguments.Length != 2)
             {
                 return false;
             }
@@ -114,7 +137,7 @@ namespace Snap.Core
                 new { Key = "--snapx-updated", Value = onUpdated ??  DefaultAction }
             }.ToDictionary(k => k.Key, v => v.Value);
 
-            var actionName = args[0];
+            var actionName = arguments[0];
             if (!invoke.ContainsKey(actionName))
             {
                 return false;
@@ -129,7 +152,7 @@ namespace Snap.Core
             {
                 Logger.Trace($"Handling event: {actionName}.");
 
-                var currentVersion = SemanticVersion.Parse(args[1]);
+                var currentVersion = SemanticVersion.Parse(arguments[1]);
 
                 invoke[actionName](currentVersion);
 
@@ -152,6 +175,62 @@ namespace Snap.Core
 
                 return true;
             }
+        }
+        
+        /// <summary>
+        /// Supervises your application and if it exits or crashes it will be automatically restarted.
+        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
+        /// </summary>
+        /// <param name="restartArguments"></param>
+        /// <exception cref="FileNotFoundException">Supervisor executable was not found</exception>
+        /// <exception cref="Exception">Supervisor is unable to start</exception>
+        public static void EnableSupervisor(List<string> restartArguments = null)
+        {
+            TryKillSupervisorProcess();
+
+            typeof(SnapUpdateManager).Assembly
+                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var stubExecutableFullPath);
+
+            if (!SnapOs.Filesystem.FileExists(stubExecutableFullPath))
+            {
+                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
+            }
+
+            var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
+
+            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
+                .AddRange(restartArguments ?? new List<string>())
+                .Add(coreRunArgument)
+            );
+
+            if (SuperVisorProcess.HasExited)
+            {
+                throw new Exception(
+                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
+            }
+
+            SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
+        }
+                               
+        public static bool TryKillSupervisorProcess()
+        {
+            if (SuperVisorProcess == null)
+            {
+                return false;
+            }
+            
+            try
+            {
+                SuperVisorProcess.Kill();
+                SuperVisorProcess = null;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess.Id}", e);
+            }
+
+            return false;
         }
 
         static void DefaultAction(SemanticVersion version)

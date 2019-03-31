@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -169,7 +168,7 @@ namespace Snap.Core
             
             fullSnapRelease.FullFilesize = fullNupkgMemoryStream.Length;
 
-            if (fullSnapRelease.IsGenisis)
+            if (fullSnapRelease.IsGenesis)
             {
                 packageDetails.SnapAppsReleases.Add(fullSnapRelease);
                 return (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, null, null, null);
@@ -215,7 +214,7 @@ namespace Snap.Core
             var snapAppMetadataOnly = new SnapApp(packageDetails.SnapApp)
             {
                 IsFull = false,
-                IsGenisis = false,
+                IsGenesis = false,
                 ReleaseNotes = null
             };
 
@@ -229,15 +228,15 @@ namespace Snap.Core
 
             if (!snapAppChannelReleases.Any())
             {           
-                var (genisisPackageBuilder, nuspecMemoryStream, _, genisisSnapApp, genisisSnapRelease) = 
+                var (genesisPackageBuilder, nuspecMemoryStream, _, genesisSnapApp, genesisSnapRelease) = 
                     await BuildFullPackageAsyncInternal(packageDetails, snapAppChannelReleases, snapAppMetadataOnly, 
                         snapReleaseMetadataOnly, coreRunLib, cancellationToken);
 
-                genisisSnapRelease.Channels = genisisSnapApp.Channels.Select(x => x.Name).ToList();
+                genesisSnapRelease.Channels = genesisSnapApp.Channels.Select(x => x.Name).ToList();
 
                 using (nuspecMemoryStream)
                 {
-                    return (genisisPackageBuilder, genisisSnapApp, genisisSnapRelease, null, null, null);                    
+                    return (genesisPackageBuilder, genesisSnapApp, genesisSnapRelease, null, null, null);                    
                 }
             }
             
@@ -282,12 +281,11 @@ namespace Snap.Core
             if (snapReleaseMetadataOnly == null) throw new ArgumentNullException(nameof(snapReleaseMetadataOnly));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
 
-            var isGenisis = !snapAppChannelReleases.Any();
+            var isGenesis = !snapAppChannelReleases.Any();
 
-            var fullSnapApp = snapAppMetadataOnly.AsFullSnapApp(isGenisis);
-            var fullSnapRelease = snapReleaseMetadataOnly.AsFullRelease(isGenisis);
+            var fullSnapApp = snapAppMetadataOnly.AsFullSnapApp(isGenesis);
+            var fullSnapRelease = snapReleaseMetadataOnly.AsFullRelease(isGenesis);
 
-            var pathComparisonType = GetPathStringComparisonType(fullSnapRelease);
             var alwaysRemoveTheseAssemblies = AlwaysRemoveTheseAssemblies.ToList();
             alwaysRemoveTheseAssemblies.Add(_snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp));
 
@@ -315,15 +313,41 @@ namespace Snap.Core
 
                 var mainExecutableFileName = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(fullSnapApp);
                 var mainExecutableTargetPath = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();
-                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, pathComparisonType);
+                var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, StringComparison.OrdinalIgnoreCase);
                 if (mainExecutablePackageFile == null)
                 {
                     throw new FileNotFoundException("Main executable is missing in nuspec", mainExecutableTargetPath);
                 }
 
+                if (fullSnapApp.Target.Icon != null
+                    && fullSnapApp.Target.Os == OSPlatform.Windows
+                    && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    using (var tmpDir = _snapFilesystem.WithDisposableTempDirectory())
+                    using (var mainExecutableStream = await mainExecutablePackageFile.GetStream().ReadToEndAsync(cancellationToken))
+                    {
+                        var mainExecutableTempFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, mainExecutableFileName);
+                        using (var mainExecutableTmpStream = _snapFilesystem.FileWrite(mainExecutableTempFilename))
+                        {
+                            await mainExecutableStream.CopyToAsync(mainExecutableTmpStream, cancellationToken);                                        
+                        }
+
+                        if (!coreRunLib.SetIcon(mainExecutableTempFilename, fullSnapApp.Target.Icon))
+                        {
+                            throw new Exception($"Failed to update icon for executable {mainExecutableTempFilename}. Icon: {fullSnapApp.Target.Icon}.");
+                        }
+
+                        var mainExecutableByteArray = await _snapFilesystem.FileReadAllBytesAsync(mainExecutableTempFilename, cancellationToken);
+                        var mainExecutableStreamWithIcon = new MemoryStream(mainExecutableByteArray);
+                       
+                        AddPackageFile(packageBuilder, mainExecutableStreamWithIcon, 
+                            mainExecutablePackageFile.EffectivePath, string.Empty, fullSnapRelease, true);
+                    }
+                }
+
                 AlwaysRemoveTheseAssemblies.ForEach(targetPath =>
                 {
-                    var packageFile = packageBuilder.GetPackageFile(targetPath, pathComparisonType);
+                    var packageFile = packageBuilder.GetPackageFile(targetPath, StringComparison.OrdinalIgnoreCase);
                     if (packageFile == null)
                     {
                         return;
@@ -398,8 +422,6 @@ namespace Snap.Core
             if (currentFullNupkgNuspecMemoryStream == null) throw new ArgumentNullException(nameof(currentFullNupkgNuspecMemoryStream));
             if (currentFullNupkgNuspecPropertiesResolverFn == null) throw new ArgumentNullException(nameof(currentFullNupkgNuspecPropertiesResolverFn));
 
-            var pathComparisonType = GetPathStringComparisonType(currentFullSnapRelease);
-
             async Task AddNoBsDiffPackageFileAsync(PackageBuilder packageBuilder, SnapReleaseChecksum checksum, IPackageFile packageFile)
             {
                 if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
@@ -430,7 +452,7 @@ namespace Snap.Core
                 if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
                 var targetPath = NeverGenerateBsDiffsTheseAssemblies
                     .SingleOrDefault(x =>
-                        string.Equals(x, packageFile.EffectivePath, pathComparisonType));
+                        string.Equals(x, packageFile.EffectivePath, StringComparison.OrdinalIgnoreCase));
                 return targetPath == null;
             }
             
@@ -451,9 +473,9 @@ namespace Snap.Core
             
             foreach (var currentChecksum in currentFullSnapRelease.Files)
             {
-                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, pathComparisonType);    
+                var currentPackageFile = currentFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);    
                 var previousChecksum =
-                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, pathComparisonType));
+                    previousFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
                     
                 if (previousChecksum == null)
                 {
@@ -463,8 +485,8 @@ namespace Snap.Core
                     continue;
                 }
                 
-                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, pathComparisonType)
-                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, pathComparisonType))
+                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, StringComparison.OrdinalIgnoreCase))
                 {
                     currentDeltaSnapRelease.Unmodified.Add(currentChecksum.NuspecTargetPath);
                     deletedChecksums.Remove(previousChecksum);
@@ -480,17 +502,30 @@ namespace Snap.Core
                     continue;
                 }
 
-                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, pathComparisonType);
+                var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
                 
                 using (var oldDataStream = await previousPackageFile.GetStream().ReadToEndAsync(cancellationToken))
                 using (var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken))
                 {
                     var patchStream = new MemoryStream();
-                                        
-                    SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream);
+
+                    if (newDataStream.Length > 0
+                        && oldDataStream.Length > 0)
+                    {
+                        SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream);
+                    } else if (newDataStream.Length > 0)
+                    {
+                        await newDataStream.CopyToAsync(patchStream, cancellationToken);
+                    }
             
                     currentChecksum.DeltaSha512Checksum = _snapCryptoProvider.Sha512(patchStream);
                     currentChecksum.DeltaFilesize = patchStream.Length;
+
+                    if (currentChecksum.DeltaFilesize == 0 
+                        && currentChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                    {
+                        throw new Exception($"Expected empty file checksum to equal {SnapConstants.Sha512EmptyFileChecksum}. Target path: {currentChecksum.NuspecTargetPath}.");
+                    }
 
                     AddPackageFile(deltaNupkgPackageBuilder, patchStream, currentChecksum.NuspecTargetPath, string.Empty);
                 }
@@ -555,32 +590,24 @@ namespace Snap.Core
                 throw new ArgumentException("Cannot be empty", nameof(snapAppChannelReleases));
             }
 
-            var genisisSnapRelease = snapAppChannelReleases.GetGenisisRelease();
-            if (!genisisSnapRelease.IsGenisis)
+            var genesisSnapRelease = snapAppChannelReleases.GetGenesisRelease();
+            if (!genesisSnapRelease.IsGenesis)
             {
-                throw new FileNotFoundException("First release must be genisis release.", snapRelease.Filename);
+                throw new FileNotFoundException("First release must be genesis release.", snapRelease.Filename);
             }
 
-            if (!genisisSnapRelease.IsFull || genisisSnapRelease.IsDelta)
+            if (!genesisSnapRelease.IsFull || genesisSnapRelease.IsDelta)
             {
-                throw new FileNotFoundException("Expected genisis to be a full release.", snapRelease.Filename);
+                throw new FileNotFoundException("Expected genesis to be a full release.", snapRelease.Filename);
             }
 
-            var (packageBuilder, genisisSnapApp) =
-                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genisisSnapRelease, cancellationToken);
-
-            var pathComparisonType = GetPathStringComparisonType(genisisSnapRelease);
+            var (packageBuilder, genesisSnapApp) =
+                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genesisSnapRelease, cancellationToken);
 
             var deltaSnapReleasesToApply = snapAppChannelReleases.GetDeltaReleasesOlderThanOrEqualTo(snapRelease.Version).ToList();
             if (!deltaSnapReleasesToApply.Any())
             {
-                var genisisReleaseChecksum = _snapCryptoProvider.Sha512(snapRelease, packageBuilder);
-                if (genisisReleaseChecksum != snapRelease.FullSha512Checksum)
-                {
-                    throw new SnapReleaseChecksumMismatchException(snapRelease);
-                }
-
-                return (packageBuilder, genisisSnapApp, snapRelease);
+                return (packageBuilder, genesisSnapApp, snapRelease);
             }
             
             if (!snapRelease.IsDelta)
@@ -588,11 +615,8 @@ namespace Snap.Core
                 throw new Exception($"Unable to rebuild full nupkg because release is not of type delta: {snapRelease.Filename}");
             }
 
-            var reassembledFullSnapRelease = genisisSnapRelease.AsFullRelease(false);                        
-            var reassembledSnapApp = new SnapApp(genisisSnapApp)
-            {
-                IsGenisis = false
-            };
+            var reassembledFullSnapRelease = genesisSnapRelease.AsFullRelease(false);
+            var reassembledFullSnapApp = genesisSnapApp.AsFullSnapApp(false);
 
             foreach (var deltaSnapRelease in deltaSnapReleasesToApply)
             {
@@ -609,13 +633,13 @@ namespace Snap.Core
 
             packageBuilder.Id = reassembledFullSnapRelease.UpstreamId;
             
-            return (packageBuilder, reassembledSnapApp, reassembledFullSnapRelease);
+            return (packageBuilder, reassembledFullSnapApp, reassembledFullSnapRelease);
 
             async Task ApplyDeltaPackageAsync(SnapRelease deltaRelease)
             {
                 if (deltaRelease == null) throw new ArgumentNullException(nameof(deltaRelease));
 
-                if (deltaRelease.IsGenisis)
+                if (deltaRelease.IsGenesis)
                 {
                     throw new Exception($"A delta cannot be the full release. Nupkg: {deltaRelease.Filename}");
                 }
@@ -638,11 +662,19 @@ namespace Snap.Core
                 {
                     foreach (var checksumNuspecTargetPath in deltaRelease.Deleted)
                     {
+                        if (!packageBuilder.RemovePackageFile(checksumNuspecTargetPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new FileNotFoundException(
+                                $"Unable to remove 'Deleted' file from genesis package builder: {reassembledFullSnapRelease.Filename}. " +
+                                $"Target path: {checksumNuspecTargetPath}. " +
+                                $"Nupkg: {deltaRelease.Filename}.");
+                        }
+
                         var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == checksumNuspecTargetPath);
                         if (existingFullChecksum == null)
                         {
                             throw new FileNotFoundException(
-                                $"Unable to remove 'Deleted' file from full release: {reassembledFullSnapRelease.Filename}. " +
+                                $"Unable to remove 'Deleted' file from full release files list: {reassembledFullSnapRelease.Filename}. " +
                                 $"Target path: {checksumNuspecTargetPath}. " +
                                 $"Nupkg: {deltaRelease.Filename}.");
                         }
@@ -682,15 +714,13 @@ namespace Snap.Core
                                 $"Nupkg: {deltaChecksum.Filename}.");
                         }
 
-                        reassembledFullSnapRelease.Files.Remove(existingChecksum);
-
-                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, pathComparisonType);
+                        var packageFile = packageBuilder.GetPackageFile(deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
                         var packageFileStream = packageFile.GetStream();
                         packageFileStream.Seek(0, SeekOrigin.Begin);
 
                         var neverGenerateBsDiffThisAssembly =
                             NeverGenerateBsDiffsTheseAssemblies.SingleOrDefault(x =>
-                                string.Equals(x, deltaChecksum.NuspecTargetPath, pathComparisonType));
+                                string.Equals(x, deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
 
                         var outputStream = new MemoryStream((int) deltaChecksum.FullFilesize);
                         using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken))
@@ -704,6 +734,23 @@ namespace Snap.Core
                                 if (deltaChecksum.FullSha512Checksum != sha512Checksum)
                                 {
                                     throw new SnapReleaseFileChecksumDeltaMismatchException(deltaChecksum, snapRelease, patchStream.Length);
+                                }
+
+                                goto done;
+                            }
+
+                            if (patchStream.Length == 0)
+                            {
+                                if (deltaChecksum.DeltaFilesize != 0)
+                                {
+                                    throw new Exception($"Expected delta file size to equal 0 (zero) when {nameof(patchStream)} " +
+                                                        $"length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
+                                }
+
+                                if (deltaChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                                {
+                                    throw new Exception($"Expected delta file checksum to equal {SnapConstants.Sha512EmptyFileChecksum} when " +
+                                                        $"{nameof(patchStream)} length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
                                 }
 
                                 goto done;
@@ -735,18 +782,13 @@ namespace Snap.Core
                             }
 
                             done:
-                            if (!packageBuilder.Files.Remove(packageFile))
-                            {
-                                throw new FileNotFoundException($"Unable to replace file. Nupkg: {deltaRelease.Filename}", deltaChecksum.Filename);
-                            }
-
-                            AddPackageFile(packageBuilder, outputStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease);
+                            AddPackageFile(packageBuilder, outputStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease, true);
                         }
 
                         packageBuilder.Populate(await packageArchiveReader.GetManifestMetadataAsync(cancellationToken));
                     }
                     
-                    reassembledFullSnapRelease.Version = reassembledSnapApp.Version = packageBuilder.Version = deltaRelease.Version.ToNuGetVersion();
+                    reassembledFullSnapRelease.Version = reassembledFullSnapApp.Version = packageBuilder.Version = deltaRelease.Version.ToNuGetVersion();
                     reassembledFullSnapRelease.Filename = deltaRelease.BuildNugetFullFilename();
                     reassembledFullSnapRelease.FullSha512Checksum = deltaRelease.FullSha512Checksum;
                     reassembledFullSnapRelease.FullFilesize = deltaRelease.FullFilesize;
@@ -808,7 +850,7 @@ namespace Snap.Core
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
 
             // Icon (Windows has native platform support for icons)
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            if (snapApp.Target.Os != OSPlatform.Windows 
                 && snapApp.Target.Icon != null)
             {
                 var iconExt = _snapFilesystem.PathGetExtension(snapApp.Target.Icon);
@@ -850,7 +892,7 @@ namespace Snap.Core
             }
         }
 
-        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packgeFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider,
+        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packageFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider,
             [NotNull] string baseDirectory, [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease)
         {
             if (nuspecStream == null) throw new ArgumentNullException(nameof(nuspecStream));
@@ -977,20 +1019,20 @@ namespace Snap.Core
                 throw new Exception("Cannot build an empty release package");
             }
 
-            var genisisRelease = snapAppReleases.GetGenisisRelease(snapApp.GetDefaultChannelOrThrow());
-            if (genisisRelease == null)
+            var genesisRelease = snapAppReleases.GetGenesisRelease(snapApp.GetDefaultChannelOrThrow());
+            if (genesisRelease == null)
             {
-                throw new Exception("Missing genisis release");
+                throw new Exception("Missing genesis release");
             }
 
-            if (!genisisRelease.IsGenisis)
+            if (!genesisRelease.IsGenesis)
             {
-                throw new Exception($"Genisis release is not a genisis release: {genisisRelease.Filename}");
+                throw new Exception($"Genesis release is not a genesis release: {genesisRelease.Filename}");
             }
 
-            if (!genisisRelease.IsFull || genisisRelease.IsDelta)
+            if (!genesisRelease.IsFull || genesisRelease.IsDelta)
             {
-                throw new Exception($"Genisis release must be full release: {genisisRelease.Filename}");
+                throw new Exception($"Genesis release must be full release: {genesisRelease.Filename}");
             }
             
             snapAppsReleases.Bump();
@@ -1009,18 +1051,18 @@ namespace Snap.Core
             {
                 if (snapRelease.IsFull)
                 {
-                    var genisisOrFull = snapRelease.IsGenisis ? "genisis" : "full";
+                    var genesisOrFull = snapRelease.IsGenesis ? "genesis" : "full";
                     
                     var expectedFilename = snapRelease.BuildNugetFullFilename();
                     if (snapRelease.Filename != expectedFilename)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} filename: {snapRelease.Filename}. Expected: {expectedFilename}");
+                        throw new Exception($"Invalid {genesisOrFull} filename: {snapRelease.Filename}. Expected: {expectedFilename}");
                     }
                     
                     var expectedUpstreamId = snapRelease.BuildNugetFullUpstreamId();
                     if (snapRelease.UpstreamId != expectedUpstreamId)
                     {
-                        throw new Exception($"Invalid {genisisOrFull} upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
+                        throw new Exception($"Invalid {genesisOrFull} upstream id: {snapRelease.UpstreamId}. Expected: {expectedUpstreamId}");
                     }
                 }
                 else if (snapRelease.IsDelta)
@@ -1039,7 +1081,7 @@ namespace Snap.Core
                 }
                 else
                 {
-                    throw new NotSupportedException($"Expected either delta or genisis release. Filename: {snapRelease.Filename}");
+                    throw new NotSupportedException($"Expected either delta or genesis release. Filename: {snapRelease.Filename}");
                 }
 
                 if (snapRelease.FullFilesize <= 0)
@@ -1128,16 +1170,42 @@ namespace Snap.Core
         }
 
         void AddPackageFile([NotNull] PackageBuilder packageBuilder, [NotNull] Stream srcStream,
-            [NotNull] string nuspecTargetPath, [NotNull] string filename, SnapRelease snapRelease = null)
+            [NotNull] string nuspecTargetPath, [NotNull] string filename, SnapRelease snapRelease = null, bool replace = false)
         {
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (nuspecTargetPath == null) throw new ArgumentNullException(nameof(nuspecTargetPath));
             if (filename == null) throw new ArgumentNullException(nameof(filename));
 
-            if (!nuspecTargetPath.StartsWith(SnapConstants.NuspecRootTargetPath))
+            if (!nuspecTargetPath.StartsWith(SnapConstants.NuspecRootTargetPath, StringComparison.OrdinalIgnoreCase))
             {
                 throw new Exception($"Invalid {nameof(nuspecTargetPath)}: {nuspecTargetPath}. Must start with: {SnapConstants.NuspecRootTargetPath}");
+            }
+
+            if (nuspecTargetPath.EndsWith("/", StringComparison.Ordinal))
+            {
+                throw new Exception($"Invalid {nameof(nuspecTargetPath)}: {nuspecTargetPath}. Cannot end with a trailing slash.");
+            }
+
+            if (replace)
+            {
+                if (snapRelease == null)
+                {
+                    throw new ArgumentNullException(nameof(snapRelease));
+                }
+
+                if (!packageBuilder.RemovePackageFile(nuspecTargetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(packageBuilder)}");
+                }
+
+                var existingSnapReleaseChecksum = snapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == nuspecTargetPath);
+                if (existingSnapReleaseChecksum == null)
+                {
+                    throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(snapRelease)}");
+                }
+
+                snapRelease.Files.Remove(existingSnapReleaseChecksum);
             }
 
             var nuGetFramework = NuGetFramework.Parse(SnapConstants.NuspecTargetFrameworkMoniker);
@@ -1146,7 +1214,7 @@ namespace Snap.Core
 
             if (filename == string.Empty)
             {
-                var lastSlashIndex = nuspecTargetPath.LastIndexOf("/", StringComparison.InvariantCulture);
+                var lastSlashIndex = nuspecTargetPath.LastIndexOf("/", StringComparison.Ordinal);
                 if (lastSlashIndex == -1)
                 {
                     throw new Exception($"Expected target path to contain filename: {nuspecTargetPath}");
@@ -1164,12 +1232,26 @@ namespace Snap.Core
                 srcStream.Seek(0, SeekOrigin.Begin);
             }
 
-            snapRelease?.Files.Add(new SnapReleaseChecksum
+            if (snapRelease != null)
             {
-                NuspecTargetPath = nuspecTargetPath,
-                FullFilesize = srcStream.Length,
-                FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
-            });
+                if (snapRelease.Files.Any(x => string.Equals(x.NuspecTargetPath, nuspecTargetPath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new Exception($"File already added to {nameof(snapRelease)}. Target path: {nuspecTargetPath}");
+                }
+
+                snapRelease.Files.Add(new SnapReleaseChecksum
+                {
+                    NuspecTargetPath = nuspecTargetPath,
+                    FullFilesize = srcStream.Length,
+                    FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
+                });
+            }
+
+            var duplicatePackageFile = packageBuilder.GetPackageFile(nuspecTargetPath, StringComparison.OrdinalIgnoreCase);
+            if (duplicatePackageFile != null)
+            {
+                throw new Exception($"File already added to {nameof(packageBuilder)}. Target path: {duplicatePackageFile.EffectivePath}");
+            }
 
             packageBuilder.Files.Add(new InMemoryPackageFile(srcStream, nuGetFramework, nuspecTargetPath, filename));
         }
@@ -1251,12 +1333,6 @@ namespace Snap.Core
 
             return (nuspecProperties, NuspecPropertyProvider);
         }
-        
-        static StringComparison GetPathStringComparisonType([NotNull] SnapRelease snapRelease)
-        {
-            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            return snapRelease.Target.Os == OSPlatform.Windows ? 
-                StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
-        }
+             
     }
 }

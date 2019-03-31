@@ -28,12 +28,12 @@ namespace Snap.Core.Models
         [Key(4)]
         public SnapTarget Target { get; set; }
         [Key(5)]
-        public bool IsGenisis { get; set; }
+        public bool IsGenesis { get; set; }
         [Key(6)]
         public bool IsFull { get; set; }
         [YamlIgnore]
         [Key(7)]
-        public bool IsDelta => !IsGenisis && !IsFull;
+        public bool IsDelta => !IsGenesis && !IsFull;
         [Key(8)]
         public string Filename { get; set; }
         [Key(9)]
@@ -78,7 +78,7 @@ namespace Snap.Core.Models
             Version = release.Version;
             Channels = release.Channels;
             Target = new SnapTarget(release.Target);
-            IsGenisis = release.IsGenisis;
+            IsGenesis = release.IsGenesis;
             IsFull = release.IsFull;
             Filename = release.Filename;
             FullFilesize = release.FullFilesize;
@@ -97,11 +97,19 @@ namespace Snap.Core.Models
             
         public void Sort()
         {
-            Files = Files.OrderBy(x => x.NuspecTargetPath).ToList();
-            New = New.OrderBy(x => x.NuspecTargetPath).ToList();
-            Modified = Modified.OrderBy(x => x.NuspecTargetPath).ToList();
-            Unmodified = Unmodified.OrderBy(x => x).ToList();
-            Deleted = Deleted.OrderBy(x => x).ToList();
+            Files = Files.OrderBy(x => x.NuspecTargetPath, new OrdinalIgnoreCaseComparer()).ToList();
+            New = New.OrderBy(x => x.NuspecTargetPath, new OrdinalIgnoreCaseComparer()).ToList();
+            Modified = Modified.OrderBy(x => x.NuspecTargetPath, new OrdinalIgnoreCaseComparer()).ToList();
+            Unmodified = Unmodified.OrderBy(x => x, new OrdinalIgnoreCaseComparer()).ToList();
+            Deleted = Deleted.OrderBy(x => x, new OrdinalIgnoreCaseComparer()).ToList();
         }        
+    }
+    
+    internal class OrdinalIgnoreCaseComparer : IComparer<string> 
+    { 
+        public int Compare(string x, string y) 
+        { 
+            return string.Compare(x, y, StringComparison.OrdinalIgnoreCase); 
+        } 
     }
 }

@@ -144,8 +144,8 @@ namespace Snap.Installer
                                 goto done;
                             }
 
-                            var isGenisis = snapAppChannelReleases.Count() == 1;
-                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenisis);
+                            var isGenesis = snapAppChannelReleases.Count() == 1;
+                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenesis);
                             snapApp.Version = snapReleaseToInstall.Version;
 
                             mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
@@ -236,7 +236,7 @@ namespace Snap.Installer
                             };
 
                             var restoreSummary = await snapPackageManager.RestoreAsync(webInstallerDir.WorkingDirectory, snapAppChannelReleases,
-                                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, diskLogger, cancellationToken);
+                                packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, snapPackageManagerProgressSource, diskLogger, cancellationToken);
                             if (!restoreSummary.Success)
                             {
                                 mainWindowLogger.Info("Unknown error while restoring assets.");
@@ -336,6 +336,8 @@ namespace Snap.Installer
                                 
                                 mainWindowLogger.Info("Successfully copied all payloads.");
                             }
+
+                            snapFilesystem.FileDeleteIfExists(nupkgAbsolutePath);
                         }
 
                         mainWindowLogger.Info($"Successfully installed {snapApp.Id}.");

@@ -57,7 +57,7 @@ namespace Snap.NuGet
         static string[] GetNugetExtraConfigPaths([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
         {
             var nugetConfig = filesystem.DirectoryGetAllFiles(workingDirectory)
-                .SingleOrDefault(x => x.EndsWith("nuget.config", StringComparison.InvariantCultureIgnoreCase));
+                .SingleOrDefault(x => x.EndsWith("nuget.config", StringComparison.OrdinalIgnoreCase));
             return nugetConfig == null ? EmptyStringArray : new[] {nugetConfig};
         }
     }

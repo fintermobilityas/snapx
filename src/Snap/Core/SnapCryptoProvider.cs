@@ -109,7 +109,7 @@ namespace Snap.Core
             var checksumFiles = GetChecksumFilesForSnapRelease(snapRelease);
 
             var enumerable = checksumFiles
-                .Select(checksum => (checksum, packageFile: packageBuilder.GetPackageFile(checksum.NuspecTargetPath, StringComparison.Ordinal)));
+                .Select(checksum => (checksum, packageFile: packageBuilder.GetPackageFile(checksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase)));
 
             return Sha512(enumerable.Select(x =>
             {
@@ -161,7 +161,8 @@ namespace Snap.Core
 
         static IEnumerable<SnapReleaseChecksum> GetChecksumFilesForSnapRelease(SnapRelease snapRelease)
         {
-            return snapRelease.IsDelta ? snapRelease.New.Concat(snapRelease.Modified).OrderBy(x => x.NuspecTargetPath).ToList() : snapRelease.Files;
+            var files = snapRelease.IsDelta ? snapRelease.New.Concat(snapRelease.Modified).ToList() : snapRelease.Files;
+            return files.OrderBy(x => x.NuspecTargetPath, new OrdinalIgnoreCaseComparer());
         }
     }
 }

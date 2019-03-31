@@ -63,17 +63,19 @@ namespace Snap.Core
 
     public enum SnapPackageManagerRestoreType
     {
-        Packaging,
-        InstallOrUpdate
+        FullAndDelta,
+        DeltaAndNewestFull,
+        GenesisAndDelta
     }
 
     internal interface ISnapPackageManager
     {
+        PackageSource GetPackageSource(SnapApp snapApp, ILog logger = null);
         Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
-            [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType,
-            ISnapPackageManagerProgressSource progressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
+            [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
+            ILog logger = null, CancellationToken cancellationToken = default, int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
     }
 
     internal class SnapPackageManagerReleaseStatus
@@ -135,8 +137,7 @@ namespace Snap.Core
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         }
 
-        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
-            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
+        public PackageSource GetPackageSource([NotNull] SnapApp snapApp, ILog logger = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
@@ -145,14 +146,30 @@ namespace Snap.Core
                 var channel = snapApp.GetCurrentChannelOrThrow();
                 if (!(channel.UpdateFeed is SnapNugetFeed snapNugetFeed))
                 {
-                    logger?.Error("Todo: Retrieve update feed credentials using a http feed.");
-                    return (null, null);
+                    return null;
                 }
 
                 var nugetPackageSources = snapApp.BuildNugetSources(_specialFolders.NugetCacheDirectory);
 
                 var packageSource = nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name
                                                                           && x.SourceUri == snapNugetFeed.Source);
+                return packageSource;
+            }
+            catch(Exception e)
+            {
+                logger?.ErrorException("Unknown error building package source", e);  
+                return null;
+            }
+        }
+
+        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            try
+            {
+                var packageSource = GetPackageSource(snapApp, logger);
 
                 var snapReleasesDownloadResult =
                     await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken);
@@ -183,17 +200,20 @@ namespace Snap.Core
         }
 
         public async Task<SnapPackageManagerRestoreSummary> RestoreAsync(string packagesDirectory, ISnapAppChannelReleases snapAppChannelReleases,
-            PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null,
-            ILog logger = null, CancellationToken cancellationToken = default)
+            PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
+            ILog logger = null, CancellationToken cancellationToken = default,  int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (checksumConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(checksumConcurrency));
+            if (downloadConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(downloadConcurrency));
+            if (restoreConcurrency <= 0) throw new ArgumentOutOfRangeException(nameof(restoreConcurrency));
 
             var restoreSummary = new SnapPackageManagerRestoreSummary(restoreType);
 
-            var genisisRelease = snapAppChannelReleases.GetGenisisRelease();
-            if (genisisRelease == null)
+            var genesisRelease = snapAppChannelReleases.GetGenesisRelease();
+            if (genesisRelease == null)
             {
                 restoreSummary.Success = true;
                 return restoreSummary;
@@ -229,11 +249,11 @@ namespace Snap.Core
 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.Packaging:
+                    case SnapPackageManagerRestoreType.FullAndDelta:
                         snapReleasesToChecksum = snapAppChannelReleases.SelectMany(x =>
                         {
                             var snapReleases = new List<SnapRelease>();
-                            if (x.IsGenisis)
+                            if (x.IsGenesis)
                             {
                                 snapReleases.Add(x);
                                 return snapReleases;
@@ -250,8 +270,9 @@ namespace Snap.Core
                             return snapReleases;
                         }).ToList();
                         break;
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:
-                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenisis || x.IsDelta).ToList();
+                    case SnapPackageManagerRestoreType.DeltaAndNewestFull:
+                    case SnapPackageManagerRestoreType.GenesisAndDelta:
+                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
                         break;
                     default:
                         throw new NotSupportedException(restoreType.ToString());
@@ -259,7 +280,6 @@ namespace Snap.Core
                 
                 logger?.Info($"Verifying checksums for {snapReleasesToChecksum.Count} packages.");
 
-                const int checksumConcurrency = 2;
                 long snapReleasesChecksummed = 0;
                 long snapReleasesChecksumOk = 0;
                 long totalSnapReleasesToChecksum = snapReleasesToChecksum.Count;
@@ -303,7 +323,7 @@ namespace Snap.Core
             async Task<bool> DownloadAsync()
             {
                 var releasesToDownload = restoreSummary.ChecksumSummary
-                    .Where(x => !x.Ok && (x.SnapRelease.IsGenisis || x.SnapRelease.IsDelta))
+                    .Where(x => !x.Ok && (x.SnapRelease.IsGenesis || x.SnapRelease.IsDelta))
                     .Select(x => x.SnapRelease)
                     .OrderBy(x => x.Version)
                     .ToList();                    
@@ -327,7 +347,6 @@ namespace Snap.Core
                 long totalBytesDownloadedSoFar = default;
                 long downloadProgressPercentage = default;
                 var previousProgressReportDateTime = DateTime.UtcNow;
-                const int downloadConcurrency = 4;
 
                 progressSource?.RaiseDownloadProgress(0, 0,
                     totalReleasesToDownload, 0, totalBytesToDownload);
@@ -400,7 +419,7 @@ namespace Snap.Core
                 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.Packaging:
+                    case SnapPackageManagerRestoreType.FullAndDelta:
                     
                         // Reassemble full nupkgs for delta packages that has been downloaded
                         deltaSnapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
@@ -432,7 +451,7 @@ namespace Snap.Core
                             
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases.OrderBy(x => x.Version));
                         break;
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:
+                    case SnapPackageManagerRestoreType.DeltaAndNewestFull:
                     
                         deltaSnapReleases = restoreSummary.DownloadSummary
                             .Where(x => x.SnapRelease.IsDelta)
@@ -466,6 +485,9 @@ namespace Snap.Core
                                                     
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases);
                         break;
+                    case SnapPackageManagerRestoreType.GenesisAndDelta:
+                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, new List<SnapRelease>());
+                        break;
                     default:
                         throw new NotSupportedException(restoreType.ToString());
                 }
@@ -478,9 +500,7 @@ namespace Snap.Core
                 logger?.Info($"Reassembling {releasesToReassemble.Count()} packages: {string.Join(", ", releasesToReassemble.Select(x => x.BuildNugetFullFilename()))}.");
 
                 progressSource?.RaiseRestoreProgress(0, 0, releasesToReassemble.Count());
-
-                const int restoreConcurrency = 2;
-
+                
                 var success = true;
                 long releasesReassembled = default;
 
@@ -553,7 +573,14 @@ namespace Snap.Core
                         return false;
                     }
                                         
-                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}. Verifying checksum!");
+                    logger?.Debug($"Downloaded nupkg: {snapRelease.Filename}. Flushing to disk.");
+
+                    var dstFilename = _filesystem.PathCombine(packagesDirectory, snapRelease.Filename);
+                    await _filesystem.FileWriteAsync(downloadResult.PackageStream, dstFilename, cancellationToken);
+
+                    downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);            
+                    
+                    logger?.Debug("Nupkg flushed to disk. Verifying checksum!");
 
                     using (var packageArchiveReader = new PackageArchiveReader(downloadResult.PackageStream, true))
                     {
@@ -563,13 +590,9 @@ namespace Snap.Core
                             logger?.Error($"Checksum mismatch for downloaded nupkg: {snapRelease.Filename}");
                             return false;
                         }                        
-                        downloadResult.PackageStream.Seek(0, SeekOrigin.Begin);                    
                     }
                     
                     logger?.Debug($"Verified checksum for downloaded nupkg: {snapRelease.Filename}.");
-
-                    var dstFilename = _filesystem.PathCombine(packagesDirectory, snapRelease.Filename);
-                    await _filesystem.FileWriteAsync(downloadResult.PackageStream, dstFilename, cancellationToken);
 
                     return true;
                 }

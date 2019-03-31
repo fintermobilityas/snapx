@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -70,14 +71,12 @@ namespace Snap.Core
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMethodReturnValue.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
-        Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
-            CancellationToken cancellationToken = default);
-        string GetStubExecutableAbsolutePath();
     }
 
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
@@ -98,9 +97,9 @@ namespace Snap.Core
         readonly ISnapAppWriter _snapAppWriter;
 
         [UsedImplicitly]
-        public SnapUpdateManager(ILog logger = null) : this(
+        public SnapUpdateManager() : this(
             Directory.GetParent(
-                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName, logger)
+                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName)
         {
         }
 
@@ -175,72 +174,60 @@ namespace Snap.Core
             }
         }
 
-        /// <summary>
-        /// Restart current application. You should invoke this method after <see cref="UpdateToLatestReleaseAsync"/> has finished.
-        /// </summary>
-        /// <param name="arguments"></param>
-        /// <param name="cancellationToken"></param>
-        /// <exception cref="FileNotFoundException">Is thrown when stub executable is not found.</exception>
-        /// <exception cref="Exception">Is thrown when stub executable immediately exists when it supposed to wait for parent process to exit.</exception>
-        /// <exception cref="OperationCanceledException">Is thrown when restart is cancelled by user.</exception>
-        public async Task<(string stubExecutableFullPath, string shutdownArguments)> RestartAsync(List<string> arguments = null,
-            CancellationToken cancellationToken = default)
-        {
-            typeof(SnapUpdateManager).Assembly
-                .GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var stubExecutableFullPath);
-
-            if (!_snapOs.Filesystem.FileExists(stubExecutableFullPath))
-            {
-                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
-            }
-
-            var argumentWaitForProcessId = $"--corerun-wait-for-process-id={_snapOs.ProcessManager.Current.Id}";
-
-            var shutdownArguments = $"{argumentWaitForProcessId}";
-
-            var process = _snapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
-                .AddRange(arguments ?? new List<string>())
-                .Add(shutdownArguments)
-            );
-
-            if (process.HasExited)
-            {
-                throw new Exception(
-                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {shutdownArguments}");
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
-
-            return (stubExecutableFullPath, shutdownArguments);
-        }
-
-        /// <summary>
-        /// Get absolute path to stub executable.
-        /// </summary>
-        /// <returns></returns>
-        public string GetStubExecutableAbsolutePath()
-        {
-            typeof(SnapUpdateManager).Assembly.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _snapAppReader, out var coreRunFullPath);
-            return coreRunFullPath;
-        }
-
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
             CancellationToken cancellationToken = default)
         {
-            var (snapAppsReleases, packageSource) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            var packageSource = _snapPackageManager.GetPackageSource(_snapApp, _logger);
+            if (packageSource == null)
+            {
+                return null;
+            }
+
+            NuGetPackageSearchMedatadata[] medatadatas;
+
+            try
+            {
+                var fullUpstreamId = _snapApp.BuildNugetFullUpstreamId();
+                var deltaUpstreamId = _snapApp.BuildNugetDeltaUpstreamId();
+
+                medatadatas = await Task.WhenAll(
+                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, cancellationToken, true),
+                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, cancellationToken, true)
+                );
+            }
+            catch (Exception e)
+            {
+                _logger.ErrorException("Unknown error retrieving full / delta metadatas.", e);
+                return null;
+            }
+
+            var metadatasThatAreNewerThanCurrentVersion = medatadatas.Where(x => x?.Identity?.Version > _snapApp.Version).Select(x => x.Identity).ToList();
+            if (!metadatasThatAreNewerThanCurrentVersion.Any())
+            {
+                return null;
+            }
+
+            var (snapAppsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
             if (snapAppsReleases == null)
             {
                 return null;
             }
 
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
+
+            _logger.Debug($"Channel: {snapChannel.Current}");
+
             var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             
-            var deltaUpdates = snapAppChannelReleases.GetDeltaReleasesNewerThan(_snapApp.Version);
-            if (!deltaUpdates.Any())
-            {
+            var snapReleases = snapAppChannelReleases.GetReleasesNewerThan(_snapApp.Version).ToList();
+            if (!snapReleases.Any())
+            {                                   
+                _logger.Warn($"Unable to find any releases newer than {_snapApp.Version}. " +
+                             $"Is your nuget server caching responses? Metadatas: {string.Join(",", metadatasThatAreNewerThanCurrentVersion)}");
                 return null;
             }
+
+            _logger.Info($"Found new releases({snapReleases.Count}): {string.Join(",", snapReleases.Select(x => x.Filename))}");
 
             progressSource?.RaiseTotalProgress(0);
 
@@ -270,7 +257,8 @@ namespace Snap.Core
             };
 
             var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppChannelReleases, 
-                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken);
+                packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, snapPackageManagerProgressSource, _logger, cancellationToken, 
+                1, 2, 1);
             if (!restoreSummary.Success)
             {
                 _logger.Error("Unknown error restoring nuget packages.");
@@ -279,9 +267,18 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(50);
 
-            var snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(false);
+            var snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
+
+            if (!snapReleaseToInstall.IsFull)
+            {
+                // A delta package always has a corresponding full package after restore. 
+                snapReleaseToInstall = snapReleaseToInstall.AsFullRelease(false);
+            }
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
+
+            _logger.Info($"Installing {nupkgToInstallAbsolutePath}");
+
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
             {
                 _logger.Error($"Unable to find full nupkg: {nupkgToInstallAbsolutePath}.");
@@ -293,6 +290,9 @@ namespace Snap.Core
             SnapApp updatedSnapApp;
             try
             {
+                var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
+                var supervisorRunning = Snapx.TryKillSupervisorProcess();
+            
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
                     logger: _logger, cancellationToken: cancellationToken);
@@ -301,8 +301,12 @@ namespace Snap.Core
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
                 
-                // Save space by only keeping deltas around.
-                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);                
+                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
+
+                if (supervisorRunning)
+                {
+                    Snapx.EnableSupervisor(supervisorRestartArguments);                               
+                }
             }
             catch (Exception e)
             {
@@ -311,6 +315,8 @@ namespace Snap.Core
             }
 
             progressSource?.RaiseTotalProgress(100);
+
+            _logger.Info($"Successfully updated to {updatedSnapApp.Version}");
             
             return new SnapApp(updatedSnapApp);
         }
@@ -318,5 +324,6 @@ namespace Snap.Core
         public void Dispose()
         {
         }
+
     }
 }

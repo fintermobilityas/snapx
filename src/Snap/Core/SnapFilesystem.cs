@@ -46,6 +46,7 @@ namespace Snap.Core
         Task<string> FileReadAllTextAsync(string fileName);
         string FileReadAllText(string filename);
         byte[] FileReadAllBytes(string filename);
+        Task<byte[]> FileReadAllBytesAsync([NotNull] string filename, CancellationToken cancellationToken);
         void FileDelete(string fileName);
         bool FileDeleteIfExists(string fileName, bool throwIfException = true);
         void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
@@ -213,6 +214,18 @@ namespace Snap.Core
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             return File.ReadAllBytes(filename);
+        }
+
+        public async Task<byte[]> FileReadAllBytesAsync(string filename, CancellationToken cancellationToken)
+        {
+            if (filename == null) throw new ArgumentNullException(nameof(filename));
+            using (var srcStream = FileRead(filename))
+            using (var destinationStream = new MemoryStream((int) srcStream.Length))
+            {                
+                await srcStream.CopyToAsync(destinationStream, cancellationToken);
+                destinationStream.Seek(0, SeekOrigin.Begin);
+                return destinationStream.ToArray();
+            }
         }
 
         public void FileDelete([NotNull] string fileName)
@@ -437,7 +450,7 @@ namespace Snap.Core
             {
                 foreach (var excludePath in excludePaths)
                 {
-                    if (string.Equals(excludePath, file, StringComparison.InvariantCultureIgnoreCase))
+                    if (string.Equals(excludePath, file, StringComparison.OrdinalIgnoreCase))
                     {
                         return Task.CompletedTask;
                     }
@@ -469,7 +482,7 @@ namespace Snap.Core
                 {
                     foreach (var excludePath in excludePaths)
                     {
-                        if (string.Equals(excludePath, dir, StringComparison.InvariantCultureIgnoreCase))
+                        if (string.Equals(excludePath, dir, StringComparison.OrdinalIgnoreCase))
                         {
                             return Task.CompletedTask;
                         }

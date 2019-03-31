@@ -34,7 +34,7 @@ namespace Snap.Extensions
             }
             var verbs = verbsStr.Split(delimeter).ToList();
             var value = Console.ReadLine();
-            return verbs.Any(verb => string.Equals(value, verb, StringComparison.InvariantCultureIgnoreCase));
+            return verbs.Any(verb => string.Equals(value, verb, StringComparison.OrdinalIgnoreCase));
         }
         
         public static void InfoWithDashses([NotNull] this ILog This, [NotNull] string message)

@@ -10,3 +10,6 @@
 [submodule "src/Vendor/plog"]
 	path = src/Vendor/plog
 	url = https://github.com/SergiusTheBest/plog.git
+[submodule "src/Vendor/cxxopts"]
+	path = src/Vendor/cxxopts
+	url = git@github.com:jarro2783/cxxopts.git

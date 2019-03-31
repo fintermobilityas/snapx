@@ -72,7 +72,7 @@ namespace snapx
             var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
 
-            var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.InvariantCultureIgnoreCase));
+            var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.OrdinalIgnoreCase));
             if (promoteSrcChannel == null)
             {
                 logger.Error($"Unable to find channel: {options.Channel}.");
@@ -213,40 +213,51 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerOfflineSuccess, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
+                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
                                 snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                                 installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
                             {
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building offline installer.");
-                                return 1;
+                                if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building offline installer.");
+                                    return 1;
+                                }
                             }
-
-                            var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
-                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
+                                logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
                             logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                            var (installerWebSuccess, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                                 installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)
                             {
-                                logger.Info('-'.Repeat(TerminalDashesWidth));
-                                logger.Error("Unknown error building web installer.");
-                                return 1;
+                                if (!canContinueIfError
+                                   || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                {
+                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Error("Unknown error building web installer.");
+                                    return 1;
+                                }
                             }
-
-                            var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
-                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            else
+                            {
+                                var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
+                                logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                            }
                         }    
                     }
                 }

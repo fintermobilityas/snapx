@@ -21,8 +21,8 @@ namespace Snap.Core.Models
         SnapRelease GetMostRecentRelease([NotNull] string channelName);
         SnapRelease GetMostRecentDeltaRelease([NotNull] SnapChannel channel);
         SnapRelease GetMostRecentDeltaRelease([NotNull] string channelName);
-        SnapRelease GetGenisisRelease([NotNull] SnapChannel channel);
-        SnapRelease GetGenisisRelease([NotNull] string channelName);
+        SnapRelease GetGenesisRelease([NotNull] SnapChannel channel);
+        SnapRelease GetGenesisRelease([NotNull] string channelName);
         SnapRelease GetPreviousRelease([NotNull] SnapChannel channel, SemanticVersion version);
         SnapRelease GetPreviousRelease([NotNull] string channelName, SemanticVersion version);
         ISnapAppChannelReleases GetDeltaReleasesNewerThan([NotNull] SnapChannel channel, [NotNull] SemanticVersion version);
@@ -103,16 +103,16 @@ namespace Snap.Core.Models
             return this.LastOrDefault(release => release.IsDelta && release.Channels.Contains(channelName));
         }
 
-        public SnapRelease GetGenisisRelease(SnapChannel channel)
+        public SnapRelease GetGenesisRelease(SnapChannel channel)
         {
             if (channel == null) throw new ArgumentNullException(nameof(channel));
-            return GetGenisisRelease(channel.Name);
+            return GetGenesisRelease(channel.Name);
         }
 
-        public SnapRelease GetGenisisRelease(string channelName)
+        public SnapRelease GetGenesisRelease(string channelName)
         {
             if (channelName == null) throw new ArgumentNullException(nameof(channelName));
-            return this.FirstOrDefault(x => x.IsFull && x.IsGenisis && x.Channels.Contains(channelName));
+            return this.FirstOrDefault(x => x.IsFull && x.IsGenesis && x.Channels.Contains(channelName));
         }
         
         public ISnapAppChannelReleases GetDeltaReleasesNewerThan(SnapChannel channel, SemanticVersion version)

@@ -45,7 +45,7 @@ namespace Snap.Shared.Tests
             return new SnapApp(snapApp) { Version = snapApp.Version.BumpMajor() };
         }
 
-        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenisis = false, string rid = null, OSPlatform osPlatform = default)
+        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenesis = false, string rid = null, OSPlatform osPlatform = default)
         {
             var pushFeed = new SnapNugetFeed
             {
@@ -112,8 +112,8 @@ namespace Snap.Shared.Tests
             {
                 Id = id,
                 Version = new SemanticVersion(1, 0, 0),
-                IsGenisis = isGenisis,
-                IsFull = isGenisis,
+                IsGenesis = isGenesis,
+                IsFull = isGenesis,
                 Channels = new List<SnapChannel>
                 {
                     testChannel,

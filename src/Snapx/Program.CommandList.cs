@@ -38,7 +38,7 @@ namespace snapx
 
             if (options.Id != null)
             {
-                if (!snapApps.Apps.Any(x => string.Equals(x.Id, options.Id, StringComparison.InvariantCultureIgnoreCase)))
+                if (!snapApps.Apps.Any(x => string.Equals(x.Id, options.Id, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger.Error($"Unable to find application with id: {options.Id}");
                     return -1;
@@ -56,7 +56,7 @@ namespace snapx
             foreach (var snapApp in snapAppses)
             {
                 if (options.Id != null 
-                    && !string.Equals(snapApp.Id, options.Id, StringComparison.InvariantCultureIgnoreCase))
+                    && !string.Equals(snapApp.Id, options.Id, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -136,7 +136,7 @@ namespace snapx
                     }                    
                 }
 
-                table.Header += $"\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
+                table.Header += $"\nVersion:{snapAppsReleases.Version}\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    
@@ -150,18 +150,18 @@ namespace snapx
 
                     foreach (var channelName in thisSnapApps.Channels)
                     {         
-                        var genisisRelease = snapAppReleases.GetGenisisRelease(channelName);
+                        var genesisRelease = snapAppReleases.GetGenesisRelease(channelName);
                         var deltaRelease = snapAppReleases.GetMostRecentDeltaRelease(channelName);
 
-                        var rowValue = genisisRelease == null && deltaRelease == null ? "-" : string.Empty;
+                        var rowValue = genesisRelease == null && deltaRelease == null ? "-" : string.Empty;
                         if (rowValue != string.Empty)
                         {
                             goto done;
                         }
 
-                        if (genisisRelease != null)
+                        if (genesisRelease != null)
                         {
-                            rowValue += $"F: {genisisRelease.Version} ({genisisRelease.FullFilesize.BytesAsHumanReadable()})";
+                            rowValue += $"F: {genesisRelease.Version} ({genesisRelease.FullFilesize.BytesAsHumanReadable()})";
                         }
                         else
                         {

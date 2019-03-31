@@ -201,7 +201,7 @@ namespace Snap
                 Symbol = typeof(T).Name;
                 const string delegatePrefix = "_delegate";
 
-                if (Symbol.EndsWith(delegatePrefix, StringComparison.InvariantCultureIgnoreCase))
+                if (Symbol.EndsWith(delegatePrefix, StringComparison.OrdinalIgnoreCase))
                 {
                     Symbol = Symbol.Substring(0, Symbol.Length - delegatePrefix.Length);
                 }

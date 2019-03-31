@@ -77,18 +77,11 @@ namespace Snap.AnyOS.Unix
             
             logger?.Info($"Creating shortcuts for executable: {shortcutDescription.ExeAbsolutePath}");
 
-            var autoStartup = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Startup);
-            if (!shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Desktop))
-            {
-                var shortcutLocations = Enum.GetNames(typeof(SnapShortcutLocation)).ToList();
-
-                logger?.Warn("Ignoring creating shortcut for executable because none of the specified shortcut locations are valid for this OS! " +
-                             $"Shortcut locations: {string.Join(", ", shortcutLocations)}. " +
-                             $"Executable: {shortcutDescription.ExeAbsolutePath}");
-                return;
-            }
-
-            var desktopShortcutUtf8Content = BuildDesktopShortcut(shortcutDescription, shortcutDescription.NuspecReader.GetDescription(), autoStartup);
+            var autoStartEnabled = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Startup);
+            var desktopEnabled = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.Desktop);
+            var startMenuEnabled = shortcutDescription.ShortcutLocations.HasFlag(SnapShortcutLocation.StartMenu);
+            
+            var desktopShortcutUtf8Content = BuildDesktopShortcut(shortcutDescription, shortcutDescription.NuspecReader.GetDescription());
             if (desktopShortcutUtf8Content == null)
             {
                 _logger?.Warn(
@@ -96,25 +89,66 @@ namespace Snap.AnyOS.Unix
                 return;
             }
 
-            var dashLauncherAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
-            var absoluteDesktopShortcutPath = Filesystem.PathCombine(dashLauncherAbsolutePath, $"{exeName}.desktop");
+            var applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
+            var autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
 
-            if (Filesystem.FileDeleteIfExists(absoluteDesktopShortcutPath))
+            var autoStartShortcutAbsolutePath = Filesystem.PathCombine(autoStartDirectoryAbsolutePath, $"{exeName}.desktop");
+            var desktopShortcutAbsolutePath = Filesystem.PathCombine(applicationsDirectoryAbsolutePath, $"{exeName}.desktop");
+
+            if (startMenuEnabled)
             {
-                _logger?.Info($"Deleted existing shortcut: {absoluteDesktopShortcutPath}");
+                _logger?.Warn("Creating start menu shortcuts is not supported on this OS.");
             }
 
-            _logger?.Info(
-                $"Creating desktop shortcut {absoluteDesktopShortcutPath}. " +
-                         $"Auto startup: {autoStartup}. " +
-                         $"Realpath: {shortcutDescription.ExeAbsolutePath}.");
+            if (autoStartEnabled)
+            {
+                if (Filesystem.DirectoryCreateIfNotExists(autoStartDirectoryAbsolutePath))
+                {
+                    _logger?.Info($"Created autostart directory: {autoStartDirectoryAbsolutePath}");
+                }
 
-            await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
-                absoluteDesktopShortcutPath, cancellationToken);
+                if (Filesystem.FileDeleteIfExists(autoStartShortcutAbsolutePath))
+                {
+                    _logger?.Info($"Deleted existing auto start shortcut: {autoStartShortcutAbsolutePath}");
+                }
+
+                _logger?.Info($"Creating autostart shortcut: {autoStartShortcutAbsolutePath}. " +
+                    $"Absolute path: {shortcutDescription.ExeAbsolutePath}.");
+
+                await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
+                    autoStartShortcutAbsolutePath, cancellationToken);
             
-            _logger?.Info($"Attempting to mark shortcut as trusted: {absoluteDesktopShortcutPath}.");
-            var trustedSuccess = await OsProcessManager.ChmodExecuteAsync(absoluteDesktopShortcutPath, cancellationToken);
-            _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
+                _logger?.Info($"Attempting to mark shortcut as trusted: {autoStartShortcutAbsolutePath}.");
+                var trustedSuccess = await OsProcessManager.ChmodExecuteAsync(autoStartShortcutAbsolutePath, cancellationToken);
+                _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
+            }
+
+            if (desktopEnabled)
+            {
+                if (!Filesystem.DirectoryExists(applicationsDirectoryAbsolutePath))
+                {
+                    _logger?.Error($"Applications directory does not exist. Desktop shortcut will not be created. Path: {applicationsDirectoryAbsolutePath}");
+                    goto next;
+                }
+
+                if (Filesystem.FileDeleteIfExists(desktopShortcutAbsolutePath))
+                {
+                    _logger?.Info($"Deleted existing shortcut: {desktopShortcutAbsolutePath}");
+                }
+
+                _logger?.Info($"Creating desktop shortcut: {desktopShortcutAbsolutePath}. " +
+                    $"Auto startup: {autoStartEnabled}. " +
+                    $"Absolute path: {shortcutDescription.ExeAbsolutePath}.");
+
+                await Filesystem.FileWriteUtf8StringAsync(desktopShortcutUtf8Content,
+                    desktopShortcutAbsolutePath, cancellationToken);
+            
+                _logger?.Info($"Attempting to mark shortcut as trusted: {desktopShortcutAbsolutePath}.");
+                var trustedSuccess = await OsProcessManager.ChmodExecuteAsync(desktopShortcutAbsolutePath, cancellationToken);
+                _logger?.Info($"Shortcut marked as trusted: {(trustedSuccess ? "yes" : "no")}");
+            }
+          
+            next: ;
         }
         
         public bool EnsureConsole()
@@ -145,7 +179,7 @@ namespace Snap.AnyOS.Unix
                 if (line == null) throw new ArgumentNullException(nameof(line));
                 if (identifier == null) throw new ArgumentNullException(nameof(identifier));
 
-                if (!line.StartsWith(identifier, StringComparison.InvariantCultureIgnoreCase))
+                if (!line.StartsWith(identifier, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
@@ -181,19 +215,16 @@ namespace Snap.AnyOS.Unix
             return (distributorId, description, release, codeName);
         }
 
-        string BuildDesktopShortcut([NotNull] SnapOsShortcutDescription shortcutDescription, string description, bool addToMachineStartup)
+        string BuildDesktopShortcut([NotNull] SnapOsShortcutDescription shortcutDescription, string description)
         {
             if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
             
-            var gnomeAutoStartEnabled = addToMachineStartup ? "true" : "false";
             var workingDirectory = Filesystem.PathGetDirectoryName(shortcutDescription.ExeAbsolutePath);
 
             switch (DistroType)
             {
                 case SnapOsDistroType.Ubuntu:
-                    return $@"
-#!/usr/bin/env xdg-open
-[Desktop Entry]
+                    return $@"[Desktop Entry]
 Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
@@ -201,9 +232,7 @@ Terminal=false
 Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
-Comment={description}
-X-GNOME-Autostart-enabled={gnomeAutoStartEnabled}
-";
+Comment={description}";
                 default:
                     return null;
             }

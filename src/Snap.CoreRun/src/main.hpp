@@ -48,7 +48,7 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     try {
         options.parse(argc, argv);
     } catch (const cxxopts::OptionException &e) {
-        LOGE << "Error parsing options argument: " << e.what();
+        LOGE << "Error parsing startup argument: " << e.what();
     }
 
     if (supervise_process_id > 0) {

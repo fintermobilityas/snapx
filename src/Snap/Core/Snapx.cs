@@ -23,12 +23,11 @@ namespace Snap.Core
     public static class Snapx
     {
         static readonly ILog Logger = LogProvider.GetLogger(nameof(Snapx));
-
         static readonly object SyncRoot = new object();
         // ReSharper disable once InconsistentNaming
-        internal static SnapApp _current;
-        
+        internal static SnapApp _current;        
         internal static ISnapOs SnapOs { get; set; }
+        internal static List<string> SupervisorProcessRestartArguments { get; private set; }
 
         static Snapx()
         {
@@ -209,6 +208,8 @@ namespace Snap.Core
                 throw new Exception(
                     $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
             }
+
+            SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
         }
                                
         public static bool TryKillSupervisorProcess()
@@ -221,6 +222,7 @@ namespace Snap.Core
             try
             {
                 SuperVisorProcess.Kill();
+                SuperVisorProcess = null;
                 return true;
             }
             catch (Exception e)

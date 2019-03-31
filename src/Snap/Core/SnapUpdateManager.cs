@@ -290,7 +290,8 @@ namespace Snap.Core
             SnapApp updatedSnapApp;
             try
             {
-                Snapx.TryKillSupervisorProcess();
+                var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
+                var supervisorRunning = Snapx.TryKillSupervisorProcess();
             
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
@@ -300,8 +301,12 @@ namespace Snap.Core
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
                 
-                // Save space by only storing deltas.
-                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);                
+                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
+
+                if (supervisorRunning)
+                {
+                    Snapx.EnableSupervisor(supervisorRestartArguments);                               
+                }
             }
             catch (Exception e)
             {

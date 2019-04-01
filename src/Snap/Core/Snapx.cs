@@ -187,17 +187,17 @@ namespace Snap.Core
             TryKillSupervisorProcess();
 
             typeof(SnapUpdateManager).Assembly
-                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var stubExecutableFullPath);
+                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
 
-            if (!SnapOs.Filesystem.FileExists(stubExecutableFullPath))
+            if (!SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath))
             {
-                Logger.Error($"Unable to find supervisor executable: {stubExecutableFullPath}");
+                Logger.Error($"Unable to find supervisor executable: {supervisorExecutableAbsolutePath}");
                 return false;
             }
 
             var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
 
-            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
+            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(supervisorExecutableAbsolutePath)
                 .AddRange(restartArguments ?? new List<string>())
                 .Add(coreRunArgument)
             );

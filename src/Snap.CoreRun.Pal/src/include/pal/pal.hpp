@@ -58,6 +58,7 @@
 
 #include "pal_string.hpp"
 #include "pal_module.hpp"
+#include "pal_semaphore.hpp"
 
 #include <plog/Log.h>
 

@@ -642,4 +642,16 @@ namespace
         EXPECT_TRUE(pal_str_is_null_or_whitespace("          "));
         EXPECT_FALSE(pal_str_is_null_or_whitespace("          s"));
     }
+
+    TEST(PAL_SEMAPHORE, CreateAndRelease) {
+        const auto sema_name = xg::newGuid().str();
+        pal_semaphore_machine_wide sema(sema_name);
+        EXPECT_TRUE(sema.try_create());
+        EXPECT_FALSE(sema.try_create());
+
+        pal_semaphore_machine_wide sema2(sema_name);
+        EXPECT_FALSE(sema2.try_create());
+
+        EXPECT_TRUE(sema.release());
     }
+}

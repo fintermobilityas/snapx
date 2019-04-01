@@ -177,7 +177,8 @@ namespace Snap.Core
         
         /// <summary>
         /// Supervises your application and if it exits or crashes it will be automatically restarted.
-        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
+        /// NB! This method _MUST_ be invoked after <see cref="ProcessEvents"/>. You can stop the supervisor
+        /// process by invoking <see cref="TryKillSupervisorProcess"/> before you exit your application.
         /// </summary>
         /// <param name="restartArguments"></param>
         public static bool EnableSupervisor(List<string> restartArguments = null)

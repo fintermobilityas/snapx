@@ -653,5 +653,8 @@ namespace
         EXPECT_FALSE(sema2.try_create());
 
         EXPECT_TRUE(sema.release());
+
+        pal_semaphore_machine_wide sema3(sema_name);
+        EXPECT_TRUE(sema2.try_create());
     }
 }

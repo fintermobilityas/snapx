@@ -210,6 +210,9 @@ namespace Snap.Core
             }
 
             SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
+
+            Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. " +
+                         $"Restart arguments({SupervisorProcessRestartArguments.Count}): {string.Join(",", SupervisorProcessRestartArguments)}. ");
         }
                                
         public static bool TryKillSupervisorProcess()

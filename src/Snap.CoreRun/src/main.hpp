@@ -3,14 +3,11 @@
 #include "corerun.hpp"
 #include "stubexecutable.hpp"
 #include "cxxopts/include/cxxopts.hpp"
+#include <plog/Log.h>
 
 #if PAL_PLATFORM_LINUX
-
 #include "unistd.h" // fork
-
 #endif
-
-#include <plog/Log.h>
 
 #include <iostream>
 

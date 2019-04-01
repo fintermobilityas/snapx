@@ -61,6 +61,12 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
 inline int corerun_command_supervise(const std::basic_string<char> &executable_full_path,
         std::vector<std::string> &arguments, const int process_id, const int cmd_show_windows)
 {
+    if(!pal_process_is_running(process_id))  
+    {
+        LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because the program is not running.";
+        return 1;
+    }
+
     const auto corerun_dash_dash = "--corerun-";
 
     auto index = 0;

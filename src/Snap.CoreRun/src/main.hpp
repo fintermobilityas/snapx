@@ -10,11 +10,13 @@
 #endif
 
 #include <iostream>
+#include <memory>
 
-inline int corerun_command_supervise(const std::basic_string<char> &executable_full_path,
-                              std::vector<std::string> &arguments,
-                              int process_id,
-                              int cmd_show_windows);
+inline int corerun_command_supervise(
+    const std::string& stub_executable_full_path,
+    std::vector<std::string>& arguments,
+    int process_id,
+    int cmd_show_windows);
 inline void main_wait_for_pid(pal_pid_t pid);
 inline void snapx_maybe_wait_for_debugger();
 
@@ -58,12 +60,37 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     return snap::stubexecutable::run(stub_executable_arguments, cmd_show_windows);
 }
 
-inline int corerun_command_supervise(const std::basic_string<char> &executable_full_path,
-        std::vector<std::string> &arguments, const int process_id, const int cmd_show_windows)
+inline int corerun_command_supervise(
+    const std::string& stub_executable_full_path,
+    std::vector<std::string>& arguments,
+    const int process_id,
+    const int cmd_show_windows)
 {
     if(!pal_process_is_running(process_id))  
     {
         LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because the program is not running.";
+        return 1;
+    }
+
+    auto process_name = std::make_unique<char*>(nullptr);
+    if(!pal_process_get_name(process_name.get())) {
+        LOGE << "Unable to get current process name";
+        return 1;
+    }
+
+    std::string semaphore_name(stub_executable_full_path);
+    if(semaphore_name.size() > PAL_MAX_PATH) {
+        semaphore_name = "corerun-" + std::string(*process_name);
+        LOGW << "Semaphore name exceeds PAL_MAX_PATH length. Using process name instead. " 
+             << "This may cause issues if there are multiple programs running. " 
+             << "Semaphore name: " << semaphore_name;
+    }
+    semaphore_name.replace(semaphore_name.begin(), semaphore_name.end(), PAL_DIRECTORY_SEPARATOR_C, '-');
+    std::transform(semaphore_name.begin(), semaphore_name.end(), semaphore_name.begin(), ::tolower);
+
+    pal_semaphore_machine_wide semaphore(semaphore_name);
+    if(!semaphore.try_create()) {
+        LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because multiple supervisors are running.";
         return 1;
     }
 
@@ -82,6 +109,7 @@ inline int corerun_command_supervise(const std::basic_string<char> &executable_f
     main_wait_for_pid(process_id);
 
     LOGD << "Process exited: " << std::to_string(process_id) << ". "
+         << "Semaphore released: " <<  semaphore.release() << ". "
          << "Startup arguments("<< std::to_string(arguments.size()) << "): "
          << this_exe::build_argv_str(arguments);
 

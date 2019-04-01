@@ -4,9 +4,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
+using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
@@ -216,7 +219,19 @@ namespace Snap.Core
         {
             try
             {
-                SuperVisorProcess?.Kill();
+                if (SuperVisorProcess == null)
+                {
+                    return false;
+                }
+                
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // We have to signal the supervisor so we can release the machine wide semaphore.
+                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, CoreRunLib.NativeMethodsUnix.Signum.SIGABRT);
+                }
+
+                SuperVisorProcess.Kill();                    
+                
                 return true;
             }
             catch (Exception e)

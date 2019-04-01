@@ -7,10 +7,13 @@
 
 #if PAL_PLATFORM_LINUX
 #include "unistd.h" // fork
+#include <csignal>
 #endif
 
 #include <iostream>
 #include <memory>
+
+static std::unique_ptr<pal_semaphore_machine_wide> corerun_supervisor_semaphore;
 
 inline int corerun_command_supervise(
     const std::string& stub_executable_full_path,
@@ -20,7 +23,20 @@ inline int corerun_command_supervise(
 inline void main_wait_for_pid(pal_pid_t pid);
 inline void snapx_maybe_wait_for_debugger();
 
+#if PAL_PLATFORM_LINUX
+void corerun_main_signal_handler(int signum) {
+    if(signum == SIGABRT
+        && corerun_supervisor_semaphore != nullptr) {
+        LOGD << "Handled SIGABRT. Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
+    }
+}
+#endif
+
 inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) {
+#if PAL_PLATFORM_LINUX
+    std::signal(SIGABRT, corerun_main_signal_handler);
+#endif
+    
     LOGD << "Process started. "
          << "Startup arguments(" << std::to_string(argc) << "): "
          << this_exe::build_argv_str(argc, argv);
@@ -88,8 +104,8 @@ inline int corerun_command_supervise(
     semaphore_name.replace(semaphore_name.begin(), semaphore_name.end(), PAL_DIRECTORY_SEPARATOR_C, '-');
     std::transform(semaphore_name.begin(), semaphore_name.end(), semaphore_name.begin(), ::tolower);
 
-    pal_semaphore_machine_wide semaphore(semaphore_name);
-    if(!semaphore.try_create()) {
+    corerun_supervisor_semaphore = std::make_unique<pal_semaphore_machine_wide>(semaphore_name);
+    if(!corerun_supervisor_semaphore->try_create()) {
         LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because multiple supervisors are running.";
         return 1;
     }
@@ -109,7 +125,7 @@ inline int corerun_command_supervise(
     main_wait_for_pid(process_id);
 
     LOGD << "Process exited: " << std::to_string(process_id) << ". "
-         << "Semaphore released: " <<  semaphore.release() << ". "
+         << "Semaphore released: " <<  corerun_supervisor_semaphore->release() << ". "
          << "Startup arguments("<< std::to_string(arguments.size()) << "): "
          << this_exe::build_argv_str(arguments);
 

@@ -20,7 +20,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public static class Snapx
     {
-        static readonly ILog Logger = LogProvider.GetLogger(nameof(Snapx));
+        static readonly ILog Logger;
         static readonly object SyncRoot = new object();
         // ReSharper disable once InconsistentNaming
         internal static SnapApp _current;        
@@ -38,6 +38,7 @@ namespace Snap.Core
                  
                 try
                 {     
+                    Logger = LogProvider.GetLogger(nameof(Snapx));
                     var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
                     Version = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
 

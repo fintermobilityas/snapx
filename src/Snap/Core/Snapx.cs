@@ -182,9 +182,7 @@ namespace Snap.Core
         /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
         /// </summary>
         /// <param name="restartArguments"></param>
-        /// <exception cref="FileNotFoundException">Supervisor executable was not found</exception>
-        /// <exception cref="Exception">Supervisor is unable to start</exception>
-        public static void EnableSupervisor(List<string> restartArguments = null)
+        public static bool EnableSupervisor(List<string> restartArguments = null)
         {
             TryKillSupervisorProcess();
 
@@ -193,7 +191,8 @@ namespace Snap.Core
 
             if (!SnapOs.Filesystem.FileExists(stubExecutableFullPath))
             {
-                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
+                Logger.Error($"Unable to find supervisor executable: {stubExecutableFullPath}");
+                return false;
             }
 
             var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
@@ -203,36 +202,28 @@ namespace Snap.Core
                 .Add(coreRunArgument)
             );
 
-            if (SuperVisorProcess.HasExited)
-            {
-                throw new Exception(
-                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
-            }
-
             SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
 
             Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. " +
                          $"Restart arguments({SupervisorProcessRestartArguments.Count}): {string.Join(",", SupervisorProcessRestartArguments)}. ");
+
+            SuperVisorProcess.Refresh();
+
+            return !SuperVisorProcess.HasExited;
         }
                                
         public static bool TryKillSupervisorProcess()
         {
-            if (SuperVisorProcess == null)
-            {
-                return false;
-            }
-            
             try
             {
-                SuperVisorProcess.Kill();
-                SuperVisorProcess = null;
+                SuperVisorProcess?.Kill();
                 return true;
             }
             catch (Exception e)
             {
-                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess.Id}", e);
+                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess?.Id}", e);
             }
-
+            SuperVisorProcess = null;
             return false;
         }
 

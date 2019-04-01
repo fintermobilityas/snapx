@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
@@ -186,7 +184,7 @@ namespace Snap.Core
         {
             TryKillSupervisorProcess();
 
-            typeof(SnapUpdateManager).Assembly
+            typeof(Snapx).Assembly
                 .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
 
             if (!SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath))

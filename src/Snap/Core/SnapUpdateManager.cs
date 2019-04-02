@@ -291,7 +291,7 @@ namespace Snap.Core
             try
             {
                 var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
-                var supervisorRunning = Snapx.TryKillSupervisorProcess();
+                var supervisorRunning = Snapx.StopSupervisor();
             
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
@@ -305,7 +305,7 @@ namespace Snap.Core
 
                 if (supervisorRunning)
                 {
-                    Snapx.EnableSupervisor(supervisorRestartArguments);                               
+                    Snapx.StartSupervisor(supervisorRestartArguments);                               
                 }
             }
             catch (Exception e)

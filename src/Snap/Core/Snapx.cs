@@ -2,13 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Threading;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
+using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
@@ -22,7 +23,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public static class Snapx
     {
-        static readonly ILog Logger = LogProvider.GetLogger(nameof(Snapx));
+        static readonly ILog Logger;
         static readonly object SyncRoot = new object();
         // ReSharper disable once InconsistentNaming
         internal static SnapApp _current;        
@@ -40,6 +41,7 @@ namespace Snap.Core
                  
                 try
                 {     
+                    Logger = LogProvider.GetLogger(nameof(Snapx));
                     var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
                     Version = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
 
@@ -179,57 +181,64 @@ namespace Snap.Core
         
         /// <summary>
         /// Supervises your application and if it exits or crashes it will be automatically restarted.
-        /// NB! This method _MUST_ be invoked after <see cref="Snapx.ProcessEvents"/>.
+        /// NB! This method _MUST_ be invoked after <see cref="ProcessEvents"/>. You can stop the supervisor
+        /// process by invoking <see cref="TryKillSupervisorProcess"/> before you exit your application.
         /// </summary>
         /// <param name="restartArguments"></param>
-        /// <exception cref="FileNotFoundException">Supervisor executable was not found</exception>
-        /// <exception cref="Exception">Supervisor is unable to start</exception>
-        public static void EnableSupervisor(List<string> restartArguments = null)
+        public static bool EnableSupervisor(List<string> restartArguments = null)
         {
             TryKillSupervisorProcess();
 
-            typeof(SnapUpdateManager).Assembly
-                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var stubExecutableFullPath);
+            typeof(Snapx).Assembly
+                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
 
-            if (!SnapOs.Filesystem.FileExists(stubExecutableFullPath))
+            if (!SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath))
             {
-                throw new FileNotFoundException($"Unable to find stub executable: {stubExecutableFullPath}");
+                Logger.Error($"Unable to find supervisor executable: {supervisorExecutableAbsolutePath}");
+                return false;
             }
 
             var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
 
-            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(stubExecutableFullPath)
+            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(supervisorExecutableAbsolutePath)
                 .AddRange(restartArguments ?? new List<string>())
                 .Add(coreRunArgument)
             );
 
-            if (SuperVisorProcess.HasExited)
-            {
-                throw new Exception(
-                    $"Fatal error! Stub executable exited unexpectedly. Full path: {stubExecutableFullPath}. Shutdown arguments: {restartArguments}");
-            }
-
             SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
+
+            Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. " +
+                         $"Restart arguments({SupervisorProcessRestartArguments.Count}): {string.Join(",", SupervisorProcessRestartArguments)}. ");
+
+            SuperVisorProcess.Refresh();
+
+            return !SuperVisorProcess.HasExited;
         }
                                
         public static bool TryKillSupervisorProcess()
         {
-            if (SuperVisorProcess == null)
-            {
-                return false;
-            }
-            
             try
             {
-                SuperVisorProcess.Kill();
-                SuperVisorProcess = null;
+                if (SuperVisorProcess == null)
+                {
+                    return false;
+                }
+                
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // We have to signal the supervisor so we can release the machine wide semaphore.
+                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, CoreRunLib.NativeMethodsUnix.Signum.SIGABRT);
+                }
+
+                SuperVisorProcess.Kill();                    
+                
                 return true;
             }
             catch (Exception e)
             {
-                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess.Id}", e);
+                Logger.ErrorException($"Exception thrown when killing supervisor process with pid: {SuperVisorProcess?.Id}", e);
             }
-
+            SuperVisorProcess = null;
             return false;
         }
 

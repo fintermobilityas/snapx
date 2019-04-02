@@ -25,6 +25,7 @@ list(APPEND pal_INCLUDE_DIRS
 list(APPEND pal_SOURCES
         src/pal_string.cpp
         src/pal_module.cpp
+        src/pal_semaphore.cpp
         src/pal.cpp
         )
 
@@ -86,6 +87,7 @@ elseif(UNIX)
 
     list(APPEND pal_LIBS
             dl
+            pthread
             )
 
     list(APPEND pal_static_LIBS

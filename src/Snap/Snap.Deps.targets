@@ -1,8 +1,8 @@
 <Project>
     <ItemGroup>
         <PackageReference Include="Mono.Cecil" Version="0.10.3"/>
-        <PackageReference Include="NuGet.Packaging" Version="5.0.0-rtm.5856"/>
-        <PackageReference Include="NuGet.Protocol" Version="5.0.0-rtm.5856"/>
+        <PackageReference Include="NuGet.Packaging" Version="5.0.0-rtm.5917"/>
+        <PackageReference Include="NuGet.Protocol" Version="5.0.0-rtm.5917"/>
         <PackageReference Include="YamlDotNet" Version="6.0.0"/>
         <PackageReference Include="SharpCompress" Version="0.23.0"/>
         <PackageReference Include="DotNet.Glob" Version="3.0.1"/>

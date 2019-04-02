@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Core.Resources;
@@ -74,6 +75,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMethodReturnValue.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
+        int ReleaseRetentionLimit { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
@@ -95,6 +97,12 @@ namespace Snap.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapPackageManager _snapPackageManager;
         readonly ISnapAppWriter _snapAppWriter;
+
+        /// <summary>
+        /// The number of releases that should be retained after a new updated has been successfully applied.
+        /// Default value is 1 - Only the previous version will be retained. 
+        /// </summary>
+        public int ReleaseRetentionLimit { get; set; } = 1;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -141,6 +149,7 @@ namespace Snap.Core
             _logger.Debug($"Root directory: {_workingDirectory}");
             _logger.Debug($"Packages directory: {_packagesDirectory}");
             _logger.Debug($"Current version: {_snapApp?.Version}");
+            _logger.Debug($"Retention limit: {ReleaseRetentionLimit}");
         }
 
         /// <summary>
@@ -284,12 +293,12 @@ namespace Snap.Core
                 _logger.Error($"Unable to find full nupkg: {nupkgToInstallAbsolutePath}.");
                 return null;
             }
-
+            
             progressSource?.RaiseTotalProgress(60);
 
             SnapApp updatedSnapApp;
             try
-            {
+            {                               
                 var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
                 var supervisorRunning = Snapx.StopSupervisor();
             
@@ -306,6 +315,58 @@ namespace Snap.Core
                 if (supervisorRunning)
                 {
                     Snapx.StartSupervisor(supervisorRestartArguments);                               
+                }
+                
+                var deletableDirectories = _snapOs.Filesystem
+                    .EnumerateDirectories(_workingDirectory)
+                    .Select(x =>
+                    {
+                        if (!x.EndsWith("app-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return (null, null);
+                        }
+
+                        var appDirIndexPosition = x.LastIndexOf("app-", StringComparison.OrdinalIgnoreCase);
+                        SemanticVersion.TryParse(x.Substring(appDirIndexPosition + 1), out var semanticVersion);
+                        
+                        return (absolutePath: x, version: semanticVersion);
+                    })
+                    .Where(x => x.version != null && x.version < updatedSnapApp.Version)
+                    .OrderBy(x => x.version)
+                    .ToList();
+
+                const int deleteRetries = 3;
+                
+                if (ReleaseRetentionLimit >= 1
+                    && deletableDirectories.Count > ReleaseRetentionLimit)
+                {
+                    var directoriesToDelete = deletableDirectories.Count - ReleaseRetentionLimit;
+                    
+                    _logger.Debug($"Exceeded application directories retention limit: {ReleaseRetentionLimit}. " +
+                                  $"Number of directories that will be deleted: {directoriesToDelete}.");
+                    
+                    for (var i = 0; i < directoriesToDelete; i++)
+                    {
+                        var (directoryAbsolutePath, version) = deletableDirectories[i];
+                        
+                        _logger.Debug($"Deleting old application version: {version}.");
+                        
+                        await SnapUtility.RetryAsync(async () =>
+                        {
+                            try
+                            {
+                                _snapOs.KillAllProcessesInsideDirectory(directoryAbsolutePath);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.ErrorException($"Exception thrown while killing processes in directory: {directoryAbsolutePath}.", e);
+                            }
+                            
+                            // Todo: Windows - https://docs.microsoft.com/en-gb/windows/desktop/api/winbase/nf-winbase-movefileexa
+                            // Delete all locked files by delaying until reboot? (MOVEFILE_DELAY_UNTIL_REBOOT) 
+                            await _snapOs.Filesystem.DirectoryDeleteAsync(directoryAbsolutePath);
+                        }, deleteRetries, throwException: false);
+                    }                    
                 }
             }
             catch (Exception e)

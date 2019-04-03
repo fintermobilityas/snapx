@@ -156,9 +156,8 @@ namespace Snap.Tests.Core
                                 It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
                         }
 
-                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                            It.Is<string>(v => v == baseDirectory.WorkingDirectory),
-                            It.Is<CancellationToken>(v => v != default)), Times.Once);
+                        _snapOsMock.Verify(x => x.KillAllProcessesInsideDirectory(
+                            It.Is<string>(v => v == baseDirectory.WorkingDirectory)), Times.Once);
 
                         _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
                             It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
@@ -380,9 +379,8 @@ namespace Snap.Tests.Core
                                 It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
                         }
 
-                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                            It.IsAny<string>(),
-                            It.IsAny<CancellationToken>()), Times.Never);
+                        _snapOsMock.Verify(x => x.KillAllProcessesInsideDirectory(
+                            It.IsAny<string>()), Times.Never);
 
                         _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
                             It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),

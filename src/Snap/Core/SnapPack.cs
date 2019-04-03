@@ -798,6 +798,7 @@ namespace Snap.Core
                     // Nuspec properties                    
                     reassembledFullSnapRelease.ReleaseNotes = deltaRelease.ReleaseNotes;
                     reassembledFullSnapRelease.CreatedDateUtc = deltaRelease.CreatedDateUtc;
+                    reassembledFullSnapRelease.Gc = deltaRelease.Gc;
                 }
             }
         }

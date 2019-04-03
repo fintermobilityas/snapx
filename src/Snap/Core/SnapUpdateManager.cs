@@ -240,6 +240,47 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(0);
 
+            if (snapAppChannelReleases.Count() == 1)
+            {
+                var snapRelease = snapReleases.Single();
+                if (snapRelease.IsGenesis && snapRelease.Gc)
+                {
+                    try
+                    {
+                        var nugetPackages = _snapOs.Filesystem
+                            .DirectoryGetAllFiles(_packagesDirectory)
+                            .Where(x => 
+                                !string.Equals(snapRelease.Filename, x, StringComparison.OrdinalIgnoreCase) 
+                                && x.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        if (nugetPackages.Count > 0)
+                        {
+                            _logger.Debug($"Garbage collecting (removing) previous nuget packages. Packages that will be removed: {nugetPackages.Count}.");
+
+                            foreach (var nugetPackageAbsolutePath in nugetPackages)
+                            {
+                                try
+                                {
+                                    SnapUtility.Retry(() => _snapOs.Filesystem.FileDelete(nugetPackageAbsolutePath), 3);
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.ErrorException($"Failed to delete: {nugetPackageAbsolutePath}", e);
+                                    continue;
+                                }
+                                
+                                _logger.Debug($"Deleted nuget package: {nugetPackageAbsolutePath}.");
+                            }                            
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.ErrorException($"Unknown error listing files in packages directory: {_packagesDirectory}.", e);                        
+                    }
+                }
+            }
+
             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
             {
                 ChecksumProgress = x =>

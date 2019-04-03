@@ -135,6 +135,12 @@ namespace snapx
             {
                 logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
 
+                if (packOptions.Gc)
+                {
+                    var releasesRemoved = snapAppsReleases.Gc(snapApp);
+                    logger.Info($"Garbage collected (removed) {releasesRemoved} releases.");
+                }
+
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
                 logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -190,7 +196,8 @@ namespace snapx
                 }
                 else
                 {
-                    if (!logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
+                    if (!packOptions.Gc 
+                        && !logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
                                                 "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]",
                         infoOnly: packOptions.YesToAllPrompts)
                     )

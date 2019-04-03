@@ -240,17 +240,18 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(0);
 
+            SnapRelease snapGenisisRelease = null;
             if (snapAppChannelReleases.Count() == 1)
             {
-                var snapRelease = snapReleases.Single();
-                if (snapRelease.IsGenesis && snapRelease.Gc)
+                snapGenisisRelease = snapReleases.Single();
+                if (snapGenisisRelease.IsGenesis && snapGenisisRelease.Gc)
                 {
                     try
                     {
                         var nugetPackages = _snapOs.Filesystem
                             .DirectoryGetAllFiles(_packagesDirectory)
                             .Where(x => 
-                                !string.Equals(snapRelease.Filename, x, StringComparison.OrdinalIgnoreCase) 
+                                !string.Equals(snapGenisisRelease.Filename, x, StringComparison.OrdinalIgnoreCase) 
                                 && x.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
                             .ToList();
 
@@ -350,8 +351,19 @@ namespace Snap.Core
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
-                
-                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
+
+                if (!updatedSnapApp.IsGenesis)
+                {
+                    _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
+                    _logger.Debug($"Deleted nukpkg: {nupkgToInstallAbsolutePath}.");                    
+                }
+                else
+                {
+                    // Genisis nupkg must be retained so we don't have to download it again 
+                    // when a new delta release is available. This should only happen if all releases has 
+                    // been garbage collected (removed). 
+                    _logger.Debug($"Retaining genesis nupkg: {nupkgToInstallAbsolutePath}.");
+                }
 
                 if (supervisorRunning)
                 {

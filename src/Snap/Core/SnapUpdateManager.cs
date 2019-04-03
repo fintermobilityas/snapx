@@ -240,7 +240,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(0);
 
-            SnapRelease snapGenisisRelease = null;
+            SnapRelease snapGenisisRelease;
             if (snapAppChannelReleases.Count() == 1)
             {
                 snapGenisisRelease = snapReleases.Single();

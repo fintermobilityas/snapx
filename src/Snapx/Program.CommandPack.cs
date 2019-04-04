@@ -287,7 +287,7 @@ namespace snapx
 
                             var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
-                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                installersDirectory, null, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
@@ -315,7 +315,7 @@ namespace snapx
 
                             var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
                                 snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
-                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                installersDirectory, null, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)

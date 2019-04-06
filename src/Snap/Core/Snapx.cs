@@ -223,6 +223,13 @@ namespace Snap.Core
                 {
                     return false;
                 }
+
+                SuperVisorProcess.Refresh();
+                var supervisorRunning = !SuperVisorProcess.HasExited;
+                if (!supervisorRunning)
+                {
+                    return false;
+                }
                 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {

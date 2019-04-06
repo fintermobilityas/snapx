@@ -338,11 +338,13 @@ namespace Snap.Core
             
             progressSource?.RaiseTotalProgress(60);
 
-            SnapApp updatedSnapApp;
+            SnapApp updatedSnapApp = null;
             try
             {                               
                 var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
-                var supervisorRunning = Snapx.StopSupervisor();
+                var supervisorStopped = Snapx.StopSupervisor();
+
+                _logger.Debug($"Supervisor stopped: {supervisorStopped}.");
             
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
@@ -350,6 +352,12 @@ namespace Snap.Core
                 if (updatedSnapApp == null)
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
+                }
+
+                if (supervisorStopped)
+                {
+                    var supervisorStarted = Snapx.StartSupervisor(supervisorRestartArguments);                               
+                    _logger.Debug($"Supervisor started: {supervisorStarted}.");
                 }
 
                 if (!updatedSnapApp.IsGenesis)
@@ -363,11 +371,6 @@ namespace Snap.Core
                     // when a new delta release is available. This should only happen if all releases has 
                     // been garbage collected (removed). 
                     _logger.Debug($"Retaining genesis nupkg: {nupkgToInstallAbsolutePath}.");
-                }
-
-                if (supervisorRunning)
-                {
-                    Snapx.StartSupervisor(supervisorRestartArguments);                               
                 }
                 
                 var deletableDirectories = _snapOs.Filesystem
@@ -425,7 +428,10 @@ namespace Snap.Core
             catch (Exception e)
             {
                 _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
-                return null;
+                if (updatedSnapApp == null)
+                {
+                    return null;
+                }
             }
 
             progressSource?.RaiseTotalProgress(100);

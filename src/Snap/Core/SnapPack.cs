@@ -396,7 +396,7 @@ namespace Snap.Core
                     }
                 });
 
-                await AddSnapAssetsAsync(coreRunLib, packageBuilder, fullSnapApp, fullSnapRelease, cancellationToken);
+                await AddSnapAssetsAsync(snapNuspecDetails, coreRunLib, packageBuilder, fullSnapApp, fullSnapRelease, cancellationToken);
 
                 return (packageBuilder, nuspecStreamCpy, nuspecPropertiesResolver, fullSnapApp, fullSnapRelease);
             }
@@ -842,9 +842,10 @@ namespace Snap.Core
             }
         }
 
-        async Task AddSnapAssetsAsync([NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder,
+        async Task AddSnapAssetsAsync([NotNull] ISnapNuspecDetails snapNuspecDetails, [NotNull] ICoreRunLib coreRunLib, [NotNull] PackageBuilder packageBuilder,
             [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease, CancellationToken cancellationToken = default)
         {
+            if (snapNuspecDetails == null) throw new ArgumentNullException(nameof(snapNuspecDetails));
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (packageBuilder == null) throw new ArgumentNullException(nameof(packageBuilder));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -868,7 +869,8 @@ namespace Snap.Core
             }
 
             // Snap.dll
-            using (var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapPack).Assembly.Location, cancellationToken))
+            var snapDllAbsolutePath = _snapFilesystem.PathCombine(snapNuspecDetails.NuspecBaseDirectory, SnapConstants.SnapDllFilename);
+            using (var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(snapDllAbsolutePath, cancellationToken))
             {
                 var snapDllOptimizedMemoryStream = new MemoryStream();
 

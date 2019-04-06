@@ -98,6 +98,13 @@ namespace Snap.Shared.Tests
             return this;
         }
         
+        public SnapReleaseBuilder AddSnapDll()
+        {
+            var assemblyDefinition = AssemblyDefinition.ReadAssembly(typeof(SnapPack).Assembly.Location);
+            _nuspec.Add(assemblyDefinition.BuildRelativeFilename(), assemblyDefinition);
+            return this;
+        }
+        
         public SnapReleaseBuilder AddDelayLoadedNuspecItem([NotNull] string targetPath)
         {
             if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));

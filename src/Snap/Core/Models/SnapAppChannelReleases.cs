@@ -42,7 +42,7 @@ namespace Snap.Core.Models
             if (snapReleases == null) throw new ArgumentNullException(nameof(snapReleases));
             App = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
             Channel = snapChannel ?? throw new ArgumentNullException(nameof(snapChannel));
-            Releases = snapReleases.ToList();
+            Releases = snapReleases.OrderBy(x => x.Version).ToList();
         }
 
         public SnapAppChannelReleases([NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] IEnumerable<SnapRelease> snapReleases) :

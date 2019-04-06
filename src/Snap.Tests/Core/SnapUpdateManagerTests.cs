@@ -131,12 +131,12 @@ namespace Snap.Tests.Core
                     progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                         It.Is<int>(v => v == 0),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 1)), Times.Once);
+                        It.Is<long>(v => v == 6)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                         It.Is<int>(v => v == 100),
-                        It.Is<long>(v => v == 1),
-                        It.Is<long>(v => v == 1)), Times.Once);
+                        It.Is<long>(v => v == 6),
+                        It.Is<long>(v => v == 6)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 0)), Times.Once);
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 50)), Times.Once);

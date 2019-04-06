@@ -26,13 +26,13 @@ namespace Snap.Core
         Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
             DownloadProgress { get; set; }
 
-        Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
         void RaiseChecksumProgress(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum);
 
         void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
 
-        void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
+        void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore);
     }
 
     internal sealed class SnapPackageManagerProgressSource : ISnapPackageManagerProgressSource
@@ -42,7 +42,7 @@ namespace Snap.Core
         public Action<(int progressPercentage, long releasesDownloaded,
             long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)> DownloadProgress { get; set; }
 
-        public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        public Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
 
         public void RaiseChecksumProgress(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)
         {
@@ -55,9 +55,9 @@ namespace Snap.Core
             DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
         }
 
-        public void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToStore)
+        public void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore)
         {
-            RestoreProgress?.Invoke((progressPercentage, releasesRestored, releasesToStore));
+            RestoreProgress?.Invoke((progressPercentage, filesRestored, filesToRestore));
         }
     }
 
@@ -498,18 +498,36 @@ namespace Snap.Core
                 }
                 
                 logger?.Info($"Reassembling {releasesToReassemble.Count()} packages: {string.Join(", ", releasesToReassemble.Select(x => x.BuildNugetFullFilename()))}.");
-
-                progressSource?.RaiseRestoreProgress(0, 0, releasesToReassemble.Count());
                 
                 var success = true;
+
+                var genesisSnapRelease = snapAppChannelReleases.GetGenesisRelease();
+                var newestVersion = releasesToReassemble.Max(x => x.Version);
+
                 long releasesReassembled = default;
+                var totalFilesToRestore = genesisSnapRelease.Files.Count + 
+                                          snapAppChannelReleases
+                                            .Where(x => x.Version > genesisSnapRelease.Version && x.Version <= newestVersion)
+                                            .Sum(x => x.New.Count + x.Modified.Count);
+                var totalFilesRestored = 0L;
+                int totalRestorePercentage;
+
+                var compoundProgressSource = new RebuildPackageProgressSource();
+                compoundProgressSource.Progress += tuple =>
+                {
+                    if(tuple.filesRestored == 0) return;
+                    totalRestorePercentage = (int) Math.Ceiling((double) ++totalFilesRestored / totalFilesToRestore * 100);
+                    progressSource?.RaiseRestoreProgress(totalRestorePercentage, totalFilesRestored, totalFilesToRestore);
+                };
+
+                progressSource?.RaiseRestoreProgress(0, 0, totalFilesToRestore);
 
                 await releasesToReassemble.ForEachAsync(async x =>
                 {
                     try
                     {
                         var (fullNupkgMemoryStream, _, fullSnapRelease) =
-                            await _snapPack.RebuildPackageAsync(packagesDirectory, snapAppChannelReleases, x, cancellationToken);
+                            await _snapPack.RebuildPackageAsync(packagesDirectory, snapAppChannelReleases, x, compoundProgressSource, cancellationToken);
 
                         using (fullNupkgMemoryStream)
                         {
@@ -517,9 +535,6 @@ namespace Snap.Core
                             await _filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, cancellationToken);
 
                             var releasesReassembledSoFarVolatile = Interlocked.Increment(ref releasesReassembled);
-                            var progress = releasesReassembledSoFarVolatile / (double) releasesToReassemble.Count() * 100;
-                            progressSource?.RaiseRestoreProgress((int) Math.Floor(progress), releasesReassembledSoFarVolatile, releasesToReassemble.Count());
-
                             restoreSummary.ReassembleSummary.Add(new SnapPackageManagerReleaseStatus(fullSnapRelease, true));
 
                             logger?.Debug($"Successfully restored {releasesReassembledSoFarVolatile} of {releasesToReassemble.Count()}.");

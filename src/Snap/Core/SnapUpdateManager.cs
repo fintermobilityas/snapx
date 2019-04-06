@@ -26,7 +26,7 @@ namespace Snap.Core
         Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
             DownloadProgress { get; set; }
 
-        Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
         Action<int> TotalProgress { get; set; }
 
         void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum);
@@ -34,7 +34,7 @@ namespace Snap.Core
         void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
 
-        void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
+        void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore);
         void RaiseTotalProgress(int percentage);
     }
 
@@ -45,7 +45,7 @@ namespace Snap.Core
         public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
             DownloadProgress { get; set; }
 
-        public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        public Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
         public Action<int> TotalProgress { get; set; }
 
         public void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)
@@ -59,9 +59,9 @@ namespace Snap.Core
             DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
         }
 
-        public void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToStore)
+        public void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore)
         {
-            RestoreProgress?.Invoke((progressPercentage, releasesRestored, releasesToStore));
+            RestoreProgress?.Invoke((progressPercentage, filesRestored, filesToRestore));
         }
 
         public void RaiseTotalProgress(int percentage)
@@ -302,8 +302,8 @@ namespace Snap.Core
                 RestoreProgress = x =>
                     progressSource?.RaiseRestoreProgress(
                         x.progressPercentage, 
-                        x.releasesRestored, 
-                        x.releasesToRestore
+                        x.filesRestored, 
+                        x.filesToRestore
                 )
             };
 
@@ -377,7 +377,7 @@ namespace Snap.Core
                     .EnumerateDirectories(_workingDirectory)
                     .Select(x =>
                     {
-                        if (!x.Contains("app-", StringComparison.OrdinalIgnoreCase))
+                        if (x.IndexOf("app-", StringComparison.OrdinalIgnoreCase) == 1)
                         {
                             return (null, null);
                         }

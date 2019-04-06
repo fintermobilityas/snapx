@@ -156,9 +156,9 @@ namespace Snap.Installer
                             mainWindowLogger.Info("Downloading required assets");
 
                             void UpdateProgress(string type, int totalPercentage,
-                                long releasesToChecksum = 0, long releasesChecksummed = 0,
-                                long releasesToDownload = 0, long releasesDownloaded = 0,
-                                long releasesToRestore = 0, long releasesRestored = 0,
+                                long releasesChecksummed = 0, long releasesToChecksum = 0,
+                                long releasesDownloaded = 0, long releasesToDownload = 0,
+                                long filesRestored = 0, long filesToRestore = 0, 
                                 long totalBytesDownloaded = 0, long totalBytesToDownload = 0)
                             {
 
@@ -203,13 +203,13 @@ namespace Snap.Installer
                                 switch (type)
                                 {
                                     case "Checksum":
-                                        SetProgressText(releasesChecksummed, releasesToChecksum, "Validating payloads", "Validating payloads");
+                                        SetProgressText(releasesChecksummed, releasesToChecksum, "Validating payload", "Validating payloads");
                                         break;
                                     case "Download":
-                                        SetProgressText(releasesDownloaded, releasesToDownload, "Downloading payloads", "Downloading payloads");
+                                        SetProgressText(releasesDownloaded, releasesToDownload, "Downloading payload", "Downloading payloads");
                                         break;
                                     case "Restore":
-                                        SetProgressText(releasesRestored, releasesToRestore, "Restore payload", "Restoring payloads");
+                                        SetProgressText(filesRestored, filesToRestore, "Restoring file", "Restoring files");
                                         break;
                                     default:
                                         diskLogger.Warn($"Unknown progress type: {type}");
@@ -221,8 +221,8 @@ namespace Snap.Installer
                             {
                                 ChecksumProgress = x => UpdateProgress("Checksum",
                                     x.progressPercentage,
-                                    x.releasesToChecksum,
-                                    x.releasesChecksummed),
+                                    x.releasesChecksummed,
+                                    x.releasesToChecksum),
                                 DownloadProgress = x => UpdateProgress("Download",
                                     x.progressPercentage,
                                     releasesDownloaded: x.releasesDownloaded,
@@ -231,8 +231,8 @@ namespace Snap.Installer
                                     totalBytesToDownload: x.totalBytesToDownload),
                                 RestoreProgress = x => UpdateProgress("Restore",
                                     x.progressPercentage,
-                                    releasesToRestore: x.releasesToRestore,
-                                    releasesRestored: x.releasesRestored)
+                                    filesRestored: x.filesRestored,
+                                    filesToRestore: x.filesToRestore)
                             };
 
                             var restoreSummary = await snapPackageManager.RestoreAsync(webInstallerDir.WorkingDirectory, snapAppChannelReleases,

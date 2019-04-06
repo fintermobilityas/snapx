@@ -98,6 +98,21 @@ namespace Snap.Core
         }
     }
 
+    internal interface IRebuildPackageProgressSource
+    {
+        Action<(int progressPercentage, long filesRestored, long filesToRestore)> Progress { get; set; }
+        void Raise(int progressPercentage, long filesRestored, long filesToRestore);
+    }
+
+    internal sealed class RebuildPackageProgressSource : IRebuildPackageProgressSource
+    {
+        public Action<(int progressPercentage, long filesRestored, long filesToRestore)> Progress { get; set; }
+        public void Raise(int progressPercentage, long filesRestored, long filesToRestore)
+        {
+            Progress?.Invoke((progressPercentage, filesRestored, filesToRestore));
+        }
+    } 
+
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapPack
     {
@@ -107,7 +122,8 @@ namespace Snap.Core
         Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
             BuildPackageAsync([NotNull] ISnapPackageDetails packageDetails, [NotNull] ICoreRunLib coreRunLib, CancellationToken cancellationToken = default);
         Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
-            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, CancellationToken cancellationToken = default);
+            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, 
+            IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default);
         MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases);
         Task<SnapApp> GetSnapAppAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
         Task<MemoryStream> GetSnapAssetAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] string filename,
@@ -243,7 +259,7 @@ namespace Snap.Core
             var previousSnapRelease = snapAppChannelReleases.GetMostRecentRelease();
 
             var (previousNupkgPackageBuilder, _, _) = await RebuildFullPackageAsyncInternal(
-                packagesDirectory, snapAppChannelReleases, previousSnapRelease, cancellationToken);
+                packagesDirectory, snapAppChannelReleases, previousSnapRelease, cancellationToken: cancellationToken);
 
             var (currentFullNupkgPackageBuilder, currentNuspecMemoryStream, currentNuspecPropertiesResolver, 
                 currentFullSnapApp, currentFullSnapRelease) = await BuildFullPackageAsyncInternal(
@@ -557,7 +573,7 @@ namespace Snap.Core
         }
 
         public async Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync(string packagesDirectory,
-            ISnapAppChannelReleases snapAppChannelReleases, SnapRelease snapRelease, CancellationToken cancellationToken = default)
+            ISnapAppChannelReleases snapAppChannelReleases, SnapRelease snapRelease, IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
@@ -566,7 +582,7 @@ namespace Snap.Core
             var outputStream = new MemoryStream();
 
             var (packageBuilder, fullSnapApp, fullSnapRelease) =
-                await RebuildFullPackageAsyncInternal(packagesDirectory, snapAppChannelReleases, snapRelease, cancellationToken);
+                await RebuildFullPackageAsyncInternal(packagesDirectory, snapAppChannelReleases, snapRelease, rebuildPackageProgressSource, cancellationToken);
             packageBuilder.Save(outputStream);
             outputStream.Seek(0, SeekOrigin.Begin);
 
@@ -577,6 +593,7 @@ namespace Snap.Core
 
         async Task<(PackageBuilder packageBuilder, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildFullPackageAsyncInternal(string packagesDirectory,
             ISnapAppChannelReleases snapAppChannelReleases, SnapRelease snapRelease,
+            IRebuildPackageProgressSource rebuildPackageProgressSource = null,
             CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
@@ -601,10 +618,32 @@ namespace Snap.Core
                 throw new FileNotFoundException("Expected genesis to be a full release.", snapRelease.Filename);
             }
 
-            var (packageBuilder, genesisSnapApp) =
-                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genesisSnapRelease, cancellationToken);
-
             var deltaSnapReleasesToApply = snapAppChannelReleases.GetDeltaReleasesOlderThanOrEqualTo(snapRelease.Version).ToList();
+
+            var compoundProgressSource = new RebuildPackageProgressSource();
+            var totalFilesToRestore = genesisSnapRelease.Files.Count + 
+                                      deltaSnapReleasesToApply
+                                          .Sum(x => x.New.Count + x.Modified.Count);
+            var totalFilesRestored = 0L;
+            var totalProgressPercentage = 0;
+
+            void UpdateRebuildProgress()
+            {
+                totalProgressPercentage = (int) Math.Floor((double) ++totalFilesRestored / totalFilesToRestore * 100);
+                rebuildPackageProgressSource?.Raise(totalProgressPercentage, totalFilesRestored, totalFilesToRestore);
+            }
+
+            compoundProgressSource.Progress += tuple =>
+            {
+                if(tuple.filesRestored == 0) return;
+                UpdateRebuildProgress();
+            };
+
+            rebuildPackageProgressSource?.Raise(0, 0, totalFilesToRestore);
+ 
+            var (packageBuilder, genesisSnapApp) =
+                await BuildPackageFromReleaseAsync(packagesDirectory, snapAppChannelReleases, genesisSnapRelease, compoundProgressSource, cancellationToken);
+
             if (!deltaSnapReleasesToApply.Any())
             {
                 return (packageBuilder, genesisSnapApp, snapRelease);
@@ -701,6 +740,8 @@ namespace Snap.Core
                         }
                         
                         AddPackageFile(packageBuilder, srcStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease);
+
+                        UpdateRebuildProgress();
                     }
 
                     foreach (var deltaChecksum in deltaRelease.Modified)
@@ -783,6 +824,7 @@ namespace Snap.Core
 
                             done:
                             AddPackageFile(packageBuilder, outputStream, deltaChecksum.NuspecTargetPath, string.Empty, reassembledFullSnapRelease, true);
+                            UpdateRebuildProgress();
                         }
 
                         packageBuilder.Populate(await packageArchiveReader.GetManifestMetadataAsync(cancellationToken));
@@ -804,7 +846,8 @@ namespace Snap.Core
         }
 
         async Task<(PackageBuilder packageBuilder, SnapApp snapApp)> BuildPackageFromReleaseAsync([NotNull] string packagesDirectory,
-            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, CancellationToken cancellationToken = default)
+            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, IRebuildPackageProgressSource rebuildPackageProgressSource = null,
+            CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
@@ -825,11 +868,19 @@ namespace Snap.Core
                 var packageBuilder = new PackageBuilder();
                 packageBuilder.Populate(await packageArchiveReader.GetManifestMetadataAsync(cancellationToken));
 
+                var filesRestored = 0;
+                var filesToRestore = snapRelease.Files.Count;
+
+                rebuildPackageProgressSource?.Raise(0, filesRestored, filesToRestore);
+
                 foreach (var checksum in snapRelease.Files)
                 {
                     var srcStream = await packageArchiveReader.GetStreamAsync(checksum.NuspecTargetPath, cancellationToken).ReadToEndAsync(cancellationToken);
 
                     AddPackageFile(packageBuilder, srcStream, checksum.NuspecTargetPath, string.Empty);
+
+                    var progressPercentage = (int) Math.Floor((double) ++filesRestored / filesToRestore * 100);
+                    rebuildPackageProgressSource?.Raise(progressPercentage, filesRestored, filesToRestore);
                 }
 
                 var releaseChecksum = _snapCryptoProvider.Sha512(snapRelease, packageBuilder);

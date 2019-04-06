@@ -4,6 +4,6 @@
         <PackageReference Include="Avalonia.Desktop" Version="0.8.0" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="0.8.0" />
         <PackageReference Include="LightInject" Version="5.4.0" />
-        <PackageReference Include="NLog" Version="4.6.1" />
+        <PackageReference Include="NLog" Version="4.6.2" />
     </ItemGroup>
 </Project>

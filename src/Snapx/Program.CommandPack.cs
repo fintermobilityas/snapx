@@ -143,7 +143,11 @@ namespace snapx
 
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                if (!packOptions.Gc)
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                }
+
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
                     pushFeed, SnapPackageManagerRestoreType.GenesisAndDelta, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
@@ -151,7 +155,10 @@ namespace snapx
                     return 1;
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                if (!packOptions.Gc)
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                }
 
                 var snapAppMostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
                 if (snapAppMostRecentRelease != null)

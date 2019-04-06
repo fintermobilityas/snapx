@@ -967,7 +967,8 @@ namespace Snap.Core
                 {
                     Glob.Parse("**/*.nuspec"),
                     Glob.Parse("**/*.pdb"),
-                    Glob.Parse("**/*.dll.xml")
+                    Glob.Parse("**/*.dll.xml"),
+                    Glob.Parse("**/*.log")
                 };
 
                 const char excludePatternDelimeter = ';';

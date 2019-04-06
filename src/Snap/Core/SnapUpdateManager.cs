@@ -355,7 +355,7 @@ namespace Snap.Core
                 if (!updatedSnapApp.IsGenesis)
                 {
                     _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
-                    _logger.Debug($"Deleted nukpkg: {nupkgToInstallAbsolutePath}.");                    
+                    _logger.Debug($"Deleted nupkg: {nupkgToInstallAbsolutePath}.");                    
                 }
                 else
                 {

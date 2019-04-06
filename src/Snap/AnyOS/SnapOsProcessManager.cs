@@ -109,8 +109,8 @@ namespace Snap.AnyOS
 
         static async Task<(int exitCode, string standardOutput)> RunAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken)
         {
-            var pi = Process.Start(processStartInfo);
-            if (pi == null)
+            var process = Process.Start(processStartInfo);
+            if (process == null)
             {
                 throw new Exception($"Error invoking process: {processStartInfo.FileName}. Arguments: {processStartInfo.Arguments}");
             }
@@ -119,7 +119,7 @@ namespace Snap.AnyOS
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (pi.WaitForExit(2000))
+                    if (process.WaitForExit(2000))
                     {                        
                         return;
                     }
@@ -130,14 +130,14 @@ namespace Snap.AnyOS
                     return;
                 }
 
-                pi.Kill();
+                process.Kill();
                 cancellationToken.ThrowIfCancellationRequested();
             }, cancellationToken);
             
-            var textResult = await pi.StandardOutput.ReadToEndAsync().WithCancellation(cancellationToken);
-            if (string.IsNullOrWhiteSpace(textResult) || pi.ExitCode != 0)
+            var textResult = await process.StandardOutput.ReadToEndAsync().WithCancellation(cancellationToken);
+            if (string.IsNullOrWhiteSpace(textResult) || process.ExitCode != 0)
             {
-                var stdError = await pi.StandardError.ReadToEndAsync().WithCancellation(cancellationToken);
+                var stdError = await process.StandardError.ReadToEndAsync().WithCancellation(cancellationToken);
                 textResult = $"{textResult ?? ""}\n{stdError}";
 
                 if (string.IsNullOrWhiteSpace(textResult))
@@ -146,7 +146,7 @@ namespace Snap.AnyOS
                 }
             }
 
-            return (pi.ExitCode, textResult.Trim());
+            return (process.ExitCode, textResult.Trim());
         }
 
         public Process StartNonBlocking([NotNull] ProcessStartInfoBuilder builder)

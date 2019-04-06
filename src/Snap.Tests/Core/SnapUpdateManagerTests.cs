@@ -71,10 +71,12 @@ namespace Snap.Tests.Core
                 var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
                 genesisReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp));
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
+                    .AddSnapDll();
                     
                 update1ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp));
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
+                    .AddSnapDll();
 
                 using (var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
                 using (var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
@@ -129,12 +131,12 @@ namespace Snap.Tests.Core
                     progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                         It.Is<int>(v => v == 0),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 1)), Times.Once);
+                        It.Is<long>(v => v == 6)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                         It.Is<int>(v => v == 100),
-                        It.Is<long>(v => v == 1),
-                        It.Is<long>(v => v == 1)), Times.Once);
+                        It.Is<long>(v => v == 6),
+                        It.Is<long>(v => v == 6)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 0)), Times.Once);
                     progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 50)), Times.Once);

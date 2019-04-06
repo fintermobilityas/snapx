@@ -65,6 +65,11 @@ namespace snapx
                 }
             }
 
+            if (restoreOptions.BuildInstallers)
+            {
+                restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.DeltaAndNewestFull;
+            }
+
             var applicationNames = snapAppTargets.Select(x => x.Id).Distinct().ToList();
 
             logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}.");
@@ -84,6 +89,8 @@ namespace snapx
                 logger.Info($"Id: {snapApp.Id}.");
                 logger.Info($"Rid: {snapApp.Target.Rid}");
                 logger.Info($"Packages directory: {packagesDirectory}");
+                logger.Info($"Restore strategy: {restoreOptions.RestoreStrategyType}");
+                logger.Info($"Restore installers: {(restoreOptions.BuildInstallers ? "yes" : "no")}");
 
                 SnapAppsReleases snapAppsReleases;
                 PackageSource packageSource;
@@ -140,27 +147,30 @@ namespace snapx
                     {
                         continue;
                     }
+
+                    var mostRecentSnapRelease = snapAppReleases.GetMostRecentRelease();
                     
                     var snapAppInstaller = new SnapApp(snapAppReleases.App)
                     {
-                        Version = snapAppReleases.GetMostRecentRelease().Version
+                        Version = mostRecentSnapRelease.Version
                     };                    
+
                     snapAppInstaller.SetCurrentChannel(snapChannel.Name);
                     
-                    var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppReleases.App.BuildNugetFullFilename());
-
                     if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
-                            installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, false, cancellationToken);
+                            installersDirectory, null, releasesNupkgAbsolutePath, false, cancellationToken);
                     }
                     
                     if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 
+                        var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, mostRecentSnapRelease.BuildNugetFullFilename());
+ 
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                     }

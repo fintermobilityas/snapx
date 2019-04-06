@@ -516,7 +516,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_exec(const char *filename_in, co
 
     const auto create_process_result = CreateProcess(nullptr,
         lp_command_line_utf16_string.data(),
-        nullptr, nullptr, true,
+        nullptr, nullptr, false,
         0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
 
     if (!create_process_result)
@@ -633,7 +633,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_daemonize(const char *filename_i
     pi.hProcess = nullptr;
 
     const auto create_process_result = CreateProcess(nullptr, lp_command_line_utf16_string.data(),
-        nullptr, nullptr, true,
+        nullptr, nullptr, false,
         0, nullptr, lp_current_directory_utf16_string.data(), &si, &pi);
 
     if (!create_process_result)

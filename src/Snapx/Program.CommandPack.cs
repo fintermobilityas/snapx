@@ -135,9 +135,19 @@ namespace snapx
             {
                 logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
 
+                if (packOptions.Gc)
+                {
+                    var releasesRemoved = snapAppsReleases.Gc(snapApp);
+                    logger.Info($"Garbage collected (removed) {releasesRemoved} releases.");
+                }
+
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                if (!packOptions.Gc)
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                }
+
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
                     pushFeed, SnapPackageManagerRestoreType.GenesisAndDelta, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
@@ -145,7 +155,10 @@ namespace snapx
                     return 1;
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                if (!packOptions.Gc)
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                }
 
                 var snapAppMostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
                 if (snapAppMostRecentRelease != null)
@@ -190,7 +203,8 @@ namespace snapx
                 }
                 else
                 {
-                    if (!logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
+                    if (!packOptions.Gc 
+                        && !logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
                                                 "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]",
                         infoOnly: packOptions.YesToAllPrompts)
                     )
@@ -280,7 +294,7 @@ namespace snapx
 
                             var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
-                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                installersDirectory, null, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
                             if (!installerOfflineSuccess)
@@ -308,7 +322,7 @@ namespace snapx
 
                             var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
                                 snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
-                                installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
+                                installersDirectory, null, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)

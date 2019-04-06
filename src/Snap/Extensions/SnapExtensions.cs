@@ -258,7 +258,8 @@ namespace Snap.Extensions
                 Filename = snapRelease.BuildNugetFullFilename(),
                 UpstreamId = snapRelease.BuildNugetFullUpstreamId(),
                 IsGenesis = isGenesis,
-                IsFull = true
+                IsFull = true,
+                Gc = isGenesis && snapRelease.Gc
             };
 
             fullSnapRelease.Files.Clear();

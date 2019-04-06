@@ -58,6 +58,8 @@ namespace Snap.Core.Models
         public DateTime CreatedDateUtc { get; set; }
         [Key(19)]
         public string ReleaseNotes { get; set; }
+        [Key(20)]
+        public bool Gc { get; set; }
 
         [UsedImplicitly]
         public SnapRelease()
@@ -87,6 +89,7 @@ namespace Snap.Core.Models
             DeltaSha512Checksum = release.DeltaSha512Checksum;
             CreatedDateUtc = release.CreatedDateUtc;
             ReleaseNotes = release.ReleaseNotes;
+            Gc = release.Gc;
 
             Files = release.Files.Select(x => new SnapReleaseChecksum(x)).ToList();
             New = release.New.Select(x => new SnapReleaseChecksum(x)).ToList();

@@ -17,5 +17,7 @@ namespace snapx.Options
         public string Version { get; [UsedImplicitly] set; }
         [Option('y', "yes", HelpText = "Yes (y) to all prompts")]
         public bool YesToAllPrompts { get; [UsedImplicitly] set; }
+        [Option("gc", HelpText = "Removes all delta releases and creates a new full release")]
+        public bool Gc { get; set; }
     }
 }

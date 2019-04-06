@@ -442,7 +442,7 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void ParseNugetFilename_When_Incurrent_Delimiter_Count()
+        public void ParseNugetFilename_When_Incorrect_Delimiter_Count()
         {
             const string value = "demoapp_full_linux-x64_snapx1.0.0";
             var (valid, _, _, _, _) = value.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
@@ -472,6 +472,7 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("demoapp_delta_linux-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-x64", "1.0.0")]
         [InlineData("demoapp_full_win-x64_snapx.1.0.0.nupkg", "demoapp", "full", "win-x64", "1.0.0")]
         [InlineData("demoapp_delta_win-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "win-x64", "1.0.0")]
+        [InlineData("demoapp_delta_linux-x64_snapx.575.0.0.nupkg", "demoapp", "delta", "linux-x64", "575.0.0")]
         public void ParseNugetFilename(string filename, string expectedId, string expectedFullOrDelta,
             string expectedRid, string expectedSemanticVersionStr)
         {

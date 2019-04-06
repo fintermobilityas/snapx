@@ -74,13 +74,16 @@ namespace Snap.Tests.Core
                 var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
                 genesisReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp));
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
+                    .AddSnapDll();
 
                 update1ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp));
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
+                    .AddSnapDll();
                     
                 update2ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp));
+                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp))
+                    .AddSnapDll();
                     
                 using (await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
                 using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))

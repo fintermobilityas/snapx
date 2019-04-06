@@ -35,8 +35,8 @@ namespace Snap.AnyOS
             CancellationToken cancellationToken = default);
         bool EnsureConsole();
         List<SnapOsProcess> GetProcesses();
-        List<SnapOsProcess> GetProcessesRunningInDirectory(string workingDirectory, CancellationToken cancellationToken);
-        void KillAllRunningInsideDirectory([NotNull] string workingDirectory, CancellationToken cancellationToken);
+        List<SnapOsProcess> GetProcessesRunningInDirectory(string workingDirectory);
+        void KillAllProcessesInsideDirectory([NotNull] string workingDirectory);
         void Kill(int pid);
         void Kill(SnapOsProcess process);
         void Exit(int exitCode = 0);
@@ -110,8 +110,7 @@ namespace Snap.AnyOS
             return OsImpl.GetProcesses();
         }
 
-        public List<SnapOsProcess> GetProcessesRunningInDirectory([NotNull] string workingDirectory,
-            CancellationToken cancellationToken)
+        public List<SnapOsProcess> GetProcessesRunningInDirectory([NotNull] string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             var processes = GetProcesses();
@@ -121,10 +120,10 @@ namespace Snap.AnyOS
                                                      StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)).ToList();
         }
 
-        public void KillAllRunningInsideDirectory(string workingDirectory, CancellationToken cancellationToken)
+        public void KillAllProcessesInsideDirectory(string workingDirectory)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            var processes = GetProcessesRunningInDirectory(workingDirectory, cancellationToken);
+            var processes = GetProcessesRunningInDirectory(workingDirectory);
             foreach (var process in processes)
             {
                 Kill(process);

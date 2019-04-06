@@ -240,7 +240,7 @@ namespace snapx
 
                             var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
-                                installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                                installersDirectory, null, releasesPackageAbsolutePath,
                                 false, cancellationToken);
 
                             if (!installerWebSuccess)

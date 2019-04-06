@@ -124,7 +124,7 @@ namespace snapx
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources, snapAppWriter);
             var snapSpecsReader = new SnapAppReader();
-            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("pool.ntp.org", 123);
+            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.google.com", 123);
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
@@ -181,9 +181,6 @@ namespace snapx
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
                         snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
                          SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
-                    (GcOptions opts) => CommandGcAsync(opts, snapFilesystem,  snapAppReader,
-                        nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
-                        snapNetworkTimeProvider, snapExtractor, SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                         nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapPackageManager, coreRunLib, 
                         snapNetworkTimeProvider, SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
@@ -390,7 +387,7 @@ namespace snapx
         static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapPack snapPack, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ICoreRunLib coreRunLib, 
-            [NotNull] string installersWorkingDirectory, [NotNull] string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
+            [NotNull] string installersWorkingDirectory, string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
             CancellationToken cancellationToken)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
@@ -401,7 +398,6 @@ namespace snapx
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (installersWorkingDirectory == null) throw new ArgumentNullException(nameof(installersWorkingDirectory));
-            if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
             if (releasesNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(releasesNupkgAbsolutePath));
 
             var installerPrefix = offline ? "offline" : "web";
@@ -484,6 +480,8 @@ namespace snapx
 
                 async Task BuildOfflineInstallerAsync()
                 {
+                    if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
+
                     var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
                     var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, "Setup.nupkg");
                     var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,

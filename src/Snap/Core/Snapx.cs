@@ -182,12 +182,12 @@ namespace Snap.Core
         /// <summary>
         /// Supervises your application and if it exits or crashes it will be automatically restarted.
         /// NB! This method _MUST_ be invoked after <see cref="ProcessEvents"/>. You can stop the supervisor
-        /// process by invoking <see cref="TryKillSupervisorProcess"/> before you exit your application.
+        /// process by invoking <see cref="StopSupervisor"/> before you exit your application.
         /// </summary>
         /// <param name="restartArguments"></param>
-        public static bool EnableSupervisor(List<string> restartArguments = null)
+        public static bool StartSupervisor(List<string> restartArguments = null)
         {
-            TryKillSupervisorProcess();
+            StopSupervisor();
 
             typeof(Snapx).Assembly
                 .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
@@ -215,11 +215,18 @@ namespace Snap.Core
             return !SuperVisorProcess.HasExited;
         }
                                
-        public static bool TryKillSupervisorProcess()
+        public static bool StopSupervisor()
         {
             try
             {
                 if (SuperVisorProcess == null)
+                {
+                    return false;
+                }
+
+                SuperVisorProcess.Refresh();
+                var supervisorRunning = !SuperVisorProcess.HasExited;
+                if (!supervisorRunning)
                 {
                     return false;
                 }

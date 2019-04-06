@@ -69,7 +69,8 @@ namespace Snap.Tests.Core
                 genesisSnapReleaseBuilder
                     .AddNuspecItem(mainAssemblyDefinition)
                     .AddNuspecItem(mainAssemblyDefinition.BuildRuntimeSettingsRelativeFilename(), mainAssemblyDefinition.BuildRuntimeSettings())
-                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"))
+                    .AddSnapDll();
 
                 using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {
@@ -156,9 +157,8 @@ namespace Snap.Tests.Core
                                 It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
                         }
 
-                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                            It.Is<string>(v => v == baseDirectory.WorkingDirectory),
-                            It.Is<CancellationToken>(v => v != default)), Times.Once);
+                        _snapOsMock.Verify(x => x.KillAllProcessesInsideDirectory(
+                            It.Is<string>(v => v == baseDirectory.WorkingDirectory)), Times.Once);
 
                         _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
                             It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),
@@ -199,7 +199,8 @@ namespace Snap.Tests.Core
             {
                 var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genesisSnapApp);
                 genesisSnapReleaseBuilder
-                    .AddNuspecItem(mainAssemblyDefinition);
+                    .AddNuspecItem(mainAssemblyDefinition)
+                    .AddSnapDll();
 
                 using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {
@@ -274,18 +275,21 @@ namespace Snap.Tests.Core
             {
                 genesisSnapReleaseBuilder
                     .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"));
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test1"))
+                    .AddSnapDll();
 
                 update1SnapReleaseBuilder
                     .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                     .AddNuspecItem(genesisSnapReleaseBuilder, 1)
-                    .AddNuspecItem(_baseFixture.BuildLibrary("test2"));
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test2"))
+                    .AddSnapDll();
 
                 update2SnapReleaseBuilder
                     .AddNuspecItem(update1SnapReleaseBuilder, 0)
                     .AddNuspecItem(update1SnapReleaseBuilder, 1)
                     .AddNuspecItem(update1SnapReleaseBuilder, 2)
-                    .AddNuspecItem(_baseFixture.BuildLibrary("test3"));
+                    .AddNuspecItem(_baseFixture.BuildLibrary("test3"))
+                    .AddSnapDll();
 
                 using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
@@ -380,9 +384,8 @@ namespace Snap.Tests.Core
                                 It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
                         }
 
-                        _snapOsMock.Verify(x => x.KillAllRunningInsideDirectory(
-                            It.IsAny<string>(),
-                            It.IsAny<CancellationToken>()), Times.Never);
+                        _snapOsMock.Verify(x => x.KillAllProcessesInsideDirectory(
+                            It.IsAny<string>()), Times.Never);
 
                         _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
                             It.IsAny<SnapOsShortcutDescription>(), It.IsAny<ILog>(),

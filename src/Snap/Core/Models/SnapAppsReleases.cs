@@ -48,6 +48,12 @@ namespace Snap.Core.Models
             return new SnapAppReleases(snapApp, snapReleases);
         }
         
+        internal int Gc([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return Releases.RemoveAll(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);            
+        }
+        
         internal ISnapAppChannelReleases GetReleases([NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));

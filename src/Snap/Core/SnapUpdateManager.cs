@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Core.Resources;
@@ -25,7 +26,7 @@ namespace Snap.Core
         Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
             DownloadProgress { get; set; }
 
-        Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
         Action<int> TotalProgress { get; set; }
 
         void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum);
@@ -33,7 +34,7 @@ namespace Snap.Core
         void RaiseDownloadProgress(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded,
             long totalBytesToDownload);
 
-        void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToRestore);
+        void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore);
         void RaiseTotalProgress(int percentage);
     }
 
@@ -44,7 +45,7 @@ namespace Snap.Core
         public Action<(int progressPercentage, long releasesDownloaded, long releasesToDownload, long totalBytesDownloaded, long totalBytesToDownload)>
             DownloadProgress { get; set; }
 
-        public Action<(int progressPercentage, long releasesRestored, long releasesToRestore)> RestoreProgress { get; set; }
+        public Action<(int progressPercentage, long filesRestored, long filesToRestore)> RestoreProgress { get; set; }
         public Action<int> TotalProgress { get; set; }
 
         public void RaiseChecksumProgress(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)
@@ -58,9 +59,9 @@ namespace Snap.Core
             DownloadProgress?.Invoke((progressPercentage, releasesDownloaded, releasesToDownload, totalBytesDownloaded, totalBytesToDownload));
         }
 
-        public void RaiseRestoreProgress(int progressPercentage, long releasesRestored, long releasesToStore)
+        public void RaiseRestoreProgress(int progressPercentage, long filesRestored, long filesToRestore)
         {
-            RestoreProgress?.Invoke((progressPercentage, releasesRestored, releasesToStore));
+            RestoreProgress?.Invoke((progressPercentage, filesRestored, filesToRestore));
         }
 
         public void RaiseTotalProgress(int percentage)
@@ -74,6 +75,7 @@ namespace Snap.Core
     [SuppressMessage("ReSharper", "UnusedMethodReturnValue.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
+        int ReleaseRetentionLimit { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
@@ -95,6 +97,12 @@ namespace Snap.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapPackageManager _snapPackageManager;
         readonly ISnapAppWriter _snapAppWriter;
+
+        /// <summary>
+        /// The number of releases that should be retained after a new updated has been successfully applied.
+        /// Default value is 1 - Only the previous version will be retained. 
+        /// </summary>
+        public int ReleaseRetentionLimit { get; set; } = 1;
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -141,6 +149,7 @@ namespace Snap.Core
             _logger.Debug($"Root directory: {_workingDirectory}");
             _logger.Debug($"Packages directory: {_packagesDirectory}");
             _logger.Debug($"Current version: {_snapApp?.Version}");
+            _logger.Debug($"Retention limit: {ReleaseRetentionLimit}");
         }
 
         /// <summary>
@@ -231,6 +240,48 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(0);
 
+            SnapRelease snapGenisisRelease;
+            if (snapAppChannelReleases.Count() == 1)
+            {
+                snapGenisisRelease = snapReleases.Single();
+                if (snapGenisisRelease.IsGenesis && snapGenisisRelease.Gc)
+                {
+                    try
+                    {
+                        var nugetPackages = _snapOs.Filesystem
+                            .DirectoryGetAllFiles(_packagesDirectory)
+                            .Where(x => 
+                                !string.Equals(snapGenisisRelease.Filename, x, StringComparison.OrdinalIgnoreCase) 
+                                && x.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        if (nugetPackages.Count > 0)
+                        {
+                            _logger.Debug($"Garbage collecting (removing) previous nuget packages. Packages that will be removed: {nugetPackages.Count}.");
+
+                            foreach (var nugetPackageAbsolutePath in nugetPackages)
+                            {
+                                try
+                                {
+                                    SnapUtility.Retry(() => _snapOs.Filesystem.FileDelete(nugetPackageAbsolutePath), 3);
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.ErrorException($"Failed to delete: {nugetPackageAbsolutePath}", e);
+                                    continue;
+                                }
+                                
+                                _logger.Debug($"Deleted nuget package: {nugetPackageAbsolutePath}.");
+                            }                            
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.ErrorException($"Unknown error listing files in packages directory: {_packagesDirectory}.", e);                        
+                    }
+                }
+            }
+
             var snapPackageManagerProgressSource = new SnapPackageManagerProgressSource
             {
                 ChecksumProgress = x =>
@@ -251,8 +302,8 @@ namespace Snap.Core
                 RestoreProgress = x =>
                     progressSource?.RaiseRestoreProgress(
                         x.progressPercentage, 
-                        x.releasesRestored, 
-                        x.releasesToRestore
+                        x.filesRestored, 
+                        x.filesToRestore
                 )
             };
 
@@ -284,14 +335,16 @@ namespace Snap.Core
                 _logger.Error($"Unable to find full nupkg: {nupkgToInstallAbsolutePath}.");
                 return null;
             }
-
+            
             progressSource?.RaiseTotalProgress(60);
 
-            SnapApp updatedSnapApp;
+            SnapApp updatedSnapApp = null;
             try
-            {
+            {                               
                 var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
-                var supervisorRunning = Snapx.TryKillSupervisorProcess();
+                var supervisorStopped = Snapx.StopSupervisor();
+
+                _logger.Debug($"Supervisor stopped: {supervisorStopped}.");
             
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
@@ -300,18 +353,85 @@ namespace Snap.Core
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
-                
-                _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
 
-                if (supervisorRunning)
+                if (supervisorStopped)
                 {
-                    Snapx.EnableSupervisor(supervisorRestartArguments);                               
+                    var supervisorStarted = Snapx.StartSupervisor(supervisorRestartArguments);                               
+                    _logger.Debug($"Supervisor started: {supervisorStarted}.");
+                }
+
+                if (!updatedSnapApp.IsGenesis)
+                {
+                    _snapOs.Filesystem.FileDelete(nupkgToInstallAbsolutePath);
+                    _logger.Debug($"Deleted nupkg: {nupkgToInstallAbsolutePath}.");                    
+                }
+                else
+                {
+                    // Genisis nupkg must be retained so we don't have to download it again 
+                    // when a new delta release is available. This should only happen if all releases has 
+                    // been garbage collected (removed). 
+                    _logger.Debug($"Retaining genesis nupkg: {nupkgToInstallAbsolutePath}.");
+                }
+                
+                var deletableDirectories = _snapOs.Filesystem
+                    .EnumerateDirectories(_workingDirectory)
+                    .Select(x =>
+                    {
+                        if (x.IndexOf("app-", StringComparison.OrdinalIgnoreCase) == 1)
+                        {
+                            return (null, null);
+                        }
+
+                        var appDirIndexPosition = x.LastIndexOf("app-", StringComparison.OrdinalIgnoreCase);
+                        SemanticVersion.TryParse(x.Substring(appDirIndexPosition + 4), out var semanticVersion);
+                        
+                        return (absolutePath: x, version: semanticVersion);
+                    })
+                    .Where(x => x.version != null && x.version != updatedSnapApp.Version)
+                    .OrderBy(x => x.version)
+                    .ToList();
+
+                const int deleteRetries = 3;
+                
+                if (ReleaseRetentionLimit >= 1
+                    && deletableDirectories.Count > ReleaseRetentionLimit)
+                {
+                    var directoriesToDelete = deletableDirectories.Count - ReleaseRetentionLimit;
+                    
+                    _logger.Debug($"Exceeded application directories retention limit: {ReleaseRetentionLimit}. " +
+                                  $"Number of directories that will be deleted: {directoriesToDelete}.");
+                    
+                    for (var i = 0; i < directoriesToDelete; i++)
+                    {
+                        var (directoryAbsolutePath, version) = deletableDirectories[i];
+                        
+                        _logger.Debug($"Deleting old application version: {version}.");
+                        
+                        await SnapUtility.RetryAsync(async () =>
+                        {
+                            try
+                            {
+                                _snapOs.KillAllProcessesInsideDirectory(directoryAbsolutePath);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.ErrorException($"Exception thrown while killing processes in directory: {directoryAbsolutePath}.", e);
+                            }
+                            
+                            // Todo: Windows - https://docs.microsoft.com/en-gb/windows/desktop/api/winbase/nf-winbase-movefileexa
+                            // Delete all locked files by delaying until reboot? (MOVEFILE_DELAY_UNTIL_REBOOT) 
+                            await _snapOs.Filesystem.DirectoryDeleteAsync(directoryAbsolutePath);
+                        }, deleteRetries, throwException: false);
+                    }                    
                 }
             }
             catch (Exception e)
             {
                 _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
-                return null;
+                if (updatedSnapApp == null)
+                {
+                    return null;
+                }
             }
 
             progressSource?.RaiseTotalProgress(100);

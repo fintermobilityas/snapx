@@ -68,7 +68,8 @@ namespace Snap.Tests.Core
             using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapOs.Filesystem))
             using (var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
-                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp)))
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
+                .AddSnapDll())
             {
                 using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
                 {

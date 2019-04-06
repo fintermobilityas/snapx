@@ -377,17 +377,17 @@ namespace Snap.Core
                     .EnumerateDirectories(_workingDirectory)
                     .Select(x =>
                     {
-                        if (!x.EndsWith("app-", StringComparison.OrdinalIgnoreCase))
+                        if (!x.Contains("app-", StringComparison.OrdinalIgnoreCase))
                         {
                             return (null, null);
                         }
 
                         var appDirIndexPosition = x.LastIndexOf("app-", StringComparison.OrdinalIgnoreCase);
-                        SemanticVersion.TryParse(x.Substring(appDirIndexPosition + 1), out var semanticVersion);
+                        SemanticVersion.TryParse(x.Substring(appDirIndexPosition + 4), out var semanticVersion);
                         
                         return (absolutePath: x, version: semanticVersion);
                     })
-                    .Where(x => x.version != null && x.version < updatedSnapApp.Version)
+                    .Where(x => x.version != null && x.version != updatedSnapApp.Version)
                     .OrderBy(x => x.version)
                     .ToList();
 

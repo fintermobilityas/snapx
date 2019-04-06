@@ -869,11 +869,22 @@ namespace Snap.Core
 
             // Snap.dll
             using (var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapPack).Assembly.Location, cancellationToken))
-            using (var snapDllAssemblyDefinitionOptimized =
-                _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, snapApp.Target.Os))
             {
                 var snapDllOptimizedMemoryStream = new MemoryStream();
-                snapDllAssemblyDefinitionOptimized.Write(snapDllOptimizedMemoryStream);
+
+                if (snapApp.Target.Os == OSPlatform.Windows
+                    && snapApp.Target.Framework.IsNetCoreAppSafe())
+                {
+                    using (var snapDllAssemblyDefinitionOptimized =
+                        _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, snapApp.Target.Os))
+                    {
+                        snapDllAssemblyDefinitionOptimized.Write(snapDllOptimizedMemoryStream);
+                    }
+                }
+                else
+                {
+                    snapDllAssemblyDefinition.Write(snapDllOptimizedMemoryStream);
+                }
 
                 AddPackageFile(packageBuilder, snapDllOptimizedMemoryStream,
                     SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename, snapRelease);

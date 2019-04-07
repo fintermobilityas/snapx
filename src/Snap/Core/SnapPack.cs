@@ -925,8 +925,7 @@ namespace Snap.Core
             {
                 var snapDllOptimizedMemoryStream = new MemoryStream();
 
-                if (snapApp.Target.Os == OSPlatform.Windows
-                    && snapApp.Target.Framework.IsNetCoreAppSafe())
+                if (snapApp.Target.Framework.IsNetCoreAppSafe())
                 {
                     using (var snapDllAssemblyDefinitionOptimized =
                         _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, snapApp.Target.Os))

@@ -175,7 +175,7 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, ListOptions, RestoreOptions, GcOptions>(args)
+                .ParseArguments<PromoteOptions, PackOptions, Sha512Options, RcEditOptions, ListOptions, RestoreOptions>(args)
                 .MapResult(
                     (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader, snapAppWriter,
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 

@@ -321,7 +321,7 @@ namespace Snap.Core
 
             var allSnapAwareApps = new List<string>
             {
-                coreRunExeAbsolutePath
+                mainExeAbsolutePath
             }.Select(x =>
                 {
                     var installOrUpdateTxt = isInitialInstall ? "--snapx-installed" : "--snapx-updated";

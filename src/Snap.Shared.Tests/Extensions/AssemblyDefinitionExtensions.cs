@@ -29,28 +29,28 @@ namespace Snap.Shared.Tests.Extensions
             return assemblyName;
         }
 
-        public static string BuildRuntimeSettingsRelativeFilename([NotNull] this AssemblyDefinition assemblyDefinition, OSPlatform osPlatform = default)
+        public static string BuildRuntimeConfigFilename([NotNull] this AssemblyDefinition assemblyDefinition, [NotNull] ISnapFilesystem snapFilesystem, OSPlatform osPlatform = default)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             var filename = assemblyDefinition.BuildRelativeFilename(osPlatform);
-            return $"{filename}.runtimesettings.json";
+            return $"{snapFilesystem.PathGetFileNameWithoutExtension(filename)}.runtimeconfig.json";
         }
         
-        public static MemoryStream BuildRuntimeSettings([NotNull] this AssemblyDefinition assemblyDefinition)
+        public static MemoryStream BuildRuntimeConfig([NotNull] this AssemblyDefinition assemblyDefinition)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            const string runtimeConfigSettings = @"
-{
+            const string runtimeConfig = @"{
   ""runtimeOptions"": {
-            ""tfm"": ""netcoreapp2.1"",
+            ""tfm"": ""netcoreapp2.2"",
             ""framework"": {
                 ""name"": ""Microsoft.NETCore.App"",
-                ""version"": ""2.1.0""
+                ""version"": ""2.2.0""
             }
         }
     }
 ";
-            return new MemoryStream(Encoding.UTF8.GetBytes(runtimeConfigSettings));
+            return new MemoryStream(Encoding.UTF8.GetBytes(runtimeConfig));
         }
 
         public static string GetFullPath(this AssemblyDefinition assemblyDefinition, [NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, OSPlatform osPlatform = default)

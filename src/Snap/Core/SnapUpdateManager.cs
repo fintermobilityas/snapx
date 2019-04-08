@@ -76,6 +76,7 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         int ReleaseRetentionLimit { get; set; }
+        bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
             CancellationToken cancellationToken = default);
@@ -103,6 +104,13 @@ namespace Snap.Core
         /// Default value is 1 - Only the previous version will be retained. 
         /// </summary>
         public int ReleaseRetentionLimit { get; set; } = 1;
+
+        /// <summary>
+        /// Start supervisor an update has been successfully applied. You should set this property to true
+        /// if you are running mission critical software. It's also safe setting this property to true
+        /// if the supervisor is already running.
+        /// </summary>
+        public bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
 
         [UsedImplicitly]
         public SnapUpdateManager() : this(
@@ -354,7 +362,7 @@ namespace Snap.Core
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
 
-                if (supervisorStopped)
+                if (supervisorStopped || SuperVisorAlwaysStartAfterSuccessfullUpdate)
                 {
                     var supervisorStarted = Snapx.StartSupervisor(supervisorRestartArguments);                               
                     _logger.Debug($"Supervisor started: {supervisorStarted}.");

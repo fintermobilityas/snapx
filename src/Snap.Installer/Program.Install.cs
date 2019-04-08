@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -306,32 +307,38 @@ namespace Snap.Installer
                             goto done;
                         }
 
-                        if (!offlineInstaller)
+                        if (!offlineInstaller
+                            && snapAppChannelReleases.HasDeltaReleases())
                         {
-                            var deltaSnapReleases = snapAppChannelReleases.GetDeltaReleases().ToList();
-                            
-                            if (deltaSnapReleases.Any())
+                            var snapReleasesToCopy = new List<SnapRelease>
                             {
-                                var totalDeltaSnapReleasesToCopyCount = deltaSnapReleases.Count;
+                                snapAppChannelReleases.GetGenesisRelease()
+                            };
+
+                            snapReleasesToCopy.AddRange(snapAppChannelReleases.GetDeltaReleases());
+
+                            if (snapReleasesToCopy.Any())
+                            {
+                                var totalSnapReleasesToCopyCount = snapReleasesToCopy.Count;
                                 
-                                mainWindowLogger.Info($"Copying 1 of {totalDeltaSnapReleasesToCopyCount} payloads to application directory.");
+                                mainWindowLogger.Info($"Copying 1 of {totalSnapReleasesToCopyCount} payloads to application directory.");
 
                                 var packagesDirectory = snapFilesystem.PathCombine(baseDirectory, "packages");
-                                var deltasCopied = 1;                                
-                                foreach (var deltaSnapRelease in deltaSnapReleases)
+                                var snapReleasesCopied = 1;                                
+                                foreach (var snapRelease in snapReleasesToCopy)
                                 {
-                                    var deltaPackageWebInstallerDirectoryAbsolutePath = snapFilesystem.PathCombine(
-                                        webInstallerDir.WorkingDirectory, deltaSnapRelease.Filename);
+                                    var nupkgPackageWebInstallerDirectoryAbsolutePath = snapFilesystem.PathCombine(
+                                        webInstallerDir.WorkingDirectory, snapRelease.Filename);
                                         
-                                    var deltaPackagePackagesDirectoryAbsolutePath = snapFilesystem.PathCombine(
-                                        packagesDirectory, deltaSnapRelease.Filename);
+                                    var nupkgPackagePackagesDirectoryAbsolutePath = snapFilesystem.PathCombine(
+                                        packagesDirectory, snapRelease.Filename);
                                         
                                     await snapFilesystem.FileCopyAsync(
-                                    deltaPackageWebInstallerDirectoryAbsolutePath, 
-                                    deltaPackagePackagesDirectoryAbsolutePath, cancellationToken);
+                                    nupkgPackageWebInstallerDirectoryAbsolutePath, 
+                                    nupkgPackagePackagesDirectoryAbsolutePath, cancellationToken);
                                     
-                                    mainWindowLogger.Info($"Copied {deltasCopied} of {totalDeltaSnapReleasesToCopyCount} payloads to application directory.");
-                                    ++deltasCopied;
+                                    mainWindowLogger.Info($"Copied {snapReleasesCopied} of {totalSnapReleasesToCopyCount} payloads to application directory.");
+                                    ++snapReleasesCopied;
                                 }
                                 
                                 mainWindowLogger.Info("Successfully copied all payloads.");

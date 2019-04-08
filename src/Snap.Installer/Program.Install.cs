@@ -300,7 +300,7 @@ namespace Snap.Installer
                     try
                     {
                         var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken);
+                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken, offlineInstaller);
 
                         if (snapAppInstalled == null)
                         {

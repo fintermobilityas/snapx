@@ -37,7 +37,7 @@ namespace Snap.Core
     internal interface ISnapInstaller
     {
         Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, [NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
-            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
+            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default, bool copyNupkgToPackagesDirectory = true);
         Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
     }
@@ -143,7 +143,7 @@ namespace Snap.Core
         }
 
         public async Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, string baseDirectory, SnapRelease snapRelease, SnapChannel snapChannel,
-            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default)
+            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default, bool copyNupkgToPackagesDirectory = true)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
@@ -207,9 +207,12 @@ namespace Snap.Core
                 _snapOs.Filesystem.DirectoryCreate(packagesDirectory);
 
                 snapProgressSource?.Raise(40);
-                var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFilename());
-                logger?.Info($"Copying nupkg to {dstNupkgFilename}");
-                await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
+                if (copyNupkgToPackagesDirectory)
+                {
+                    var dstNupkgFilename = _snapOs.Filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFilename());
+                    logger?.Info($"Copying nupkg to {dstNupkgFilename}");
+                    await _snapOs.Filesystem.FileCopyAsync(nupkgAbsoluteFilename, dstNupkgFilename, cancellationToken);
+                }
 
                 snapProgressSource?.Raise(50);
                 var appDirectory = GetApplicationDirectory(baseDirectory, snapApp.Version);

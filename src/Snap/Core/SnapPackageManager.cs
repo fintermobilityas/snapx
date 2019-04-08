@@ -415,14 +415,14 @@ namespace Snap.Core
             async Task<bool> ReassembleAsync()
             {
                 SnapAppChannelReleases releasesToReassemble;
-                List<SnapRelease> deltaSnapReleases;
+                List<SnapRelease> snapReleases;
                 
                 switch (restoreType)
                 {
                     case SnapPackageManagerRestoreType.FullAndDelta:
                     
                         // Reassemble full nupkgs for delta packages that has been downloaded
-                        deltaSnapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
+                        snapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
                             {
                                 var fullFilename = downloadStatus.SnapRelease.BuildNugetFullFilename();
                                 var fullSnapReleaseChecksum = restoreSummary.ChecksumSummary.Single(checksumStatus => checksumStatus.SnapRelease.Filename == fullFilename);
@@ -432,7 +432,7 @@ namespace Snap.Core
                             .ToList();
 
                         // Reassemble missing full packages for existing delta packages but only if they have a valid checksum.
-                        deltaSnapReleases.AddRange(restoreSummary.ChecksumSummary.Where(deltaChecksumStatus =>
+                        snapReleases.AddRange(restoreSummary.ChecksumSummary.Where(deltaChecksumStatus =>
                         {
                             if (!deltaChecksumStatus.SnapRelease.IsDelta)
                             {
@@ -444,23 +444,23 @@ namespace Snap.Core
                                     x.SnapRelease.IsFull 
                                     && x.SnapRelease.Version == deltaChecksumStatus.SnapRelease.Version);
 
-                            return !fullChecksumStatus.Ok && deltaSnapReleases.All(x => x.Filename != deltaChecksumStatus.SnapRelease.Filename);
+                            return !fullChecksumStatus.Ok && snapReleases.All(x => x.Filename != deltaChecksumStatus.SnapRelease.Filename);
                         })
                         .Select(x => x.SnapRelease)
                         .ToList());
                             
-                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases.OrderBy(x => x.Version));
+                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, snapReleases.OrderBy(x => x.Version));
                         break;
                     case SnapPackageManagerRestoreType.DeltaAndNewestFull:
                     
-                        deltaSnapReleases = restoreSummary.DownloadSummary
+                        snapReleases = restoreSummary.DownloadSummary
                             .Where(x => x.SnapRelease.IsDelta)
                             .OrderByDescending(x => x.SnapRelease.Version)
                             .Take(1)
                             .Select(x => x.SnapRelease)
                             .ToList();
 
-                        if (!deltaSnapReleases.Any())
+                        if (!snapReleases.Any())
                         {
                             var mostRecentDeltaSnapRelease = restoreSummary.ChecksumSummary
                                 .Where(x => x.SnapRelease.IsDelta)
@@ -478,12 +478,12 @@ namespace Snap.Core
                                     
                                 if (mostRecentFullSnapRelease != null)
                                 {
-                                    deltaSnapReleases.Add(mostRecentDeltaSnapRelease.SnapRelease);
+                                    snapReleases.Add(mostRecentDeltaSnapRelease.SnapRelease);
                                 }
                             }
                         }
                                                     
-                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, deltaSnapReleases);
+                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, snapReleases);
                         break;
                     case SnapPackageManagerRestoreType.GenesisAndDelta:
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, new List<SnapRelease>());

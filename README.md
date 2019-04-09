@@ -5,8 +5,8 @@
 
 | Build server | Platform | Build status |
 |--------------|----------|--------------|
-| Azure Pipelines | Windows | [![Build Status Master](https://dev.azure.com/youpark/snapx/_apis/build/status/snapx?branchName=master&jobName=Job&configuration=windows)](https://dev.azure.com/youpark/snapx/_build/latest?definitionId=2&branchName=master) |
-| Azure Pipelines | Linux  | [![Build Status Master](https://dev.azure.com/youpark/snapx/_apis/build/status/snapx?branchName=master&jobName=Job&configuration=linux)](https://dev.azure.com/youpark/snapx/_build/latest?definitionId=2&branchName=master) |
+| Azure Pipelines | Windows (x64) | [![Build Status Master](https://dev.azure.com/youpark/snapx/_apis/build/status/snapx?branchName=master&jobName=Job&configuration=windows)](https://dev.azure.com/youpark/snapx/_build/latest?definitionId=2&branchName=master) |
+| Azure Pipelines | Linux (x64)  | [![Build Status Master](https://dev.azure.com/youpark/snapx/_apis/build/status/snapx?branchName=master&jobName=Job&configuration=linux)](https://dev.azure.com/youpark/snapx/_build/latest?definitionId=2&branchName=master) |
 
 **Snapx** is a powerful .NET cross-platform updater with built-in support for delta updates, release channels (test, staging, production etc.) and staged rollouts via nuget. 
 

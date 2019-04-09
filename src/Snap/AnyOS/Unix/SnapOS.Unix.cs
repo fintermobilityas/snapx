@@ -229,7 +229,7 @@ Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
-Exec=bash -c 'cd ""{workingDirectory}"" && {shortcutDescription.ExeAbsolutePath}'
+Exec=bash -c 'cd ""{workingDirectory}"" && LD_LIBRARY_PATH=. {shortcutDescription.ExeAbsolutePath}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
 Comment={description}";

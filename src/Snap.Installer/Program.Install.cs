@@ -119,7 +119,8 @@ namespace Snap.Installer
                             {
                                 var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
                                 snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
-                                snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
+                                var isGenesis = !snapAppChannelReleases.HasDeltaReleases();
+                                snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenesis);
                             }
                         }
                         catch (Exception e)

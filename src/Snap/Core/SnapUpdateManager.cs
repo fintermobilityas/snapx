@@ -322,7 +322,7 @@ namespace Snap.Core
             };
 
             var restoreSummary = await _snapPackageManager.RestoreAsync(_packagesDirectory, snapAppChannelReleases, 
-                packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, snapPackageManagerProgressSource, _logger, cancellationToken, 
+                packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, snapPackageManagerProgressSource, _logger, cancellationToken, 
                 1, 2, 1);
             if (!restoreSummary.Success)
             {

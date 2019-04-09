@@ -20,7 +20,6 @@ namespace snapx.Options
         public int RestoreConcurrency { get; set; } = 4;
         [Option("dc", HelpText = "Download concurrency (default: 4)")]
         public int DownloadConcurrency { get; set; } = 4;
-        [Option("restore-strategy", HelpText = "Restore strategy (default: GenesisAndDelta)")]
-        public SnapPackageManagerRestoreType RestoreStrategyType { get; set; } = SnapPackageManagerRestoreType.GenesisAndDelta;
+        public SnapPackageManagerRestoreType RestoreStrategyType { get; set; } = SnapPackageManagerRestoreType.Pack;
     }
 }

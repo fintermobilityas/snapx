@@ -67,7 +67,7 @@ namespace snapx
 
             if (restoreOptions.BuildInstallers)
             {
-                restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.DeltaAndNewestFull;
+                restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.InstallOrUpdate;
             }
 
             var applicationNames = snapAppTargets.Select(x => x.Id).Distinct().ToList();

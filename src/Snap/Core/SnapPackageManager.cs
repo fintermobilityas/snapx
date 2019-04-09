@@ -63,9 +63,8 @@ namespace Snap.Core
 
     public enum SnapPackageManagerRestoreType
     {
-        FullAndDelta,
-        DeltaAndNewestFull,
-        GenesisAndDelta
+        InstallOrUpdate,
+        Pack
     }
 
     internal interface ISnapPackageManager
@@ -228,10 +227,6 @@ namespace Snap.Core
             restoreSummary.Sort();
             restoreSummary.Success = restoreSummary.ChecksumSummary.Count > 0 
                     && restoreSummary.ChecksumSummary.All(x => x.Ok);                    
-            if (restoreSummary.Success)
-            {
-                return restoreSummary;
-            }
 
             // Download
             stopwatch.Restart();
@@ -250,29 +245,14 @@ namespace Snap.Core
 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.FullAndDelta:
-                        snapReleasesToChecksum = snapAppChannelReleases.SelectMany(x =>
+                    case SnapPackageManagerRestoreType.InstallOrUpdate:
+                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
+                        if (snapAppChannelReleases.HasDeltaReleases())
                         {
-                            var snapReleases = new List<SnapRelease>();
-                            if (x.IsGenesis)
-                            {
-                                snapReleases.Add(x);
-                                return snapReleases;
-                            }
-
-                            if (!x.IsDelta)
-                            {
-                                throw new Exception($"Expected to checksum a delta package: {x.Filename}");
-                            }
-
-                            snapReleases.Add(x.AsFullRelease(false));
-                            snapReleases.Add(x);
-
-                            return snapReleases;
-                        }).ToList();
+                            snapReleasesToChecksum.Add(snapAppChannelReleases.Last().AsFullRelease(false));
+                        }
                         break;
-                    case SnapPackageManagerRestoreType.DeltaAndNewestFull:
-                    case SnapPackageManagerRestoreType.GenesisAndDelta:
+                    case SnapPackageManagerRestoreType.Pack:
                         snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
                         break;
                     default:
@@ -416,77 +396,31 @@ namespace Snap.Core
             async Task<bool> ReassembleAsync()
             {
                 SnapAppChannelReleases releasesToReassemble;
-                List<SnapRelease> snapReleases;
-                
+
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.FullAndDelta:
-                    
-                        // Reassemble full nupkgs for delta packages that has been downloaded
-                        snapReleases = restoreSummary.DownloadSummary.Where(downloadStatus =>
-                            {
-                                var fullFilename = downloadStatus.SnapRelease.BuildNugetFullFilename();
-                                var fullSnapReleaseChecksum = restoreSummary.ChecksumSummary.Single(checksumStatus => checksumStatus.SnapRelease.Filename == fullFilename);
-                                return downloadStatus.SnapRelease.IsDelta && downloadStatus.Ok && !fullSnapReleaseChecksum.Ok;
-                            })
-                            .Select(x => x.SnapRelease)
-                            .ToList();
+                    case SnapPackageManagerRestoreType.InstallOrUpdate:                    
+                        var snapReleases = new List<SnapRelease>();
 
-                        // Reassemble missing full packages for existing delta packages but only if they have a valid checksum.
-                        snapReleases.AddRange(restoreSummary.ChecksumSummary.Where(deltaChecksumStatus =>
+                        var mostRecentDeltaSnapRelease = snapAppChannelReleases.GetDeltaReleases().LastOrDefault();                                
+                        if (mostRecentDeltaSnapRelease != null)
                         {
-                            if (!deltaChecksumStatus.SnapRelease.IsDelta)
-                            {
-                                return false;
-                            }
-
-                            var fullChecksumStatus =
-                                restoreSummary.ChecksumSummary.Single(x => 
-                                    x.SnapRelease.IsFull 
-                                    && x.SnapRelease.Version == deltaChecksumStatus.SnapRelease.Version);
-
-                            return !fullChecksumStatus.Ok && snapReleases.All(x => x.Filename != deltaChecksumStatus.SnapRelease.Filename);
-                        })
-                        .Select(x => x.SnapRelease)
-                        .ToList());
-                            
-                        releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, snapReleases.OrderBy(x => x.Version));
-                        break;
-                    case SnapPackageManagerRestoreType.DeltaAndNewestFull:
-                    
-                        snapReleases = restoreSummary.DownloadSummary
-                            .Where(x => x.SnapRelease.IsDelta)
-                            .OrderByDescending(x => x.SnapRelease.Version)
-                            .Take(1)
-                            .Select(x => x.SnapRelease)
-                            .ToList();
-
-                        if (!snapReleases.Any())
-                        {
-                            var mostRecentDeltaSnapRelease = restoreSummary.ChecksumSummary
-                                .Where(x => x.SnapRelease.IsDelta)
-                                .OrderByDescending(x => x.SnapRelease.Version)
-                                .FirstOrDefault();
-                                
-                            if (mostRecentDeltaSnapRelease != null
-                                && mostRecentDeltaSnapRelease.Ok)
-                            {
-                                var mostRecentFullSnapRelease = restoreSummary.ChecksumSummary.SingleOrDefault(x =>
-                                        x.Ok 
-                                        && x.SnapRelease.IsFull 
-                                        && x.SnapRelease.Version == mostRecentDeltaSnapRelease.SnapRelease.Version
-                                );
+                            var mostRecentFullSnapRelease = restoreSummary.ChecksumSummary.SingleOrDefault(x =>
+                                x.Ok 
+                                && x.SnapRelease.IsFull 
+                                && x.SnapRelease.Version == mostRecentDeltaSnapRelease.Version
+                            );
                                     
-                                if (mostRecentFullSnapRelease != null)
-                                {
-                                    snapReleases.Add(mostRecentDeltaSnapRelease.SnapRelease);
-                                }
+                            if (mostRecentFullSnapRelease == null)
+                            {
+                                snapReleases.Add(mostRecentDeltaSnapRelease);
                             }
                         }
                                                     
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, snapReleases);
                         break;
-                    case SnapPackageManagerRestoreType.GenesisAndDelta:
+                    case SnapPackageManagerRestoreType.Pack:
+                        // Noop
                         releasesToReassemble = new SnapAppChannelReleases(snapAppChannelReleases, new List<SnapRelease>());
                         break;
                     default:

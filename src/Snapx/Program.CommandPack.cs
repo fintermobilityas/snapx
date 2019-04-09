@@ -150,7 +150,7 @@ namespace snapx
                 }
 
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                    pushFeed, SnapPackageManagerRestoreType.GenesisAndDelta, logger: logger, cancellationToken: cancellationToken);
+                    pushFeed, SnapPackageManagerRestoreType.Pack, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
                 {
                     return 1;

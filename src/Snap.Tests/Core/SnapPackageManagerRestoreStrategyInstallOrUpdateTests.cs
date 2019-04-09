@@ -18,7 +18,7 @@ using Snap.Extensions;
 namespace Snap.Tests.Core
 {
     [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
-    public class SnapPackageManagerDeltaTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
+    public class SnapPackageManagerRestoreStrategyInstallOrUpdateTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
     {
         readonly Mock<INugetService> _nugetServiceMock;
         readonly BaseFixturePackaging _baseFixturePackaging;
@@ -34,7 +34,7 @@ namespace Snap.Tests.Core
         readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
 
-        public SnapPackageManagerDeltaTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
+        public SnapPackageManagerRestoreStrategyInstallOrUpdateTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
         {
             _nugetServiceMock = new Mock<INugetService>();
             _coreRunLibMock = new Mock<ICoreRunLib>();
@@ -91,7 +91,7 @@ namespace Snap.Tests.Core
                     await _snapFilesystem.FileCopyAsync(genesisPackageContext.FullPackageAbsolutePath, genesisPackageAbsolutePath, default);
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -105,7 +105,7 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 1),
                         It.Is<long>(v => v == 1)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.DeltaAndNewestFull, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.InstallOrUpdate, restoreSummary.RestoreType);
 
                     Assert.Single(restoreSummary.ChecksumSummary);
                     Assert.True(restoreSummary.ChecksumSummary[0].Ok);
@@ -177,27 +177,29 @@ namespace Snap.Tests.Core
                     );
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
                         It.Is<long>(v => v == 0),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 2)), Times.Once);
+                        It.Is<long>(v => v == 3)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 100),
-                        It.Is<long>(v => v == 2),
-                        It.Is<long>(v => v == 2),
-                        It.Is<long>(v => v == 2)), Times.Once);
+                        It.Is<long>(v => v == 3),
+                        It.Is<long>(v => v == 3),
+                        It.Is<long>(v => v == 3)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.DeltaAndNewestFull, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.InstallOrUpdate, restoreSummary.RestoreType);
 
-                    Assert.Equal(2, restoreSummary.ChecksumSummary.Count);
+                    Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
                     Assert.True(restoreSummary.ChecksumSummary[0].Ok);
                     Assert.Equal(genesisPackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[0].SnapRelease.Filename);
                     Assert.True(restoreSummary.ChecksumSummary[1].Ok);
                     Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[1].SnapRelease.Filename);
+                    Assert.True(restoreSummary.ChecksumSummary[2].Ok);
+                    Assert.Equal(update1PackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[2].SnapRelease.Filename);
 
                     Assert.Empty(restoreSummary.DownloadSummary);
                     Assert.Empty(restoreSummary.ReassembleSummary);
@@ -276,7 +278,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>()));
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
@@ -302,7 +304,7 @@ namespace Snap.Tests.Core
                         It.IsAny<long>(),
                         It.IsAny<long>()), Times.Never);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.DeltaAndNewestFull, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.InstallOrUpdate, restoreSummary.RestoreType);
 
                     Assert.Single(restoreSummary.ChecksumSummary);
                     Assert.False(restoreSummary.ChecksumSummary[0].Ok);
@@ -397,19 +399,19 @@ namespace Snap.Tests.Core
                         It.IsAny<long>()));
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
                         It.Is<long>(v => v == 0),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 2)), Times.Once);
+                        It.Is<long>(v => v == 3)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 100),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 2),
-                        It.Is<long>(v => v == 2)), Times.Once);
+                        It.Is<long>(v => v == 3),
+                        It.Is<long>(v => v == 3)), Times.Once);
 
                     var totalBytesToDownload = genesisPackageContext.FullPackageSnapRelease.FullFilesize +
                                                update1PackageContext.DeltaPackageSnapRelease.DeltaFilesize;
@@ -431,13 +433,15 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 6),
                         It.Is<long>(v => v == 6)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.DeltaAndNewestFull, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.InstallOrUpdate, restoreSummary.RestoreType);
 
-                    Assert.Equal(2, restoreSummary.ChecksumSummary.Count);
+                    Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
                     Assert.False(restoreSummary.ChecksumSummary[0].Ok);
                     Assert.Equal(genesisPackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[0].SnapRelease.Filename);
                     Assert.False(restoreSummary.ChecksumSummary[1].Ok);
                     Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[1].SnapRelease.Filename);
+                    Assert.False(restoreSummary.ChecksumSummary[2].Ok);
+                    Assert.Equal(update1PackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[2].SnapRelease.Filename);
 
                     Assert.Equal(2, restoreSummary.DownloadSummary.Count);
                     Assert.True(restoreSummary.DownloadSummary[0].Ok);
@@ -571,19 +575,19 @@ namespace Snap.Tests.Core
                         It.IsAny<long>()));
 
                     var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                        packageSource, SnapPackageManagerRestoreType.DeltaAndNewestFull, progressSourceMock.Object);
+                        packageSource, SnapPackageManagerRestoreType.InstallOrUpdate, progressSourceMock.Object);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 0),
                         It.Is<long>(v => v == 0),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 3)), Times.Once);
+                        It.Is<long>(v => v == 4)), Times.Once);
 
                     progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                         It.Is<int>(v => v == 100),
                         It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 3),
-                        It.Is<long>(v => v == 3)), Times.Once);
+                        It.Is<long>(v => v == 4),
+                        It.Is<long>(v => v == 4)), Times.Once);
 
                     var totalBytesToDownload = genesisPackageContext.FullPackageSnapRelease.FullFilesize +
                                                update1PackageContext.DeltaPackageSnapRelease.DeltaFilesize +
@@ -606,15 +610,17 @@ namespace Snap.Tests.Core
                         It.Is<long>(v => v == 8),
                         It.Is<long>(v => v == 8)), Times.Once);
 
-                    Assert.Equal(SnapPackageManagerRestoreType.DeltaAndNewestFull, restoreSummary.RestoreType);
+                    Assert.Equal(SnapPackageManagerRestoreType.InstallOrUpdate, restoreSummary.RestoreType);
 
-                    Assert.Equal(3, restoreSummary.ChecksumSummary.Count);
+                    Assert.Equal(4, restoreSummary.ChecksumSummary.Count);
                     Assert.False(restoreSummary.ChecksumSummary[0].Ok);
                     Assert.Equal(genesisPackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[0].SnapRelease.Filename);
                     Assert.False(restoreSummary.ChecksumSummary[1].Ok);
                     Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[1].SnapRelease.Filename);
                     Assert.False(restoreSummary.ChecksumSummary[2].Ok);
                     Assert.Equal(update2PackageContext.DeltaPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[2].SnapRelease.Filename);
+                    Assert.False(restoreSummary.ChecksumSummary[3].Ok);
+                    Assert.Equal(update2PackageContext.FullPackageSnapRelease.Filename, restoreSummary.ChecksumSummary[3].SnapRelease.Filename);
 
                     Assert.Equal(3, restoreSummary.DownloadSummary.Count);
                     Assert.True(restoreSummary.DownloadSummary[0].Ok);

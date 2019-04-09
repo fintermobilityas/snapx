@@ -391,7 +391,7 @@ namespace Snap.Core
                     .EnumerateDirectories(_workingDirectory)
                     .Select(x =>
                     {
-                        if (x.IndexOf("app-", StringComparison.OrdinalIgnoreCase) == 1)
+                        if (x.IndexOf("app-", StringComparison.OrdinalIgnoreCase) == -1)
                         {
                             return (null, null);
                         }

@@ -78,7 +78,8 @@ namespace Snap.Core
         int ReleaseRetentionLimit { get; set; }
         bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
-        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default,
+        Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
+            Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
             CancellationToken cancellationToken = default);
     }
 
@@ -175,14 +176,15 @@ namespace Snap.Core
         /// Updates current application to latest upstream release.
         /// </summary>
         /// <param name="snapProgressSource"></param>
+        /// <param name="onUpdatesAvailable"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns FALSE if there are no new releases available to install.</returns>
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null,
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
             CancellationToken cancellationToken = default)
         {
             try
             {
-                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, cancellationToken);
+                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, onUpdatesAvailable, cancellationToken);
             }
             catch (Exception e)
             {
@@ -191,7 +193,7 @@ namespace Snap.Core
             }
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null,
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
             CancellationToken cancellationToken = default)
         {
             var packageSource = _snapPackageManager.GetPackageSource(_snapApp, _logger);
@@ -243,6 +245,8 @@ namespace Snap.Core
                              $"Is your nuget server caching responses? Metadatas: {string.Join(",", metadatasThatAreNewerThanCurrentVersion)}");
                 return null;
             }
+            
+            onUpdatesAvailable?.Invoke(snapAppChannelReleases);
 
             _logger.Info($"Found new releases({snapReleases.Count}): {string.Join(",", snapReleases.Select(x => x.Filename))}");
 

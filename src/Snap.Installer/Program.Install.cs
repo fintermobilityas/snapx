@@ -110,20 +110,30 @@ namespace Snap.Installer
                     // Offline installer
                     if (snapFilesystem.FileExists(nupkgAbsolutePath))
                     {
-                        var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
-                        using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
+                        mainWindowLogger.Info("Offline installer is loading manifest");
+
+                        try
                         {
-                            var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
-                            snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
-                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
+                            var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
+                            using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
+                            {
+                                var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
+                                snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                                snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease();
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            mainWindowLogger.ErrorException($"Error reading {nupkgAbsolutePath}", e);
+                            goto done;
                         }
 
                         offlineInstaller = true;
-                        // Web installer
                     }
+                    // Web installer
                     else if (snapFilesystem.FileExists(snapAppDllAbsolutePath))
                     {
-                        mainWindowLogger.Info("Downloading releases manifest");
+                        mainWindowLogger.Info("Web installer is downloading manifest");
 
                         try
                         {
@@ -276,6 +286,7 @@ namespace Snap.Installer
                         goto done;
                     }
 
+                    diskLogger.Trace($"Offline installer: {offlineInstaller}");
                     diskLogger.Trace($"{nameof(nupkgAbsolutePath)}: {nupkgAbsolutePath}");
                     diskLogger.Trace($"{nameof(nupkgReleasesAbsolutePath)}: {nupkgReleasesAbsolutePath}");
 

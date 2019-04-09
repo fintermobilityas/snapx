@@ -364,7 +364,8 @@ namespace snapx
                 sleep:
                 await Task.Delay(retryInterval, cancellationToken);
  
-                var (upstreamSnapAppsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+                var (upstreamSnapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+                releasesMemoryStream?.Dispose();
                 if (upstreamSnapAppsReleases == null)
                 {
                     goto sleep;

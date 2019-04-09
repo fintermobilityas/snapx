@@ -168,7 +168,8 @@ namespace Snap.Core
         /// <returns></returns>
         public async Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
         {
-            var (snapAppsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            releasesMemoryStream?.Dispose();
             return snapAppsReleases?.GetReleases(_snapApp);
         }
 
@@ -226,7 +227,8 @@ namespace Snap.Core
                 return null;
             }
 
-            var (snapAppsReleases, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            releasesMemoryStream?.Dispose();
             if (snapAppsReleases == null)
             {
                 return null;

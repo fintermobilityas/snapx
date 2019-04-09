@@ -137,8 +137,9 @@ namespace Snap.Installer
 
                         try
                         {
-                            var (snapAppsReleases, packageSource) =
+                            var (snapAppsReleases, packageSource, releasesMemoryStream) =
                                 await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
+                            releasesMemoryStream?.Dispose();
                             if (snapAppsReleases == null)
                             {
                                 mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");

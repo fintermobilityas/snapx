@@ -71,7 +71,7 @@ namespace Snap.Core
     internal interface ISnapPackageManager
     {
         PackageSource GetPackageSource(SnapApp snapApp, ILog logger = null);
-        Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+        Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> GetSnapsReleasesAsync(
             [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
         Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
             [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
@@ -162,7 +162,7 @@ namespace Snap.Core
             }
         }
 
-        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource)> GetSnapsReleasesAsync(
+        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> GetSnapsReleasesAsync(
             SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -177,25 +177,26 @@ namespace Snap.Core
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
                     logger?.Error($"Unknown error while downloading {snapApp.BuildNugetReleasesUpstreamId()} from {packageSource.Source}.");
-                    return (null, null);
+                    return (null, null, null);
                 }
 
-                using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream))
+                using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream, true))
                 {
                     var snapReleases = await _snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, _snapAppReader, cancellationToken);
                     if (snapReleases != null)
                     {
-                        return (snapReleases, packageSource);
+                        snapReleasesDownloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
+                        return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream);
                     }
 
                     logger?.Error("Unknown error unpacking releases nupkg");
-                    return (null, null);
+                    return (null, null, null);
                 }
             }
             catch (Exception e)
             {
                 logger?.Error("Exception thrown while checking for updates", e);
-                return (null, null);
+                return (null, null, null);
             }
         }
 

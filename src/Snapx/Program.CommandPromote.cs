@@ -89,7 +89,8 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
             logger.Info("Downloading releases nupkg.");
-            var (snapAppsReleases, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+            var (snapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+            releasesMemoryStream?.Dispose();
             if (snapAppsReleases == null)
             {
                 logger.Error($"Unknown error downloading releases nupkg: {snapApp.BuildNugetReleasesFilename()}.");

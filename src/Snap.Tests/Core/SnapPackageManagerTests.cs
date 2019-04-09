@@ -105,14 +105,21 @@ namespace Snap.Tests.Core
 
                     _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genesisSnapApp);
 
-                    var (snapAppsReleasesAfter, packageSourceAfter) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
-                    Assert.NotNull(snapAppsReleasesAfter);
-                    Assert.NotNull(packageSourceAfter);
-                    Assert.Equal(expectedVersion, snapAppsReleases.Version);
-                    Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
+                    var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
+                    using (releasesMemoryStream)
+                    {
+                        Assert.NotNull(releasesMemoryStream);
+                        Assert.Equal(0, releasesMemoryStream.Position);
+                        Assert.True(releasesMemoryStream.Length > 0);
 
-                    var snapAppReleases = snapAppsReleasesAfter.GetReleases(genesisSnapApp);
-                    Assert.Equal(3, snapAppReleases.Count());
+                        Assert.NotNull(snapAppsReleasesAfter);
+                        Assert.NotNull(packageSourceAfter);
+                        Assert.Equal(expectedVersion, snapAppsReleases.Version);
+                        Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
+
+                        var snapAppReleases = snapAppsReleasesAfter.GetReleases(genesisSnapApp);
+                        Assert.Equal(3, snapAppReleases.Count());
+                    }
                 }
             }
         }

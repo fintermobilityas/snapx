@@ -111,11 +111,14 @@ namespace snapx
                         return 1;
                     }
 
-                    await filesystem.FileWriteAsync(snapAppWriter.ToSnapAppsReleases(uncached.snapAppsReleases), releasesNupkgAbsolutePath, cancellationToken);
+                    using (uncached.releasesMemoryStream)
+                    {
+                        await filesystem.FileWriteAsync(uncached.releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
+                    }
 
                     snapAppsReleases = uncached.snapAppsReleases;
                     packageSource = uncached.packageSource;
-                    releaseManifests.Add(snapApp.Id, uncached);
+                    releaseManifests.Add(snapApp.Id, (uncached.snapAppsReleases, uncached.packageSource));
 
                     logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
                 }

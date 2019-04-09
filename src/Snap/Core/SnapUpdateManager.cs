@@ -232,7 +232,7 @@ namespace Snap.Core
 
             var snapChannel = _snapApp.GetCurrentChannelOrThrow();
 
-            _logger.Debug($"Channel: {snapChannel.Current}");
+            _logger.Debug($"Channel: {snapChannel.Name}");
 
             var snapAppChannelReleases = snapAppsReleases.GetReleases(_snapApp, snapChannel);
             

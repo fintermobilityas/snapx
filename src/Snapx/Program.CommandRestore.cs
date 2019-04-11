@@ -160,7 +160,8 @@ namespace snapx
 
                     snapAppInstaller.SetCurrentChannel(snapChannel.Name);
                     
-                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
+                    if (restoreOptions.BuildInstallers 
+                        || snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 
@@ -168,7 +169,8 @@ namespace snapx
                             installersDirectory, null, releasesNupkgAbsolutePath, false, cancellationToken);
                     }
                     
-                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
+                    if (restoreOptions.BuildInstallers 
+                        || snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
                         logger.Info('-'.Repeat(TerminalDashesWidth));
 

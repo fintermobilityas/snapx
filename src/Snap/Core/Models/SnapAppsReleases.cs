@@ -47,6 +47,18 @@ namespace Snap.Core.Models
             var snapReleases = Releases.Where(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid).Select(x => x);
             return new SnapAppReleases(snapApp, snapReleases);
         }
+
+        internal IEnumerable<SnapChannel> GetChannels([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            var channelNames = GetReleases(snapApp).SelectMany(x => x.Channels).Distinct();
+            foreach (var channelName in channelNames)
+            {
+                var channel = snapApp.Channels.SingleOrDefault(x => x.Name == channelName);
+                if(channel == null) continue;
+                yield return channel;
+            }
+        }
         
         internal int Gc([NotNull] SnapApp snapApp)
         {

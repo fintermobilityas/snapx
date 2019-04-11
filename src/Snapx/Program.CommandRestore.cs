@@ -143,7 +143,7 @@ namespace snapx
                     continue;
                 }
 
-                foreach (var snapChannel in snapApp.Channels)
+                foreach (var snapChannel in snapAppsReleases.GetChannels(snapApp))
                 {
                     snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
                     if (!snapAppReleases.Any())

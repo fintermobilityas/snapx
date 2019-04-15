@@ -5,6 +5,7 @@
 *.zip filter=lfs diff=lfs merge=lfs -text
 *.tar.gz filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
+tools/** filter=lfs diff=lfs merge=lfs -text
 
 # Declare files that will always have LF line endings on checkout.
 

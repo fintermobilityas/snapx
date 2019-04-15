@@ -16,6 +16,7 @@ param(
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+$ToolsDir = Join-Path $WorkingDir tools
 . $WorkingDir\common.ps1
 
 $ErrorActionPreference = "Stop"; 
@@ -37,11 +38,13 @@ if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersio
 }
 
 $CommandDocker = $null
+$CommandSigntool = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandDocker = "docker.exe"
+        $CommandSigntool = Join-Path $ToolsDir signtool-win-x64.exe
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -142,6 +145,17 @@ function Invoke-Build-Native {
 function Invoke-Build-Snap-Installer {
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+
+    if($env:SNAPX_CI_BUILD -eq $false -and ($OSPlatform -eq "Windows")) {
+        $DotnetBuildDir = Join-Path $WorkingDir build\dotnet\win-x64\Snap.Installer\netcoreapp2.2
+
+        $Executables = @(
+            "$DotnetBuildDir/Release/publish/Snap.Installer.exe"
+        ) -join " "
+
+        Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
+    }
+
 }
 
 function Invoke-Build-Snap {
@@ -262,8 +276,6 @@ function Invoke-Build-Docker-Entrypoint
 
 function Invoke-Build-Snapx
 {
-    Write-Output-Header "Building snapx"
-
     .\install_snapx.ps1 -Bootstrap $true -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
     if(0 -ne $LASTEXITCODE) {
         return
@@ -272,6 +284,19 @@ function Invoke-Build-Snapx
     Invoke-Build-Snap-Installer
     if(0 -ne $LASTEXITCODE) {
         return
+    }
+
+    Write-Output-Header "Building snapx"
+
+    if($env:SNAPX_CI_BUILD -eq $false -and ($OSPlatform -eq "Windows")) {
+        $NativeBuildDir = Join-Path $WorkingDir build\native
+
+        $Executables = @(
+            "$NativeBuildDir/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun/corerun.exe"
+            "$NativeBuildDir/Windows/win-msvs-16-x64/Release/Snap.CoreRun/Release/corerun.exe"
+        ) -join " "
+
+        Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
     }
 
     .\install_snapx.ps1 -Bootstrap $false -NetCoreAppVersion $NetCoreAppVersion

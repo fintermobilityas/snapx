@@ -97,29 +97,7 @@ namespace Snap.Core.Resources
                 throw new PlatformNotSupportedException();
             }
 
-            var coreRunFilename = GetCoreRunExeFilenameForSnapApp(snapApp);
-
-            // Update corerun icon
-            if (snapApp.Target.Icon != null 
-                && snapApp.Target.Os == OSPlatform.Windows
-                && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                using (var tmpDir = snapFilesystem.WithDisposableTempDirectory())
-                {
-                    var coreRunTempFilename = snapFilesystem.PathCombine(tmpDir.WorkingDirectory, coreRunFilename);
-                    using (var coreRunTmpStream = snapFilesystem.FileWrite(coreRunTempFilename))
-                    {
-                        coreRunStream.CopyTo(coreRunTmpStream);                                        
-                    }
-
-                    if (!coreRunLib.SetIcon(coreRunTempFilename, snapApp.Target.Icon))
-                    {
-                        throw new Exception($"Failed to update icon for executable {coreRunTempFilename}. Icon: {snapApp.Target.Icon}.");
-                    }
-
-                    coreRunStream = new MemoryStream(snapFilesystem.FileReadAllBytes(coreRunTempFilename));
-                }
-            }
+            var coreRunFilename = GetCoreRunExeFilenameForSnapApp(snapApp);            
 
             return (coreRunStream, coreRunFilename, osPlatform);
         }

@@ -154,6 +154,10 @@ function Invoke-Build-Snap-Installer {
         ) -join " "
 
         Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
+
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
     }
 
 }
@@ -297,6 +301,10 @@ function Invoke-Build-Snapx
         ) -join " "
 
         Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
+
+        if(0 -ne $LASTEXITCODE) {
+            return
+        }
     }
 
     .\install_snapx.ps1 -Bootstrap $false -NetCoreAppVersion $NetCoreAppVersion

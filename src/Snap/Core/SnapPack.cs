@@ -1029,7 +1029,6 @@ namespace Snap.Core
                 var defaultExcludePattern = new List<Glob>
                 {
                     Glob.Parse("**/*.nuspec"),
-                    Glob.Parse("**/*.pdb"),
                     Glob.Parse("**/*.dll.xml"),
                     Glob.Parse("**/*.log")
                 };

@@ -379,26 +379,24 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 #if defined(PAL_PLATFORM_WINDOWS)
     const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
+    bool is_running = false;
     if (pss != INVALID_HANDLE_VALUE)
     {
         PROCESSENTRY32 pe = {};
-        pe.dwSize = sizeof pe;
+        pe.dwSize = sizeof (PROCESSENTRY32);
 
         if (Process32First(pss, &pe))
-        {
-            while (Process32Next(pss, &pe))
+        {      
+            is_running = pe.th32ProcessID == pid;
+            while (!is_running && Process32Next(pss, &pe))
             {
-                if (pe.th32ProcessID != pid)
-                {
-                    continue;
-                }
-                return TRUE;
+                is_running = pe.th32ProcessID == pid;
             }
         }
         assert(0 != CloseHandle(pss));
     }
 
-    return FALSE;
+    return is_running ? TRUE : FALSE;
 #elif defined(PAL_PLATFORM_LINUX)
     struct stat dontcare = { 0 };
     std::string proc_path("/proc/" + std::to_string(pid));

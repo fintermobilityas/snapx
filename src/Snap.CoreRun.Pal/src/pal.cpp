@@ -377,7 +377,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_o
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 {
 #if defined(PAL_PLATFORM_WINDOWS)
-    const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPALL, 0);
+    const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
     if (pss != INVALID_HANDLE_VALUE)
     {

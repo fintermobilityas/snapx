@@ -125,7 +125,7 @@ namespace snapx
                 }
 
                 SnapAppsReleases snapAppsReleases;
-                
+                var databaseSize = downloadResourceResult.PackageStream.Length;
                 using (var packageArchiveReader = new PackageArchiveReader(downloadResourceResult.PackageStream))
                 {
                     snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, appReader, cancellationToken);
@@ -136,7 +136,7 @@ namespace snapx
                     }                    
                 }
 
-                table.Header += $"\nVersion:{snapAppsReleases.Version}\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}";
+                table.Header += $"\nVersion: {snapAppsReleases.Version}\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}\nDatabase size: {databaseSize.BytesAsHumanReadable()}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    

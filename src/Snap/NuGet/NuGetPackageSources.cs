@@ -107,6 +107,8 @@ namespace Snap.NuGet
             }
                         
             var packageSources = configFilePaths
+                .Select(filesystem.PathGetDirectoryName)
+                .Distinct()
                 .Select(configFilePath => nuGetConfigFileReader.ReadNugetSources(configFilePath)).ToList();
 
             Items = packageSources.SelectMany(x => x.Items).ToList();

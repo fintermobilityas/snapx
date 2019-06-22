@@ -16,8 +16,8 @@ jobs:
   - task: DotNetCoreInstaller@0
     inputs:
       packageType: 'sdk' 
-      version: '2.2.203' 
-    displayName: Install .NET Core 2.2.203
+      version: '2.2.300' 
+    displayName: Install .NET Core 2.2.300
   - script: pwsh $(buildScript)
   - task: PublishTestResults@2
     displayName: Publish test results
@@ -41,8 +41,8 @@ jobs:
   - task: DotNetCoreInstaller@0
     inputs:
       packageType: 'sdk' 
-      version: '2.2.203' 
-    displayName: Install .NET Core 2.2.203
+      version: '2.2.300' 
+    displayName: Install .NET Core 2.2.300
   - script: powershell -f $(buildScript) -VisualStudioVersion "16"
   - task: PublishTestResults@2
     displayName: Publish .NET test results

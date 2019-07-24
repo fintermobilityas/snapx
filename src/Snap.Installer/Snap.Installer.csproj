@@ -24,4 +24,9 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <!-- https://github.com/mono/linker/issues/652#issuecomment-511874899 -->
+        <TrimmerRootAssembly Include="mscorlib" />
+    </ItemGroup>
+
 </Project>

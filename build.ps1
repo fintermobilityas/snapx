@@ -147,7 +147,7 @@ function Invoke-Build-Snap-Installer {
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
 
     if($env:SNAPX_CI_BUILD -eq $false -and ($OSPlatform -eq "Windows")) {
-        $DotnetBuildDir = Join-Path $WorkingDir build\dotnet\win-x64\Snap.Installer\netcoreapp2.2
+        $DotnetBuildDir = Join-Path $WorkingDir build\dotnet\win-x64\Snap.Installer\$NetCoreAppVersion
 
         $Executables = @(
             "$DotnetBuildDir/Release/publish/Snap.Installer.exe"

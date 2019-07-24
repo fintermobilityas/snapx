@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +23,7 @@ namespace Snap.Core
         Task<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync(MemoryStream stream);
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class SnapAppReader : ISnapAppReader
     {
         internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApp = new Dictionary<string, Type>

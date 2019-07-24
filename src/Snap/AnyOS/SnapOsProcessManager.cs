@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +9,7 @@ using Snap.Extensions;
 
 namespace Snap.AnyOS
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal sealed class ProcessStartInfoBuilder 
     {
         public string Filename { get; }
@@ -53,8 +52,8 @@ namespace Snap.AnyOS
         }
     }
     
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    [SuppressMessage("ReSharper", "NotAccessedField.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "NotAccessedField.Global")]
     internal struct SnapOsProcess
     {
         public int Pid;
@@ -63,7 +62,7 @@ namespace Snap.AnyOS
         public string WorkingDirectory;
     }
     
-    [SuppressMessage("ReSharper", "NotAccessedField.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "NotAccessedField.Global")]
     internal interface ISnapOsProcessManager
     {
         Process Current { get; }

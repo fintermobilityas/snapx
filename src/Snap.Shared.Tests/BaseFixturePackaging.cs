@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,8 +18,8 @@ using Xunit;
 
 namespace Snap.Shared.Tests
 {
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal class SnapReleaseBuilder : IDisposable, IEnumerable<string>
     {
         readonly Dictionary<string, IDisposable> _nuspec;
@@ -421,7 +420,7 @@ namespace Snap.Shared.Tests
             return GetEnumerator();
         }
 
-        [SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
         (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] SnapRelease snapRelease, [NotNull] string relativePath)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
@@ -474,7 +473,7 @@ namespace Snap.Shared.Tests
         }
     }
 
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal class BuildPackageContext : IDisposable
     {
         public MemoryStream FullPackageMemoryStream { get; set; }

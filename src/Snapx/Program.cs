@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -26,7 +25,7 @@ using Parser = CommandLine.Parser;
 
 namespace snapx
 {
-    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     internal partial class Program
     {
         static readonly ILog SnapLogger = LogProvider.GetLogger("Snapx");

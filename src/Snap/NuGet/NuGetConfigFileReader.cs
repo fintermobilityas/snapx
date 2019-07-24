@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using JetBrains.Annotations;
 using NuGet.Configuration;
@@ -8,7 +7,7 @@ using Snap.Logging;
 
 namespace Snap.NuGet
 {
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface INugetConfigFileReader
     {
     }
@@ -33,7 +32,7 @@ namespace Snap.NuGet
             return ReadFromFile(settings, enabledSources);
         }
 
-        NuGetPackageSources ReadFromFile([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
+        NuGetPackageSources ReadFromFile([JetBrains.Annotations.NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (sources == null) throw new ArgumentNullException(nameof(sources));

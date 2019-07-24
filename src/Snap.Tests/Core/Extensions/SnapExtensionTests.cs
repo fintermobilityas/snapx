@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -433,7 +432,7 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         public void ParseNugetFilename_When_Null()
         {
             string value = null;

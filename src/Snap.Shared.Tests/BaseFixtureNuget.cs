@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -13,7 +12,7 @@ using Snap.Extensions;
 
 namespace Snap.Shared.Tests
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class BaseFixtureNuget
     {
         internal void SetupReleases([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] MemoryStream releasesMemoryStream,

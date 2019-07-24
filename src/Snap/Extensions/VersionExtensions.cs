@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 
 namespace Snap.Extensions
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class VersionExtensions
     {
         public static SemanticVersion BumpMajor(this SemanticVersion version, int inc = 1)

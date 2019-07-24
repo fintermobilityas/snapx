@@ -8,8 +8,8 @@ param(
     [Validateset(16)]
     [int] $VisualStudioVersion = 16,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
-    [string] $NetCoreAppVersion = "netcoreapp2.2"
+    [ValidateSet("netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp3.0"
 )
 
 $ErrorActionPreference = "Stop"; 

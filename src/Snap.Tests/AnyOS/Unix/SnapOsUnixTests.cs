@@ -33,23 +33,14 @@ namespace Snap.Tests.AnyOS.Unix
         }
 
         [Fact]
-        public async Task TestParseLsbRelease()
+        public void TestParseLsbRelease()
         {
-            var lsbRelease = @"
+            const string lsbRelease = @"
 No LSB modules are available.
 Distributor ID:	Ubuntu
 Description:	Ubuntu 18.10
 Release:	18.10
 Codename:	cosmic";
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var (exitCode, maybeLsbRelease) = await _snapOs.ProcessManager.RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None);
-                if (exitCode == 0 && !string.IsNullOrWhiteSpace(maybeLsbRelease))
-                {
-                    lsbRelease = maybeLsbRelease;
-                }
-            } 
 
             var (distributorId, description, release, codeName) = _snapOsUnix.ParseLsbRelease(lsbRelease);
             Assert.Equal("Ubuntu", distributorId);

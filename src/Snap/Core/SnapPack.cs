@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -25,8 +24,8 @@ using Snap.Reflection;
 
 namespace Snap.Core
 {
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseFileChecksumMismatchException : Exception
     {
         public SnapReleaseChecksum Checksum { get; }
@@ -40,8 +39,8 @@ namespace Snap.Core
         }
     }
 
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseFileChecksumDeltaMismatchException : Exception
     {
         public SnapReleaseChecksum Checksum { get; }
@@ -56,8 +55,8 @@ namespace Snap.Core
         }
     }
 
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseChecksumMismatchException : Exception
     {
         public SnapRelease Release { get; }
@@ -113,7 +112,7 @@ namespace Snap.Core
         }
     } 
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapPack
     {
         IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
@@ -130,7 +129,7 @@ namespace Snap.Core
             CancellationToken cancellationToken = default);
     }
 
-    [SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
     internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;

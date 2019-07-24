@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,7 +7,7 @@ using Mono.Cecil;
 
 namespace Snap.Extensions
 {
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class CecilExtensions
     {
         const string ExpressionCannotBeNullMessage = "The expression cannot be null";

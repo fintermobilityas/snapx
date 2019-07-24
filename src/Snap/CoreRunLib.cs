@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -9,8 +8,8 @@ using Snap.Extensions;
 
 namespace Snap
 {   
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ICoreRunLib : IDisposable
     {
         bool Chmod(string filename, int mode);
@@ -19,7 +18,7 @@ namespace Snap
         bool FileExists(string filename);
     }
 
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
     internal sealed class CoreRunLib : ICoreRunLib
     {
         IntPtr _libPtr;
@@ -157,8 +156,8 @@ namespace Snap
             throw new PlatformNotSupportedException();
         }
 
-        [SuppressMessage("ReSharper", "UnusedMember.Local")]
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
         #pragma warning disable IDE1006 // Naming Styles
         static class NativeMethodsWindows
         {
@@ -170,14 +169,14 @@ namespace Snap
             public static extern bool dlclose(IntPtr hModule);
         }
 
-        [SuppressMessage("ReSharper", "UnusedMember.Local")]
-        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
         internal static class NativeMethodsUnix
         {
             public const int libdl_RTLD_LOCAL = 1; 
             public const int libdl_RTLD_NOW = 2; 
 
-            [SuppressMessage("ReSharper", "UnusedMember.Global")]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
             internal enum Signum {
                 SIGHUP    =  1, // Hangup (POSIX).
                 SIGINT    =  2, // Interrupt (ANSI).
@@ -228,7 +227,7 @@ namespace Snap
         
         #pragma warning restore IDE1006 // Naming Styles
 
-        [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
         sealed class Delegate<T> where T: Delegate
         {
             public T Invoke { get; }

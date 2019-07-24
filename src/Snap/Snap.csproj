@@ -11,8 +11,8 @@
         <DefineConstants>$(DefineConstants);</DefineConstants>
         <IsPackable Condition="$(SnapNupkg)">true</IsPackable>
         <IsTestProject>false</IsTestProject>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp2.2;net472</TargetFrameworks>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp2.2</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp3.0;net472</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp3.0</TargetFrameworks>
     </PropertyGroup>
 
     <PropertyGroup>

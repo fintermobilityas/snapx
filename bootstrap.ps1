@@ -15,8 +15,8 @@ param(
     [Validateset(16)]
     [int] $VisualStudioVersion = 16,
     [Parameter(Position = 6, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
-    [string] $NetCoreAppVersion = "netcoreapp2.2"
+    [ValidateSet("netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp3.0"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -204,24 +204,15 @@ function Invoke-Build-Snap-Installer {
 
     $PackerArch = $null
     $SnapInstallerExeName = $null
-    $MonoLinkerCrossGenEnabled = $false
 
     switch ($Rid) {
         "win-x64" {
             $PackerArch = "windows-x64"
             $SnapInstallerExeName = "Snap.Installer.exe"
-
-            if ($OSPlatform -eq "Windows") {
-                $MonoLinkerCrossGenEnabled = $true
-            }
         }
         "linux-x64" {
             $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
-			
-			if ($OSPlatform -eq "Unix") {
-                $MonoLinkerCrossGenEnabled = $true
-            }
         }
         default {
             Write-Error "Rid not supported: $Rid"
@@ -243,8 +234,8 @@ function Invoke-Build-Snap-Installer {
 
     Invoke-Command-Colored $CommandDotnet @(
         ("publish {0}" -f (Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj))
-        "/p:ShowLinkerSizeComparison=true"
-        "/p:CrossGenDuringPublish=$MonoLinkerCrossGenEnabled"
+        "/p:PublishTrimmed=true"
+        "/p:PublishSingleFile=true"
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "/p:SnapNativeConfiguration=$Configuration"
         "--runtime $Rid"

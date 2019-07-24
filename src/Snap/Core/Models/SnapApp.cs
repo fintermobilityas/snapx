@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -71,7 +70,7 @@ namespace Snap.Core.Models
         internal abstract bool HasCredentials();
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapNugetFeed : SnapFeed
     {
         public string Name { get; set; }
@@ -196,7 +195,7 @@ namespace Snap.Core.Models
         }
     }
 
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapChannel
     {
         public string Name { get; set; }

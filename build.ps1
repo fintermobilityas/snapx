@@ -11,8 +11,8 @@ param(
     [Parameter(Position = 4, ValueFromPipeline = $true)]
     [string] $VisualStudioVersionStr = "16",
     [Parameter(Position = 5, ValueFromPipeline = $true)]
-    [ValidateSet("netcoreapp2.2", "netcoreapp3.0")]
-    [string] $NetCoreAppVersion = "netcoreapp2.2"
+    [ValidateSet("netcoreapp3.0")]
+    [string] $NetCoreAppVersion = "netcoreapp3.0"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition

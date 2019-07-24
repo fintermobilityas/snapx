@@ -77,8 +77,10 @@ namespace Snap.Installer
                     mainWindowLogger.Error($"Error! Installer cannot run in an elevated user context: {rootUserText}");
                     goto done;
                 }
+                
+                var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
+                diskLogger.Debug($"{nameof(snapAppDllAbsolutePath)}: {snapAppDllAbsolutePath}.");
 
-                var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);                
                 if (!snapFilesystem.FileExists(snapAppDllAbsolutePath))
                 {
                     mainWindowLogger.Info($"Unable to find: {snapFilesystem.PathGetFileName(snapAppDllAbsolutePath)}");

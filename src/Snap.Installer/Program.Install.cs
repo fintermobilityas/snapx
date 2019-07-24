@@ -78,6 +78,9 @@ namespace Snap.Installer
                     goto done;
                 }
                 
+                diskLogger.Debug($"{nameof(environment.Io.WorkingDirectory)}: {environment.Io.WorkingDirectory}");
+                diskLogger.Debug($"{nameof(environment.Io.ThisExeWorkingDirectory)}: {environment.Io.ThisExeWorkingDirectory}");
+
                 var snapAppDllAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
                 diskLogger.Debug($"{nameof(snapAppDllAbsolutePath)}: {snapAppDllAbsolutePath}.");
 

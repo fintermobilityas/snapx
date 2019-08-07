@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -43,7 +44,7 @@ namespace Snap
         delegate int pal_fs_file_exists_delegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string filename);
         readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
-        public CoreRunLib([NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [NotNull] string workingDirectory)
+        public CoreRunLib([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [JetBrains.Annotations.NotNull] string workingDirectory)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -83,7 +84,7 @@ namespace Snap
             pal_fs_file_exists = new Delegate<pal_fs_file_exists_delegate>(_libPtr, osPlatform);
         }
 
-        public bool Chmod([NotNull] string filename, int mode)
+        public bool Chmod([JetBrains.Annotations.NotNull] string filename, int mode)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
@@ -96,7 +97,7 @@ namespace Snap
             return pal_is_elevated.Invoke() == 1;
         }
 
-        public bool SetIcon([NotNull] string exeAbsolutePath, [NotNull] string iconAbsolutePath)
+        public bool SetIcon([JetBrains.Annotations.NotNull] string exeAbsolutePath, [JetBrains.Annotations.NotNull] string iconAbsolutePath)
         {
             if (exeAbsolutePath == null) throw new ArgumentNullException(nameof(exeAbsolutePath));
             if (iconAbsolutePath == null) throw new ArgumentNullException(nameof(iconAbsolutePath));
@@ -112,7 +113,7 @@ namespace Snap
             return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
         }
 
-        public bool FileExists([NotNull] string filename)
+        public bool FileExists([JetBrains.Annotations.NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_file_exists.ThrowIfDangling();
@@ -176,43 +177,36 @@ namespace Snap
             public const int libdl_RTLD_LOCAL = 1; 
             public const int libdl_RTLD_NOW = 2; 
 
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-            internal enum Signum {
-                SIGHUP    =  1, // Hangup (POSIX).
-                SIGINT    =  2, // Interrupt (ANSI).
-                SIGQUIT   =  3, // Quit (POSIX).
-                SIGILL    =  4, // Illegal instruction (ANSI).
-                SIGTRAP   =  5, // Trace trap (POSIX).
-                SIGABRT   =  6, // Abort (ANSI).
-                SIGIOT    =  6, // IOT trap (4.2 BSD).
-                SIGBUS    =  7, // BUS error (4.2 BSD).
-                SIGFPE    =  8, // Floating-point exception (ANSI).
-                SIGKILL   =  9, // Kill, unblockable (POSIX).
-                SIGUSR1   = 10, // User-defined signal 1 (POSIX).
-                SIGSEGV   = 11, // Segmentation violation (ANSI).
-                SIGUSR2   = 12, // User-defined signal 2 (POSIX).
-                SIGPIPE   = 13, // Broken pipe (POSIX).
-                SIGALRM   = 14, // Alarm clock (POSIX).
-                SIGTERM   = 15, // Termination (ANSI).
-                SIGSTKFLT = 16, // Stack fault.
-                SIGCLD    = SIGCHLD, // Same as SIGCHLD (System V).
-                SIGCHLD   = 17, // Child status has changed (POSIX).
-                SIGCONT   = 18, // Continue (POSIX).
-                SIGSTOP   = 19, // Stop, unblockable (POSIX).
-                SIGTSTP   = 20, // Keyboard stop (POSIX).
-                SIGTTIN   = 21, // Background read from tty (POSIX).
-                SIGTTOU   = 22, // Background write to tty (POSIX).
-                SIGURG    = 23, // Urgent condition on socket (4.2 BSD).
-                SIGXCPU   = 24, // CPU limit exceeded (4.2 BSD).
-                SIGXFSZ   = 25, // File size limit exceeded (4.2 BSD).
-                SIGVTALRM = 26, // Virtual alarm clock (4.2 BSD).
-                SIGPROF   = 27, // Profiling alarm clock (4.2 BSD).
-                SIGWINCH  = 28, // Window size change (4.3 BSD, Sun).
-                SIGPOLL   = SIGIO, // Pollable event occurred (System V).
-                SIGIO     = 29, // I/O now possible (4.2 BSD).
-                SIGPWR    = 30, // Power failure restart (System V).
-                SIGSYS    = 31, // Bad system call.
-                SIGUNUSED = 31
+            // https://github.com/tmds/Tmds.LibC/blob/f336956facd8f6a0f8dcfa1c652828237dc032fb/src/Sources/linux.common/types.cs#L162
+            public struct pid_t : IEquatable<pid_t>
+            {
+                [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+                internal int Value { get; }
+
+                pid_t(int value) => Value = value;
+
+                public static implicit operator int(pid_t arg) => arg.Value;
+                public static implicit operator pid_t(int arg) => new pid_t(arg);
+
+                public override string ToString() => Value.ToString();
+
+                public override int GetHashCode() => Value.GetHashCode();
+
+                public override bool Equals(object obj)
+                {
+                    if (obj != null && obj is pid_t v)
+                    {
+                        return this == v;
+                    }
+
+                    return false;
+                }
+
+                public bool Equals(pid_t v) => this == v;
+
+                public static pid_t operator -(pid_t v) => new pid_t(-v.Value);
+                public static bool operator ==(pid_t v1, pid_t v2) => v1.Value == v2.Value;
+                public static bool operator !=(pid_t v1, pid_t v2) => v1.Value != v2.Value;
             }
             
             [DllImport("libdl", SetLastError = true, EntryPoint = "dlsym", CharSet = CharSet.Ansi)]
@@ -222,7 +216,7 @@ namespace Snap
             [DllImport("libdl", SetLastError = true, EntryPoint = "dlclose")]
             public static extern int dlclose(IntPtr hModule);            
             [DllImport("libc", SetLastError = true, EntryPoint = "kill")]
-            public static extern int kill (int pid, Signum sig);
+            public static extern int kill (pid_t pid, int sig);
         }
         
         #pragma warning restore IDE1006 // Naming Styles

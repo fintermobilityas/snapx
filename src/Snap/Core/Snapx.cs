@@ -232,21 +232,21 @@ namespace Snap.Core
                 
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
+                    // ReSharper disable once InconsistentNaming
+                    const int SIGTERM = 15;
                     // We have to signal the supervisor so we can release the machine wide semaphore.
-                    const CoreRunLib.NativeMethodsUnix.Signum killSignal = CoreRunLib.NativeMethodsUnix.Signum.SIGTERM;
-                    var killResult = CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, killSignal);
+                    var killResult = CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, SIGTERM);
                     var killSuccess = killResult == 0;
 
                     if (!killSuccess)
                     {
-                        Logger.Warn($"Failed to signal ({killSignal}) supervisor. Return code: {killResult}.");
-                    }
-                    else
-                    {
-                        Logger.Info($"Successfully signaled ({killSignal}) supervisor.");
+                        Logger.Warn($"Failed to signal ({nameof(SIGTERM)}) supervisor. Return code: {killResult}.");
+                        return false;
                     }
 
-                    var attempts = !killSuccess ? -1 : 3;
+                    Logger.Info($"Successfully signaled ({nameof(SIGTERM)}) supervisor.");
+
+                    var attempts = 3;
                     while (attempts-- >= 0)
                     {
                         SuperVisorProcess.Refresh();
@@ -258,15 +258,6 @@ namespace Snap.Core
                         }
 
                         Thread.Sleep(100);
-                    }
-
-                    if (supervisorRunning)
-                    {
-                        Logger.Warn($"Supervisor is still running after sending kill signal: {killSignal}. Pid: {SuperVisorProcess.Id}. Force killing process.");
-                        SuperVisorProcess.Kill();
-                        SuperVisorProcess.Refresh();
-                        supervisorRunning = !SuperVisorProcess.HasExited;
-                        Logger.Warn($"Supervisor was successfully killed: {!supervisorRunning}.");
                     }
 
                     return !supervisorRunning;

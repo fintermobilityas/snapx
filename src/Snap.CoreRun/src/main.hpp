@@ -25,16 +25,20 @@ inline void snapx_maybe_wait_for_debugger();
 
 #if PAL_PLATFORM_LINUX
 void corerun_main_signal_handler(int signum) {
-    if(signum == SIGTERM
-        && corerun_supervisor_semaphore != nullptr) {
-        LOGD << "Handled SIGTERM. Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
+    LOGD << "Interrupt signal: " << signum;
+
+    if(corerun_supervisor_semaphore != nullptr) {
+        LOGD << "Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
     }
+
+    LOGD << "Supervisor will now exit.";
+    exit(signum);
 }
 #endif
 
 inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) {
 #if PAL_PLATFORM_LINUX
-    std::signal(SIGABRT, corerun_main_signal_handler);
+    std::signal(SIGTERM, corerun_main_signal_handler);
 #endif
     
     LOGD << "Process started. "
@@ -106,7 +110,7 @@ inline int corerun_command_supervise(
 
     corerun_supervisor_semaphore = std::make_unique<pal_semaphore_machine_wide>(semaphore_name);
     if(!corerun_supervisor_semaphore->try_create()) {
-        LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because multiple supervisors are running.";
+        LOGE << "Aborting supervision of target process with id " << std::to_string(process_id) << " because a supervisor is already running.";
         return 1;
     }
 

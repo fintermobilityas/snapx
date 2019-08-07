@@ -233,7 +233,7 @@ namespace Snap.Core
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // We have to signal the supervisor so we can release the machine wide semaphore.
-                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, CoreRunLib.NativeMethodsUnix.Signum.SIGABRT);
+                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, CoreRunLib.NativeMethodsUnix.Signum.SIGTERM);
                 }
 
                 SuperVisorProcess.Kill();                    

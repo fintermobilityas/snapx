@@ -25,9 +25,9 @@ inline void snapx_maybe_wait_for_debugger();
 
 #if PAL_PLATFORM_LINUX
 void corerun_main_signal_handler(int signum) {
-    if(signum == SIGABRT
+    if(signum == SIGTERM
         && corerun_supervisor_semaphore != nullptr) {
-        LOGD << "Handled SIGABRT. Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
+        LOGD << "Handled SIGTERM. Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
     }
 }
 #endif

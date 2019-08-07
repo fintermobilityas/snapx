@@ -234,9 +234,19 @@ namespace Snap.Core
                 {
                     // We have to signal the supervisor so we can release the machine wide semaphore.
                     const CoreRunLib.NativeMethodsUnix.Signum killSignal = CoreRunLib.NativeMethodsUnix.Signum.SIGTERM;
-                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, killSignal);
+                    var killResult = CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, killSignal);
+                    var killSuccess = killResult == 0;
 
-                    var attempts = 3;
+                    if (!killSuccess)
+                    {
+                        Logger.Warn($"Failed to signal ({killSignal}) supervisor. Return code: {killResult}.");
+                    }
+                    else
+                    {
+                        Logger.Info($"Successfully signaled ({killSignal}) supervisor.");
+                    }
+
+                    var attempts = !killSuccess ? -1 : 3;
                     while (attempts-- >= 0)
                     {
                         SuperVisorProcess.Refresh();

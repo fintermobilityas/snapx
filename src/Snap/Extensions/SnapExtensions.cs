@@ -513,7 +513,7 @@ namespace Snap.Extensions
                 var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed.Name);
                 if (pushFeed == null)
                 {
-                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
+                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed.Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 SnapFeed updateFeed = null;

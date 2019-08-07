@@ -237,7 +237,7 @@ namespace Snap.Core
                     CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, killSignal);
 
                     var attempts = 3;
-                    while (attempts-- > 0)
+                    while (attempts-- >= 0)
                     {
                         SuperVisorProcess.Refresh();
 

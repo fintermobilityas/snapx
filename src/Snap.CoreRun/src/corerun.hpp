@@ -22,7 +22,7 @@ public:
     {
         const auto filename = get_logger_relative_filename();
 
-        static plog::RollingFileAppender<plog::TxtFormatter> file_appender(filename.c_str(), 8000);
+        static plog::RollingFileAppender<plog::TxtFormatter> file_appender(filename.c_str(), 1000000, 1);
         static plog::ColorConsoleAppender<plog::TxtFormatter> console_appender;
 #if defined(PAL_PLATFORM_WINDOWS)
         static plog::DebugOutputAppender<plog::TxtFormatter> debug_output_appender;

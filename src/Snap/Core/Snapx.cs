@@ -233,12 +233,40 @@ namespace Snap.Core
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // We have to signal the supervisor so we can release the machine wide semaphore.
-                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, CoreRunLib.NativeMethodsUnix.Signum.SIGTERM);
+                    const CoreRunLib.NativeMethodsUnix.Signum killSignal = CoreRunLib.NativeMethodsUnix.Signum.SIGTERM;
+                    CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, killSignal);
+
+                    var attempts = 3;
+                    while (attempts-- > 0)
+                    {
+                        SuperVisorProcess.Refresh();
+
+                        supervisorRunning = !SuperVisorProcess.HasExited;
+                        if (!supervisorRunning)
+                        {
+                            break;
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    if (supervisorRunning)
+                    {
+                        Logger.Warn($"Supervisor is still running after sending kill signal: {killSignal}. Pid: {SuperVisorProcess.Id}. Force killing process.");
+                        SuperVisorProcess.Kill();
+                        SuperVisorProcess.Refresh();
+                        supervisorRunning = !SuperVisorProcess.HasExited;
+                        Logger.Warn($"Supervisor was successfully killed: {!supervisorRunning}.");
+                    }
+
+                    return !supervisorRunning;
                 }
 
-                SuperVisorProcess.Kill();                    
-                
-                return true;
+                SuperVisorProcess.Kill();
+                SuperVisorProcess.Refresh();
+                supervisorRunning = !SuperVisorProcess.HasExited;
+
+                return !supervisorRunning;
             }
             catch (Exception e)
             {

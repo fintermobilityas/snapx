@@ -188,7 +188,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                _logger.Error("Exception thrown when attempting to update to latest release", e);
+                _logger.ErrorException("Exception thrown when attempting to update to latest release", e);
                 return null;
             }
         }

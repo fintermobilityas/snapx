@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -19,7 +20,7 @@ namespace Snap.Extensions
             foreach (var item in source) onNext(item);
         }
 
-        public static async Task ForEachAsync<T>([NotNull] this IEnumerable<T> source, [NotNull] Func<T, Task> body, int concurrency = 0)
+        public static Task ForEachAsync<T>([NotNull] this IEnumerable<T> source, [NotNull] Func<T, Task> body, int concurrency = 0)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (body == null) throw new ArgumentNullException(nameof(body));
@@ -37,32 +38,21 @@ namespace Snap.Extensions
                 concurrency = maxConcurrency;
             }
             
-            using (var semaphore = new SemaphoreSlim(concurrency, concurrency))
-            {                
-                var threads = source.Select(x =>
+            // https://devblogs.microsoft.com/pfxteam/implementing-a-simple-foreachasync-part-2/
+            return Task.WhenAll(
+                Partitioner
+                .Create(source)
+                .GetPartitions(concurrency)
+                .Select(partition => Task.Run(async delegate
                 {
-                    var tcs = new TaskCompletionSource<bool>();
-                    
-                    new Thread(async () =>
+                    using (partition)
                     {
-                        await semaphore.WaitAsync();
-                        
-                        try
+                        while (partition.MoveNext())
                         {
-                            await body.Invoke(x);
+                            await body(partition.Current);
                         }
-                        finally
-                        {
-                            semaphore.Release();
-                            tcs.TrySetResult(true);
-                        }
-                    }).Start();
-                    
-                    return tcs.Task;
-                });
-
-                await Task.WhenAll(threads);
-            }
+                    }
+                }))); 
             
         }    
     }

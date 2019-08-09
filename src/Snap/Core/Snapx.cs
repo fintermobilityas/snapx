@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -212,6 +213,42 @@ namespace Snap.Core
             SuperVisorProcess.Refresh();
 
             return !SuperVisorProcess.HasExited;
+        }
+
+        public static bool StopAndDeleteSupervisor()
+        {  
+            typeof(Snapx).Assembly
+                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
+
+            try
+            {
+                bool SuperVisorExeExistsOnDisk()
+                {
+                    return SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath);
+                }
+
+                if (!SuperVisorExeExistsOnDisk())
+                {
+                    return false;
+                }
+
+                SnapUtility.Retry(() =>
+                {
+                    if (!SuperVisorExeExistsOnDisk())
+                    {
+                        return;
+                    }
+                    StopSupervisor();
+                    File.Delete(supervisorExecutableAbsolutePath);
+                }, 5);
+
+                return !SuperVisorExeExistsOnDisk();
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorException($"Exception thrown while attempting to delete supervisor exe: {supervisorExecutableAbsolutePath}", e);
+                return false;
+            }
         }
                                
         public static bool StopSupervisor()

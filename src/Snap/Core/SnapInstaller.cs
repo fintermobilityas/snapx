@@ -19,7 +19,7 @@ namespace Snap.Core
     [Flags]
     public enum SnapShortcutLocation
     {
-        StartMenu = 1 << 0,
+        StartMenu = 1,
         Desktop = 1 << 1,
         Startup = 1 << 2
     }
@@ -27,7 +27,7 @@ namespace Snap.Core
     [Flags]
     public enum SnapInstallerType
     {
-        Web = 1 << 0,
+        Web = 1,
         Offline = 1 << 1
     }
 

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -340,8 +338,9 @@ namespace Snap.Core
             }
             
             var nupkgToInstallAbsolutePath = _snapOs.Filesystem.PathCombine(_packagesDirectory, snapReleaseToInstall.Filename);
+            var updateInstallAbsolutePath = _snapInstaller.GetApplicationDirectory(_workingDirectory, snapReleaseToInstall);
 
-            _logger.Info($"Installing {nupkgToInstallAbsolutePath}");
+            _logger.Info($"Installing update {nupkgToInstallAbsolutePath} to application directory: {updateInstallAbsolutePath}");
 
             if (!_snapOs.Filesystem.FileExists(nupkgToInstallAbsolutePath))
             {
@@ -420,29 +419,21 @@ namespace Snap.Core
                         
                         _logger.Debug($"Deleting old application version: {version}.");
                         
-                        await SnapUtility.RetryAsync(async () =>
-                        {
-                            try
-                            {
-                                _snapOs.KillAllProcessesInsideDirectory(directoryAbsolutePath);
-                            }
-                            catch (Exception e)
-                            {
-                                _logger.ErrorException($"Exception thrown while killing processes in directory: {directoryAbsolutePath}.", e);
-                            }
-                            
-                            // Todo: Windows - https://docs.microsoft.com/en-gb/windows/desktop/api/winbase/nf-winbase-movefileexa
-                            // Delete all locked files by delaying until reboot? (MOVEFILE_DELAY_UNTIL_REBOOT) 
-                            await _snapOs.Filesystem.DirectoryDeleteAsync(directoryAbsolutePath);
-                        }, deleteRetries, throwException: false);
+                        await DeleteDirectorySafeAsync(directoryAbsolutePath, deleteRetries);
                     }                    
                 }
             }
             catch (Exception e)
             {
-                _logger.ErrorException($"Unknown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
+                _logger.ErrorException($"Exception thrown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
                 if (updatedSnapApp == null)
                 {
+                    _logger.Warn($"Attempting to delete to delete failed application update directory: {updateInstallAbsolutePath}.");
+
+                    var success = await DeleteDirectorySafeAsync(updateInstallAbsolutePath, 3);
+
+                    _logger.Warn($"Failed application update directory deleted: {success}.");
+
                     return null;
                 }
             }
@@ -456,6 +447,35 @@ namespace Snap.Core
 
         public void Dispose()
         {
+        }
+
+        async Task<bool> DeleteDirectorySafeAsync([NotNull] string directoryAbsolutePath, int deleteRetries)
+        {
+            if (directoryAbsolutePath == null) throw new ArgumentNullException(nameof(directoryAbsolutePath));
+
+            var success = false;
+            await SnapUtility.RetryAsync(async () =>
+            {
+                try
+                {
+                    if (!_snapOs.Filesystem.DirectoryExists(directoryAbsolutePath))
+                    {
+                        return;
+                    }
+
+                    _snapOs.KillAllProcessesInsideDirectory(directoryAbsolutePath);
+                }
+                catch (Exception e)
+                {
+                    _logger.ErrorException($"Exception thrown while killing processes in directory: {directoryAbsolutePath}.", e);
+                }
+
+                await _snapOs.Filesystem.DirectoryDeleteAsync(directoryAbsolutePath);
+                success = true;
+
+            }, deleteRetries, throwException: false);
+
+            return success;
         }
 
     }

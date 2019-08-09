@@ -652,6 +652,21 @@ namespace Snap.Extensions
                 return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
             }
         }
+
+        internal static void GetCoreRunExecutableFullPath([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string baseDirectory, out string coreRunFullPath)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+            if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
+
+            var exeName = snapApp.Id;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                exeName += ".exe";
+            }
+            
+            coreRunFullPath = snapFilesystem.PathCombine(baseDirectory, exeName);
+        }
     
         internal static void GetCoreRunExecutableFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem,
             [NotNull] ISnapAppReader snapAppReader, out string coreRunFullPath)
@@ -662,15 +677,9 @@ namespace Snap.Extensions
 
             var assemblyLocationDirectory = snapFilesystem.PathGetDirectoryName(assembly.Location);
             var snapApp = assemblyLocationDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
-            var parentDirectory = snapFilesystem.DirectoryGetParent(assemblyLocationDirectory);            
-            
-            var exeName = snapApp.Id;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                exeName += ".exe";
-            }
-            
-            coreRunFullPath = snapFilesystem.PathCombine(parentDirectory, exeName);
+            var parentDirectory = snapFilesystem.DirectoryGetParent(assemblyLocationDirectory);
+
+            snapApp.GetCoreRunExecutableFullPath(snapFilesystem, parentDirectory, out coreRunFullPath);
         }
 
         internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)

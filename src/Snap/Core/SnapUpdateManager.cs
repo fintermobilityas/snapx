@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -195,6 +196,9 @@ namespace Snap.Core
         async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
             CancellationToken cancellationToken = default)
         {
+            var sw = new Stopwatch();
+            sw.Restart();
+
             var packageSource = _snapPackageManager.GetPackageSource(_snapApp, _logger);
             if (packageSource == null)
             {
@@ -482,7 +486,7 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(100);
 
-            _logger.Info($"Successfully updated to {updatedSnapApp.Version}");
+            _logger.Info($"Successfully updated to {updatedSnapApp.Version}. Update completed in {sw.Elapsed.TotalSeconds:F1}s.");
             
             return new SnapApp(updatedSnapApp);
         }

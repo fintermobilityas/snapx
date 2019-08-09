@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -351,13 +352,34 @@ namespace Snap.Core
             progressSource?.RaiseTotalProgress(60);
 
             SnapApp updatedSnapApp = null;
+
+            _snapApp.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _workingDirectory, out var superVisorAbsolutePath);
+
+            var superVisorBackupAbsolutePath = superVisorAbsolutePath + ".bak";
+            var superVisorRestartArguments = Snapx.SupervisorProcessRestartArguments; 
+            var superVisorStopped = false;
+            var backupSuperVisor = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+
             try
             {                               
-                var supervisorRestartArguments = Snapx.SupervisorProcessRestartArguments;                
-                var supervisorStopped = Snapx.StopSupervisor();
+                superVisorStopped = Snapx.StopSupervisor();
 
-                _logger.Debug($"Supervisor stopped: {supervisorStopped}.");
-            
+                _logger.Debug($"Supervisor stopped: {superVisorStopped}.");
+
+                // Prevent "The process cannot access the file because it is being used by another process." exception on Windows
+                // if the supervisor is started during update.
+                if (backupSuperVisor)
+                {
+                    _logger.Warn("This OS requires us to move supervisor to a backup location in order to prevent it from being started during update." +
+                                 $"Current path: {superVisorAbsolutePath}. " +
+                                 $"Destination path: {superVisorBackupAbsolutePath}. ");
+                    var backupSupervisorSuccess = _snapOs.Filesystem.TryFileMove(superVisorAbsolutePath, superVisorBackupAbsolutePath, beforeMoveAction: () =>
+                    {
+                        Snapx.StopSupervisor();
+                    });
+                    _logger.Warn($"Supervisor backed up: {backupSupervisorSuccess}.");
+                }
+
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
                     logger: _logger, cancellationToken: cancellationToken);
@@ -366,9 +388,9 @@ namespace Snap.Core
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
 
-                if (supervisorStopped || SuperVisorAlwaysStartAfterSuccessfullUpdate)
+                if (superVisorStopped || SuperVisorAlwaysStartAfterSuccessfullUpdate)
                 {
-                    var supervisorStarted = Snapx.StartSupervisor(supervisorRestartArguments);                               
+                    var supervisorStarted = Snapx.StartSupervisor(superVisorRestartArguments);                               
                     _logger.Debug($"Supervisor started: {supervisorStarted}.");
                 }
 
@@ -422,12 +444,32 @@ namespace Snap.Core
                         await DeleteDirectorySafeAsync(directoryAbsolutePath, deleteRetries);
                     }                    
                 }
+
+                if (backupSuperVisor)
+                {
+                    _logger.Warn($"Removing supervisor backup: {superVisorBackupAbsolutePath}.");
+                    var removeSupervisorBackupSuccess = _snapOs.Filesystem.FileDeleteWithRetries(superVisorBackupAbsolutePath, true);
+                    _logger.Warn($"Supervisor backup deleted: {removeSupervisorBackupSuccess}.");
+                    backupSuperVisor = false;
+                }
+
             }
             catch (Exception e)
             {
                 _logger.ErrorException($"Exception thrown error updating application. Filename: {nupkgToInstallAbsolutePath}.", e);
+
                 if (updatedSnapApp == null)
                 {
+                    if (backupSuperVisor)
+                    {
+                        _logger.Warn("Restoring supervisor because of failed update. " +
+                                     $"Backup path: {superVisorBackupAbsolutePath}. " +
+                                     $"Destination path: {superVisorAbsolutePath}.");
+
+                        var backupRestoreSupervisorSuccess = _snapOs.Filesystem.TryFileMove(superVisorBackupAbsolutePath, superVisorAbsolutePath);
+                        _logger.Warn($"Supervisor backup restored: {backupRestoreSupervisorSuccess}");
+                    }
+
                     _logger.Warn($"Attempting to delete to delete failed application update directory: {updateInstallAbsolutePath}.");
 
                     var success = await DeleteDirectorySafeAsync(updateInstallAbsolutePath, 3);

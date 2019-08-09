@@ -142,7 +142,7 @@ namespace Snap.Core
 
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
             _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
-            snapEmbeddedResources = snapEmbeddedResources ?? new SnapEmbeddedResources();
+            snapEmbeddedResources ??= new SnapEmbeddedResources();
             _snapAppReader = snapAppReader ?? new SnapAppReader();
             _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
             _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, snapEmbeddedResources);

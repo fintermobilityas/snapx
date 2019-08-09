@@ -23,7 +23,7 @@ namespace Snap.NuGet
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            logger = logger ?? LogProvider.For<NuGetMachineWideSettings>();
+            logger ??= LogProvider.For<NuGetMachineWideSettings>();
 
             var baseDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.MachineWideConfigDirectory);
             _settings = new Lazy<ISettings>(() =>

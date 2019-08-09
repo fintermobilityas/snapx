@@ -48,7 +48,7 @@ namespace Snap.Core
         Task<byte[]> FileReadAllBytesAsync([NotNull] string filename, CancellationToken cancellationToken);
         void FileDelete(string fileName);
         bool FileDeleteIfExists(string fileName, bool throwIfException = true);
-        void FileDeleteWithRetries(string path, bool ignoreIfFails = false);
+        bool FileDeleteWithRetries(string path, bool ignoreIfFails = false);
         FileStream FileRead(string fileName, int bufferSize = 8196, bool useAsync = true);
         FileStream FileReadWrite(string fileName, bool overwrite = true);
         FileStream FileWrite(string fileName, bool overwrite = true);
@@ -256,16 +256,22 @@ namespace Snap.Core
             return false;
         }
 
-        public void FileDeleteWithRetries([NotNull] string path, bool ignoreIfFails = false)
+        public bool FileDeleteWithRetries([NotNull] string path, bool ignoreIfFails = false)
         {
             if (path == null) throw new ArgumentNullException(nameof(path));
             try
             {
-                SnapUtility.Retry(() => File.Delete(path));
+                var success = false;
+                SnapUtility.Retry(() =>
+                {
+                    FileDelete(path);
+                    success = true;
+                });
+                return success;
             }
             catch (Exception ex)
             {
-                if (ignoreIfFails) return;
+                if (ignoreIfFails) return false;
 
                 Logger.ErrorException("Really couldn't delete file: " + path, ex);
                 throw;

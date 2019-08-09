@@ -39,6 +39,8 @@ namespace Snap.Core
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default, bool copyNupkgToPackagesDirectory = true);
         Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
+        string GetApplicationDirectory(string baseDirectory, SemanticVersion version);
+        string GetPackagesDirectory([NotNull] string baseDirectory);
     }
 
     internal sealed class SnapInstaller : ISnapInstaller
@@ -401,14 +403,14 @@ namespace Snap.Core
                     .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}")));
         }
 
-        string GetApplicationDirectory(string baseDirectory, SemanticVersion version)
+        public string GetApplicationDirectory(string baseDirectory, SemanticVersion version)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (version == null) throw new ArgumentNullException(nameof(version));
             return _snapOs.Filesystem.PathCombine(baseDirectory, "app-" + version);
         }
 
-        string GetPackagesDirectory([NotNull] string baseDirectory)
+        public string GetPackagesDirectory([NotNull] string baseDirectory)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             return _snapOs.Filesystem.PathCombine(baseDirectory, "packages");

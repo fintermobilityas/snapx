@@ -49,6 +49,11 @@ namespace Snap.Core
                     WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(Snapx).Assembly.Location);
                     
                     _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
+
+                    typeof(Snapx).Assembly
+                        .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
+
+                    SuperVisorProcessExeDirectory = supervisorExecutableAbsolutePath;
                 }
                 catch (Exception e)
                 {
@@ -102,6 +107,10 @@ namespace Snap.Core
         /// Current supervisor process.
         /// </summary>
         public static Process SuperVisorProcess { get; private set; }
+        /// <summary>
+        /// Current supervisor process absolute path.
+        /// </summary>
+        public static string SuperVisorProcessExeDirectory { get; }
 
         /// <summary>
         /// Call this method as early as possible in app startup. This method
@@ -189,18 +198,15 @@ namespace Snap.Core
         {
             StopSupervisor();
 
-            typeof(Snapx).Assembly
-                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
-
-            if (!SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath))
+            if (!SnapOs.Filesystem.FileExists(SuperVisorProcessExeDirectory))
             {
-                Logger.Error($"Unable to find supervisor executable: {supervisorExecutableAbsolutePath}");
+                Logger.Error($"Unable to find supervisor executable: {SuperVisorProcessExeDirectory}");
                 return false;
             }
 
             var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
 
-            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(supervisorExecutableAbsolutePath)
+            SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
                 .AddRange(restartArguments ?? new List<string>())
                 .Add(coreRunArgument)
             );
@@ -216,15 +222,12 @@ namespace Snap.Core
         }
 
         public static bool StopAndDeleteSupervisor()
-        {  
-            typeof(Snapx).Assembly
-                .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
-
+        {
             try
             {
                 bool SuperVisorExeExistsOnDisk()
                 {
-                    return SnapOs.Filesystem.FileExists(supervisorExecutableAbsolutePath);
+                    return SnapOs.Filesystem.FileExists(SuperVisorProcessExeDirectory);
                 }
 
                 if (!SuperVisorExeExistsOnDisk())
@@ -239,14 +242,14 @@ namespace Snap.Core
                         return;
                     }
                     StopSupervisor();
-                    File.Delete(supervisorExecutableAbsolutePath);
+                    File.Delete(SuperVisorProcessExeDirectory);
                 }, 5, 500);
 
                 return !SuperVisorExeExistsOnDisk();
             }
             catch (Exception e)
             {
-                Logger.ErrorException($"Exception thrown while attempting to delete supervisor exe: {supervisorExecutableAbsolutePath}", e);
+                Logger.ErrorException($"Exception thrown while attempting to delete supervisor exe: {SuperVisorProcessExeDirectory}", e);
                 return false;
             }
         }

@@ -92,6 +92,18 @@ namespace Snap.Tests.Core
                 Assert.Equal(_baseFixture.WorkingDirectory, _snapFilesystem.DirectoryGetParent(tmpDir.WorkingDirectory));
             }
         }
+
+        [Fact]
+        public async Task TestTryMoveFile()
+        {
+            using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
+            var srcFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
+            var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test2.txt");
+            await _snapFilesystem.FileWriteUtf8StringAsync("test", srcFilenameAbsolutePath, default);
+            _snapFilesystem.TryFileMove(srcFilenameAbsolutePath, dstFilenameAbsolutePath);
+            Assert.True(_snapFilesystem.FileExists(dstFilenameAbsolutePath));
+            Assert.Equal("test", _snapFilesystem.FileReadAllText(dstFilenameAbsolutePath));
+        }
         
     }
 }

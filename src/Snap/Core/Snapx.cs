@@ -221,39 +221,6 @@ namespace Snap.Core
             return !SuperVisorProcess.HasExited;
         }
 
-        public static bool StopAndDeleteSupervisor()
-        {
-            try
-            {
-                bool SuperVisorExeExistsOnDisk()
-                {
-                    return SnapOs.Filesystem.FileExists(SuperVisorProcessExeDirectory);
-                }
-
-                if (!SuperVisorExeExistsOnDisk())
-                {
-                    return false;
-                }
-
-                SnapUtility.Retry(() =>
-                {
-                    if (!SuperVisorExeExistsOnDisk())
-                    {
-                        return;
-                    }
-                    StopSupervisor();
-                    File.Delete(SuperVisorProcessExeDirectory);
-                }, 5, 500);
-
-                return !SuperVisorExeExistsOnDisk();
-            }
-            catch (Exception e)
-            {
-                Logger.ErrorException($"Exception thrown while attempting to delete supervisor exe: {SuperVisorProcessExeDirectory}", e);
-                return false;
-            }
-        }
-                               
         public static bool StopSupervisor()
         {
             try

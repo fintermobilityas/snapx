@@ -161,15 +161,15 @@ namespace snapx
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                 }
 
+                if (snapAppChannelReleases.Any(x => x.Version >= snapApp.Version))
+                {
+                    logger.Error($"Version {snapApp.Version} is already published to feed: {pushFeed.Name}.");
+                    return 1;
+                }
+
                 var snapAppMostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
                 if (snapAppMostRecentRelease != null)
                 {
-                    if (snapAppMostRecentRelease.Version == snapApp.Version)
-                    {
-                        logger.Error($"Version {snapApp.Version} is already published to feed: {pushFeed.Name}.");
-                        return 1;
-                    }
-
                     logger.Info($"Most recent release is: {snapAppMostRecentRelease.Version}");
 
                     var persistentDisk = filesystem

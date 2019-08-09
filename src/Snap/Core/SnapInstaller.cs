@@ -40,6 +40,7 @@ namespace Snap.Core
         Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
         string GetApplicationDirectory(string baseDirectory, SemanticVersion version);
+        string GetApplicationDirectory(string baseDirectory, SnapRelease release);
         string GetPackagesDirectory([NotNull] string baseDirectory);
     }
 
@@ -408,6 +409,11 @@ namespace Snap.Core
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (version == null) throw new ArgumentNullException(nameof(version));
             return _snapOs.Filesystem.PathCombine(baseDirectory, "app-" + version);
+        }
+
+        public string GetApplicationDirectory(string baseDirectory, SnapRelease release)
+        {
+            return GetApplicationDirectory(baseDirectory, release?.Version);
         }
 
         public string GetPackagesDirectory([NotNull] string baseDirectory)

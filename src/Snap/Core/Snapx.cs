@@ -240,7 +240,7 @@ namespace Snap.Core
                     }
                     StopSupervisor();
                     File.Delete(supervisorExecutableAbsolutePath);
-                }, 5);
+                }, 5, 500);
 
                 return !SuperVisorExeExistsOnDisk();
             }

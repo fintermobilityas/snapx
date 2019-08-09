@@ -69,7 +69,7 @@ namespace Snap.Core
         string PathChangeExtension(string path, string extension);
         string PathGetTempPath();
         void FileMove(string sourceFilename, string destinationFilename);
-        bool TryFileMove(string srcFilenameAbsolutePath, string dstFilenameAbsolutePath, int retries = 3);
+        bool TryFileMove(string srcFilenameAbsolutePath, string dstFilenameAbsolutePath, Action beforeMoveAction = null, int retries = 3);
     }
 
     internal sealed class SnapFilesystem : ISnapFilesystem
@@ -540,7 +540,7 @@ namespace Snap.Core
             File.Move(sourceFilename, destinationFilename);
         }
 
-        public bool TryFileMove(string srcFilenameAbsolutePath, string dstFilenameAbsolutePath, int retries = 3)
+        public bool TryFileMove(string srcFilenameAbsolutePath, string dstFilenameAbsolutePath, Action beforeMoveAction = null, int retries = 3)
         {
             if (srcFilenameAbsolutePath == null) throw new ArgumentNullException(nameof(srcFilenameAbsolutePath));
             if (dstFilenameAbsolutePath == null) throw new ArgumentNullException(nameof(dstFilenameAbsolutePath));
@@ -554,7 +554,7 @@ namespace Snap.Core
             var success = false;
             SnapUtility.Retry(() =>
             {
-                Snapx.StopSupervisor();
+                beforeMoveAction?.Invoke();
                 FileDeleteIfExists(dstFilenameAbsolutePath, false);
                 FileMove(srcFilenameAbsolutePath, dstFilenameAbsolutePath);
                 success = true;

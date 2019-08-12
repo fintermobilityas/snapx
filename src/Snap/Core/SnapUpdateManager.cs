@@ -78,7 +78,7 @@ namespace Snap.Core
         bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
-            Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
+            Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
             CancellationToken cancellationToken = default);
     }
 
@@ -177,14 +177,16 @@ namespace Snap.Core
         /// </summary>
         /// <param name="snapProgressSource"></param>
         /// <param name="onUpdatesAvailable"></param>
+        /// <param name="onAfterApplyUpdate"></param>
+        /// <param name="onBeforeApplyUpdate"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns FALSE if there are no new releases available to install.</returns>
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
             CancellationToken cancellationToken = default)
         {
             try
             {
-                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, onUpdatesAvailable, cancellationToken);
+                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, onUpdatesAvailable, onBeforeApplyUpdate, onAfterApplyUpdate, cancellationToken);
             }
             catch (Exception e)
             {
@@ -193,7 +195,7 @@ namespace Snap.Core
             }
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
             CancellationToken cancellationToken = default)
         {
             var sw = new Stopwatch();
@@ -384,6 +386,8 @@ namespace Snap.Core
                     _logger.Warn($"Supervisor backed up: {backupSupervisorSuccess}.");
                 }
 
+                onBeforeApplyUpdate?.Invoke(snapReleaseToInstall);
+
                 updatedSnapApp = await _snapInstaller.UpdateAsync(
                     _workingDirectory, snapReleaseToInstall, snapChannel,
                     logger: _logger, cancellationToken: cancellationToken);
@@ -391,6 +395,8 @@ namespace Snap.Core
                 {
                     throw new Exception($"{nameof(updatedSnapApp)} was null after attempting to install full nupkg: {nupkgToInstallAbsolutePath}");
                 }
+
+                onAfterApplyUpdate?.Invoke(snapReleaseToInstall);
 
                 if (superVisorStopped || SuperVisorAlwaysStartAfterSuccessfullUpdate)
                 {

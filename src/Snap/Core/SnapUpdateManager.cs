@@ -78,7 +78,10 @@ namespace Snap.Core
         bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
-            Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
+            Action<ISnapAppChannelReleases> onUpdatesAvailable = null, 
+            Action<SnapRelease> onBeforeApplyUpdate = null, 
+            Action<SnapRelease> onAfterApplyUpdate = null,            
+            Action<SnapRelease, Exception> onApplyUpdateException = null,
             CancellationToken cancellationToken = default);
     }
 
@@ -179,14 +182,19 @@ namespace Snap.Core
         /// <param name="onUpdatesAvailable"></param>
         /// <param name="onAfterApplyUpdate"></param>
         /// <param name="onBeforeApplyUpdate"></param>
+        /// <param name="onApplyUpdateException"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns FALSE if there are no new releases available to install.</returns>
-        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
+        public async Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource snapProgressSource = null, 
+            Action<ISnapAppChannelReleases> onUpdatesAvailable = null, 
+            Action<SnapRelease> onBeforeApplyUpdate = null,
+            Action<SnapRelease> onAfterApplyUpdate = null,
+            Action<SnapRelease, Exception> onApplyUpdateException = null,
             CancellationToken cancellationToken = default)
         {
             try
             {
-                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, onUpdatesAvailable, onBeforeApplyUpdate, onAfterApplyUpdate, cancellationToken);
+                return await UpdateToLatestReleaseAsyncImpl(snapProgressSource, onUpdatesAvailable, onBeforeApplyUpdate, onAfterApplyUpdate, onApplyUpdateException, cancellationToken);
             }
             catch (Exception e)
             {
@@ -195,7 +203,11 @@ namespace Snap.Core
             }
         }
 
-        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, Action<ISnapAppChannelReleases> onUpdatesAvailable = null, Action<SnapRelease> onBeforeApplyUpdate = null, Action<SnapRelease> onAfterApplyUpdate = null,
+        async Task<SnapApp> UpdateToLatestReleaseAsyncImpl(ISnapUpdateManagerProgressSource progressSource = null, 
+            Action<ISnapAppChannelReleases> onUpdatesAvailable = null,
+            Action<SnapRelease> onBeforeApplyUpdate = null,
+            Action<SnapRelease> onAfterApplyUpdate = null,
+            Action<SnapRelease, Exception> onApplyUpdateException = null,
             CancellationToken cancellationToken = default)
         {
             var sw = new Stopwatch();
@@ -362,13 +374,12 @@ namespace Snap.Core
             _snapApp.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _workingDirectory, out var superVisorAbsolutePath);
 
             var superVisorBackupAbsolutePath = superVisorAbsolutePath + ".bak";
-            var superVisorRestartArguments = Snapx.SupervisorProcessRestartArguments; 
-            var superVisorStopped = false;
+            var superVisorRestartArguments = Snapx.SupervisorProcessRestartArguments;
             var backupSuperVisor = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
             try
             {                               
-                superVisorStopped = Snapx.StopSupervisor();
+                var superVisorStopped = Snapx.StopSupervisor();
 
                 _logger.Debug($"Supervisor stopped: {superVisorStopped}.");
 
@@ -470,6 +481,8 @@ namespace Snap.Core
 
                 if (updatedSnapApp == null)
                 {
+                    onApplyUpdateException?.Invoke(snapReleaseToInstall, e);
+
                     if (backupSuperVisor)
                     {
                         _logger.Warn("Restoring supervisor because of failed update. " +

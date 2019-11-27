@@ -218,9 +218,9 @@ namespace Snap.Installer
             return environment;
         }
 
-        static AppBuilder BuildAvaloniaApp()
+        static AppBuilder BuildAvaloniaApp<TWindow>() where TWindow : Application, new()
         {
-            var result = AppBuilder.Configure<App>();
+            var result = AppBuilder.Configure<TWindow>();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

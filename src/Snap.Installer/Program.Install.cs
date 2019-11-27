@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
 using JetBrains.Annotations;
 using NuGet.Packaging;
 using Snap.AnyOS;
@@ -381,15 +382,17 @@ namespace Snap.Installer
                 environment.Shutdown();
             }
 
-            BuildAvaloniaApp()
-                .BeforeStarting(builder =>
+            var avaloniaApp = BuildAvaloniaApp<App>()
+                .AfterSetup(builder =>
                 {
                     MainWindow.Environment = environment;
                     MainWindow.ViewModel = new MainWindowViewModel(snapInstallerEmbeddedResources,
                         installerProgressSource, () => onFirstAnimationRenderedEvent.Set(), cancellationToken);
 
                     Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
-                }).Start<MainWindow>();
+                });
+
+            avaloniaApp.StartWithClassicDesktopLifetime(null);
 
             return exitCode;
         }

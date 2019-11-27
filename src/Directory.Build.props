@@ -20,9 +20,7 @@
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
         <SnapNativeConfiguration Condition="$(IsCIBuild)">Release</SnapNativeConfiguration>
         <SnapNativeConfiguration Condition="$(SnapNativeConfiguration) == ''">$(Configuration)</SnapNativeConfiguration>
-        <!-- TODO: FIX ME WHEN VS 2019 IS RELEASED -->
-        <!-- <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> -->
-        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">16</SnapMsvsToolsetVersion> 
+        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
     </PropertyGroup>
 
     <PropertyGroup>

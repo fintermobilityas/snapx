@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using JetBrains.Annotations;
 using NuGet.Configuration;
-using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 
 namespace Snap.NuGet

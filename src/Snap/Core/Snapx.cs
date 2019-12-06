@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -9,7 +8,6 @@ using System.Threading;
 using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
-using Snap.AnyOS.Windows;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;

@@ -1,7 +1,5 @@
 ﻿#if NETFULLFRAMEWORK
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace

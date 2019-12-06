@@ -1,5 +1,3 @@
-using System;
-using System.Text;
 using MessagePack;
 using MessagePack.Formatters;
 using NuGet.Versioning;

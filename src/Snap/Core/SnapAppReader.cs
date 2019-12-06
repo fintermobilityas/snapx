@@ -20,7 +20,7 @@ namespace Snap.Core
         SnapApps BuildSnapAppsFromYamlString(string yamlString);
         SnapApp BuildSnapAppFromStream(MemoryStream stream);
         SnapApp BuildSnapAppFromYamlString(string yamlString);
-        Task<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync(MemoryStream stream);
+        ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync(MemoryStream stream);
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
@@ -52,7 +52,7 @@ namespace Snap.Core
  
         static IDeserializer Build(DeserializerBuilder builder)
         {
-            return builder.WithNamingConvention(new CamelCaseNamingConvention())
+            return builder.WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .WithTypeConverter(new SemanticVersionYamlTypeConverter())
                 .WithTypeConverter(new UriYamlTypeConverter())
                 .WithTypeConverter(new OsPlatformYamlTypeConverter())
@@ -78,7 +78,7 @@ namespace Snap.Core
             return DeserializerSnapApp.Deserialize<SnapApp>(yamlString);
         }
 
-        public Task<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync([NotNull] MemoryStream stream)
+        public ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync([NotNull] MemoryStream stream)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
             return MessagePackSerializer.DeserializeAsync<SnapAppsReleases>(stream);

@@ -46,13 +46,12 @@ namespace Snap.Core
         static ISerializer Build(SerializerBuilder serializerBuilder)
         {
             return serializerBuilder
-                .WithNamingConvention(new CamelCaseNamingConvention())
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .WithTypeConverter(new SemanticVersionYamlTypeConverter())
                 .WithTypeConverter(new OsPlatformYamlTypeConverter())
                 .WithTypeConverter(new UriYamlTypeConverter())
                 .WithTypeConverter(new DateTimeConverter(DateTimeKind.Utc))     
                 .DisableAliases()
-                .EmitDefaults()
                 .Build();
         }
 

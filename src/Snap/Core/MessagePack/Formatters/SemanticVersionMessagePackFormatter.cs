@@ -1,3 +1,5 @@
+using System;
+using System.Text;
 using MessagePack;
 using MessagePack.Formatters;
 using NuGet.Versioning;
@@ -6,15 +8,21 @@ namespace Snap.Core.MessagePack.Formatters
 {
     public sealed class SemanticVersionMessagePackFormatter : IMessagePackFormatter<SemanticVersion>
     {
-        public int Serialize(ref byte[] bytes, int offset, SemanticVersion value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, SemanticVersion value, MessagePackSerializerOptions options)
         {
-            return formatterResolver.GetFormatterWithVerify<string>().Serialize(ref bytes, offset, value.ToString(), formatterResolver);
+#if NETFULLFRAMEWORK
+            var utf8StringBytes = Encoding.UTF8.GetBytes(value.ToString());
+            writer.WriteString(utf8StringBytes);
+#else
+            var utf8StringBytes = Encoding.UTF8.GetBytes(value.ToString()).AsSpan();
+            writer.WriteString(utf8StringBytes);
+#endif
         }
 
-        public SemanticVersion Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public SemanticVersion Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var version = formatterResolver.GetFormatterWithVerify<string>().Deserialize(bytes, offset, formatterResolver, out readSize);
-            return SemanticVersion.Parse(version);
+            var value = reader.ReadString();
+            return SemanticVersion.Parse(value);
         }
     }
 }

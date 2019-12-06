@@ -2,9 +2,9 @@ variables:
   buildScript: build.ps1 -Target Bootstrap -DockerImagePrefix $(build.buildId) -CIBuild "1"
 
 jobs:
-- job: Ubuntu_1604
+- job: Ubuntu_1804
   pool:
-    vmImage: 'ubuntu-16.04'
+    vmImage: 'ubuntu-18.04'
   steps:
   - script: |
         sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
@@ -31,7 +31,7 @@ jobs:
     inputs:
       testRunner: JUnit
       testResultsFiles: '**/*.xml'
-      testRunTitle: GoogleTest_Ubuntu_1604
+      testRunTitle: GoogleTest_Ubuntu_1804
       mergeTestResults: false
 - job: Windows_Visual_Studio_2019
   pool: 

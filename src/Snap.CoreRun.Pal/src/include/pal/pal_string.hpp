@@ -152,7 +152,7 @@ public:
         return m_value.size();
     }
 
-    const TStorageClass* c_str() const noexcept
+    [[nodiscard]] const TStorageClass* c_str() const noexcept
     {
         return m_value.c_str();
     }

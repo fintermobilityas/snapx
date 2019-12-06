@@ -20,7 +20,7 @@ private:
     std::string m_semaphore_name;
 
 public:
-    pal_semaphore_machine_wide(const std::string& name);
+    explicit pal_semaphore_machine_wide(const std::string& name);
     bool try_create();
     bool release();
     ~pal_semaphore_machine_wide();

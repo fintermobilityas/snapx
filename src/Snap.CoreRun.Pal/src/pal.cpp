@@ -20,7 +20,6 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
-#include <cwchar>
 #include <tlhelp32.h> // CreateToolhelp32Snapshot 
 #include "versionhelpers.h"
 #include "vendor/rcedit/rcedit.hpp"
@@ -96,9 +95,9 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
         // The author of the PR mentions that he used Procmon to observe
         // what files are loading from current working directory.
         // So, the question is.. does it matter that we load these dlls anyway?
-        auto version = std::wstring(sys32_folder) + L"\\version.dll";
-        auto logoncli = std::wstring(sys32_folder) + L"\\logoncli.dll";
-        auto sspicli = std::wstring(sys32_folder) + L"\\sspicli.dll";
+        const auto version = std::wstring(sys32_folder) + L"\\version.dll";
+        const auto logoncli = std::wstring(sys32_folder) + L"\\logoncli.dll";
+        const auto sspicli = std::wstring(sys32_folder) + L"\\sspicli.dll";
 
         LoadLibrary(version.c_str());
         LoadLibrary(logoncli.c_str());
@@ -106,7 +105,7 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
 
         if (pal_is_windows_8_or_greater())
         {
-            auto path_cch = std::wstring(sys32_folder) + L"\\api-ms-win-core-path-l1-1-0.dll";
+            const auto path_cch = std::wstring(sys32_folder) + L"\\api-ms-win-core-path-l1-1-0.dll";
             LoadLibrary(path_cch.c_str());
         }
     };
@@ -333,19 +332,19 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_has_icon(const char * filename_in)
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_cwd(char **cwd_out)
 {
-    auto real_path = std::make_unique<char*>(nullptr);
+    const auto real_path = std::make_unique<char*>(nullptr);
     if (!pal_process_get_real_path(real_path.get()))
     {
         return FALSE;
     }
 
-    auto real_path_cwd = std::make_unique<char*>(nullptr);
+    const auto real_path_cwd = std::make_unique<char*>(nullptr);
     if (!pal_path_get_directory_name_from_file_path(*real_path, real_path_cwd.get()))
     {
         return FALSE;
     }
 
-    *cwd_out = _strdup(std::move(*real_path_cwd));
+    *cwd_out = _strdup(*real_path_cwd);
 
     return TRUE;
 }
@@ -445,13 +444,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_pid(pal_pid_t* pid_out)
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_name(char **exe_name_out)
 {
-    auto real_path = std::make_unique<char*>(nullptr);
+    const auto real_path = std::make_unique<char*>(nullptr);
     if (!pal_process_get_real_path(real_path.get()))
     {
         return FALSE;
     }
 
-    std::string real_path_str(*real_path);
+    const std::string real_path_str(*real_path);
 
     const auto directory_separator_pos = real_path_str.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
     if (std::string::npos == directory_separator_pos)
@@ -774,14 +773,17 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
 #if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
     const auto buffer_size = 65535;
-    wchar_t buffer[buffer_size];
+    const auto buffer = new wchar_t[buffer_size];
     const auto actual_len = GetEnvironmentVariable(environment_variable_in_utf16_string.data(), buffer, buffer_size);
     if (actual_len <= 0)
     {
+        delete[] buffer;
         return FALSE;
     }
 
     *environment_variable_value_out = pal_utf8_string(&buffer[L'\0']).dup();
+
+    delete[] buffer;
 
     return TRUE;
 #elif defined(PAL_PLATFORM_LINUX)
@@ -885,7 +887,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name_from_file_path(c
     }
 
 #if defined(PAL_PLATFORM_WINDOWS)
-    const auto supports_pathcch_module = pal_is_windows_8_or_greater();
     pal_utf16_string path_in_utf16_string(path_in);
 
     wchar_t path_in_without_filespec[PAL_MAX_PATH];
@@ -946,7 +947,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_get_directory_name(const char * pat
         return FALSE;
     }
 
-    std::string path_in_s(path_in);
+    const std::string path_in_s(path_in);
 
     const auto directory_name_start_pos = path_in_s.find_last_of(PAL_DIRECTORY_SEPARATOR_C);
     if (directory_name_start_pos == std::string::npos)
@@ -1290,7 +1291,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_files(const char * path_in, cons
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char ** working_directory_out)
 {
 #if defined(PAL_PLATFORM_WINDOWS)
-    wchar_t* buffer = nullptr;
+    wchar_t* buffer;
     if ((buffer = _wgetcwd(nullptr, 0)) == nullptr)
     {
         return FALSE;
@@ -1506,7 +1507,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_
         return FALSE;
     }
 
-    auto directory_in_normalized = std::make_unique<char*>(new char);
+    const auto directory_in_normalized = std::make_unique<char*>(new char);
     if (!pal_path_normalize(directory_in, directory_in_normalized.get()))
     {
         return FALSE;
@@ -1760,7 +1761,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
             size_t cchPathOut,
             PCWSTR pszPathIn);
 
-        auto path_cch_canonicalize_fn = pathcch_module.bind<PathCchCanonicalizeFn>("PathCchCanonicalizeEx");
+        const auto path_cch_canonicalize_fn = pathcch_module.bind<PathCchCanonicalizeFn>("PathCchCanonicalizeEx");
         if (path_cch_canonicalize_fn == nullptr)
         {
             return FALSE;
@@ -1929,7 +1930,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_combine(const char * path1, const c
         using PathCchCombineExFn = HRESULT(WINAPI*)(PWSTR pszPathOut,
             size_t cchPathOut, PCWSTR pszPathIn, PCWSTR pszMore, unsigned long dwFlags);
 
-        auto path_cch_combine_ex_fn = pathcch_module.bind<PathCchCombineExFn>("PathCchCombineEx");
+        const auto path_cch_combine_ex_fn = pathcch_module.bind<PathCchCombineExFn>("PathCchCombineEx");
         if (path_cch_combine_ex_fn == nullptr)
         {
             return FALSE;

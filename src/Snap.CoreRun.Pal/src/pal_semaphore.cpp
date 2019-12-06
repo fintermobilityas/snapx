@@ -41,8 +41,9 @@ bool pal_semaphore_machine_wide::try_create() {
     }
     m_semaphore = semaphore;
     return true;
-#endif
+#else
     return false;
+#endif
 }
 
 bool pal_semaphore_machine_wide::release() {

@@ -15,13 +15,13 @@ public:
     pal_module& operator=(pal_module&&) noexcept = delete;
     ~pal_module();
 
-    bool is_loaded() const;
-    const std::string& get_filename() const;
+    [[nodiscard]] bool is_loaded() const;
+    [[nodiscard]] const std::string& get_filename() const;
     template<typename T>
     T bind(const std::string& fn)
     {
         return reinterpret_cast<T>(_bind(fn));
     }
 private:
-    void* _bind(const std::string& fn);
+    [[nodiscard]] void* _bind(const std::string& fn) const;
 };

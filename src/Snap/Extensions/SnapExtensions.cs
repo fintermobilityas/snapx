@@ -624,14 +624,12 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find resource {SnapConstants.SnapAppLibraryName} in assembly {assemblyReflector.FullName}");
             }
 
-            using (var resourceStream = snapSpecEmbeddedResource.GetResourceStream())
-            using (var snapAppMemoryStream = new MemoryStream())
-            {
-                resourceStream.CopyTo(snapAppMemoryStream);
-                snapAppMemoryStream.Seek(0, SeekOrigin.Begin);
+            using var resourceStream = snapSpecEmbeddedResource.GetResourceStream();
+            using var snapAppMemoryStream = new MemoryStream();
+            resourceStream.CopyTo(snapAppMemoryStream);
+            snapAppMemoryStream.Seek(0, SeekOrigin.Begin);
 
-                return snapAppReader.BuildSnapAppFromStream(snapAppMemoryStream);
-            }
+            return snapAppReader.BuildSnapAppFromStream(snapAppMemoryStream);
         }
 
         internal static SnapApp GetSnapAppFromDirectory([NotNull] this string workingDirectory, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader)
@@ -646,11 +644,9 @@ namespace Snap.Extensions
                 throw new FileNotFoundException(snapAppDll);
             }
 
-            using (var snapAppDllFileStream = new FileStream(snapAppDll, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var snapAppDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapAppDllFileStream))
-            {
-                return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
-            }
+            using var snapAppDllFileStream = new FileStream(snapAppDll, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var snapAppDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapAppDllFileStream);
+            return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
         }
 
         internal static void GetCoreRunExecutableFullPath([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string baseDirectory, out string coreRunFullPath)

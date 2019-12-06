@@ -195,8 +195,8 @@ namespace snapx
             const int pushRetries = 3;
 
             using (releasesPackageMemoryStream)
-            using (var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem))
             {
+                using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
                 var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();
                 var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
                 await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);
@@ -247,7 +247,7 @@ namespace snapx
                             if (!installerWebSuccess)
                             {
                                 if (!canContinueIfError
-                                   || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                                 {
                                     logger.Info('-'.Repeat(TerminalDashesWidth));
                                     logger.Error("Unknown error building web installer.");

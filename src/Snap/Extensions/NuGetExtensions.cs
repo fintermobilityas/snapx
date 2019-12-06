@@ -187,20 +187,16 @@ namespace Snap.Extensions
             CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken))
-            {
-                return new NuspecReader(nuspecStream);
-            }
+            using var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken);
+            return new NuspecReader(nuspecStream);
         }
 
         internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,
             CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using (var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken))
-            {
-                return Manifest.ReadFrom(nuspecStream, false)?.Metadata;
-            }
+            using var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken);
+            return Manifest.ReadFrom(nuspecStream, false)?.Metadata;
         }
 
         static bool IsPasswordEncryptionSupportedImpl()

@@ -178,18 +178,16 @@ namespace Snap.Core
                     return (null, null, null);
                 }
 
-                using (var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream, true))
+                using var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream, true);
+                var snapReleases = await _snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, _snapAppReader, cancellationToken);
+                if (snapReleases != null)
                 {
-                    var snapReleases = await _snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, _snapAppReader, cancellationToken);
-                    if (snapReleases != null)
-                    {
-                        snapReleasesDownloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
-                        return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream);
-                    }
-
-                    logger?.Error("Unknown error unpacking releases nupkg");
-                    return (null, null, null);
+                    snapReleasesDownloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
+                    return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream);
                 }
+
+                logger?.Error("Unknown error unpacking releases nupkg");
+                return (null, null, null);
             }
             catch (Exception e)
             {
@@ -567,45 +565,43 @@ namespace Snap.Core
                     return false;
                 }
 
-                using (var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename))
+                using var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename);
+                if (!silent)
                 {
-                    if (!silent)
-                    {
-                        logger?.Debug($"Checksumm in progress: {filename}.");
-                    }
-
-                    var sha512Checksum = _snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, _snapPack);
-                    if (snapRelease.IsFull)
-                    {
-                        if (sha512Checksum == snapRelease.FullSha512Checksum)
-                        {
-                            if (!silent)
-                            {
-                                logger?.Debug($"Checksum success: {filename}.");
-                            }
-                            return true;
-                        }
-                    }
-                    else if (snapRelease.IsDelta)
-                    {
-                        if (sha512Checksum == snapRelease.DeltaSha512Checksum)
-                        {
-                            if (!silent)
-                            {
-                                logger?.Debug($"Checksum success: {filename}.");
-                            }
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"Unknown package type: {snapRelease.Filename}");
-                    }
-
-                    logger?.Error($"Checksum mismatch: {filename}.");
-                    
-                    return false;
+                    logger?.Debug($"Checksumm in progress: {filename}.");
                 }
+
+                var sha512Checksum = _snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, _snapPack);
+                if (snapRelease.IsFull)
+                {
+                    if (sha512Checksum == snapRelease.FullSha512Checksum)
+                    {
+                        if (!silent)
+                        {
+                            logger?.Debug($"Checksum success: {filename}.");
+                        }
+                        return true;
+                    }
+                }
+                else if (snapRelease.IsDelta)
+                {
+                    if (sha512Checksum == snapRelease.DeltaSha512Checksum)
+                    {
+                        if (!silent)
+                        {
+                            logger?.Debug($"Checksum success: {filename}.");
+                        }
+                        return true;
+                    }
+                }
+                else
+                {
+                    throw new NotSupportedException($"Unknown package type: {snapRelease.Filename}");
+                }
+
+                logger?.Error($"Checksum mismatch: {filename}.");
+                    
+                return false;
             }
             catch (Exception e)
             {

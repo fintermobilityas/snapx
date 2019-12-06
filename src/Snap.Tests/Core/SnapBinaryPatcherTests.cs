@@ -20,13 +20,11 @@ namespace Snap.Tests.Core
                 patchData = patchOut.ToArray();
             }
 
-            using (var toPatch = new MemoryStream(baseFileData))
-            using (var patched = new MemoryStream())
-            {
-                SnapBinaryPatcher.Apply(toPatch, () => new MemoryStream(patchData), patched);
+            using var toPatch = new MemoryStream(baseFileData);
+            using var patched = new MemoryStream();
+            SnapBinaryPatcher.Apply(toPatch, () => new MemoryStream(patchData), patched);
 
-                Assert.Equal(newFileData, patched.ToArray());
-            }
+            Assert.Equal(newFileData, patched.ToArray());
         }
     }
 }

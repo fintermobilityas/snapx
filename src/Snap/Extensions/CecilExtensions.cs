@@ -16,11 +16,9 @@ namespace Snap.Extensions
         public static byte[] ToByteArray([NotNull] this AssemblyDefinition assemblyDefinition, WriterParameters writerParameters = null)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            using (var srcStream = new MemoryStream())
-            {
-                assemblyDefinition.Write(srcStream, writerParameters ?? new WriterParameters());
-                return srcStream.ToArray();
-            }
+            using var srcStream = new MemoryStream();
+            assemblyDefinition.Write(srcStream, writerParameters ?? new WriterParameters());
+            return srcStream.ToArray();
         }
 
         public static string BuildMemberName<T>(this Expression<Func<T, object>> expression)

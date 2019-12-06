@@ -65,30 +65,24 @@ namespace Snap.Tests.Core
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            using (var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapOs.Filesystem))
-            using (var genesisSnapReleaseBuilder = _baseFixture
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapOs.Filesystem);
+            using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll())
-            {
-                using (var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
-                {
-                    Checksum(genesisPackageContext.FullPackageSnapRelease);
-                    Checksum(genesisPackageContext.FullPackageSnapRelease);
+                .AddSnapDll();
+            using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
+            Checksum(genesisPackageContext.FullPackageSnapRelease);
+            Checksum(genesisPackageContext.FullPackageSnapRelease);
 
-                    void Checksum(SnapRelease snapRelease)
-                    {
-                        if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-                        using (var asyncPackageCoreReader = new PackageArchiveReader(genesisPackageContext.FullPackageMemoryStream, true))
-                        {
-                            var checksum1 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
-                            var checksum2 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
-                            Assert.NotNull(checksum1);
-                            Assert.True(checksum1.Length == 128);
-                            Assert.Equal(checksum1, checksum2);
-                        }
-                    }                    
-                }
+            void Checksum(SnapRelease snapRelease)
+            {
+                if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+                using var asyncPackageCoreReader = new PackageArchiveReader(genesisPackageContext.FullPackageMemoryStream, true);
+                var checksum1 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
+                var checksum2 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
+                Assert.NotNull(checksum1);
+                Assert.True(checksum1.Length == 128);
+                Assert.Equal(checksum1, checksum2);
             }
         }
     }

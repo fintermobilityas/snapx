@@ -122,10 +122,8 @@ namespace Snap.Core
 
             var outputBytes = Encoding.UTF8.GetBytes(utf8Text);
 
-            using (var outputStream = FileWrite(dstFilename, overwrite))
-            {
-                await outputStream.WriteAsync(outputBytes, 0, outputBytes.Length, cancellationToken);
-            }
+            using var outputStream = FileWrite(dstFilename, overwrite);
+            await outputStream.WriteAsync(outputBytes, 0, outputBytes.Length, cancellationToken);
         }
 
         public FileStream FileRead([NotNull] string fileName, int bufferSize = 8196, bool useAsync = true)
@@ -193,21 +191,17 @@ namespace Snap.Core
         public async Task<string> FileReadAllTextAsync([NotNull] string fileName)
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
-            using (var stream = FileRead(fileName))
-            using (var streamReader = new StreamReader(stream))
-            {
-                return await streamReader.ReadToEndAsync();
-            }
+            using var stream = FileRead(fileName);
+            using var streamReader = new StreamReader(stream);
+            return await streamReader.ReadToEndAsync();
         }
 
         public string FileReadAllText([NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
-            using (var stream = FileRead(filename))
-            using (var streamReader = new StreamReader(stream))
-            {
-                return streamReader.ReadToEnd();
-            }
+            using var stream = FileRead(filename);
+            using var streamReader = new StreamReader(stream);
+            return streamReader.ReadToEnd();
         }
 
         public byte[] FileReadAllBytes([NotNull] string filename)
@@ -219,13 +213,11 @@ namespace Snap.Core
         public async Task<byte[]> FileReadAllBytesAsync(string filename, CancellationToken cancellationToken)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
-            using (var srcStream = FileRead(filename))
-            using (var destinationStream = new MemoryStream((int) srcStream.Length))
-            {                
-                await srcStream.CopyToAsync(destinationStream, cancellationToken);
-                destinationStream.Seek(0, SeekOrigin.Begin);
-                return destinationStream.ToArray();
-            }
+            using var srcStream = FileRead(filename);
+            using var destinationStream = new MemoryStream((int) srcStream.Length);
+            await srcStream.CopyToAsync(destinationStream, cancellationToken);
+            destinationStream.Seek(0, SeekOrigin.Begin);
+            return destinationStream.ToArray();
         }
 
         public void FileDelete([NotNull] string fileName)
@@ -352,10 +344,8 @@ namespace Snap.Core
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (destFilename == null) throw new ArgumentNullException(nameof(destFilename));
 
-            using (var dstStream = FileWrite(destFilename, overwrite))
-            {
-                srcStream.CopyTo(dstStream);
-            }
+            using var dstStream = FileWrite(destFilename, overwrite);
+            srcStream.CopyTo(dstStream);
         }
 
         public async Task FileCopyAsync(string sourcePath, string destinationPath, CancellationToken cancellationToken, bool overwrite = true)
@@ -363,31 +353,25 @@ namespace Snap.Core
             if (sourcePath == null) throw new ArgumentNullException(nameof(sourcePath));
             if (destinationPath == null) throw new ArgumentNullException(nameof(destinationPath));
 
-            using (Stream source = FileRead(sourcePath))
-            using (Stream destination = FileWrite(destinationPath, overwrite))
-            {
-                await source.CopyToAsync(destination, cancellationToken);
-            }
+            using Stream source = FileRead(sourcePath);
+            using Stream destination = FileWrite(destinationPath, overwrite);
+            await source.CopyToAsync(destination, cancellationToken);
         }
 
         public async Task FileWriteAsync([NotNull] Stream srcStream, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
-            using (var dstStream = FileWrite(dstFilename, overwrite))
-            {
-                await srcStream.CopyToAsync(dstStream, cancellationToken);
-            }
+            using var dstStream = FileWrite(dstFilename, overwrite);
+            await srcStream.CopyToAsync(dstStream, cancellationToken);
         }
         
         public async Task FileWriteAsync([NotNull] byte[] bytes, [NotNull] string dstFilename, CancellationToken cancellationToken, bool overwrite = true)
         {
             if (bytes == null) throw new ArgumentNullException(nameof(bytes));
             if (dstFilename == null) throw new ArgumentNullException(nameof(dstFilename));
-            using (var dstStream = FileWrite(dstFilename, overwrite))
-            {                
-                await dstStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
-            }
+            using var dstStream = FileWrite(dstFilename, overwrite);
+            await dstStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
         }
 
         public async Task<MemoryStream> FileReadAsync(string filename, CancellationToken cancellationToken)

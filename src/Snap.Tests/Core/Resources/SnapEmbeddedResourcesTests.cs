@@ -79,14 +79,12 @@ namespace Snap.Tests.Core.Resources
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);
 
-            using (var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem))
-            {
-                var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);
-                await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, tempDir.WorkingDirectory, osPlatform);
+            using var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);
+            await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, tempDir.WorkingDirectory, osPlatform);
                 
-                Assert.True(_snapFilesystem.FileExists(expectedDllFilenameAbsolute));
-                Assert.True(_snapFilesystem.FileStat(expectedDllFilenameAbsolute).Length > 0);                
-            }            
+            Assert.True(_snapFilesystem.FileExists(expectedDllFilenameAbsolute));
+            Assert.True(_snapFilesystem.FileStat(expectedDllFilenameAbsolute).Length > 0);
         }
         
         [Fact]

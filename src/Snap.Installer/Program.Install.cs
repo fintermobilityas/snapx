@@ -121,13 +121,11 @@ namespace Snap.Installer
                         try
                         {
                             var releasesFileStream = snapFilesystem.FileRead(nupkgReleasesAbsolutePath);
-                            using (var packageArchiveReader = new PackageArchiveReader(releasesFileStream))
-                            {
-                                var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
-                                snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
-                                var isGenesis = !snapAppChannelReleases.HasDeltaReleases();
-                                snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenesis);
-                            }
+                            using var packageArchiveReader = new PackageArchiveReader(releasesFileStream);
+                            var snapAppsReleases = await snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, snapAppReader, cancellationToken);
+                            snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                            var isGenesis = !snapAppChannelReleases.HasDeltaReleases();
+                            snapReleaseToInstall = snapAppChannelReleases.GetMostRecentRelease().AsFullRelease(isGenesis);
                         }
                         catch (Exception e)
                         {

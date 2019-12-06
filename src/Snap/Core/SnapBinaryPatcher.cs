@@ -113,8 +113,8 @@ namespace Snap.Core
             int eblen = 0;
 
             using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            using (var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true))
             {
+                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
                 // compute the differences, writing ctrl as we go
                 int scan = 0;
                 int pos = 0;
@@ -231,8 +231,8 @@ namespace Snap.Core
 
             // write compressed diff data
             using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            using (var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true))
             {
+                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
                 bz2Stream.Write(db, 0, dblen);
             }
 
@@ -243,11 +243,9 @@ namespace Snap.Core
             // write compressed extra data, if any
             if (eblen > 0)
             {
-                using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-                using (var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true))
-                {
-                    bz2Stream.Write(eb, 0, eblen);
-                }
+                using WrappingStream wrappingStream = new WrappingStream(output, Ownership.None);
+                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                bz2Stream.Write(eb, 0, eblen);
             }
 
             // seek to the beginning, write the header, then seek back to end
@@ -320,88 +318,84 @@ namespace Snap.Core
             byte[] oldData = new byte[c_bufferSize];
 
             // prepare to read three parts of the patch in parallel
-            using (Stream compressedControlStream = openPatchStream())
-            using (Stream compressedDiffStream = openPatchStream())
-            using (Stream compressedExtraStream = openPatchStream())
+            using Stream compressedControlStream = openPatchStream();
+            using Stream compressedDiffStream = openPatchStream();
+            using Stream compressedExtraStream = openPatchStream();
+            // seek to the start of each part
+            compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
+            compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
+            compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
+
+            // the stream might end here if there is no extra data
+            var hasExtraData = compressedExtraStream.Position < compressedExtraStream.Length;
+
+            // decompress each part (to read it)
+            using var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true);
+            using var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true);
+            using var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null;
+            long[] control = new long[3];
+            byte[] buffer = new byte[8];
+
+            int oldPosition = 0;
+            int newPosition = 0;
+            while (newPosition < newSize)
             {
-                // seek to the start of each part
-                compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
-                compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
-                compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
-
-                // the stream might end here if there is no extra data
-                var hasExtraData = compressedExtraStream.Position < compressedExtraStream.Length;
-
-                // decompress each part (to read it)
-                using (var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true))
-                using (var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true))
-                using (var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null)
+                // read control data
+                for (int i = 0; i < 3; i++)
                 {
-                    long[] control = new long[3];
-                    byte[] buffer = new byte[8];
-
-                    int oldPosition = 0;
-                    int newPosition = 0;
-                    while (newPosition < newSize)
-                    {
-                        // read control data
-                        for (int i = 0; i < 3; i++)
-                        {
-                            controlStream.ReadExactly(buffer, 0, 8);
-                            control[i] = ReadInt64(buffer, 0);
-                        }
-
-                        // sanity-check
-                        if (newPosition + control[0] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
-
-                        // seek old file to the position that the new data is diffed against
-                        input.Position = oldPosition;
-
-                        int bytesToCopy = (int)control[0];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                            // read diff string
-                            diffStream.ReadExactly(newData, 0, actualBytesToCopy);
-
-                            // add old data to diff string
-                            int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                            input.ReadExactly(oldData, 0, availableInputBytes);
-
-                            for (int index = 0; index < availableInputBytes; index++)
-                                newData[index] += oldData[index];
-
-                            output.Write(newData, 0, actualBytesToCopy);
-
-                            // adjust counters
-                            newPosition += actualBytesToCopy;
-                            oldPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
-
-                        // sanity-check
-                        if (newPosition + control[1] > newSize)
-                            throw new InvalidOperationException("Corrupt patch.");
-
-                        // read extra string
-                        bytesToCopy = (int)control[1];
-                        while (bytesToCopy > 0)
-                        {
-                            int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                            extraStream.ReadExactly(newData, 0, actualBytesToCopy);
-                            output.Write(newData, 0, actualBytesToCopy);
-
-                            newPosition += actualBytesToCopy;
-                            bytesToCopy -= actualBytesToCopy;
-                        }
-
-                        // adjust position
-                        oldPosition = (int)(oldPosition + control[2]);
-                    }
+                    controlStream.ReadExactly(buffer, 0, 8);
+                    control[i] = ReadInt64(buffer, 0);
                 }
+
+                // sanity-check
+                if (newPosition + control[0] > newSize)
+                    throw new InvalidOperationException("Corrupt patch.");
+
+                // seek old file to the position that the new data is diffed against
+                input.Position = oldPosition;
+
+                int bytesToCopy = (int)control[0];
+                while (bytesToCopy > 0)
+                {
+                    int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+
+                    // read diff string
+                    diffStream.ReadExactly(newData, 0, actualBytesToCopy);
+
+                    // add old data to diff string
+                    int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
+                    input.ReadExactly(oldData, 0, availableInputBytes);
+
+                    for (int index = 0; index < availableInputBytes; index++)
+                        newData[index] += oldData[index];
+
+                    output.Write(newData, 0, actualBytesToCopy);
+
+                    // adjust counters
+                    newPosition += actualBytesToCopy;
+                    oldPosition += actualBytesToCopy;
+                    bytesToCopy -= actualBytesToCopy;
+                }
+
+                // sanity-check
+                if (newPosition + control[1] > newSize)
+                    throw new InvalidOperationException("Corrupt patch.");
+
+                // read extra string
+                bytesToCopy = (int)control[1];
+                while (bytesToCopy > 0)
+                {
+                    int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
+
+                    extraStream.ReadExactly(newData, 0, actualBytesToCopy);
+                    output.Write(newData, 0, actualBytesToCopy);
+
+                    newPosition += actualBytesToCopy;
+                    bytesToCopy -= actualBytesToCopy;
+                }
+
+                // adjust position
+                oldPosition = (int)(oldPosition + control[2]);
             }
         }
 

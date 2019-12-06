@@ -67,12 +67,10 @@ namespace Snap.Core
         public string Sha512([NotNull] AssemblyDefinition assemblyDefinition)
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            using (var outputStream = new MemoryStream())
-            {
-                assemblyDefinition.Write(outputStream);
-                outputStream.Seek(0, SeekOrigin.Begin);
-                return Sha512(outputStream);
-            }
+            using var outputStream = new MemoryStream();
+            assemblyDefinition.Write(outputStream);
+            outputStream.Seek(0, SeekOrigin.Begin);
+            return Sha512(outputStream);
         }
 
         public string Sha512(SnapRelease snapRelease, [NotNull] IPackageCoreReader packageCoreReader, [NotNull] ISnapPack snapPack)
@@ -134,8 +132,9 @@ namespace Snap.Core
                     sb.Append(sha512);
                     srcStream.Seek(0, SeekOrigin.Begin);
                     continue;
-                }                
-                using (var intermediateStream = new MemoryStream())
+                }
+
+                using var intermediateStream = new MemoryStream();
                 {
                     srcStream.CopyTo(intermediateStream);
                     var sha512 = Sha512(intermediateStream);

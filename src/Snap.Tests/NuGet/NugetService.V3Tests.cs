@@ -101,15 +101,13 @@ namespace Snap.Tests.NuGet
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
 
-            using (var downloadResourceResult = await _nugetService.DownloadAsync(packageSource, packageIdentity, CancellationToken.None))
-            {
-                Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
+            using var downloadResourceResult = await _nugetService.DownloadAsync(packageSource, packageIdentity, CancellationToken.None);
+            Assert.Equal(DownloadResourceResultStatus.Available, downloadResourceResult.Status);
 
-                Assert.True(downloadResourceResult.PackageStream.CanRead);
-                Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
+            Assert.True(downloadResourceResult.PackageStream.CanRead);
+            Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
 
-                Assert.Null(downloadResourceResult.PackageReader);
-            }
+            Assert.Null(downloadResourceResult.PackageReader);
         }
 
         [Fact]
@@ -135,28 +133,25 @@ namespace Snap.Tests.NuGet
                 MaxTries = 3
             };
 
-            using (var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
-                progressSourceMock.Object, CancellationToken.None))
-            {
-                Assert.NotNull(downloadResourceResult);
-                Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
-                Assert.Equal(0, downloadResourceResult.PackageStream.Position);
+            using var downloadResourceResult = await _nugetService.DownloadAsyncWithProgressAsync(packageSource, downloadContext, 
+                progressSourceMock.Object, CancellationToken.None);
+            Assert.NotNull(downloadResourceResult);
+            Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
+            Assert.Equal(0, downloadResourceResult.PackageStream.Position);
                 
-                progressSourceMock.Verify(x => x.Raise(
-                    It.Is<int>(v => v == 0), 
-                    It.Is<long>(v => v == 0), 
-                    It.Is<long>(v => v == 0), 
-                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
+            progressSourceMock.Verify(x => x.Raise(
+                It.Is<int>(v => v == 0), 
+                It.Is<long>(v => v == 0), 
+                It.Is<long>(v => v == 0), 
+                It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
                 
-                progressSourceMock.Verify(x => x.Raise(
-                    It.Is<int>(v => v == 100), 
-                    It.IsAny<long>(), 
-                    It.Is<long>(v => v == downloadContext.PackageFileSize), 
-                    It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
+            progressSourceMock.Verify(x => x.Raise(
+                It.Is<int>(v => v == 100), 
+                It.IsAny<long>(), 
+                It.Is<long>(v => v == downloadContext.PackageFileSize), 
+                It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
                 
-                Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
-            }
-            
+            Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
         }
         
         [Fact]

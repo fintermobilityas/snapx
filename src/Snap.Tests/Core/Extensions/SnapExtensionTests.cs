@@ -631,15 +631,13 @@ namespace Snap.Tests.Core.Extensions
         {
             var snapApp = _baseFixture.BuildSnapApp();
 
-            using (var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem))
-            using (var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp))
-            {
-                var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
-                assemblyDefinition.Write(snapAppDllAbsolutePath); 
+            using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
+            using var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp);
+            var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
+            assemblyDefinition.Write(snapAppDllAbsolutePath); 
                                
-                var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
-                Assert.NotNull(appSpecAfter);
-            }
+            var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
+            Assert.NotNull(appSpecAfter);
         }
 
         [Fact]

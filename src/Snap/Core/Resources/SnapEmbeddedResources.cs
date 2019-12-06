@@ -135,11 +135,9 @@ namespace Snap.Core.Resources
                 if (lhsStream == null) throw new ArgumentNullException(nameof(lhsStream));
                 if (filename == null) throw new ArgumentNullException(nameof(filename));
                 var lhsSha512 = snapCryptoProvider.Sha512(lhsStream);
-                using (var rhsStream = filesystem.FileRead(filename))
-                {
-                    var rhsSha512 = snapCryptoProvider.Sha512(rhsStream);
-                    return !string.Equals(lhsSha512, rhsSha512);
-                }
+                using var rhsStream = filesystem.FileRead(filename);
+                var rhsSha512 = snapCryptoProvider.Sha512(rhsStream);
+                return !string.Equals(lhsSha512, rhsSha512);
             }
             
             if (osPlatform == OSPlatform.Windows)
@@ -151,10 +149,11 @@ namespace Snap.Core.Resources
                     return;
                 }
                 using (var dstStream = filesystem.FileWrite(filename))
-                using (var coreRunLibWindows = CoreRunLibWindows)
                 {
+                    using var coreRunLibWindows = CoreRunLibWindows;
                     await coreRunLibWindows.CopyToAsync(dstStream);
                 }
+
                 return;
             }
 
@@ -167,10 +166,11 @@ namespace Snap.Core.Resources
                     return;
                 }
                 using (var dstStream = filesystem.FileWrite(filename))
-                using (var coreRunLibLinux = CoreRunLibLinux)
                 {
+                    using var coreRunLibLinux = CoreRunLibLinux;
                     await coreRunLibLinux.CopyToAsync(dstStream);
                 }
+
                 return;
             }
             

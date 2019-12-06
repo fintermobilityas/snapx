@@ -40,10 +40,8 @@ namespace Snap.Core
             if (nupkgAbsolutePath == null) throw new ArgumentNullException(nameof(nupkgAbsolutePath));
             if (destinationDirectoryAbsolutePath == null) throw new ArgumentNullException(nameof(destinationDirectoryAbsolutePath));
 
-            using (var packageArchiveReader = new PackageArchiveReader(nupkgAbsolutePath))
-            {
-                return await ExtractAsync(destinationDirectoryAbsolutePath, snapRelease, packageArchiveReader, cancellationToken);
-            }
+            using var packageArchiveReader = new PackageArchiveReader(nupkgAbsolutePath);
+            return await ExtractAsync(destinationDirectoryAbsolutePath, snapRelease, packageArchiveReader, cancellationToken);
         }
 
         public async Task<List<string>> ExtractAsync(string destinationDirectoryAbsolutePath, [NotNull] SnapRelease snapRelease, 
@@ -108,20 +106,16 @@ namespace Snap.Core
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
 
             var snapReleasesFilename = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
-            using (var snapReleasesCompressedStream =
+            using var snapReleasesCompressedStream =
                 await asyncPackageCoreReader
                     .GetStreamAsync(snapReleasesFilename, cancellationToken)
-                    .ReadToEndAsync(cancellationToken))
-            {
-                using (var snapReleasesUncompressedStream = new MemoryStream())
-                using (var reader = ReaderFactory.Open(snapReleasesCompressedStream))
-                {
-                    reader.MoveToNextEntry();
-                    reader.WriteEntryTo(snapReleasesUncompressedStream);
-                    snapReleasesUncompressedStream.Seek(0, SeekOrigin.Begin);
-                    return await snapAppReader.BuildSnapAppsReleasesFromStreamAsync(snapReleasesUncompressedStream);
-                }
-            }
+                    .ReadToEndAsync(cancellationToken);
+            using var snapReleasesUncompressedStream = new MemoryStream();
+            using var reader = ReaderFactory.Open(snapReleasesCompressedStream);
+            reader.MoveToNextEntry();
+            reader.WriteEntryTo(snapReleasesUncompressedStream);
+            snapReleasesUncompressedStream.Seek(0, SeekOrigin.Begin);
+            return await snapAppReader.BuildSnapAppsReleasesFromStreamAsync(snapReleasesUncompressedStream);
         }
     }
 }

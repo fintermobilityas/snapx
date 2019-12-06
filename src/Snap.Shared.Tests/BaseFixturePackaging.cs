@@ -305,96 +305,92 @@ namespace Snap.Shared.Tests
             var nupkgAbsoluteFilename = SnapFilesystem.PathCombine(SnapAppPackagesDirectory, snapRelease.Filename);
             Assert.True(SnapFilesystem.FileExists(nupkgAbsoluteFilename));
 
-            using (var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename))
+            using var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename);
+            Assert.Equal(snapApp.ReleaseNotes, snapRelease.ReleaseNotes);
+
+            foreach (var releaseChecksum in snapRelease.Files)
             {
-                Assert.Equal(snapApp.ReleaseNotes, snapRelease.ReleaseNotes);
+                var (_, _, checksumFileAbsolutePath) = NormalizePath(snapRelease, releaseChecksum.NuspecTargetPath);
+                Assert.NotNull(checksumFileAbsolutePath);
 
-                foreach (var releaseChecksum in snapRelease.Files)
+                if (snapRelease.IsDelta)
                 {
-                    var (_, _, checksumFileAbsolutePath) = NormalizePath(snapRelease, releaseChecksum.NuspecTargetPath);
-                    Assert.NotNull(checksumFileAbsolutePath);
-
-                    if (snapRelease.IsDelta)
+                    var deletedChecksum = snapRelease.Deleted.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
+                    if (deletedChecksum != null)
                     {
-                        var deletedChecksum = snapRelease.Deleted.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
-                        if (deletedChecksum != null)
-                        {
-                            Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));
-                            continue;
-                        }
-
-                        var unmodifiedChecksum = snapRelease.Unmodified.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
-                        if (unmodifiedChecksum != null)
-                        {
-                            Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));
-                            continue;
-                        }               
+                        Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));
+                        continue;
                     }
 
-                    Assert.True(SnapFilesystem.FileExists(checksumFileAbsolutePath));
-
-                    using (var fileStream = SnapFilesystem.FileRead(checksumFileAbsolutePath))
+                    var unmodifiedChecksum = snapRelease.Unmodified.SingleOrDefault(x => x == releaseChecksum.NuspecTargetPath);
+                    if (unmodifiedChecksum != null)
                     {
-                        var diskSha512Checksum = SnapCryptoProvider.Sha512(fileStream);
-                        var diskFilesize = SnapFilesystem.FileStat(checksumFileAbsolutePath).Length;
-
-                        SnapReleaseChecksum targetChecksum;
-                        bool useFullChecksum;
-                        if (snapRelease.IsFull)
-                        {
-                            targetChecksum = releaseChecksum;
-                            useFullChecksum = true;
-                            goto checksum;
-                        }
-
-                        if (SnapPack.NeverGenerateBsDiffsTheseAssemblies.Any(x => x == releaseChecksum.NuspecTargetPath))
-                        {
-                            targetChecksum = releaseChecksum;
-                            useFullChecksum = true;
-                            goto checksum;
-                        }
-
-                        targetChecksum = snapRelease.New.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
-                        if (targetChecksum != null)
-                        {
-                            useFullChecksum = true;
-                        }
-                        else
-                        {
-                            targetChecksum = snapRelease.Modified.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
-                            useFullChecksum = false;
-                        }
-
-                        checksum:
-                        Assert.NotNull(targetChecksum);
-   
-                        var expectedChecksum = useFullChecksum ? targetChecksum.FullSha512Checksum : targetChecksum.DeltaSha512Checksum;
-                        var expectedFilesize = useFullChecksum ? targetChecksum.FullFilesize : targetChecksum.DeltaFilesize;
-
-                        Assert.NotNull(expectedChecksum);
-                        if (expectedChecksum == SnapConstants.Sha512EmptyFileChecksum)
-                        {
-                            Assert.Equal(0, expectedFilesize);
-                        }
-                        else
-                        {
-                            Assert.True(expectedFilesize > 0);
-                        }
-
-                        Assert.Equal(expectedChecksum, diskSha512Checksum);
-                        Assert.Equal(expectedFilesize, diskFilesize);
-                    }
+                        Assert.False(SnapFilesystem.FileExists(checksumFileAbsolutePath));
+                        continue;
+                    }               
                 }
 
-                var snapReleaseChecksum = SnapCryptoProvider.Sha512(snapRelease, packageArchiveReader, SnapPack);
-                var snapReleaseFilesize = SnapFilesystem.FileStat(nupkgAbsoluteFilename)?.Length;
-                
-                var expectedReleaseChecksum = snapRelease.IsFull ? snapRelease.FullSha512Checksum : snapRelease.DeltaSha512Checksum;
-                var expectedReleaseFilesize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
+                Assert.True(SnapFilesystem.FileExists(checksumFileAbsolutePath));
 
-                Assert.Equal(expectedReleaseChecksum, snapReleaseChecksum);
-                Assert.Equal(expectedReleaseFilesize, snapReleaseFilesize);
+                using var fileStream = SnapFilesystem.FileRead(checksumFileAbsolutePath);
+                var diskSha512Checksum = SnapCryptoProvider.Sha512(fileStream);
+                var diskFilesize = SnapFilesystem.FileStat(checksumFileAbsolutePath).Length;
+
+                SnapReleaseChecksum targetChecksum;
+                bool useFullChecksum;
+                if (snapRelease.IsFull)
+                {
+                    targetChecksum = releaseChecksum;
+                    useFullChecksum = true;
+                    goto checksum;
+                }
+
+                if (SnapPack.NeverGenerateBsDiffsTheseAssemblies.Any(x => x == releaseChecksum.NuspecTargetPath))
+                {
+                    targetChecksum = releaseChecksum;
+                    useFullChecksum = true;
+                    goto checksum;
+                }
+
+                targetChecksum = snapRelease.New.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
+                if (targetChecksum != null)
+                {
+                    useFullChecksum = true;
+                }
+                else
+                {
+                    targetChecksum = snapRelease.Modified.SingleOrDefault(x => x.NuspecTargetPath == releaseChecksum.NuspecTargetPath);
+                    useFullChecksum = false;
+                }
+
+                checksum:
+                Assert.NotNull(targetChecksum);
+   
+                var expectedChecksum = useFullChecksum ? targetChecksum.FullSha512Checksum : targetChecksum.DeltaSha512Checksum;
+                var expectedFilesize = useFullChecksum ? targetChecksum.FullFilesize : targetChecksum.DeltaFilesize;
+
+                Assert.NotNull(expectedChecksum);
+                if (expectedChecksum == SnapConstants.Sha512EmptyFileChecksum)
+                {
+                    Assert.Equal(0, expectedFilesize);
+                }
+                else
+                {
+                    Assert.True(expectedFilesize > 0);
+                }
+
+                Assert.Equal(expectedChecksum, diskSha512Checksum);
+                Assert.Equal(expectedFilesize, diskFilesize);
             }
+
+            var snapReleaseChecksum = SnapCryptoProvider.Sha512(snapRelease, packageArchiveReader, SnapPack);
+            var snapReleaseFilesize = SnapFilesystem.FileStat(nupkgAbsoluteFilename)?.Length;
+                
+            var expectedReleaseChecksum = snapRelease.IsFull ? snapRelease.FullSha512Checksum : snapRelease.DeltaSha512Checksum;
+            var expectedReleaseFilesize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
+
+            Assert.Equal(expectedReleaseChecksum, snapReleaseChecksum);
+            Assert.Equal(expectedReleaseFilesize, snapReleaseFilesize);
         }
 
         public void Dispose()

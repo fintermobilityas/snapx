@@ -52,11 +52,9 @@ namespace Snap.Tests.Core
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
 
-            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
-            {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
-                Assert.NotNull(snapAppAfter);
-            }
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
         }
 
         [Fact, ExcludeFromCodeCoverage]
@@ -80,16 +78,14 @@ namespace Snap.Tests.Core
                 }
             });
 
-            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
-            {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
-                Assert.NotNull(snapAppAfter);
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
 
-                var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
-                Assert.Null(snapAppAfterChannel.PushFeed.ApiKey);
-                Assert.Null(snapAppAfterChannel.PushFeed.Username);
-                Assert.Null(snapAppAfterChannel.PushFeed.Password);
-            }
+            var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
+            Assert.Null(snapAppAfterChannel.PushFeed.ApiKey);
+            Assert.Null(snapAppAfterChannel.PushFeed.Username);
+            Assert.Null(snapAppAfterChannel.PushFeed.Password);
         }
         
         [Fact, ExcludeFromCodeCoverage]
@@ -103,13 +99,11 @@ namespace Snap.Tests.Core
                 "somefile.json"
             };
 
-            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
-            {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
-                Assert.NotNull(snapAppAfter);
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
                 
-                Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
-            }
+            Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
         }
         
         [Fact, ExcludeFromCodeCoverage]
@@ -123,13 +117,11 @@ namespace Snap.Tests.Core
                 SnapShortcutLocation.StartMenu
             };
 
-            using (var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore))
-            {
-                var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
-                Assert.NotNull(snapAppAfter);
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
                 
-                Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
-            }
+            Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
         }
 
         [ExcludeFromCodeCoverage]
@@ -140,26 +132,24 @@ namespace Snap.Tests.Core
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);
 
-            using (var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapAppWriter).Assembly.Location, CancellationToken.None))
-            using (var optimizedAssemblyDefinition = _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, osPlatform))
-            {
-                Assert.NotNull(optimizedAssemblyDefinition);
+            using var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapAppWriter).Assembly.Location, CancellationToken.None);
+            using var optimizedAssemblyDefinition = _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, osPlatform);
+            Assert.NotNull(optimizedAssemblyDefinition);
 
-                var optimizedAssembly = Assembly.Load(optimizedAssemblyDefinition.ToByteArray());
+            var optimizedAssembly = Assembly.Load(optimizedAssemblyDefinition.ToByteArray());
 
-                // Assembly is rewritten so we have to use a dynamic cast :(
+            // Assembly is rewritten so we have to use a dynamic cast :(
 
-                var optimizedEmbeddedResources = (dynamic)Activator.CreateInstance
-                    (optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName, true), true);
+            var optimizedEmbeddedResources = (dynamic)Activator.CreateInstance
+                (optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName, true), true);
 
-                Assert.NotNull(optimizedEmbeddedResources);
+            Assert.NotNull(optimizedEmbeddedResources);
 
-                Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
-                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
-                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
-                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
-                Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
-            }
+            Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
+            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
+            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
+            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
+            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
         }
 
     }

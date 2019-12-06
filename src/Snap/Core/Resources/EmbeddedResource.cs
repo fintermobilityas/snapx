@@ -82,29 +82,25 @@ namespace Snap.Core.Resources
                 return filterFn == null || filterFn(resource);
             }))
             {
-                using (var manifestResourceStream = typeRoot.Assembly.GetManifestResourceStream(resource))
+                using var manifestResourceStream = typeRoot.Assembly.GetManifestResourceStream(resource);
+                if (manifestResourceStream == null)
                 {
-                    if (manifestResourceStream == null)
-                    {
-                        continue;
-                    }
-
-                    using (var binaryReader = new BinaryReader(manifestResourceStream))
-                    {
-                        var embededResourceStream = new MemoryStream();
-
-                        var buffer = new byte[81920];
-                        int bytesRead;
-                        while ((bytesRead = binaryReader.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            embededResourceStream.Write(buffer, 0, bytesRead);
-                        }
-
-                        embededResourceStream.Seek(0, SeekOrigin.Begin);
-
-                        _resources.Add(new EmbeddedResource(typeRoot, embededResourceStream, resource.Substring(typeRootNamespace.Length + 1)));
-                    }
+                    continue;
                 }
+
+                using var binaryReader = new BinaryReader(manifestResourceStream);
+                var embededResourceStream = new MemoryStream();
+
+                var buffer = new byte[81920];
+                int bytesRead;
+                while ((bytesRead = binaryReader.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    embededResourceStream.Write(buffer, 0, bytesRead);
+                }
+
+                embededResourceStream.Seek(0, SeekOrigin.Begin);
+
+                _resources.Add(new EmbeddedResource(typeRoot, embededResourceStream, resource.Substring(typeRootNamespace.Length + 1)));
             }
         }
 

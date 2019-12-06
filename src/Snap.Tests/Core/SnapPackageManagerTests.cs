@@ -62,64 +62,62 @@ namespace Snap.Tests.Core
             var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
             var update2SnapApp = _baseFixturePackaging.Bump(update1SnapApp);
 
-            using (var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem))
-            using (var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory))
-            using (var genesisReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext))
-            using (var update1ReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext))
-            using (var update2ReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update2SnapApp, _releaseBuilderContext))
+            using var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
+            using var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
+            using var genesisReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext);
+            using var update1ReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext);
+            using var update2ReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update2SnapApp, _releaseBuilderContext);
+            var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
+
+            genesisReleaseBuilder
+                .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
+                .AddSnapDll();
+
+            update1ReleaseBuilder
+                .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
+                .AddSnapDll();
+                    
+            update2ReleaseBuilder
+                .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp))
+                .AddSnapDll();
+                    
+            using (await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
+            using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
             {
-                var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
-
-                genesisReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                    .AddSnapDll();
-
-                update1ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                    .AddSnapDll();
+                using var update2PackageContext = await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder);
+                using var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
+                var expectedVersion = SemanticVersion.Parse("1.0.0");
                     
-                update2ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp))
-                    .AddSnapDll();
+                var expectedPackageIdentity = new PackageIdentity(
+                    update2PackageContext.FullPackageSnapRelease.BuildNugetReleasesUpstreamId(), 
+                    expectedVersion.ToNuGetVersion());
                     
-                using (await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
-                using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
-                using (var update2PackageContext = await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder))
-                using (var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases))
-                {                                    
-                    var expectedVersion = SemanticVersion.Parse("1.0.0");
-                    
-                    var expectedPackageIdentity = new PackageIdentity(
-                        update2PackageContext.FullPackageSnapRelease.BuildNugetReleasesUpstreamId(), 
-                        expectedVersion.ToNuGetVersion());
-                    
-                    using (var releasesPackageArchiveReader = new PackageArchiveReader(releasesNupkgMemoryStream, true))
-                    {
-                        Assert.Equal(expectedPackageIdentity,releasesPackageArchiveReader.GetIdentity());
-                    }
+                using (var releasesPackageArchiveReader = new PackageArchiveReader(releasesNupkgMemoryStream, true))
+                {
+                    Assert.Equal(expectedPackageIdentity,releasesPackageArchiveReader.GetIdentity());
+                }
 
-                    releasesNupkgMemoryStream.Seek(0, SeekOrigin.Begin);
+                releasesNupkgMemoryStream.Seek(0, SeekOrigin.Begin);
 
-                    _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genesisSnapApp);
+                _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genesisSnapApp);
 
-                    var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
-                    using (releasesMemoryStream)
-                    {
-                        Assert.NotNull(releasesMemoryStream);
-                        Assert.Equal(0, releasesMemoryStream.Position);
-                        Assert.True(releasesMemoryStream.Length > 0);
+                var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
+                using (releasesMemoryStream)
+                {
+                    Assert.NotNull(releasesMemoryStream);
+                    Assert.Equal(0, releasesMemoryStream.Position);
+                    Assert.True(releasesMemoryStream.Length > 0);
 
-                        Assert.NotNull(snapAppsReleasesAfter);
-                        Assert.NotNull(packageSourceAfter);
-                        Assert.Equal(expectedVersion, snapAppsReleases.Version);
-                        Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
+                    Assert.NotNull(snapAppsReleasesAfter);
+                    Assert.NotNull(packageSourceAfter);
+                    Assert.Equal(expectedVersion, snapAppsReleases.Version);
+                    Assert.Equal(expectedVersion, snapAppsReleasesAfter.Version);
 
-                        var snapAppReleases = snapAppsReleasesAfter.GetReleases(genesisSnapApp);
-                        Assert.Equal(3, snapAppReleases.Count());
-                    }
+                    var snapAppReleases = snapAppsReleasesAfter.GetReleases(genesisSnapApp);
+                    Assert.Equal(3, snapAppReleases.Count());
                 }
             }
         }
@@ -145,21 +143,19 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
             var snapAppChannel = genesisSnapApp.GetDefaultChannelOrThrow();
 
-            using (var restoreDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem))
-            using (var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory))
-            {
-                var packagesDirectory = _snapFilesystem.PathCombine(restoreDirectory.WorkingDirectory, "packages");
-                var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
-                var packageSource = nugetPackageSources.Items.Single();
+            using var restoreDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
+            using var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
+            var packagesDirectory = _snapFilesystem.PathCombine(restoreDirectory.WorkingDirectory, "packages");
+            var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
+            var packageSource = nugetPackageSources.Items.Single();
 
-                var snapAppChannelReleases = new SnapAppChannelReleases(genesisSnapApp, snapAppChannel, Enumerable.Empty<SnapRelease>());
-                var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases, packageSource, restoreType);
-                Assert.Empty(restoreSummary.ChecksumSummary);
-                Assert.Empty(restoreSummary.DownloadSummary);
-                Assert.Empty(restoreSummary.ReassembleSummary);
-                Assert.Equal(restoreType, restoreSummary.RestoreType);
-                Assert.True(restoreSummary.Success);
-            }
+            var snapAppChannelReleases = new SnapAppChannelReleases(genesisSnapApp, snapAppChannel, Enumerable.Empty<SnapRelease>());
+            var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases, packageSource, restoreType);
+            Assert.Empty(restoreSummary.ChecksumSummary);
+            Assert.Empty(restoreSummary.DownloadSummary);
+            Assert.Empty(restoreSummary.ReassembleSummary);
+            Assert.Equal(restoreType, restoreSummary.RestoreType);
+            Assert.True(restoreSummary.Success);
         }
         
     }

@@ -58,105 +58,101 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
             var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
 
-            using (var nugetPackageSourcesDirectory = _snapOs.Filesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory))
-            using (var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem))
-            using (var installDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem))
-            using (var genesisReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext))
-            using (var update1ReleaseBuilder =
-                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext))
-            {
-                var packagesDirectory = _snapOs.Filesystem.PathCombine(installDirectory.WorkingDirectory, "packages");
-                var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
+            using var nugetPackageSourcesDirectory = _snapOs.Filesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
+            using var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem);
+            using var installDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem);
+            using var genesisReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext);
+            using var update1ReleaseBuilder =
+                _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext);
+            var packagesDirectory = _snapOs.Filesystem.PathCombine(installDirectory.WorkingDirectory, "packages");
+            var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
-                genesisReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                    .AddSnapDll();
+            genesisReleaseBuilder
+                .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
+                .AddSnapDll();
                     
-                update1ReleaseBuilder
-                    .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                    .AddSnapDll();
+            update1ReleaseBuilder
+                .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
+                .AddSnapDll();
 
-                using (var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
-                using (var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
-                using (var snapAppsReleasesMemoryStream = _snapPack.BuildReleasesPackage(update1PackageContext.FullPackageSnapApp, snapAppsReleases))
-                {
-                    _baseFixtureNuget.SetupReleases(_nugetServiceMock, snapAppsReleasesMemoryStream,
-                        nugetPackageSources, update1PackageContext.FullPackageSnapApp);                     
+            using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
+            using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
+            using var snapAppsReleasesMemoryStream = _snapPack.BuildReleasesPackage(update1PackageContext.FullPackageSnapApp, snapAppsReleases);
+            _baseFixtureNuget.SetupReleases(_nugetServiceMock, snapAppsReleasesMemoryStream,
+                nugetPackageSources, update1PackageContext.FullPackageSnapApp);                     
                     
-                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, genesisPackageContext.FullPackageSnapApp);
-                    _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
-                        genesisPackageContext.FullPackageSnapApp, genesisPackageContext.FullPackageMemoryStream, nugetPackageSources);
+            _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, genesisPackageContext.FullPackageSnapApp);
+            _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
+                genesisPackageContext.FullPackageSnapApp, genesisPackageContext.FullPackageMemoryStream, nugetPackageSources);
                     
-                    _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, update1PackageContext.DeltaPackageSnapApp);
-                    _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
-                        update1PackageContext.DeltaPackageSnapApp, update1PackageContext.DeltaPackageMemoryStream, nugetPackageSources);
+            _baseFixtureNuget.SetupGetMetadatasAsync(_nugetServiceMock, nugetPackageSources, update1PackageContext.DeltaPackageSnapApp);
+            _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock, 
+                update1PackageContext.DeltaPackageSnapApp, update1PackageContext.DeltaPackageMemoryStream, nugetPackageSources);
                     
-                    var progressSourceMock = new Mock<ISnapUpdateManagerProgressSource>();
-                    SetupUpdateManagerProgressSource(progressSourceMock);
+            var progressSourceMock = new Mock<ISnapUpdateManagerProgressSource>();
+            SetupUpdateManagerProgressSource(progressSourceMock);
 
-                    var snapUpdateManager = BuildUpdateManager(installDirectory.WorkingDirectory,
-                        genesisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object);
+            var snapUpdateManager = BuildUpdateManager(installDirectory.WorkingDirectory,
+                genesisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object);
 
-                    var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
-                    Assert.NotNull(updatedSnapApp);
-                    Assert.Equal(update1PackageContext.FullPackageSnapApp.Version, updatedSnapApp.Version);
+            var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
+            Assert.NotNull(updatedSnapApp);
+            Assert.Equal(update1PackageContext.FullPackageSnapApp.Version, updatedSnapApp.Version);
 
-                    _nugetServiceMock.Verify(x => x
-                        .DownloadLatestAsync(
-                            It.Is<string>(v => v == update1PackageContext.DeltaPackageSnapApp.BuildNugetReleasesUpstreamId()),
-                            It.IsAny<PackageSource>(),
-                            It.IsAny<CancellationToken>()), Times.Once);
+            _nugetServiceMock.Verify(x => x
+                .DownloadLatestAsync(
+                    It.Is<string>(v => v == update1PackageContext.DeltaPackageSnapApp.BuildNugetReleasesUpstreamId()),
+                    It.IsAny<PackageSource>(),
+                    It.IsAny<CancellationToken>()), Times.Once);
 
-                    _nugetServiceMock.Verify(x => x
-                        .DownloadAsyncWithProgressAsync(
-                            It.IsAny<PackageSource>(),
-                            It.Is<DownloadContext>(v => v.PackageIdentity.Id.StartsWith(update1PackageContext.DeltaPackageSnapApp.BuildNugetUpstreamId())),
-                            It.IsAny<INugetServiceProgressSource>(),
-                            It.IsAny<CancellationToken>()), Times.Once);
+            _nugetServiceMock.Verify(x => x
+                .DownloadAsyncWithProgressAsync(
+                    It.IsAny<PackageSource>(),
+                    It.Is<DownloadContext>(v => v.PackageIdentity.Id.StartsWith(update1PackageContext.DeltaPackageSnapApp.BuildNugetUpstreamId())),
+                    It.IsAny<INugetServiceProgressSource>(),
+                    It.IsAny<CancellationToken>()), Times.Once);
 
-                    progressSourceMock.Verify(x => x.RaiseChecksumProgress(
-                        It.Is<int>(v => v == 0),
-                        It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 3)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseChecksumProgress(
+                It.Is<int>(v => v == 0),
+                It.Is<long>(v => v == 0),
+                It.Is<long>(v => v == 0),
+                It.Is<long>(v => v == 3)), Times.Once);
 
-                    progressSourceMock.Verify(x => x.RaiseChecksumProgress(
-                        It.Is<int>(v => v == 100),
-                        It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 3),
-                        It.Is<long>(v => v == 3)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseChecksumProgress(
+                It.Is<int>(v => v == 100),
+                It.Is<long>(v => v == 0),
+                It.Is<long>(v => v == 3),
+                It.Is<long>(v => v == 3)), Times.Once);
 
-                    progressSourceMock.Verify(x => x.RaiseRestoreProgress(
-                        It.Is<int>(v => v == 0),
-                        It.Is<long>(v => v == 0),
-                        It.Is<long>(v => v == 6)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseRestoreProgress(
+                It.Is<int>(v => v == 0),
+                It.Is<long>(v => v == 0),
+                It.Is<long>(v => v == 6)), Times.Once);
 
-                    progressSourceMock.Verify(x => x.RaiseRestoreProgress(
-                        It.Is<int>(v => v == 100),
-                        It.Is<long>(v => v == 6),
-                        It.Is<long>(v => v == 6)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseRestoreProgress(
+                It.Is<int>(v => v == 100),
+                It.Is<long>(v => v == 6),
+                It.Is<long>(v => v == 6)), Times.Once);
 
-                    progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 0)), Times.Once);
-                    progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 50)), Times.Once);
-                    progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 60)), Times.Once);
-                    progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 100)), Times.Once);
-                    progressSourceMock.Verify(x => x.RaiseTotalProgress(It.IsAny<int>()), Times.Exactly(4));
+            progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 0)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 50)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 60)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 100)), Times.Once);
+            progressSourceMock.Verify(x => x.RaiseTotalProgress(It.IsAny<int>()), Times.Exactly(4));
 
-                    var genesisFullNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory,
-                        genesisPackageContext.FullPackageSnapApp.BuildNugetFullFilename());
+            var genesisFullNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory,
+                genesisPackageContext.FullPackageSnapApp.BuildNugetFullFilename());
 
-                    var update1FullNupkgAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
-                        update1PackageContext.FullPackageSnapApp.BuildNugetFullFilename());
+            var update1FullNupkgAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
+                update1PackageContext.FullPackageSnapApp.BuildNugetFullFilename());
 
-                    var update1DeltaAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
-                        update1PackageContext.DeltaPackageSnapApp.BuildNugetDeltaFilename());
+            var update1DeltaAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
+                update1PackageContext.DeltaPackageSnapApp.BuildNugetDeltaFilename());
 
-                    Assert.True(_snapOs.Filesystem.FileExists(genesisFullNupkgAbsolutePath));
-                    Assert.False(_snapOs.Filesystem.FileExists(update1FullNupkgAbsolutePathAfter));
-                    Assert.True(_snapOs.Filesystem.FileExists(update1DeltaAbsolutePathAfter));
-                }
-            }
+            Assert.True(_snapOs.Filesystem.FileExists(genesisFullNupkgAbsolutePath));
+            Assert.False(_snapOs.Filesystem.FileExists(update1FullNupkgAbsolutePathAfter));
+            Assert.True(_snapOs.Filesystem.FileExists(update1DeltaAbsolutePathAfter));
         }
 
         [Fact]

@@ -123,7 +123,7 @@ namespace Snap.Core
         Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
             [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, 
             IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default);
-        MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases);
+        MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases, int? version = null);
         Task<SnapApp> GetSnapAppAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
         Task<MemoryStream> GetSnapAssetAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] string filename,
             CancellationToken cancellationToken = default);
@@ -1071,7 +1071,7 @@ namespace Snap.Core
             }
         }
 
-        public MemoryStream BuildReleasesPackage(SnapApp snapApp, SnapAppsReleases snapAppsReleases)
+        public MemoryStream BuildReleasesPackage(SnapApp snapApp, SnapAppsReleases snapAppsReleases, int? version = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (snapAppsReleases == null) throw new ArgumentNullException(nameof(snapAppsReleases));
@@ -1097,8 +1097,15 @@ namespace Snap.Core
             {
                 throw new Exception($"Genesis release must be full release: {genesisRelease.Filename}");
             }
-            
-            snapAppsReleases.Bump();
+
+            if (version.HasValue)
+            {
+                snapAppsReleases.SetMajor(version.Value);
+            }
+            else
+            {
+                snapAppsReleases.Bump();
+            }
 
             var packageBuilder = new PackageBuilder
             {

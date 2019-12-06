@@ -34,6 +34,11 @@ namespace Snap.Core.Models
             Version = Version.BumpMajor();
         }
 
+        public void SetMajor(int major)
+        {
+            Version = Version.SetMajor(major);
+        }
+
         internal SnapAppsReleases([NotNull] SnapAppsReleases releases)
         {
             if (releases == null) throw new ArgumentNullException(nameof(releases));

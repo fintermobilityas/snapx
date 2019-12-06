@@ -19,5 +19,7 @@ namespace snapx.Options
         public bool YesToAllPrompts { get; [UsedImplicitly] set; }
         [Option("gc", HelpText = "Removes all delta releases and creates a new full release")]
         public bool Gc { get; set; }
+        [Option("db-version", HelpText = "Manually specify next db version. Has to be greater than current version.")]
+        public int DbVersion { get; set; } = -1;
     }
 }

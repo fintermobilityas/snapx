@@ -271,7 +271,13 @@ namespace snapx
             }
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
 
-            var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases);
+            var forcedDbVersion = packOptions.DbVersion > snapAppsReleases.Version.Major ? packOptions.DbVersion : (int?) null;
+            if (forcedDbVersion.HasValue)
+            {
+                logger.Warn($"Db version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
+            }
+
+            var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases, forcedDbVersion);
             var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesFilename());
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);

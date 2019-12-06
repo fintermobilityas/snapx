@@ -7,6 +7,12 @@ namespace Snap.Extensions
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class VersionExtensions
     {
+        public static SemanticVersion SetMajor(this SemanticVersion version, int major)
+        {
+            if (major < 0) throw new ArgumentOutOfRangeException(nameof(major));
+            return new SemanticVersion(major, version.Minor, version.Patch, version.ReleaseLabels, version.Metadata);
+        }
+
         public static SemanticVersion BumpMajor(this SemanticVersion version, int inc = 1)
         {
             if (inc <= 0) throw new ArgumentOutOfRangeException(nameof(inc));

@@ -13,7 +13,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
@@ -37,8 +37,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap)">
-        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/netcoreapp3.0/Release/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
-        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/netcoreapp3.0/Release/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
+        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
+        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>

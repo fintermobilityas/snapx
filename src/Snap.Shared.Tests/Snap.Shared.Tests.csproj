@@ -5,8 +5,8 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp3.0;net472</TargetFrameworks>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp3.0</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp3.1;net472</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp3.1</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>

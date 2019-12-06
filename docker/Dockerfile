@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:6.2.0-ubuntu-18.04 as env-build
+FROM mcr.microsoft.com/powershell:6.2.3-ubuntu-18.04 as env-build
 
 ENV DEBIAN_FRONTEND=noninteractive
 

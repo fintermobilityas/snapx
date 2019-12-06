@@ -123,7 +123,7 @@ namespace snapx
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources, snapAppWriter);
             var snapSpecsReader = new SnapAppReader();
-            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.google.com", 123);
+            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));

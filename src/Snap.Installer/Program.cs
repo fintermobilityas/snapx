@@ -139,7 +139,7 @@ namespace Snap.Installer
             }
             catch (Exception e)
             {
-                snapInstallerLogger.Error("Error creating installer mutex, exiting...", e);
+                snapInstallerLogger.ErrorException("Error creating installer mutex, exiting...", e);
                 return -1;
             }
 

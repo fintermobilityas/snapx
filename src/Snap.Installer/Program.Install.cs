@@ -100,7 +100,7 @@ namespace Snap.Installer
                 }
                 catch (Exception ex)
                 {
-                    mainWindowLogger.Error($"Error reading {SnapConstants.SnapAppDllFilename}", ex);
+                    mainWindowLogger.ErrorException($"Error reading {SnapConstants.SnapAppDllFilename}", ex);
                     goto done;
                 }
 

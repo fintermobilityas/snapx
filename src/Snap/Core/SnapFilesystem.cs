@@ -449,7 +449,7 @@ namespace Snap.Core
             }
             catch (Exception ex)
             {
-                Logger.Error($"The directories inside {directory} could not be read", ex);
+                Logger.ErrorException($"The directories inside {directory} could not be read", ex);
             }
 
             var fileDeleteTasks = files.ForEachAsync(file =>
@@ -475,7 +475,7 @@ namespace Snap.Core
                     }
                     catch (Exception e)
                     {
-                        Logger.Error($"Unable to delete file: {file}", e);
+                        Logger.ErrorException($"Unable to delete file: {file}", e);
                     }
                 });
             });

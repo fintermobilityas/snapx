@@ -193,7 +193,7 @@ namespace Snap.Core
             }
             catch (Exception e)
             {
-                logger?.Error("Exception thrown while checking for updates", e);
+                logger?.ErrorException("Exception thrown while checking for updates", e);
                 return (null, null, null);
             }
         }

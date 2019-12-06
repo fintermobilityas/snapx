@@ -86,7 +86,7 @@ namespace snapx
             }
             catch (Exception e)
             {
-                SnapLogger.Error("Exception thrown while initializing snap os", e);
+                SnapLogger.ErrorException("Exception thrown while initializing snap os", e);
                 return -1;
             }
 
@@ -263,7 +263,7 @@ namespace snapx
             catch (YamlException yamlException)
             {
                 var moreHelpfulExceptionMaybe = yamlException.InnerException ?? yamlException;
-                SnapLogger.Error($"{snapxYamlFilename} file contains incorrect yaml syntax. Error message: {moreHelpfulExceptionMaybe.Message}.", moreHelpfulExceptionMaybe);                
+                SnapLogger.ErrorException($"{snapxYamlFilename} file contains incorrect yaml syntax. Error message: {moreHelpfulExceptionMaybe.Message}.", moreHelpfulExceptionMaybe);                
             }
             catch (Exception e)
             {

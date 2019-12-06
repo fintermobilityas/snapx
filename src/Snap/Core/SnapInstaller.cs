@@ -321,7 +321,7 @@ namespace Snap.Core
             }
             catch(Exception e)
             {
-                logger?.Error($"Unknown error updating {snapAppDllAbsolutePath}", e);
+                logger?.ErrorException($"Unknown error updating {snapAppDllAbsolutePath}", e);
             }
 
             var allSnapAwareApps = new List<string>

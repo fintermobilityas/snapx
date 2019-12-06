@@ -32,7 +32,7 @@ namespace snapx
             }
             catch (Exception e)
             {
-                logger.Error($"Error computing SHA512-checksum for filename: {sha512Options.Filename}", e);
+                logger.ErrorException($"Error computing SHA512-checksum for filename: {sha512Options.Filename}", e);
                 return -1;
             }
         }

@@ -34,7 +34,7 @@
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Csharp" Version="4.5.0">
+        <PackageReference Include="Microsoft.Csharp" Version="4.7.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

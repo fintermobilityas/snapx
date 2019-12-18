@@ -270,6 +270,9 @@ namespace Snap.Core
 
             progressSource?.RaiseTotalProgress(0);
 
+            // Todo: Refactor - Delete all nupkgs that are no longer required
+            // https://github.com/youpark/snapx/issues/9
+
             SnapRelease snapGenisisRelease;
             if (snapAppChannelReleases.Count() == 1)
             {

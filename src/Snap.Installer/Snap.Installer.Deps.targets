@@ -1,7 +1,7 @@
 <Project>
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.9.0" />
-        <PackageReference Include="Avalonia.Desktop" Version="0.9.0" />
+        <PackageReference Include="Avalonia" Version="0.9.1" />
+        <PackageReference Include="Avalonia.Desktop" Version="0.9.1" />
         <PackageReference Include="Avalonia.ReactiveUI" Version="0.9.1" />
         <PackageReference Include="LightInject" Version="6.2.0" />
         <PackageReference Include="NLog" Version="4.6.8" />

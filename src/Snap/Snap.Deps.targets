@@ -10,7 +10,7 @@
         <PackageReference Include="Jetbrains.Annotations" Version="2019.1.3">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="MessagePackAnalyzer" Version="1.7.3.7">
+        <PackageReference Include="MessagePackAnalyzer" Version="2.1.80">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

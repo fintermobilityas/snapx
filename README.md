@@ -39,7 +39,7 @@ uphold this code.**
 
 ## Sponsors
 <p align="center">
-<a href="https://www.youpark.no" target="_blank"><img src="https://cdn.youpark.no/cdn/frontend/27/static/apps/youpark/images/app/logo-black.png"></a>
+<a href="https://www.finterjobs.com" target="_blank"><img src="https://static.wixstatic.com/media/49c5ac_e5c089f7be224d6e92eb3f2f5edc3535~mv2.png/v1/crop/x_173,y_545,w_938,h_425/fill/w_189,h_87,al_c,q_85,usm_0.66_1.00_0.01/Finter%20Mobility%20AS%20gjennomsiktig%20bakgrun.webp"></a>
 </p>
 
 ## License

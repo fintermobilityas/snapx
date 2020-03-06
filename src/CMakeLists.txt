@@ -33,6 +33,10 @@ if (BUILD_ENABLE_TESTS)
 
     add_subdirectory(Snap.CoreRun.Tests)
 
+else()
+
+    message(STATUS "Unit tests disabled.")
+
 endif()
 
 if(WIN32)

@@ -9,7 +9,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container: powershell:preview-ubuntu-20.04
+    container: mcr.microsoft.com/powershell:preview-ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2

@@ -23,5 +23,5 @@ jobs:
         
       - name: Build native dependencies
         run:  
-          pwsh -command ".\$GITHUB_WORKSPACE\build.ps1" -Target Bootstrap -DockerImagePrefix ${{ github.run_id }} -CIBuild "1"
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap -DockerImagePrefix ${{ github.run_id }} -CIBuild "1"
       

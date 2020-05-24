@@ -13,6 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          token: '{{ secrets.githubactions }}'
           submodules: 'recursive'
       
       - name: Setup .NET Core

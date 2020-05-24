@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Native", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
+    [ValidateSet("Bootstrap", "Bootstrap-Github-Actions", "Native", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerImagePrefix,

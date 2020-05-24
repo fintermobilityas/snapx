@@ -151,21 +151,6 @@ function Invoke-Build-Native {
 function Invoke-Build-Snap-Installer {
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
     .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
-
-    if($env:SNAPX_CI_BUILD -eq $false -and ($OSPlatform -eq "Windows")) {
-        $DotnetBuildDir = Join-Path $WorkingDir build\dotnet\win-x64\Snap.Installer\$NetCoreAppVersion
-
-        $Executables = @(
-            "$DotnetBuildDir/Release/publish/Snap.Installer.exe"
-        ) -join " "
-
-        Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
-
-        if(0 -ne $LASTEXITCODE) {
-            return
-        }
-    }
-
 }
 
 function Invoke-Build-Snap {

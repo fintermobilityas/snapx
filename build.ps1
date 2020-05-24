@@ -38,17 +38,20 @@ if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersio
 }
 
 $CommandDocker = $null
+$CommandDockerCli = $null
 $CommandSigntool = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandDocker = "docker.exe"
+        $CommandDockerCli = Join-Path $env:ProgramFiles docker\docker\dockercli.exe
         $CommandSigntool = Join-Path $ToolsDir signtool-win-x64.exe
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandDocker = "docker"
+        $CommandDockerCli = "dockercli"
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -217,7 +220,11 @@ function Invoke-Docker
     if($env:SNAPX_CI_BUILD -eq $true) {
         $DockerRunFlags = "-i"
     }
-    
+
+    if($env:SNAPX_CI_BUILD -and $OSPlatform -eq "Windows") {
+        Invoke-Command-Colored "& '$CommandDockerCli'" @("-SwitchLinuxEngine")
+    } 
+
     if($Entrypoint -eq "Native")
     {
         $DockerBuildNoCache = ""

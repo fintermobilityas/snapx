@@ -333,6 +333,36 @@ function Invoke-Build-Snapx
 }
 
 switch ($Target) {
+    "Bootstrap-Github-Actions"
+    {        
+        Resolve-Unix
+        
+        Invoke-Build-Native 
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }       
+        Invoke-Native-UnitTests
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }  
+
+        Invoke-Build-Snapx
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }        
+
+        Invoke-Build-Snap
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        } 
+
+        Invoke-Dotnet-Unit-Tests
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }    
+
+        Invoke-Summary
+    }
     "Bootstrap"{
 
         Invoke-Git-Restore

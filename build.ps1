@@ -219,11 +219,11 @@ function Invoke-Docker
 
     if($env:SNAPX_CI_BUILD -eq $true) {
         $DockerRunFlags = "-i"
+    } else {        
+        if($OSPlatform -eq "Windows") {
+            Invoke-Command-Colored "& '$CommandDockerCli'" @("-SwitchLinuxEngine")
+        } 
     }
-
-    if($env:SNAPX_CI_BUILD -and $OSPlatform -eq "Windows") {
-        Invoke-Command-Colored "& '$CommandDockerCli'" @("-SwitchLinuxEngine")
-    } 
 
     if($Entrypoint -eq "Native")
     {

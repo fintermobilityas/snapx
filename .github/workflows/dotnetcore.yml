@@ -31,7 +31,8 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get update && apt-get install -y --no-install-recommends cmake make gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
+          sudo apt-get update 
+          sudo apt-get install -y --no-install-recommends cmake make gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
 
       - name: Build
         run:  

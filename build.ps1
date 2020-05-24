@@ -334,9 +334,7 @@ function Invoke-Build-Snapx
 
 switch ($Target) {
     "Bootstrap-Github-Actions"
-    {        
-        Resolve-Unix
-        
+    {                
         Invoke-Build-Native 
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE

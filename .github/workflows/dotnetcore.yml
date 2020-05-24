@@ -28,8 +28,12 @@ jobs:
           
       - name: Setup powershell
         run: dotnet tool update powershell --global
-        
-      - name: Build native dependencies
+
+      - name: Install build dependencies
+        run: |
+          apt update && apt install -y --no-install-recommends cmake make gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
+
+      - name: Build
         run:  
           pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap -DockerImagePrefix ${{ github.run_id }} -CIBuild "1"
       

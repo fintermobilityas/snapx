@@ -19,7 +19,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}            
           
       - name: Setup powershell
-        run: dotnet tool update pot --global
+        run: dotnet tool update powershell --global
         
       - name: Build native dependencies
         run:  

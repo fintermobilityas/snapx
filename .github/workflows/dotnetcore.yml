@@ -8,8 +8,7 @@ env:
 jobs:
 
   build:
-    runs-on: windows-latest
-    container: powershell:preview-ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -18,8 +17,11 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}            
-      
+          
+      - name: Setup powershell
+        run: dotnet tool update powershell --global
+        
       - name: Build native dependencies
         run:  
-          pwsh -command ".\$GITHUB_WORKSPACE\build.ps1" -Target Bootstrap -DockerImagePrefix ${{ github.run_id }} -CIBuild "1"
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap -DockerImagePrefix ${{ github.run_id }} -CIBuild "1"
       

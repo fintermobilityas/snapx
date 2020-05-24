@@ -40,6 +40,7 @@ if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersio
 $CommandDocker = $null
 $CommandDockerCli = $null
 $CommandSigntool = $null
+$CommandGit = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
@@ -47,11 +48,13 @@ switch -regex ($OSVersion) {
         $CommandDocker = "docker.exe"
         $CommandDockerCli = Join-Path $env:ProgramFiles docker\docker\dockercli.exe
         $CommandSigntool = Join-Path $ToolsDir signtool-win-x64.exe
+        $CommandGit = "git.exe"
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandDocker = "docker"
         $CommandDockerCli = "dockercli"
+        $CommandGit = "git"
     }	
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -285,6 +288,10 @@ function Invoke-Build-Docker-Entrypoint
     }
 }
 
+function Invoke-Git-Restore {
+    Invoke-Command-Colored $CommandGit ("submodule update --init --recursive")
+}
+
 function Invoke-Build-Snapx
 {
     .\install_snapx.ps1 -Bootstrap $true -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
@@ -327,6 +334,9 @@ function Invoke-Build-Snapx
 
 switch ($Target) {
     "Bootstrap"{
+
+        Invoke-Git-Restore
+
         Invoke-Docker -Entrypoint "Native"
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE

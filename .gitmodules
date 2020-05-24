@@ -1,6 +1,6 @@
 [submodule "src/Snap.DemoApp"]
 	path = src/Snap.DemoApp
-	url = https://github.com/peters/snapx.demoapp.git
+url=https://github.com/fintermobilityas/snapx.demoapp.git
 [submodule "src/Vendor/gtest"]
 	path = src/Vendor/gtest
 	url = https://github.com/google/googletest.git

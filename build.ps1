@@ -366,10 +366,7 @@ switch ($Target) {
 
         Invoke-Summary
     }
-    "Bootstrap"{
-
-switch ($Target) {
-    "Bootstrap"{
+    "Bootstrap" {
         Invoke-Docker -Entrypoint "Native"
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE

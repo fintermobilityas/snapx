@@ -4,7 +4,7 @@
         <PackageReference Include="NuGet.Packaging" Version="5.4.0"/>
         <PackageReference Include="NuGet.Protocol" Version="5.4.0"/>
         <PackageReference Include="YamlDotNet" Version="8.1.1"/>
-        <PackageReference Include="SharpCompress" Version="0.25.0"/>
+        <PackageReference Include="SharpCompress" Version="0.25.1"/>
         <PackageReference Include="DotNet.Glob" Version="3.0.9"/>
         <PackageReference Include="MessagePack" Version="1.7.3.7"/>
         <PackageReference Include="Jetbrains.Annotations" Version="2020.1.0">

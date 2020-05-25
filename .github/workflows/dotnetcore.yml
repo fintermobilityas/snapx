@@ -4,7 +4,7 @@ on: push
 
 env:
   POWERSHELL_VERSION: 7.0.1
-  SNAPX_VERSION: 2.1.0.${{ github.run_number }}
+  SNAPX_VERSION: 2.2.0.${{ github.run_number }}
   DOTNET_VERSION: 3.1.300
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
 

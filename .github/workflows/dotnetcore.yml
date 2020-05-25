@@ -15,7 +15,9 @@ jobs:
    steps:
     - name: Set prerelease version if branch is not master
       if: github.ref != 'refs/heads/master'
-      run: echo "::set-output name=SNAPX_VERSION::${{ env.SNAPX_VERSION }}-prerelease"  
+      uses: allenevans/set-env@v1.1.0  
+      with:
+        SNAPX_VERSION: ${{ env.SNAPX_VERSION }}-prerelease 
   
   unix:
     runs-on: ubuntu-latest
@@ -43,7 +45,7 @@ jobs:
           
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ steps.setup.outputs.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
     
       - name: Collect artifacts
         env:
@@ -108,7 +110,7 @@ jobs:
 
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ steps.setup.outputs.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
 
       - name: Upload artifacts
         if: success()
@@ -129,8 +131,8 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: | 
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ steps.setup.outputs.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ steps.setup.outputs.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'
@@ -138,7 +140,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.setup.outputs.SNAPX_VERSION }}
-          release_name: Release v${{ steps.setup.outputs.SNAPX_VERSION }}
+          tag_name: v${{ env.SNAPX_VERSION }}
+          release_name: Release v${{ env.SNAPX_VERSION }}
           draft: true
           prerelease: false

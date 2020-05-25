@@ -128,7 +128,9 @@ jobs:
           path: ${{ github.workspace }}/nupkgs
             
       - name: Push nuget packages MyGet
-        run: dotnet nuget push ${{ github.workspace }}/nupkgs/**/*.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+        run: | 
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

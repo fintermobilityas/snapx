@@ -116,11 +116,6 @@ jobs:
           with:
             name: nupkgs
             path: ${{ github.workspace }}/nupkgs/*.nupkg
-          
-        - name: Delete unix artifacts
-          uses: geekyeggo/delete-artifact@v1
-          with:
-            name: unix 
             
   publish:
     runs-on: ubuntu-latest
@@ -134,11 +129,6 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: dotnet nuget push ${{ github.workspace }}/nupkgs/**/*.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
-
-      - name: Delete nupkg artifacts
-        uses: geekyeggo/delete-artifact@v1
-        with:
-          name: nupkgs    
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

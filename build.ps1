@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Github-Actions", "Native", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
+    [ValidateSet("Bootstrap", "Bootstrap-CI-Unix", "Bootstrap-CI-Windows", "Native", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipeline = $true)]
     [string] $DockerImagePrefix,
@@ -12,7 +12,9 @@ param(
     [string] $VisualStudioVersionStr = "16",
     [Parameter(Position = 5, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp3.1")]
-    [string] $NetCoreAppVersion = "netcoreapp3.1"
+    [string] $NetCoreAppVersion = "netcoreapp3.1",
+    [Parameter(Position = 6, ValueFromPipeline = $true)]
+    [string] $Version = "0.0.0"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -92,7 +94,7 @@ function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
             
         if($env:SNAPX_CI_BUILD -eq $false) {
-            .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+            .\bootstrap.ps1 -Target Native -Configuration Debug -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
             if($LASTEXITCODE -ne 0)
             {
                 Write-Error "Native build failed"
@@ -100,7 +102,7 @@ function Invoke-Build-Native {
             }
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -110,17 +112,19 @@ function Invoke-Build-Native {
         return
     }
     
+    Write-output $OSPlatform
+
     if ($OSPlatform -eq "Unix") {
 
         if($env:SNAPX_CI_BUILD -eq $false) {
-            .\bootstrap.ps1 -Target Native -Configuration Debug -NetCoreAppVersion $NetCoreAppVersion
+            .\bootstrap.ps1 -Target Native -Configuration Debug -NetCoreAppVersion $NetCoreAppVersion -Version $Version
             if($LASTEXITCODE -ne 0)
             {
                 Write-Error "Native build failed"
                 exit $LASTEXITCODE
             }
 
-            .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1 -NetCoreAppVersion $NetCoreAppVersion
+            .\bootstrap.ps1 -Target Native -Configuration Debug -Cross 1 -NetCoreAppVersion $NetCoreAppVersion -Version $Version
             if($LASTEXITCODE -ne 0)
             {
                 Write-Error "Native build failed"
@@ -128,14 +132,14 @@ function Invoke-Build-Native {
             }
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -NetCoreAppVersion $NetCoreAppVersion
+        .\bootstrap.ps1 -Target Native -Configuration Release -Lto 1 -NetCoreAppVersion $NetCoreAppVersion -Version $Version
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
             exit $LASTEXITCODE
         }
 
-        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1 -NetCoreAppVersion $NetCoreAppVersion
+        .\bootstrap.ps1 -Target Native -Configuration Release -Cross 1 -Lto 1 -NetCoreAppVersion $NetCoreAppVersion -Version $Version
         if($LASTEXITCODE -ne 0)
         {
             Write-Error "Native build failed"
@@ -149,12 +153,12 @@ function Invoke-Build-Native {
 }
 
 function Invoke-Build-Snap-Installer {
-    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
-    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid linux-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
+    .\bootstrap.ps1 -Target Snap-Installer -DotNetRid win-x64 -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
 }
 
 function Invoke-Build-Snap {
-    .\bootstrap.ps1 -Target Snap -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+    .\bootstrap.ps1 -Target Snap -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
 }
 
 function Invoke-Summary {
@@ -165,12 +169,12 @@ function Invoke-Summary {
 
 function Invoke-Native-UnitTests
 {
-    .\bootstrap.ps1 -Target Run-Native-UnitTests -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+    .\bootstrap.ps1 -Target Run-Native-UnitTests -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
 }
 
 function Invoke-Dotnet-Unit-Tests
 {
-    .\bootstrap.ps1 -Target Run-Dotnet-UnitTests -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+    .\bootstrap.ps1 -Target Run-Dotnet-UnitTests -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
 }
 
 function Invoke-Docker 
@@ -279,7 +283,7 @@ function Invoke-Git-Restore {
 
 function Invoke-Build-Snapx
 {
-    .\install_snapx.ps1 -Bootstrap $true -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion
+    .\install_snapx.ps1 -Bootstrap $true -VisualStudioVersion $VisualStudioVersion -NetCoreAppVersion $NetCoreAppVersion -Version $Version
     if(0 -ne $LASTEXITCODE) {
         return
     }
@@ -290,23 +294,8 @@ function Invoke-Build-Snapx
     }
 
     Write-Output-Header "Building snapx"
-
-    if($env:SNAPX_CI_BUILD -eq $false -and ($OSPlatform -eq "Windows")) {
-        $NativeBuildDir = Join-Path $WorkingDir build\native
-
-        $Executables = @(
-            "$NativeBuildDir/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun/corerun.exe"
-            "$NativeBuildDir/Windows/win-msvs-16-x64/Release/Snap.CoreRun/Release/corerun.exe"
-        ) -join " "
-
-        Invoke-Command-Colored $CommandSigntool @("sign /a /fd sha256 /t http://timestamp.digicert.com /sha1 F57A7A2A8DFBDA7D7211B81C755150A8D994CD48 /a $Executables")
-
-        if(0 -ne $LASTEXITCODE) {
-            return
-        }
-    }
-
-    .\install_snapx.ps1 -Bootstrap $false -NetCoreAppVersion $NetCoreAppVersion
+    
+    .\install_snapx.ps1 -Bootstrap $false -NetCoreAppVersion $NetCoreAppVersion -Version $Version
     if(0 -ne $LASTEXITCODE) {
         return
     }
@@ -318,7 +307,37 @@ function Invoke-Build-Snapx
 }
 
 switch ($Target) {
-    "Bootstrap-Github-Actions"
+    "Bootstrap-CI-Unix"
+    {                
+        Invoke-Build-Native 
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }       
+
+        Invoke-Native-UnitTests
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }              
+
+        Invoke-Build-Snapx
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        }        
+
+        Invoke-Build-Snap
+        if(0 -ne $LASTEXITCODE) {
+            exit $LASTEXITCODE
+        } 
+
+        # TODO: ENABLE ME
+        #Invoke-Dotnet-Unit-Tests
+        #if(0 -ne $LASTEXITCODE) {
+        #    exit $LASTEXITCODE
+        #}           
+
+        Invoke-Summary
+    }
+    "Bootstrap-CI-Windows"
     {                
         Invoke-Build-Native 
         if(0 -ne $LASTEXITCODE) {
@@ -339,17 +358,18 @@ switch ($Target) {
             exit $LASTEXITCODE
         } 
 
-        Invoke-Dotnet-Unit-Tests
-        if(0 -ne $LASTEXITCODE) {
-            exit $LASTEXITCODE
-        }    
+        # TODO: ENABLE ME
+        #Invoke-Dotnet-Unit-Tests
+        #if(0 -ne $LASTEXITCODE) {
+        #    exit $LASTEXITCODE
+        #}        
 
         Invoke-Summary
     }
     "Bootstrap"{
 
-        Invoke-Git-Restore
-
+switch ($Target) {
+    "Bootstrap"{
         Invoke-Docker -Entrypoint "Native"
         if(0 -ne $LASTEXITCODE) {
             exit $LASTEXITCODE

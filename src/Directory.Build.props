@@ -1,10 +1,9 @@
 <Project>
 
-    <Import Project="Version.props" />
-
     <PropertyGroup>
         <SnapNupkg Condition="$(SnapNupkg) == ''">false</SnapNupkg>
         <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
+        <Version Condition="$(Version) == ''">0.0.0</Version>
     </PropertyGroup>
 
    <PropertyGroup>
@@ -24,19 +23,17 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Authors>Peter Rekdal Sunde</Authors>
+        <Authors>Finter Mobility As</Authors>
         <Product>Snap</Product>
-        <Copyright>Copyright © Peter Rekdal Sunde</Copyright>
+        <Copyright>Copyright © Finter Mobility As</Copyright>
         <NeutralLanguage>en-US</NeutralLanguage>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-        <PackageProjectUrl>https://github.com/peters/snapx</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/peters/snapx.git</RepositoryUrl>
-        <PackageReleaseNotes>See $(PackageProjectUrl)/blob/master/CHANGELOG.md#v$(VersionPrefix.Replace('.','')) for release notes.</PackageReleaseNotes>
+        <PackageProjectUrl>https://github.com/fintermobilityas/snapx</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/fintermobilityas/snapx.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <IsPackable>false</IsPackable>
         <NoPackageAnalysis>true</NoPackageAnalysis>
-        <PackageOutputPath Condition="$(PackageOutputPath) == '' AND $(IsCIBuild)">$(BUILD_ARTIFACTSTAGINGDIRECTORY)</PackageOutputPath>
         <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)..\nupkgs</PackageOutputPath>
         <GeneratePackageOnBuild Condition="$(SnapNupkg)">true</GeneratePackageOnBuild>
         <GeneratePackageOnBuild Condition="$(GeneratePackageOnBuild) == ''">false</GeneratePackageOnBuild>

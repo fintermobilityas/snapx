@@ -3,38 +3,145 @@ name: snapx
 on: push
 
 env:
+  POWERSHELL_VERSION: 7.0.1
+  SNAPX_VERSION: 2.1.0.${{ github.run_number }}
   DOTNET_VERSION: 3.1.300
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
 
-  build:
+  unix:
     runs-on: ubuntu-latest
     steps:
+      - name: Set prerelease version if branch is not master
+        if: github.ref != 'refs/heads/master'
+        run: echo "::set-env name=SNAPX_VERSION_APPEND::-prerelease"  
+
       - name: Checkout
         uses: actions/checkout@v2
-
-      - name: Checkout submodules 
-        run: |
-          git config --file .gitmodules --get-regexp url | while read url; do
-            git config --file=.gitmodules $(echo "$url" | sed -E "s/git@github.com:|https:\/\/github.com\//https:\/\/${{ secrets.CI_PAT }}:${{ secrets.CI_PAT }}@github.com\//")
-          done
-          git submodule sync
-          git submodule update --init --recursive
+        with: 
+            lfs: true
+            token: ${{ secrets.CI_PAT }}
+            submodules: true
     
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v1.4.0   
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}            
-          
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
       - name: Setup powershell
-        run: dotnet tool update powershell --global
+        run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
 
       - name: Install build dependencies
         run: |
           sudo apt-get update 
           sudo apt-get install -y --no-install-recommends cmake make gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
-
-      - name: Build
+          
+      - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-Github-Actions -CIBuild "1"
-      
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}
+    
+      - name: Collect artifacts
+        env:
+          SNAPX_UNIX_SETUP_LINUX_X64_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/netcoreapp3.1/Release/publish
+          SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun
+          SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun.Pal
+          SNAPX_MINGW_CORERUN_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun
+          SNAPX_MINGW_PAL_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun.Pal
+          SNAPX_MINGW_TESTS_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun.Tests
+        run: |
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_LINUX_X64_ZIP_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_LINUX_X64_ZIP_REL_DIR }}/Setup-linux-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_LINUX_X64_ZIP_REL_DIR }}/Setup-linux-x64.zip
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
+          
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
+          
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: unix
+          path: ${{ github.workspace }}/artifacts/**/*
+
+  windows:
+      runs-on: windows-latest
+      needs: [unix]
+      steps:
+        - name: Set prerelease version if branch is not master
+          if: github.ref != 'refs/heads/master'
+          run: echo "::set-env name=SNAPX_VERSION_APPEND::-prerelease"  
+
+        - name: Checkout
+          uses: actions/checkout@v2
+          with: 
+            lfs: true
+            token: ${{ secrets.CI_PAT }}
+            submodules: true
+    
+        - name: Setup .NET Core
+          uses: actions/setup-dotnet@v1.4.0 
+          with:
+            dotnet-version: ${{ env.DOTNET_VERSION }}
+
+        - name: Setup powershell
+          run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
+
+        - name: Download unix artifacts
+          uses: actions/download-artifact@v2
+          with:
+            name: unix
+            path: ${{ github.workspace }}
+        
+        - name: Build & Run Tests
+          run:  
+            pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}
+   
+        - name: Upload artifacts
+          if: success()
+          uses: actions/upload-artifact@v2
+          with:
+            name: nupkgs
+            path: ${{ github.workspace }}/nupkgs/*.nupkg
+          
+  publish:
+    runs-on: ubuntu-latest
+    needs: [unix, windows]
+    steps:
+      - name: Download nupkgs
+        uses: actions/download-artifact@v2
+        with:
+          name: nupkgs
+          path: ${{ github.workspace }}/nupkgs
+            
+      #- name: Push nuget packages to GitHub registry
+      #  run: |
+      #    dotnet nuget add source https://nuget.pkg.github.com/fintermobilityas/index.json --name GPR --username fintermobilityas --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+      #    dotnet nuget push ${{ github.workspace }}/nupkgs/*.nupkg --source "GPR"
+
+      - name: Push nuget packages MyGet
+        run: dotnet nuget push ${{ github.workspace }}/nupkgs/*.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+
+      - name: Create github release tag
+        if: github.ref == 'refs/heads/master'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.SNAPX_VERSION }}
+          release_name: Release v${{ env.SNAPX_VERSION }}
+          draft: true
+          prerelease: false          

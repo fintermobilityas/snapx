@@ -16,7 +16,9 @@ param(
     [int] $VisualStudioVersion = 16,
     [Parameter(Position = 6, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp3.1")]
-    [string] $NetCoreAppVersion = "netcoreapp3.1"
+    [string] $NetCoreAppVersion = "netcoreapp3.1",
+    [Parameter(Position = 7, ValueFromPipeline = $true)]
+    [string] $Version = "0.0.0"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -28,12 +30,7 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 
 $ToolsDir = Join-Path $WorkingDir tools
 $SrcDir = Join-Path $WorkingDir src
-
 $NupkgsDir = Join-Path $WorkingDir nupkgs
-if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
-{
-    $NupkgsDir = $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-}
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
@@ -111,12 +108,12 @@ function Invoke-Build-Native {
 
     if($OSPlatform -eq "Windows")
     {
-        if($VisualStudioVersion -ge 16) {
-            $CmakeGenerator += " 2019"
-            $CmakeArchNewSyntaxPrefix = "-A x64"
-        } else {
-            $CmakeGenerator += " 2017 Win64"
+        if($VisualStudioVersion -ne 16) {
+           Write-Error "Only Visual Studio 2019 is supported"
         }
+
+        $CmakeGenerator += " 2019"
+        $CmakeArchNewSyntaxPrefix = "-A x64"
     }
 
     $CmakeArguments = @(
@@ -178,6 +175,7 @@ function Invoke-Build-Snap {
 
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapDotnetSrcDir Snap.csproj))
+        "/p:Version=$Version",
         "/p:SnapNupkg=true",
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
@@ -185,6 +183,7 @@ function Invoke-Build-Snap {
 
     Invoke-Command-Colored $CommandDotnet @(
         "pack",
+        "/p:PackageVersion=$Version",
         "--no-build",
         "--output ${NupkgsDir}",
         "--configuration $Configuration",
@@ -237,6 +236,7 @@ function Invoke-Build-Snap-Installer {
         "/p:PublishTrimmed=true"
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "/p:SnapNativeConfiguration=$Configuration"
+        "/p:Version=$Version"
         "--runtime $Rid"
         "--framework $TargetArchDotNet"
         "--self-contained true"
@@ -335,12 +335,12 @@ function Invoke-Dotnet-Unit-Tests
     {
         Invoke-Command-Colored $CommandDotnet @(
             "test"
-            "$Project",  
-            "--logger trx", 
-            "--diag=testhang.txt",
+            "$Project"
+            "--logger xunit",
+            "--verbosity normal"
             "--configuration=$Configuration"
             "--", # RunSettings
-            "RunConfiguration.TestSessionTimeout=60000"
+            "RunConfiguration.TestSessionTimeout=300000" # 5 minutes
         )    
     }
 

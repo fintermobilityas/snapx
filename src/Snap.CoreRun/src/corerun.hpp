@@ -7,7 +7,6 @@
 
 #if defined(PAL_PLATFORM_WINDOWS)
 #include <plog/Appenders/DebugOutputAppender.h>
-#include "resource.h"
 #endif
 
 #include <string>
@@ -54,7 +53,7 @@ public:
             return std::string();
         }
 
-        const auto app_name_str = std::string(app_name);
+        auto app_name_str = std::string(app_name);
         delete app_name;
 
         return app_name_str;
@@ -70,14 +69,14 @@ public:
         return ss;
     }
 
-    static std::string build_argv_str(const int argc, char** argv)
+    static std::string build_argv_str(const uint32_t argc, char** argv)
     {
         if (argv == nullptr)
         {
             return std::string();
         }
 
-        std::vector<std::string> arguments(argv, argv + argc);
+        const std::vector<std::string> arguments(argv, argv + argc);
         return build_argv_str(arguments);
     }
 

@@ -27,7 +27,7 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
     executable_full_path = app_dir_str + PAL_DIRECTORY_SEPARATOR_C + app_name;
 
     const auto argc = static_cast<uint32_t>(arguments.size());
-    const auto argv = new char* [argc];
+    auto* const argv = new char* [argc];
 
     for (auto i = 0u; i < argc; i++)
     {

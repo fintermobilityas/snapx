@@ -9,7 +9,9 @@ param(
     [int] $VisualStudioVersion = 16,
     [Parameter(Position = 3, ValueFromPipeline = $true)]
     [ValidateSet("netcoreapp3.1")]
-    [string] $NetCoreAppVersion = "netcoreapp3.1"
+    [string] $NetCoreAppVersion = "netcoreapp3.1",
+    [Parameter(Position = 4, ValueFromPipeline = $true)]
+    [string] $Version = "0.0.0"
 )
 
 $ErrorActionPreference = "Stop"; 
@@ -27,12 +29,7 @@ $Properties = @()
 
 $ToolInstallDir = Join-Path $WorkingDir tools\snapx
 $SnapxSrcDir = Join-Path $WorkingDir src/Snapx
-
 $NupkgsDir = Join-Path $WorkingDir nupkgs
-if($env:BUILD_ARTIFACTSTAGINGDIRECTORY)
-{
-    $NupkgsDir = $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-}
 
 # Commands
 
@@ -84,15 +81,17 @@ if($env:SNAPX_CI_BUILD -eq $true) {
 Invoke-Command-Clean-Dotnet-Directory $SnapxSrcDir
 Invoke-Command-Colored $CommandDotnet @(
     "build"
+    "/p:Version=$Version"
     "--configuration $Configuration"
     "$SnapxSrcDir"
     "-f ${NetCoreAppVersion} {0}" -f ($Properties -join " ")
 )
 Invoke-Command-Colored $CommandDotnet @(
     "pack",
+    "/p:PackageVersion=$Version"
     "--no-build",
-    "--output ${NupkgsDir}",
-    "--configuration $Configuration",
+    "--output ${NupkgsDir}"
+    "--configuration $Configuration"
     "$SnapxSrcDir"
 )
 
@@ -103,6 +102,7 @@ if($env:SNAPX_CI_BUILD -eq $true) {
         "install", 
         "--tool-path $ToolInstallDir",
         "--add-source $NupkgsDir",
+        "--version $Version"
         "snapx"
     )
     $CommandSnapx = Join-Path $ToolInstallDir $CommandSnapx
@@ -112,10 +112,7 @@ if($env:SNAPX_CI_BUILD -eq $true) {
         "install",
         "--global",
         "--add-source $NupkgsDir",
+        "--version $Version"
         "snapx"
     )
 }
-
-# Prove that executable is working and able to start. 
-# Added bonus is that it will break the CI pipeline if snapx crashses.
-Invoke-Command-Colored $CommandSnapx @()

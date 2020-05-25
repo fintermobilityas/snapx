@@ -4,7 +4,6 @@ on: push
 
 env:
   POWERSHELL_VERSION: 7.0.1
-  SNAPX_VERSION: 2.2.${{ github.run_number }}
   DOTNET_VERSION: 3.1.300
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
@@ -12,13 +11,17 @@ jobs:
 
   setup:
    runs-on: ubuntu-latest
+   env:
+      SNAPX_VERSION_TEMPLATE: 2.2.${{ github.run_number }}
+   outputs:
+      version: ${{ steps.set-version.outputs.version }}
    steps:
     - name: Set prerelease version if branch is not master
       if: github.ref != 'refs/heads/master'
-      uses: allenevans/set-env@v1.1.0  
-      with:
-        overwrite: true
-        SNAPX_VERSION: '${{ env.SNAPX_VERSION }}-prerelease'
+      run: echo "::set-output name=version::${{ env.SNAPX_VERSION_TEMPLATE }}-prerelease"
+    - name: Set version if branch is master
+      if: github.ref == 'refs/heads/master'
+      run: echo "::set-output name=version::${{ env.SNAPX_VERSION_TEMPLATE }}"
   
   unix:
     runs-on: ubuntu-latest
@@ -46,7 +49,7 @@ jobs:
           
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ needs.setup.outputs.version }}
     
       - name: Collect artifacts
         env:
@@ -111,7 +114,7 @@ jobs:
 
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ needs.setup.outputs.version }}
 
       - name: Upload artifacts
         if: success()
@@ -132,8 +135,9 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: | 
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget add source https://www.myget.org/F/youpark/api/v3/index.json --name MyGet --username finter_github_rw --password ${{ secrets.FINTER_MYGET_PAT }} --store-password-in-clear-text
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ needs.setup.outputs.version }}.nupkg --source MyGet
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ needs.setup.outputs.version }}.nupkg --source MyGet
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'
@@ -141,7 +145,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.SNAPX_VERSION }}
-          release_name: Release v${{ env.SNAPX_VERSION }}
+          tag_name: v${{ needs.setup.outputs.version }}
+          release_name: Release v${{ needs.setup.outputs.version }}
           draft: true
           prerelease: false

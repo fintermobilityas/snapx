@@ -4,19 +4,23 @@ on: push
 
 env:
   POWERSHELL_VERSION: 7.0.1
-  SNAPX_VERSION: 2.2.0.${{ github.run_number }}
+  SNAPX_VERSION: 2.2.${{ github.run_number }}
   DOTNET_VERSION: 3.1.300
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 jobs:
 
+  setup:
+   runs-on: ubuntu-latest
+   steps:
+    - name: Set prerelease version if branch is not master
+      if: github.ref != 'refs/heads/master'
+      run: echo "::set-env name=SNAPX_VERSION::${{ env.SNAPX_VERSION }}-prerelease"  
+  
   unix:
     runs-on: ubuntu-latest
+    needs: [setup]
     steps:
-      - name: Set prerelease version if branch is not master
-        if: github.ref != 'refs/heads/master'
-        run: echo "::set-env name=SNAPX_VERSION_APPEND::-prerelease"  
-
       - name: Checkout
         uses: actions/checkout@v2
         with: 
@@ -39,7 +43,7 @@ jobs:
           
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
     
       - name: Collect artifacts
         env:
@@ -78,48 +82,44 @@ jobs:
           path: ${{ github.workspace }}/artifacts/**/*
 
   windows:
-      runs-on: windows-latest
-      needs: [unix]
-      steps:
-        - name: Set prerelease version if branch is not master
-          if: github.ref != 'refs/heads/master'
-          run: echo "::set-env name=SNAPX_VERSION_APPEND::-prerelease"  
+    runs-on: windows-latest
+    needs: [setup, unix]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with: 
+          lfs: true
+          token: ${{ secrets.CI_PAT }}
+          submodules: true
 
-        - name: Checkout
-          uses: actions/checkout@v2
-          with: 
-            lfs: true
-            token: ${{ secrets.CI_PAT }}
-            submodules: true
-    
-        - name: Setup .NET Core
-          uses: actions/setup-dotnet@v1.4.0 
-          with:
-            dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1.4.0 
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
-        - name: Setup powershell
-          run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
+      - name: Setup powershell
+        run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
 
-        - name: Download unix artifacts
-          uses: actions/download-artifact@v2
-          with:
-            name: unix
-            path: ${{ github.workspace }}
-        
-        - name: Build & Run Tests
-          run:  
-            pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}
-   
-        - name: Upload artifacts
-          if: success()
-          uses: actions/upload-artifact@v2
-          with:
-            name: nupkgs
-            path: ${{ github.workspace }}/nupkgs/*.nupkg
+      - name: Download unix artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: unix
+          path: ${{ github.workspace }}
+
+      - name: Build & Run Tests
+        run:  
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: nupkgs
+          path: ${{ github.workspace }}/nupkgs/*.nupkg
             
   publish:
     runs-on: ubuntu-latest
-    needs: [unix, windows]
+    needs: [setup, unix, windows]
     steps:
       - name: Download nupkgs artifacts
         uses: actions/download-artifact@v2
@@ -129,8 +129,8 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: | 
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}${{ env.SNAPX_VERSION_APPEND }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

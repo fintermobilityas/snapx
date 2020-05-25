@@ -136,9 +136,8 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: | 
-          dotnet nuget add source https://www.myget.org/F/youpark/api/v3/index.json --name MyGet --username finter_github_rw --password ${{ secrets.FINTER_MYGET_PAT }} --store-password-in-clear-text
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ needs.setup.outputs.version }}.nupkg --source MyGet
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ needs.setup.outputs.version }}.nupkg --source MyGet
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ needs.setup.outputs.version }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_PAT }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ needs.setup.outputs.version }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_PAT }}
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

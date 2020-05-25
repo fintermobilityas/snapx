@@ -6,22 +6,23 @@ env:
   POWERSHELL_VERSION: 7.0.1
   DOTNET_VERSION: 3.1.300
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  SNAPX_VERSION: 2.2.${{ github.run_number }}
 
 jobs:
 
   setup:
    runs-on: ubuntu-latest
-   env:
-      SNAPX_VERSION_TEMPLATE: 2.2.${{ github.run_number }}
    outputs:
       version: ${{ steps.set-version.outputs.version }}
    steps:
-    - name: Set prerelease version if branch is not master
-      if: github.ref != 'refs/heads/master'
-      run: echo "::set-output name=version::${{ env.SNAPX_VERSION_TEMPLATE }}-prerelease"
-    - name: Set version if branch is master
-      if: github.ref == 'refs/heads/master'
-      run: echo "::set-output name=version::${{ env.SNAPX_VERSION_TEMPLATE }}"
+    - id: set-version
+      name: Set version
+      run: |
+        if [ "$GITHUB_REF" == "refs/heads/master" ]; then
+           echo "::set-output name=version::${{ env.SNAPX_VERSION }}"
+        else
+           echo "::set-output name=version::${{ env.SNAPX_VERSION }}-prelease"
+        fi
   
   unix:
     runs-on: ubuntu-latest

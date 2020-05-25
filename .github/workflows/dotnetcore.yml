@@ -132,13 +132,8 @@ jobs:
           name: nupkgs
           path: ${{ github.workspace }}/nupkgs
             
-      #- name: Push nuget packages to GitHub registry
-      #  run: |
-      #    dotnet nuget add source https://nuget.pkg.github.com/fintermobilityas/index.json --name GPR --username fintermobilityas --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
-      #    dotnet nuget push ${{ github.workspace }}/nupkgs/*.nupkg --source "GPR"
-
       - name: Push nuget packages MyGet
-        run: dotnet nuget push ${{ github.workspace }}/nupkgs/*.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
+        run: dotnet nuget push ${{ github.workspace }}/nupkgs/**/*.nupkg --source ${{ secrets.YOUPARK_MYGET_FEED }}
 
       - name: Delete nupkg artifacts
         uses: geekyeggo/delete-artifact@v1

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -157,6 +158,7 @@ namespace Snap.Installer
             container.Register(c => snapOs.SpecialFolders);
 
             container.Register(c => snapOs.Filesystem);
+            container.Register<ISnapHttpClient>(c => new SnapHttpClient(new HttpClient()));
             container.Register<ISnapEmbeddedResources>(c => new SnapEmbeddedResources());
             container.Register<ISnapInstallerEmbeddedResources>(c => new SnapInstallerEmbeddedResources());
             container.Register<INuGetPackageSources>(c =>

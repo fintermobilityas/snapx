@@ -167,15 +167,8 @@ namespace Snap.NuGet
             var sourceRepository = _packageSources.Get(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-            await packageUpdateResource.Push(
-                packagePath,
-                null,
-                timeOutInSeconds,
-                false,
-                _ => GetApiKey(),
-                _ => null,
-                false,
-                nugetLogger ?? NullLogger.Instance);
+            await packageUpdateResource.Push(packagePath, null, timeOutInSeconds, false, _ => GetApiKey(), _ => null,
+                false, false, null, nugetLogger ?? NullLogger.Instance);
         }
 
         public async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync([NotNull] string searchTerm, [NotNull] SearchFilter filters, int skip, int take,

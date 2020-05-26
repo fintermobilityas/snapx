@@ -61,8 +61,6 @@ namespace snapx
                     continue;
                 }
                 
-                var thisSnapAppPackageIds = new List<string>();
-
                 foreach (var channel in snapApp.Channels)
                 {
                     var snapAppTmp = new SnapApp(snapApp);
@@ -73,9 +71,6 @@ namespace snapx
 
                     snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
                     snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
-
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamId());
-                    thisSnapAppPackageIds.Add(snapAppTmp.BuildNugetUpstreamId());
                 }
 
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);

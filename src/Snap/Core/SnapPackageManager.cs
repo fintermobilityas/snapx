@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Configuration;
@@ -184,9 +185,23 @@ namespace Snap.Core
                         await 
                         #endif 
                         using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
+                        stream.Seek(0, SeekOrigin.Begin);
 
-                        var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream);
-                        var snapNugetFeed = new SnapNugetFeed(packageManagerNugetHttp);
+                        var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream, new JsonSerializerOptions
+                        {
+                            Converters = { new JsonStringEnumConverter() },
+                            IgnoreNullValues = true,
+                            PropertyNameCaseInsensitive = true
+                        });
+                        if (packageManagerNugetHttp == null)
+                        {
+                            throw new Exception($"Unable to deserialize nuget http feed. Url: {feed.Source}. Response length: {stream.Position}");
+                        }
+
+                        var snapNugetFeed = new SnapNugetFeed(packageManagerNugetHttp)
+                        {
+                            Name = $"{snapApp.Id}-{channel.Name}-http"
+                        };
 
                         return snapNugetFeed.BuildPackageSource(new NugetTempSettings(_specialFolders.NugetCacheDirectory));
 

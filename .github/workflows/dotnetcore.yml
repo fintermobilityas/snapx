@@ -21,7 +21,7 @@ jobs:
         if [ "$GITHUB_REF" == "refs/heads/master" ]; then
            echo "::set-output name=version::${{ env.SNAPX_VERSION }}"
         else
-           echo "::set-output name=version::${{ env.SNAPX_VERSION }}-prelease"
+           echo "::set-output name=version::${{ env.SNAPX_VERSION }}-prerelease"
         fi
   
   unix:

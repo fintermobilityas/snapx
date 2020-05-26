@@ -124,7 +124,6 @@ namespace Snap.Shared.Tests
                     Os = osPlatform,
                     Framework = "netcoreapp2.1",
                     Rid = rid ?? "win-x64",
-                    Nuspec = "test.nuspec",
                     Shortcuts = new List<SnapShortcutLocation>
                     {
                         SnapShortcutLocation.Desktop,

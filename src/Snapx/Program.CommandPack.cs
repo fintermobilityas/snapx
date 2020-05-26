@@ -78,16 +78,6 @@ namespace snapx
             filesystem.DirectoryCreateIfNotExists(installersDirectory);
             filesystem.DirectoryCreateIfNotExists(packagesDirectory);
 
-            var nuspecFilename = snapApp.Target.Nuspec == null
-                ? null
-                : filesystem.PathCombine(workingDirectory, nuspecsDirectory, snapApp.Target.Nuspec);
-
-            if (nuspecFilename == null || !filesystem.FileExists(nuspecFilename))
-            {
-                logger.Error($"Nuspec does not exist: {nuspecFilename}");
-                return 1;
-            }
-
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
             logger.Info($"Schema version: {snapApps.Schema}");
@@ -106,7 +96,6 @@ namespace snapx
             logger.Info($"Installers: {installersStr}");
             var shortcutsStr = !snapApp.Target.Shortcuts.Any() ? "None" : string.Join(", ", snapApp.Target.Shortcuts);
             logger.Info($"Shortcuts: {shortcutsStr}");
-            logger.Info($"Nuspec: {nuspecFilename}");
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
@@ -222,7 +211,6 @@ namespace snapx
                 SnapApp = snapApp,
                 NuspecBaseDirectory = artifactsDirectory,
                 PackagesDirectory = packagesDirectory,
-                NuspecFilename = nuspecFilename,
                 SnapAppsReleases = snapAppsReleases
             };
 

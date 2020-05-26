@@ -117,7 +117,6 @@ namespace Snap.Core.Models
         public OSPlatform Os { get; set; }
         public string Framework { get; set; }
         public string Rid { get; set; }
-        public string Nuspec { get; set; }
         public string Icon { get; set; }
         public List<SnapShortcutLocation> Shortcuts { get; set; }
         public List<string> PersistentAssets { get; set; }
@@ -137,7 +136,6 @@ namespace Snap.Core.Models
             Os = target.Os;
             Framework = target.Framework;
             Rid = target.Rid;
-            Nuspec = target.Nuspec;
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;
@@ -150,7 +148,6 @@ namespace Snap.Core.Models
             Os = target.Os;
             Framework = target.Framework;
             Rid = target.Rid;
-            Nuspec = target.Nuspec;
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;

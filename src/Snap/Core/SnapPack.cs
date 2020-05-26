@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -70,7 +71,6 @@ namespace Snap.Core
 
     internal interface ISnapNuspecDetails
     {
-        string NuspecFilename { get; }
         string NuspecBaseDirectory { get; }
         IReadOnlyDictionary<string, string> NuspecProperties { get; }
     }
@@ -86,7 +86,6 @@ namespace Snap.Core
     {
         public SnapAppsReleases SnapAppsReleases { get; set; }
         public SnapApp SnapApp { get; set; }
-        public string NuspecFilename { get; set; }
         public string NuspecBaseDirectory { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; [UsedImplicitly] set; }
         public string PackagesDirectory { get; set; }
@@ -306,8 +305,15 @@ namespace Snap.Core
 
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(snapNuspecDetails.NuspecProperties);
 
-            var nuspecIntermediateStream = await _snapFilesystem
-                .FileReadAsync(snapNuspecDetails.NuspecFilename, cancellationToken);
+            const string nuspecXml = @"<?xml version=""1.0""?>
+<package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
+    <metadata>
+
+    </metadata>
+</package>";
+
+
+            var nuspecIntermediateStream = new MemoryStream(Encoding.UTF8.GetBytes(nuspecXml));
 
             var (nuspecStream, packageFiles) = BuildNuspec(nuspecIntermediateStream, nuspecPropertiesResolver,
                 snapNuspecDetails.NuspecBaseDirectory, fullSnapApp, fullSnapRelease);
@@ -1335,11 +1341,6 @@ namespace Snap.Core
                 throw new ArgumentNullException(nameof(packageDetails.SnapAppsReleases));
             }
 
-            if (packageDetails.NuspecFilename == null)
-            {
-                throw new ArgumentNullException(nameof(packageDetails.NuspecFilename));
-            }
-
             if (packageDetails.NuspecBaseDirectory == null)
             {
                 throw new ArgumentNullException(nameof(packageDetails.NuspecBaseDirectory));
@@ -1355,7 +1356,6 @@ namespace Snap.Core
                 throw new ArgumentNullException(nameof(packageDetails.PackagesDirectory));
             }
 
-            _snapFilesystem.FileExistsThrowIfNotExists(packageDetails.NuspecFilename);
             _snapFilesystem.DirectoryExistsThrowIfNotExists(packageDetails.NuspecBaseDirectory);
             _snapFilesystem.DirectoryExistsThrowIfNotExists(packageDetails.PackagesDirectory);
             

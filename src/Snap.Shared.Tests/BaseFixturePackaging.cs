@@ -506,23 +506,11 @@ namespace Snap.Shared.Tests
                 releaseBuilder.SnapEmbeddedResources.GetCoreRunForSnapApp(releaseBuilder.SnapApp, releaseBuilder.SnapFilesystem, releaseBuilder.CoreRunLib);
             coreRunMemoryStream.Dispose();
 
-            var nuspecContent = $@"<?xml version=""1.0""?>
-<package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
-    <metadata>
-        <title>Random Title</title>
-        <authors>Peter Rekdal Sunde</authors>
-        <releaseNotes>{releaseNotes}</releaseNotes>
-    </metadata>
-</package>";
-
-            var nuspecFilename = releaseBuilder.SnapFilesystem.PathCombine(releaseBuilder.NugetPackagingDirectory, "test.nuspec");
-
             var nuspecBaseDirectory = releaseBuilder.SnapFilesystem.PathCombine(releaseBuilder.NugetPackagingDirectory, "content");
             releaseBuilder.SnapFilesystem.DirectoryCreate(nuspecBaseDirectory);
 
             var snapPackDetails = new SnapPackageDetails
             {
-                NuspecFilename = nuspecFilename,
                 NuspecBaseDirectory = nuspecBaseDirectory,
                 PackagesDirectory = releaseBuilder.SnapAppPackagesDirectory,
                 SnapApp = releaseBuilder.SnapApp,
@@ -550,8 +538,6 @@ namespace Snap.Shared.Tests
                         throw new NotSupportedException($"{targetPath}: {value?.GetType().FullName}");
                 }                
             }
-
-            await releaseBuilder.SnapFilesystem.FileWriteUtf8StringAsync(nuspecContent, snapPackDetails.NuspecFilename, cancellationToken);
 
             var (fullPackageMemoryStream, fullSnapApp, fullPackageSnapRelease, deltaPackageMemoryStream, deltaSnapApp, deltaSnapRelease) = await releaseBuilder.SnapPack
                 .BuildPackageAsync(snapPackDetails, releaseBuilder.CoreRunLib, cancellationToken);

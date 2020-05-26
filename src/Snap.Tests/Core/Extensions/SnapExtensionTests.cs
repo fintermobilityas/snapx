@@ -695,7 +695,6 @@ namespace Snap.Tests.Core.Extensions
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win-x64",
-                    Nuspec = "test.nuspec",
                     Shortcuts = new List<SnapShortcutLocation>
                     {
                         SnapShortcutLocation.Desktop,
@@ -727,7 +726,6 @@ namespace Snap.Tests.Core.Extensions
             Assert.NotNull(snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
-            Assert.Equal(snapAppBefore.Target.Nuspec, snapAppAfter.Target.Nuspec);
             Assert.Equal(snapAppBefore.Target.Shortcuts, snapAppAfter.Target.Shortcuts);
             Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
 
@@ -857,7 +855,6 @@ namespace Snap.Tests.Core.Extensions
                 {
                     Os = OSPlatform.Windows,
                     Rid = "win-x64",
-                    Nuspec = "test.nuspec",
                     Framework = "netcoreapp2.1"                   
                 }
             };

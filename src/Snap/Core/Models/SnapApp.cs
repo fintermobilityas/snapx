@@ -160,14 +160,12 @@ namespace Snap.Core.Models
         [Key(2)]
         public string Rid { get; set; }
         [Key(3)]
-        public string Nuspec { get; set; }
-        [Key(4)]
         public string Icon { get; set; }
-        [Key(5)]
+        [Key(4)]
         public List<SnapShortcutLocation> Shortcuts { get; set; }
-        [Key(6)]
+        [Key(5)]
         public List<string> PersistentAssets { get; set; }
-        [Key(7)]
+        [Key(6)]
         public List<SnapInstallerType> Installers { get; set; }
 
         [UsedImplicitly]
@@ -184,7 +182,6 @@ namespace Snap.Core.Models
             Os = target.Os;
             Framework = target.Framework;
             Rid = target.Rid;
-            Nuspec = target.Nuspec;
             Icon = target.Icon;
             Shortcuts = target.Shortcuts;
             PersistentAssets = target.PersistentAssets;
@@ -195,7 +192,6 @@ namespace Snap.Core.Models
         {
             Os = snapsTarget.Os,
             Framework = snapsTarget.Framework,
-            Nuspec = snapsTarget.Nuspec,
             Rid = snapsTarget.Rid,
             Icon = snapsTarget.Icon,
             Shortcuts = snapsTarget.Shortcuts,

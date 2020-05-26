@@ -104,7 +104,6 @@ namespace Snap.Tests.Core
                     Os = OSPlatform.Windows,
                     Framework = "netcoreapp2.1",
                     Rid = "win7-x64",
-                    Nuspec = "test.nuspec",
                     Shortcuts = new List<SnapShortcutLocation>
                     {
                         SnapShortcutLocation.Desktop,
@@ -186,7 +185,6 @@ namespace Snap.Tests.Core
             Assert.NotNull(snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
             Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
-            Assert.Equal(snapAppBefore.Target.Nuspec, snapAppAfter.Target.Nuspec);
             Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
 
             // Channels

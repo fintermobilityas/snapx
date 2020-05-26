@@ -144,7 +144,7 @@ namespace Snap.NuGet
         }
 
         public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource,
-            [NotNull] ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
+            ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
         {
             if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
@@ -216,10 +216,8 @@ namespace Snap.NuGet
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
             if (downloadContext == null) throw new ArgumentNullException(nameof(downloadContext));
 
-            using var cacheContext = new SourceCacheContext();
-            cacheContext.NoCache = true;
-            cacheContext.DirectDownload = true;
-                
+            using var cacheContext = new SourceCacheContext {NoCache = true, DirectDownload = true};
+
             var tempPackagesDirectory = _snapFilesystem.PathCombine(cacheContext.GeneratedTempFolder, Guid.NewGuid().ToString());
             var redirectedPackagesDirectory = _snapFilesystem.PathCombine(tempPackagesDirectory, "nuget_install_dir");
             _snapFilesystem.DirectoryCreate(redirectedPackagesDirectory);

@@ -6,15 +6,15 @@ namespace Snap.Core.MessagePack.Formatters
 {
     public sealed class OsPlatformMessagePackFormatter : IMessagePackFormatter<OSPlatform>
     {
-        public int Serialize(ref byte[] bytes, int offset, OSPlatform value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, OSPlatform value, MessagePackSerializerOptions options)
         {
-            return formatterResolver.GetFormatterWithVerify<string>().Serialize(ref bytes, offset, value.ToString(), formatterResolver);
+            options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, value.ToString(), options);
         }
 
-        public OSPlatform Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public OSPlatform Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var version = formatterResolver.GetFormatterWithVerify<string>().Deserialize(bytes, offset, formatterResolver, out readSize);
-            return OSPlatform.Create(version);
+            var osPlatform = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
+            return OSPlatform.Create(osPlatform);
         }
     }
 }

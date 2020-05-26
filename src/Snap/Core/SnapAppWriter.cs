@@ -126,7 +126,7 @@ namespace Snap.Core
         public byte[] ToSnapAppsReleases([NotNull] SnapAppsReleases snapAppsApps)
         {
             if (snapAppsApps == null) throw new ArgumentNullException(nameof(snapAppsApps));
-            return MessagePackSerializer.Serialize(snapAppsApps);
+            return MessagePackSerializer.Serialize(snapAppsApps, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));
         }
     }
 }

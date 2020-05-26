@@ -6,17 +6,14 @@ namespace Snap.Core.MessagePack.Formatters
 {
     public sealed class SemanticVersionMessagePackFormatter : IMessagePackFormatter<SemanticVersion>
     {
-        public int Serialize(ref byte[] bytes, int offset, SemanticVersion value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, SemanticVersion value, MessagePackSerializerOptions options)
         {
-            return formatterResolver.GetFormatterWithVerify<string>()
-                .Serialize(ref bytes, offset, value.ToString(), formatterResolver);
+            options.Resolver.GetFormatterWithVerify<string>().Serialize(ref writer, value.ToString(), options);
         }
 
-        public SemanticVersion Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver,
-            out int readSize)
+        public SemanticVersion Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            var version = formatterResolver.GetFormatterWithVerify<string>()
-                .Deserialize(bytes, offset, formatterResolver, out readSize);
+            var version = options.Resolver.GetFormatterWithVerify<string>().Deserialize(ref reader, options);
             return SemanticVersion.Parse(version);
         }
     }

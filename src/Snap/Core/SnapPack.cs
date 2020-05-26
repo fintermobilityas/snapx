@@ -305,10 +305,11 @@ namespace Snap.Core
 
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(snapNuspecDetails.NuspecProperties);
 
-            const string nuspecXml = @"<?xml version=""1.0""?>
+            var nuspecXml = $@"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
-
+        <title>{fullSnapApp.Id}</title>
+        <authors>snapx</authors>
     </metadata>
 </package>";
 
@@ -990,7 +991,7 @@ namespace Snap.Core
                 var title = metadata.SingleOrDefault(XName.Get("title", nuspecXmlNs));
                 if (title == null)
                 {
-                    throw new Exception("The required element 'description' is missing from the nuspec");
+                    throw new Exception("The required element 'title' is missing from the nuspec");
                 }
 
                 var version = metadata.SingleOrDefault(XName.Get("version", nuspecXmlNs));

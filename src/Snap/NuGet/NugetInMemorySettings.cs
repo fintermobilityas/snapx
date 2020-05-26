@@ -5,11 +5,11 @@ using NuGet.Configuration;
 
 namespace Snap.NuGet
 {
-    internal sealed class NugetTempSettings : ISettings
+    internal sealed class NugetInMemorySettings : ISettings
     {
         readonly Settings _settings;
 
-        public NugetTempSettings([NotNull] string tempDirectory) 
+        public NugetInMemorySettings([NotNull] string tempDirectory) 
         {
             if (tempDirectory == null) throw new ArgumentNullException(nameof(tempDirectory));
             _settings = new Settings(tempDirectory);

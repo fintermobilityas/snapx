@@ -203,7 +203,7 @@ namespace Snap.Core
                             Name = $"{snapApp.Id}-{channel.Name}-http"
                         };
 
-                        return snapNugetFeed.BuildPackageSource(new NugetTempSettings(_specialFolders.NugetCacheDirectory));
+                        return snapNugetFeed.BuildPackageSource(new NugetInMemorySettings(_specialFolders.NugetCacheDirectory));
 
                     }
                     case SnapNugetFeed snapNugetFeed:

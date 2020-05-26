@@ -332,14 +332,14 @@ namespace Snap.Extensions
             return (valid, id, fullOrDelta, semanticVersion, rid);
         }
 
-        internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] NugetTempSettings nugetTempSettings)
+        internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] ISettings settings)
         {
             if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
-            if (nugetTempSettings == null) throw new ArgumentNullException(nameof(nugetTempSettings));
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             var packageSource = new PackageSource(snapFeed.Source.ToString(), snapFeed.Name, true, true, false);
 
-            var storePasswordInClearText = !nugetTempSettings.IsPasswordEncryptionSupported();
+            var storePasswordInClearText = !settings.IsPasswordEncryptionSupported();
             
             if (snapFeed.Username != null && snapFeed.Password != null)
             {
@@ -353,18 +353,18 @@ namespace Snap.Extensions
                     // ReSharper disable once ExpressionIsAlwaysNull
                     snapFeed.Username, snapFeed.Password, storePasswordInClearText, validAuthenticationTypesText);
 
-                nugetTempSettings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
+                settings.AddOrUpdate(ConfigurationConstants.CredentialsSectionName, packageSource.Credentials.AsCredentialsItem());
             }
 
             if (snapFeed.ApiKey != null)
             {
                 if (storePasswordInClearText)
                 {
-                    nugetTempSettings.AddOrUpdate(ConfigurationConstants.ApiKeys, new AddItem(packageSource.Source, snapFeed.ApiKey));
+                    settings.AddOrUpdate(ConfigurationConstants.ApiKeys, new AddItem(packageSource.Source, snapFeed.ApiKey));
                 }
                 else
                 {
-                    SettingsUtility.SetEncryptedValueForAddItem(nugetTempSettings, ConfigurationConstants.ApiKeys, packageSource.Source, snapFeed.ApiKey);                    
+                    SettingsUtility.SetEncryptedValueForAddItem(settings, ConfigurationConstants.ApiKeys, packageSource.Source, snapFeed.ApiKey);                    
                 }
             }
 
@@ -555,7 +555,7 @@ namespace Snap.Extensions
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (tempDirectory == null) throw new ArgumentNullException(nameof(tempDirectory));
-            var inMemorySettings = new NugetTempSettings(tempDirectory);
+            var inMemorySettings = new NugetInMemorySettings(tempDirectory);
 
             var nugetFeeds = snapApp.Channels
                 .SelectMany(x => new List<SnapNugetFeed> { x.PushFeed, x.UpdateFeed as SnapNugetFeed })

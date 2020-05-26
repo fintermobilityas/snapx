@@ -1149,7 +1149,7 @@ namespace Snap.Core
                     throw new Exception($"Invalid file size: {snapRelease.FullSha256Checksum}. Must be greater than zero! Filename: {snapRelease.Filename}");
                 }
 
-                if (snapRelease.FullSha256Checksum == null || snapRelease.FullSha256Checksum.Length != 128)
+                if (snapRelease.FullSha256Checksum == null || snapRelease.FullSha256Checksum.Length != 64)
                 {
                     throw new Exception($"Invalid checksum: {snapRelease.FullSha256Checksum}. Filename: {snapRelease.Filename}");
                 }

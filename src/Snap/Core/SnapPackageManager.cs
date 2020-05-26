@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using NuGet.Configuration;
 using NuGet.Packaging;
 using Snap.AnyOS;
@@ -16,8 +17,8 @@ using Snap.NuGet;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
+    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapPackageManagerProgressSource
     {
         Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
@@ -68,12 +69,28 @@ namespace Snap.Core
 
     internal interface ISnapPackageManager
     {
-        PackageSource GetPackageSource(SnapApp snapApp, ILog logger = null);
+        Task<PackageSource> GetPackageSourceAsync(SnapApp snapApp, ILog logger = null, string applicationId = null);
+
         Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> GetSnapsReleasesAsync(
-            [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default);
-        Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases,
-            [NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType, ISnapPackageManagerProgressSource progressSource = null, 
-            ILog logger = null, CancellationToken cancellationToken = default, int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
+            [JetBrains.Annotations.NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null);
+
+        Task<SnapPackageManagerRestoreSummary> RestoreAsync([JetBrains.Annotations.NotNull] string packagesDirectory, 
+            [JetBrains.Annotations.NotNull] ISnapAppChannelReleases snapAppChannelReleases,
+            [JetBrains.Annotations.NotNull] PackageSource packageSource, SnapPackageManagerRestoreType restoreType, 
+            ISnapPackageManagerProgressSource progressSource = null, 
+            ILog logger = null, CancellationToken cancellationToken = default, 
+            int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
+    }
+
+    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    internal class SnapPackageManagerNugetHttpFeed
+    {
+        public Uri Source { get; set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string ApiKey { get; set; }
+        public NuGetProtocolVersion ProtocolVersion { get; set; }
     }
 
     internal class SnapPackageManagerReleaseStatus
@@ -81,7 +98,7 @@ namespace Snap.Core
         public SnapRelease SnapRelease { get; }
         public bool Ok { get; }
 
-        public SnapPackageManagerReleaseStatus([NotNull] SnapRelease snapRelease, bool ok)
+        public SnapPackageManagerReleaseStatus([JetBrains.Annotations.NotNull] SnapRelease snapRelease, bool ok)
         {
             SnapRelease = snapRelease ?? throw new ArgumentNullException(nameof(snapRelease));
             Ok = ok;
@@ -117,41 +134,73 @@ namespace Snap.Core
         readonly ISnapFilesystem _filesystem;
         readonly ISnapOsSpecialFolders _specialFolders;
         readonly INugetService _nugetService;
+        [JetBrains.Annotations.NotNull] readonly ISnapHttpClient _snapHttpClient;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapAppReader _snapAppReader;
         readonly ISnapPack _snapPack;
 
-        public SnapPackageManager([NotNull] ISnapFilesystem filesystem, [NotNull] ISnapOsSpecialFolders specialFolders,
-            [NotNull] INugetService nugetService, [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapExtractor snapExtractor,
-            [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapPack snapPack)
+        public SnapPackageManager([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, 
+            [JetBrains.Annotations.NotNull] ISnapOsSpecialFolders specialFolders,
+            [JetBrains.Annotations.NotNull] INugetService nugetService, 
+            [JetBrains.Annotations.NotNull] ISnapHttpClient snapHttpClient,
+            [JetBrains.Annotations.NotNull] ISnapCryptoProvider snapCryptoProvider, 
+            [JetBrains.Annotations.NotNull] ISnapExtractor snapExtractor,
+            [JetBrains.Annotations.NotNull] ISnapAppReader snapAppReader, 
+            [JetBrains.Annotations.NotNull] ISnapPack snapPack)
         {
             _filesystem = filesystem ?? throw new ArgumentNullException(nameof(filesystem));
             _specialFolders = specialFolders ?? throw new ArgumentNullException(nameof(specialFolders));
             _nugetService = nugetService ?? throw new ArgumentNullException(nameof(nugetService));
+            _snapHttpClient = snapHttpClient ?? throw new ArgumentNullException(nameof(snapHttpClient));
             _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
             _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
             _snapAppReader = snapAppReader ?? throw new ArgumentNullException(nameof(snapAppReader));
             _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         }
 
-        public PackageSource GetPackageSource([NotNull] SnapApp snapApp, ILog logger = null)
+        public async Task<PackageSource> GetPackageSourceAsync(
+            [JetBrains.Annotations.NotNull] SnapApp snapApp, 
+            ILog logger = null, 
+            string applicationId = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
             try
             {
                 var channel = snapApp.GetCurrentChannelOrThrow();
-                if (!(channel.UpdateFeed is SnapNugetFeed snapNugetFeed))
+
+                switch (channel.UpdateFeed)
                 {
-                    return null;
+                    case SnapHttpFeed feed:
+                    {
+                        var headers = new Dictionary<string, string>
+                        {
+                            { "X-Snapx-App-Id", snapApp.Id},
+                            { "X-Snapx-Channel", channel.Name },
+                            { "X-Snapx-Application-Id", applicationId }
+                        };
+                        #if !NETFULLFRAMEWORK
+                        await 
+                        #endif 
+                        using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
+
+                        var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream);
+                        var snapNugetFeed = new SnapNugetFeed(packageManagerNugetHttp);
+
+                        return snapNugetFeed.BuildPackageSource(new NugetTempSettings(_specialFolders.NugetCacheDirectory));
+
+                    }
+                    case SnapNugetFeed snapNugetFeed:
+                        var nugetPackageSources = snapApp.BuildNugetSources(_specialFolders.NugetCacheDirectory);
+
+                        var packageSource = nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name
+                                                                                  && x.SourceUri == snapNugetFeed.Source);
+                        return packageSource;
+                    default:
+                        throw new NotSupportedException(channel.UpdateFeed?.GetType().FullName);
                 }
 
-                var nugetPackageSources = snapApp.BuildNugetSources(_specialFolders.NugetCacheDirectory);
-
-                var packageSource = nugetPackageSources.Items.Single(x => x.Name == snapNugetFeed.Name
-                                                                          && x.SourceUri == snapNugetFeed.Source);
-                return packageSource;
             }
             catch(Exception e)
             {
@@ -160,14 +209,15 @@ namespace Snap.Core
             }
         }
 
-        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> GetSnapsReleasesAsync(
-            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default)
+        public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> 
+            GetSnapsReleasesAsync(
+            SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
             try
             {
-                var packageSource = GetPackageSource(snapApp, logger);
+                var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId);
 
                 var snapReleasesDownloadResult =
                     await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken);
@@ -486,8 +536,8 @@ namespace Snap.Core
             }
         }
 
-        async Task<bool> TryDownloadAsync([NotNull] string packagesDirectory, [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease,
-            [NotNull] PackageSource packageSource, INugetServiceProgressSource progressSource, ILog logger = null,
+        async Task<bool> TryDownloadAsync([JetBrains.Annotations.NotNull] string packagesDirectory, [JetBrains.Annotations.NotNull] ISnapAppChannelReleases snapAppChannelReleases, [JetBrains.Annotations.NotNull] SnapRelease snapRelease,
+            [JetBrains.Annotations.NotNull] PackageSource packageSource, INugetServiceProgressSource progressSource, ILog logger = null,
             CancellationToken cancellationToken = default)
         {
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
@@ -551,7 +601,7 @@ namespace Snap.Core
             }
         }
 
-        bool TryChecksum([NotNull] SnapRelease snapRelease, string nupkgAbsoluteFilename, bool silent = false, ILog logger = null)
+        bool TryChecksum([JetBrains.Annotations.NotNull] SnapRelease snapRelease, string nupkgAbsoluteFilename, bool silent = false, ILog logger = null)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
             if (nupkgAbsoluteFilename == null) throw new ArgumentNullException(nameof(nupkgAbsoluteFilename));

@@ -34,11 +34,13 @@ namespace Snap.Tests.Core
         readonly ISnapPackageManager _snapPackageManager;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
+        readonly Mock<ISnapHttpClient> _snapHttpClientMock;
 
         public SnapPackageManagerTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
         {
             _nugetServiceMock = new Mock<INugetService>();
             _coreRunLibMock = new Mock<ICoreRunLib>();
+            _snapHttpClientMock = new Mock<ISnapHttpClient>();
             _baseFixturePackaging = baseFixturePackaging;
             _baseFixtureNuget = baseFixtureNuget;
             _snapFilesystem = new SnapFilesystem();
@@ -49,6 +51,7 @@ namespace Snap.Tests.Core
             _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
             _snapPackageManager = new SnapPackageManager(_snapFilesystem, new SnapOsSpecialFoldersUnix(), _nugetServiceMock.Object,
+                _snapHttpClientMock.Object,
                 _snapCryptoProvider, _snapExtractor, _snapAppReader, _snapPack);
             _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem,
                 _snapCryptoProvider, _snapEmbeddedResources, _snapPack);

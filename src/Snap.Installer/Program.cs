@@ -194,6 +194,7 @@ namespace Snap.Installer
                 c.GetInstance<ISnapFilesystem>(),
                 c.GetInstance<ISnapOsSpecialFolders>(),
                 c.GetInstance<INugetService>(),
+                c.GetInstance<ISnapHttpClient>(),
                 c.GetInstance<ISnapCryptoProvider>(),
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapAppReader>(),

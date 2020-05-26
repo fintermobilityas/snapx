@@ -96,6 +96,18 @@ namespace Snap.Core.Models
             ApiKey = snapFeed.ApiKey;
         }
 
+        internal SnapNugetFeed([NotNull] SnapPackageManagerNugetHttpFeed httpFeed) : this(new SnapNugetFeed
+        {
+            ProtocolVersion = httpFeed.ProtocolVersion,
+            ApiKey = httpFeed.ApiKey,
+            Username = httpFeed.Username,
+            Password = httpFeed.Password,
+            Source = httpFeed.Source
+        })
+        {
+            if (httpFeed == null) throw new ArgumentNullException(nameof(httpFeed));
+        }
+
         internal override bool HasCredentials()
         {
             return Username != null || Password != null || ApiKey != null;

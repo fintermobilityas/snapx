@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -32,6 +37,7 @@ namespace Snap.Tests.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
         readonly Mock<INugetService> _nugetServiceMock;
+        readonly Mock<ISnapHttpClient> _snapHttpClientMock;
 
         public SnapUpdateManagerTests(BaseFixture baseFixture, BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
         {
@@ -40,6 +46,7 @@ namespace Snap.Tests.Core
             _baseFixtureNuget = baseFixtureNuget;
             _coreRunLibMock = new Mock<ICoreRunLib>();
             _nugetServiceMock = new Mock<INugetService>();
+            _snapHttpClientMock = new Mock<ISnapHttpClient>();
             _snapCryptoProvider = new SnapCryptoProvider();
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapOs = SnapOs.AnyOs;
@@ -50,7 +57,52 @@ namespace Snap.Tests.Core
             _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapOs.Filesystem,
                 _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
-    
+
+        [Fact]
+        public async Task TestGetSnapReleasesAsync_SnapHttpFeed()
+        {
+            var snapApp = _baseFixturePackaging.BuildSnapApp();
+
+            var snapChannel = snapApp.Channels.First(x => x.UpdateFeed is SnapHttpFeed);
+            snapApp.SetCurrentChannel(snapChannel.Name);
+
+            var snapPackageManagerHttpFeed = new SnapPackageManagerNugetHttpFeed
+            {
+                ApiKey = "apikey",
+                ProtocolVersion = NuGetProtocolVersion.V2,
+                Password = "password",
+                Username = "username",
+                Source = new Uri("https://finter.no")
+            };
+
+            const string applicationId = "my-application-id";
+
+            _snapHttpClientMock.Setup(x => x.GetStreamAsync(It.IsAny<Uri>(), It.IsAny<Dictionary<string, string>>())).ReturnsAsync(() =>
+            {
+                var jsonUtf8Bytes = JsonSerializer.SerializeToUtf8Bytes(snapPackageManagerHttpFeed);
+                return new MemoryStream(jsonUtf8Bytes);
+            }).Callback((Uri uri, IDictionary<string, string> headers) =>
+            {
+                Assert.Equal(uri, snapPackageManagerHttpFeed.Source);
+                Assert.NotNull(headers);
+                Assert.Equal(3, headers.Count);
+                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Id", snapApp.Id));
+                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
+                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Id", applicationId));
+            });
+
+            var snapUpdateManager = BuildUpdateManager(_baseFixturePackaging.WorkingDirectory, snapApp, _nugetServiceMock.Object,
+                snapHttpClient: _snapHttpClientMock.Object, applicationId: applicationId);
+            
+            var snapReleases = await snapUpdateManager.GetSnapReleasesAsync(default);
+            Assert.Null(snapReleases);
+            
+            _snapHttpClientMock.Verify(x => 
+                x.GetStreamAsync(
+                    It.Is<Uri>(v => v == snapChannel.UpdateFeed.Source), 
+                    It.Is<Dictionary<string, string>>(v => v.Count == 3)), Times.Once);
+        }
+
         [Fact]
         public async Task TestUpdateToLatestReleaseAsync()
         {
@@ -181,12 +233,16 @@ namespace Snap.Tests.Core
         static ISnapUpdateManager BuildUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null,
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
-            ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null)
+            ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null,
+            ISnapHttpClient snapHttpClient = null, string applicationId = null)
         {
             return new SnapUpdateManager(workingDirectory,
                 snapApp, null, nugetService, snapOs, snapCryptoProvider, 
                 snapEmbeddedResources, snapAppReader, snapAppWriter, snapPack, snapExtractor,
-                snapInstaller);
+                snapInstaller, snapHttpClient: snapHttpClient)
+            {
+                ApplicationId = applicationId
+            };
         }
 
         static void SetupUpdateManagerProgressSource(Mock<ISnapUpdateManagerProgressSource> progressSourceMock)

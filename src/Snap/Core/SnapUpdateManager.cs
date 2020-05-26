@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,6 +76,7 @@ namespace Snap.Core
     public interface ISnapUpdateManager : IDisposable
     {
         int ReleaseRetentionLimit { get; set; }
+        string ApplicationId { get; set; }
         bool SuperVisorAlwaysStartAfterSuccessfullUpdate { get; set; }
         Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken);
         Task<SnapApp> UpdateToLatestReleaseAsync(ISnapUpdateManagerProgressSource progressSource = default, 
@@ -101,12 +103,19 @@ namespace Snap.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapPackageManager _snapPackageManager;
         readonly ISnapAppWriter _snapAppWriter;
+        readonly ISnapHttpClient _snapHttpClient;
 
         /// <summary>
         /// The number of releases that should be retained after a new updated has been successfully applied.
         /// Default value is 1 - Only the previous version will be retained. 
         /// </summary>
         public int ReleaseRetentionLimit { get; set; } = 1;
+
+        /// <summary>
+        /// Specify a unique application id that is sent to a remote http server
+        /// if a snap http feed is used when retrieving nuget credentials.
+        /// </summary>
+        public string ApplicationId { get; set; }
 
         /// <summary>
         /// Start supervisor an update has been successfully applied. You should set this property to true
@@ -132,7 +141,8 @@ namespace Snap.Core
         internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null,
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null,
-            ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null)
+            ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null, 
+            ISnapHttpClient snapHttpClient = null)
         {
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -151,8 +161,9 @@ namespace Snap.Core
             _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, snapEmbeddedResources);
             _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
             _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources, _snapAppWriter);
+            _snapHttpClient = snapHttpClient ?? new SnapHttpClient(new HttpClient());
             _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
-                                      _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapCryptoProvider,
+                                      _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapHttpClient, _snapCryptoProvider,
                                       _snapExtractor, _snapAppReader, _snapPack);
 
             _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
@@ -170,7 +181,8 @@ namespace Snap.Core
         /// <returns></returns>
         public async Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
         {
-            var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+            var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager
+                .GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken, ApplicationId);
             releasesMemoryStream?.Dispose();
             return snapAppsReleases?.GetReleases(_snapApp);
         }
@@ -213,7 +225,7 @@ namespace Snap.Core
             var sw = new Stopwatch();
             sw.Restart();
 
-            var packageSource = _snapPackageManager.GetPackageSource(_snapApp, _logger);
+            var packageSource = await _snapPackageManager.GetPackageSourceAsync(_snapApp, _logger, ApplicationId);
             if (packageSource == null)
             {
                 return null;

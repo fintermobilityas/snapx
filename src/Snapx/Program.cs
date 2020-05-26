@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,13 +125,15 @@ namespace snapx
             var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources, snapAppWriter);
             var snapSpecsReader = new SnapAppReader();
             var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);
+            var snapHttpClient = new SnapHttpClient(new HttpClient());
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
             var nugetServiceCommandRestore = new NugetService(snapOs.Filesystem, new NugetLogger(SnapRestoreLogger));
             var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
-            var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, nugetServiceCommandPack, 
+            var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, 
+                nugetServiceCommandPack, snapHttpClient,
                 snapCryptoProvider, snapExtractor, snapAppReader, snapPack);
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 

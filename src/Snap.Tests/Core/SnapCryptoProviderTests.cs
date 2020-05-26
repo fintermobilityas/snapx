@@ -42,25 +42,25 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public void TestSha512_Empty_StringBuilder()
+        public void TestSha256_Empty_StringBuilder()
         {
-            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new StringBuilder(), Encoding.UTF8));
+            Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(new StringBuilder(), Encoding.UTF8));
         }
         
         [Fact]
-        public void TestSha512_Empty_Array()
+        public void TestSha256_Empty_Array()
         {
-            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new byte[]{ }));
+            Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(new byte[]{ }));
         }
 
         [Fact]
-        public void TestSha512_Empty_Stream()
+        public void TestSha256_Empty_Stream()
         {
-            Assert.Equal("cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e", _snapCryptoProvider.Sha512(new MemoryStream()));
+            Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(new MemoryStream()));
         }
 
         [Fact]
-        public async Task TestSha512_PackageArchiveReader_Central_Directory_Corrupt()
+        public async Task TestSha256_PackageArchiveReader_Central_Directory_Corrupt()
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
@@ -78,10 +78,10 @@ namespace Snap.Tests.Core
             {
                 if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
                 using var asyncPackageCoreReader = new PackageArchiveReader(genesisPackageContext.FullPackageMemoryStream, true);
-                var checksum1 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
-                var checksum2 = _snapCryptoProvider.Sha512(snapRelease, asyncPackageCoreReader, _snapPack);
+                var checksum1 = _snapCryptoProvider.Sha256(snapRelease, asyncPackageCoreReader, _snapPack);
+                var checksum2 = _snapCryptoProvider.Sha256(snapRelease, asyncPackageCoreReader, _snapPack);
                 Assert.NotNull(checksum1);
-                Assert.True(checksum1.Length == 128);
+                Assert.True(checksum1.Length == 64);
                 Assert.Equal(checksum1, checksum2);
             }
         }

@@ -175,7 +175,7 @@ namespace Snap.Core
             
             var fullNupkgMemoryStream = new MemoryStream();
             
-            fullSnapRelease.FullSha512Checksum = _snapCryptoProvider.Sha512(fullSnapRelease, fullNupkgPackageBuilder);
+            fullSnapRelease.FullSha256Checksum = _snapCryptoProvider.Sha256(fullSnapRelease, fullNupkgPackageBuilder);
 
             fullNupkgPackageBuilder.Save(fullNupkgMemoryStream);
             fullNupkgMemoryStream.Seek(0, SeekOrigin.Begin);
@@ -192,14 +192,14 @@ namespace Snap.Core
 
             var deltaNupkgMemoryStream = new MemoryStream();
 
-            deltaSnapRelease.DeltaSha512Checksum =
-                fullSnapRelease.DeltaSha512Checksum = _snapCryptoProvider.Sha512(deltaSnapRelease, deltaNupkgPackageBuilder);
+            deltaSnapRelease.DeltaSha256Checksum =
+                fullSnapRelease.DeltaSha256Checksum = _snapCryptoProvider.Sha256(deltaSnapRelease, deltaNupkgPackageBuilder);
                 
             deltaNupkgPackageBuilder.Save(deltaNupkgMemoryStream);
 
             deltaSnapRelease.DeltaFilesize = 
                 fullSnapRelease.DeltaFilesize = deltaNupkgMemoryStream.Length;
-            deltaSnapRelease.FullSha512Checksum = fullSnapRelease.FullSha512Checksum;
+            deltaSnapRelease.FullSha256Checksum = fullSnapRelease.FullSha256Checksum;
             deltaSnapRelease.FullFilesize = fullSnapRelease.FullFilesize;
 
             packageDetails.SnapAppsReleases.Add(deltaSnapRelease);
@@ -445,10 +445,10 @@ namespace Snap.Core
                 if (checksum == null) throw new ArgumentNullException(nameof(checksum));
                 if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
                 
-                if (checksum.DeltaSha512Checksum != null)
+                if (checksum.DeltaSha256Checksum != null)
                 {
                     throw new Exception(
-                        $"Expected {nameof(checksum.DeltaSha512Checksum)} to be null. " +
+                        $"Expected {nameof(checksum.DeltaSha256Checksum)} to be null. " +
                         $"Filename: {checksum.Filename}. " +
                         $"Nupkg: {currentFullSnapRelease.Filename}. ");
                 }
@@ -502,8 +502,8 @@ namespace Snap.Core
                     continue;
                 }
                 
-                if (string.Equals(previousChecksum.FullSha512Checksum, currentChecksum.FullSha512Checksum, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(previousChecksum.DeltaSha512Checksum, currentChecksum.DeltaSha512Checksum, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(previousChecksum.FullSha256Checksum, currentChecksum.FullSha256Checksum, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(previousChecksum.DeltaSha256Checksum, currentChecksum.DeltaSha256Checksum, StringComparison.OrdinalIgnoreCase))
                 {
                     currentDeltaSnapRelease.Unmodified.Add(currentChecksum.NuspecTargetPath);
                     deletedChecksums.Remove(previousChecksum);
@@ -534,13 +534,13 @@ namespace Snap.Core
                     await newDataStream.CopyToAsync(patchStream, cancellationToken);
                 }
             
-                currentChecksum.DeltaSha512Checksum = _snapCryptoProvider.Sha512(patchStream);
+                currentChecksum.DeltaSha256Checksum = _snapCryptoProvider.Sha256(patchStream);
                 currentChecksum.DeltaFilesize = patchStream.Length;
 
                 if (currentChecksum.DeltaFilesize == 0 
-                    && currentChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                    && currentChecksum.DeltaSha256Checksum != SnapConstants.Sha256EmptyFileChecksum)
                 {
-                    throw new Exception($"Expected empty file checksum to equal {SnapConstants.Sha512EmptyFileChecksum}. Target path: {currentChecksum.NuspecTargetPath}.");
+                    throw new Exception($"Expected empty file checksum to equal {SnapConstants.Sha256EmptyFileChecksum}. Target path: {currentChecksum.NuspecTargetPath}.");
                 }
 
                 AddPackageFile(deltaNupkgPackageBuilder, patchStream, currentChecksum.NuspecTargetPath, string.Empty);
@@ -663,8 +663,8 @@ namespace Snap.Core
             
             reassembledFullSnapRelease.Sort();
 
-            var reassembledNupkgSha512Checksum = _snapCryptoProvider.Sha512(reassembledFullSnapRelease, packageBuilder);
-            if (reassembledNupkgSha512Checksum != snapRelease.FullSha512Checksum)
+            var reassembledNupkgSha256Checksum = _snapCryptoProvider.Sha256(reassembledFullSnapRelease, packageBuilder);
+            if (reassembledNupkgSha256Checksum != snapRelease.FullSha256Checksum)
             {
                 throw new SnapReleaseChecksumMismatchException(snapRelease);
             }
@@ -722,8 +722,8 @@ namespace Snap.Core
                 foreach (var deltaChecksum in deltaRelease.New)
                 {
                     var srcStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken);
-                    var sha512Checksum = _snapCryptoProvider.Sha512(srcStream);
-                    if (deltaChecksum.FullSha512Checksum != sha512Checksum)
+                    var sha256Checksum = _snapCryptoProvider.Sha256(srcStream);
+                    if (deltaChecksum.FullSha256Checksum != sha256Checksum)
                     {
                         throw new SnapReleaseFileChecksumMismatchException(deltaChecksum, snapRelease);
                     }
@@ -764,13 +764,13 @@ namespace Snap.Core
                     var outputStream = new MemoryStream((int) deltaChecksum.FullFilesize);
                     using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken))
                     {
-                        string sha512Checksum;
+                        string sha256Checksum;
                         if (neverGenerateBsDiffThisAssembly != null)
                         {
                             await patchStream.CopyToAsync(outputStream, cancellationToken);
 
-                            sha512Checksum = _snapCryptoProvider.Sha512(outputStream);
-                            if (deltaChecksum.FullSha512Checksum != sha512Checksum)
+                            sha256Checksum = _snapCryptoProvider.Sha256(outputStream);
+                            if (deltaChecksum.FullSha256Checksum != sha256Checksum)
                             {
                                 throw new SnapReleaseFileChecksumDeltaMismatchException(deltaChecksum, snapRelease, patchStream.Length);
                             }
@@ -786,17 +786,17 @@ namespace Snap.Core
                                                     $"length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
                             }
 
-                            if (deltaChecksum.DeltaSha512Checksum != SnapConstants.Sha512EmptyFileChecksum)
+                            if (deltaChecksum.DeltaSha256Checksum != SnapConstants.Sha256EmptyFileChecksum)
                             {
-                                throw new Exception($"Expected delta file checksum to equal {SnapConstants.Sha512EmptyFileChecksum} when " +
+                                throw new Exception($"Expected delta file checksum to equal {SnapConstants.Sha256EmptyFileChecksum} when " +
                                                     $"{nameof(patchStream)} length is 0 (zero). Target path: {existingChecksum.NuspecTargetPath}.");
                             }
 
                             goto done;
                         }
 
-                        sha512Checksum = _snapCryptoProvider.Sha512(patchStream);
-                        if (deltaChecksum.DeltaSha512Checksum != sha512Checksum)
+                        sha256Checksum = _snapCryptoProvider.Sha256(patchStream);
+                        if (deltaChecksum.DeltaSha256Checksum != sha256Checksum)
                         {
                             throw new SnapReleaseFileChecksumDeltaMismatchException(deltaChecksum, snapRelease, patchStream.Length);
                         }
@@ -814,8 +814,8 @@ namespace Snap.Core
 
                         SnapBinaryPatcher.Apply(packageFileStream, OpenPatchStream, outputStream);
 
-                        sha512Checksum = _snapCryptoProvider.Sha512(outputStream);
-                        if (deltaChecksum.FullSha512Checksum != sha512Checksum)
+                        sha256Checksum = _snapCryptoProvider.Sha256(outputStream);
+                        if (deltaChecksum.FullSha256Checksum != sha256Checksum)
                         {
                             throw new SnapReleaseFileChecksumMismatchException(deltaChecksum, snapRelease);
                         }
@@ -830,9 +830,9 @@ namespace Snap.Core
                     
                 reassembledFullSnapRelease.Version = reassembledFullSnapApp.Version = packageBuilder.Version = deltaRelease.Version.ToNuGetVersion();
                 reassembledFullSnapRelease.Filename = deltaRelease.BuildNugetFullFilename();
-                reassembledFullSnapRelease.FullSha512Checksum = deltaRelease.FullSha512Checksum;
+                reassembledFullSnapRelease.FullSha256Checksum = deltaRelease.FullSha256Checksum;
                 reassembledFullSnapRelease.FullFilesize = deltaRelease.FullFilesize;
-                reassembledFullSnapRelease.DeltaSha512Checksum = deltaRelease.DeltaSha512Checksum;
+                reassembledFullSnapRelease.DeltaSha256Checksum = deltaRelease.DeltaSha256Checksum;
                 reassembledFullSnapRelease.DeltaFilesize = deltaRelease.DeltaFilesize;
 
                 // Nuspec properties                    
@@ -879,8 +879,8 @@ namespace Snap.Core
                 rebuildPackageProgressSource?.Raise(progressPercentage, filesRestored, filesToRestore);
             }
 
-            var releaseChecksum = _snapCryptoProvider.Sha512(snapRelease, packageBuilder);
-            if (releaseChecksum != snapRelease.FullSha512Checksum)
+            var releaseChecksum = _snapCryptoProvider.Sha256(snapRelease, packageBuilder);
+            if (releaseChecksum != snapRelease.FullSha256Checksum)
             {
                 throw new SnapReleaseChecksumMismatchException(snapRelease);
             }
@@ -1146,12 +1146,12 @@ namespace Snap.Core
 
                 if (snapRelease.FullFilesize <= 0)
                 {
-                    throw new Exception($"Invalid file size: {snapRelease.FullSha512Checksum}. Must be greater than zero! Filename: {snapRelease.Filename}");
+                    throw new Exception($"Invalid file size: {snapRelease.FullSha256Checksum}. Must be greater than zero! Filename: {snapRelease.Filename}");
                 }
 
-                if (snapRelease.FullSha512Checksum == null || snapRelease.FullSha512Checksum.Length != 128)
+                if (snapRelease.FullSha256Checksum == null || snapRelease.FullSha256Checksum.Length != 128)
                 {
-                    throw new Exception($"Invalid checksum: {snapRelease.FullSha512Checksum}. Filename: {snapRelease.Filename}");
+                    throw new Exception($"Invalid checksum: {snapRelease.FullSha256Checksum}. Filename: {snapRelease.Filename}");
                 }
             }
 
@@ -1299,7 +1299,7 @@ namespace Snap.Core
                 {
                     NuspecTargetPath = nuspecTargetPath,
                     FullFilesize = srcStream.Length,
-                    FullSha512Checksum = _snapCryptoProvider.Sha512(srcStream)
+                    FullSha256Checksum = _snapCryptoProvider.Sha256(srcStream)
                 });
             }
 

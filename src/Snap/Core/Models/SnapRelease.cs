@@ -38,11 +38,11 @@ namespace Snap.Core.Models
         [Key(9)]
         public long FullFilesize { get; set; }
         [Key(10)]
-        public string FullSha512Checksum { get; set; }
+        public string FullSha256Checksum { get; set; }
         [Key(11)]
         public long DeltaFilesize { get; set; }
         [Key(12)]
-        public string DeltaSha512Checksum { get; set; }
+        public string DeltaSha256Checksum { get; set; }
         [Key(13)]
         public List<SnapReleaseChecksum> New { get; set; }
         [Key(14)]
@@ -83,9 +83,9 @@ namespace Snap.Core.Models
             IsFull = release.IsFull;
             Filename = release.Filename;
             FullFilesize = release.FullFilesize;
-            FullSha512Checksum = release.FullSha512Checksum;
+            FullSha256Checksum = release.FullSha256Checksum;
             DeltaFilesize = release.DeltaFilesize;
-            DeltaSha512Checksum = release.DeltaSha512Checksum;
+            DeltaSha256Checksum = release.DeltaSha256Checksum;
             CreatedDateUtc = release.CreatedDateUtc;
             ReleaseNotes = release.ReleaseNotes;
             Gc = release.Gc;

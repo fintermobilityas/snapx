@@ -23,11 +23,11 @@ namespace Snap.Core.Models
             }
         }
         [Key(1)]
-        public string FullSha512Checksum { get; set; }
+        public string FullSha256Checksum { get; set; }
         [Key(2)]
         public long FullFilesize { get; set; }
         [Key(3)]
-        public string DeltaSha512Checksum { get; set; }
+        public string DeltaSha256Checksum { get; set; }
         [Key(4)]
         public long DeltaFilesize { get; set; }
 
@@ -40,9 +40,9 @@ namespace Snap.Core.Models
         {
             if (checksum == null) throw new ArgumentNullException(nameof(checksum));
             NuspecTargetPath = checksum.NuspecTargetPath;           
-            FullSha512Checksum = checksum.FullSha512Checksum;
+            FullSha256Checksum = checksum.FullSha256Checksum;
             FullFilesize = checksum.FullFilesize;
-            DeltaSha512Checksum = checksum.DeltaSha512Checksum;
+            DeltaSha256Checksum = checksum.DeltaSha256Checksum;
             DeltaFilesize = checksum.DeltaFilesize;
         }
     }

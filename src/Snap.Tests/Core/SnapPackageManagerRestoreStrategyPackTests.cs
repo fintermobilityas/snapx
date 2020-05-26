@@ -118,8 +118,8 @@ namespace Snap.Tests.Core
 
             using var packageArchiveReader = new PackageArchiveReader(genesisPackageAbsolutePath);
             Assert.Equal(genesisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-            Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+            Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
         }
 
         [Fact]
@@ -201,22 +201,22 @@ namespace Snap.Tests.Core
             using (var packageArchiveReader = new PackageArchiveReader(genesisPackageAbsolutePath))
             {
                 Assert.Equal(genesisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                    _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                    _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
             }
 
             using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
             {
                 Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                    _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                    _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
             }
 
             using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
             {
                 Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
-                    _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha256Checksum,
+                    _snapCryptoProvider.Sha256(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
             }
         }
 
@@ -317,8 +317,8 @@ namespace Snap.Tests.Core
 
             using var packageArchiveReader = new PackageArchiveReader(genesisPackageAbsolutePath);
             Assert.Equal(genesisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-            Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+            Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
         }
 
         [Fact]
@@ -447,15 +447,15 @@ namespace Snap.Tests.Core
             using (var packageArchiveReader = new PackageArchiveReader(genesisPackageAbsolutePath))
             {
                 Assert.Equal(genesisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                    _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                    _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
             }
 
             using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
             {
                 Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
-                    _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha256Checksum,
+                    _snapCryptoProvider.Sha256(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
             }
         }
 
@@ -579,22 +579,22 @@ namespace Snap.Tests.Core
             using (var packageArchiveReader = new PackageArchiveReader(genesisPackageAbsolutePath))
             {
                 Assert.Equal(genesisPackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                    _snapCryptoProvider.Sha512(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(genesisPackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                    _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
             }
 
             using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
             {
                 Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha512Checksum,
-                    _snapCryptoProvider.Sha512(update1PackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha256Checksum,
+                    _snapCryptoProvider.Sha256(update1PackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
             }
 
             using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
             {
                 Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha512Checksum,
-                    _snapCryptoProvider.Sha512(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
+                Assert.Equal(update1PackageContext.DeltaPackageSnapRelease.DeltaSha256Checksum,
+                    _snapCryptoProvider.Sha256(update1PackageContext.DeltaPackageSnapRelease, packageArchiveReader, _snapPack));
             }
         }
     }

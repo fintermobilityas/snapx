@@ -549,7 +549,7 @@ namespace Snap.Core
             restoreStopwatch.Restart();
 
             var nupkgFileSize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
-            var nupkgChecksum = snapRelease.IsFull ? snapRelease.FullSha512Checksum : snapRelease.DeltaSha512Checksum;
+            var nupkgChecksum = snapRelease.IsFull ? snapRelease.FullSha256Checksum : snapRelease.DeltaSha256Checksum;
 
             logger?.Debug($"Downloading nupkg: {snapRelease.Filename}. " +
                           $"File size: {nupkgFileSize.BytesAsHumanReadable()}. " +
@@ -581,7 +581,7 @@ namespace Snap.Core
 
                     using (var packageArchiveReader = new PackageArchiveReader(downloadResult.PackageStream, true))
                     {
-                        var downloadChecksum = _snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, _snapPack);
+                        var downloadChecksum = _snapCryptoProvider.Sha256(snapRelease, packageArchiveReader, _snapPack);
                         if (downloadChecksum != nupkgChecksum)
                         {
                             logger?.Error($"Checksum mismatch for downloaded nupkg: {snapRelease.Filename}");
@@ -621,10 +621,10 @@ namespace Snap.Core
                     logger?.Debug($"Checksumm in progress: {filename}.");
                 }
 
-                var sha512Checksum = _snapCryptoProvider.Sha512(snapRelease, packageArchiveReader, _snapPack);
+                var sha256Checksum = _snapCryptoProvider.Sha256(snapRelease, packageArchiveReader, _snapPack);
                 if (snapRelease.IsFull)
                 {
-                    if (sha512Checksum == snapRelease.FullSha512Checksum)
+                    if (sha256Checksum == snapRelease.FullSha256Checksum)
                     {
                         if (!silent)
                         {
@@ -635,7 +635,7 @@ namespace Snap.Core
                 }
                 else if (snapRelease.IsDelta)
                 {
-                    if (sha512Checksum == snapRelease.DeltaSha512Checksum)
+                    if (sha256Checksum == snapRelease.DeltaSha256Checksum)
                     {
                         if (!silent)
                         {

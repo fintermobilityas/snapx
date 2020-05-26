@@ -333,7 +333,7 @@ namespace Snap.Shared.Tests
                 Assert.True(SnapFilesystem.FileExists(checksumFileAbsolutePath));
 
                 using var fileStream = SnapFilesystem.FileRead(checksumFileAbsolutePath);
-                var diskSha512Checksum = SnapCryptoProvider.Sha512(fileStream);
+                var diskSha256Checksum = SnapCryptoProvider.Sha256(fileStream);
                 var diskFilesize = SnapFilesystem.FileStat(checksumFileAbsolutePath).Length;
 
                 SnapReleaseChecksum targetChecksum;
@@ -366,11 +366,11 @@ namespace Snap.Shared.Tests
                 checksum:
                 Assert.NotNull(targetChecksum);
    
-                var expectedChecksum = useFullChecksum ? targetChecksum.FullSha512Checksum : targetChecksum.DeltaSha512Checksum;
+                var expectedChecksum = useFullChecksum ? targetChecksum.FullSha256Checksum : targetChecksum.DeltaSha256Checksum;
                 var expectedFilesize = useFullChecksum ? targetChecksum.FullFilesize : targetChecksum.DeltaFilesize;
 
                 Assert.NotNull(expectedChecksum);
-                if (expectedChecksum == SnapConstants.Sha512EmptyFileChecksum)
+                if (expectedChecksum == SnapConstants.Sha256EmptyFileChecksum)
                 {
                     Assert.Equal(0, expectedFilesize);
                 }
@@ -379,14 +379,14 @@ namespace Snap.Shared.Tests
                     Assert.True(expectedFilesize > 0);
                 }
 
-                Assert.Equal(expectedChecksum, diskSha512Checksum);
+                Assert.Equal(expectedChecksum, diskSha256Checksum);
                 Assert.Equal(expectedFilesize, diskFilesize);
             }
 
-            var snapReleaseChecksum = SnapCryptoProvider.Sha512(snapRelease, packageArchiveReader, SnapPack);
+            var snapReleaseChecksum = SnapCryptoProvider.Sha256(snapRelease, packageArchiveReader, SnapPack);
             var snapReleaseFilesize = SnapFilesystem.FileStat(nupkgAbsoluteFilename)?.Length;
                 
-            var expectedReleaseChecksum = snapRelease.IsFull ? snapRelease.FullSha512Checksum : snapRelease.DeltaSha512Checksum;
+            var expectedReleaseChecksum = snapRelease.IsFull ? snapRelease.FullSha256Checksum : snapRelease.DeltaSha256Checksum;
             var expectedReleaseFilesize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
 
             Assert.Equal(expectedReleaseChecksum, snapReleaseChecksum);

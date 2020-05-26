@@ -134,10 +134,10 @@ namespace Snap.Core.Resources
             {
                 if (lhsStream == null) throw new ArgumentNullException(nameof(lhsStream));
                 if (filename == null) throw new ArgumentNullException(nameof(filename));
-                var lhsSha512 = snapCryptoProvider.Sha512(lhsStream);
+                var lhsSha256 = snapCryptoProvider.Sha256(lhsStream);
                 using var rhsStream = filesystem.FileRead(filename);
-                var rhsSha512 = snapCryptoProvider.Sha512(rhsStream);
-                return !string.Equals(lhsSha512, rhsSha512);
+                var rhsSha256 = snapCryptoProvider.Sha256(rhsStream);
+                return !string.Equals(lhsSha256, rhsSha256);
             }
             
             if (osPlatform == OSPlatform.Windows)

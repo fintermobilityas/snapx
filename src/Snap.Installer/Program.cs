@@ -127,7 +127,7 @@ namespace Snap.Installer
 
             try
             {
-                var mutexName = snapCryptoProvider.Sha512(Encoding.UTF8.GetBytes(workingDirectory));
+                var mutexName = snapCryptoProvider.Sha256(Encoding.UTF8.GetBytes(workingDirectory));
                 _mutexSingleInstanceWorkingDirectory = new Mutex(true, $"Global\\{mutexName}", out var createdNew);
                 if (!createdNew)
                 {

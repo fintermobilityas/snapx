@@ -1212,12 +1212,10 @@ namespace Snap.Core
 
             if (targetOs == OSPlatform.Linux)
             {
-                using (var coreRun = _snapEmbeddedResources.CoreRunLinux)
+                using var coreRun = _snapEmbeddedResources.CoreRunLinux;
+                if (coreRun.Length <= 0)
                 {
-                    if (coreRun.Length <= 0)
-                    {
-                        throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}");
-                    }
+                    throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}");
                 }
 
                 return;

@@ -148,11 +148,10 @@ namespace Snap.Core.Resources
                 {
                     return;
                 }
-                using (var dstStream = filesystem.FileWrite(filename))
-                {
-                    using var coreRunLibWindows = CoreRunLibWindows;
-                    await coreRunLibWindows.CopyToAsync(dstStream);
-                }
+
+                using var dstStream = filesystem.FileWrite(filename);
+                using var coreRunLibWindows = CoreRunLibWindows;
+                await coreRunLibWindows.CopyToAsync(dstStream);
 
                 return;
             }
@@ -165,11 +164,10 @@ namespace Snap.Core.Resources
                 {
                     return;
                 }
-                using (var dstStream = filesystem.FileWrite(filename))
-                {
-                    using var coreRunLibLinux = CoreRunLibLinux;
-                    await coreRunLibLinux.CopyToAsync(dstStream);
-                }
+
+                using var dstStream = filesystem.FileWrite(filename);
+                using var coreRunLibLinux = CoreRunLibLinux;
+                await coreRunLibLinux.CopyToAsync(dstStream);
 
                 return;
             }

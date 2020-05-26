@@ -24,10 +24,8 @@ namespace snapx
 
             try
             {
-                using (var fileStream = new FileStream(sha256Options.Filename, FileMode.Open, FileAccess.Read))
-                {
-                    logger.Info(snapCryptoProvider.Sha256(fileStream));
-                }
+                using var fileStream = new FileStream(sha256Options.Filename, FileMode.Open, FileAccess.Read);
+                logger.Info(snapCryptoProvider.Sha256(fileStream));
                 return 0;
             }
             catch (Exception e)

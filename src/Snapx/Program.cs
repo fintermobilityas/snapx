@@ -211,7 +211,7 @@ namespace snapx
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
-            var snapApp = snapAppTargets?.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
+            var snapApp = snapAppTargets.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
                                                             && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
@@ -256,10 +256,7 @@ namespace snapx
                     throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {expectedSchemaVersion}.");
                 }
 
-                if (snapApps.Generic == null)
-                {
-                    snapApps.Generic = new SnapAppsGeneric();
-                }
+                snapApps.Generic ??= new SnapAppsGeneric();
 
                 return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), false, snapsFilename);
             }
@@ -274,7 +271,7 @@ namespace snapx
             }
 
             error:
-            return (null, null, true, snapsFilename);
+            return (new SnapApps(), new List<SnapApp>(), true, snapsFilename);
         }
 
         static string BuildArtifactsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,

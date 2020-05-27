@@ -58,15 +58,18 @@ namespace Snap.Installer
            
             try
             {
+                var headless = args.Any(x => string.Equals("--headless", x, StringComparison.Ordinal));
+                var unitTest = args.Any(x => string.Equals("--unit-test", x, StringComparison.Ordinal));
+
                 var snapOs = SnapOs.AnyOs;
                 
-                ConfigureNlog(snapOs);                
+                ConfigureNlog(snapOs);
                 LogProvider.SetCurrentLogProvider(new NLogLogProvider());
 
                 var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
                 
                 var environment = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
-                exitCode = MainImpl(environment, snapInstallerLogger, args);
+                exitCode = MainImpl(environment, snapInstallerLogger, headless, unitTest);
             }
             catch (Exception e)
             {
@@ -89,13 +92,12 @@ namespace Snap.Installer
             return exitCode;
         }
 
-        static int MainImpl([NotNull] SnapInstallerEnvironment snapInstallerEnvironment, [NotNull] ILog snapInstallerLogger, [NotNull] string[] args)
+        static int MainImpl([NotNull] SnapInstallerEnvironment snapInstallerEnvironment, [NotNull] ILog snapInstallerLogger, bool headless, bool unitTest)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
-            if (args == null) throw new ArgumentNullException(nameof(args));
-            
-            if (args.Length == 1 && args.Any(x => string.Equals("--unit-test", x, StringComparison.Ordinal)))
+        
+            if (unitTest)
             {
                 return UnitTestExitCode;
             }
@@ -123,7 +125,8 @@ namespace Snap.Installer
             {
                 return Install(snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
-                    snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger);
+                    snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger,
+                    headless);
             }
 
             try

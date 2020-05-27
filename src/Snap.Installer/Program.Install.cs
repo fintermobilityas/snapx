@@ -26,7 +26,9 @@ namespace Snap.Installer
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
             [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
-            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger)
+            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager,
+            [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger,
+            bool headless)
         {
             if (environment == null) throw new ArgumentNullException(nameof(environment));
             if (snapInstallerEmbeddedResources == null) throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
@@ -52,14 +54,22 @@ namespace Snap.Installer
 
             // ReSharper disable once ImplicitlyCapturedClosure
 
-            async Task InstallInBackgroundAsync(MainWindowViewModel mainWindowViewModel)
+            async Task InstallInBackgroundAsync(IMainWindowViewModel mainWindowViewModel)
             {
                 if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
 
-                diskLogger.Info("Waiting for main window to become visible.");
-                onFirstAnimationRenderedEvent.Wait(cancellationToken);
-                onFirstAnimationRenderedEvent.Dispose();
-                diskLogger.Info("Main window should now be visible.");
+                if (mainWindowViewModel.Headless)
+                {
+                    diskLogger.Info("Headless install.");
+                    onFirstAnimationRenderedEvent.Dispose();
+                }
+                else
+                {
+                    diskLogger.Info("Waiting for main window to become visible.");
+                    onFirstAnimationRenderedEvent.Wait(cancellationToken);
+                    onFirstAnimationRenderedEvent.Dispose();
+                    diskLogger.Info("Main window should now be visible.");
+                }
 
                 var mainWindowLogger = new LogForwarder(LogLevel.Info, diskLogger, (level, func, exception, parameters) =>
                 {
@@ -380,11 +390,24 @@ namespace Snap.Installer
                 environment.Shutdown();
             }
 
+            if (headless)
+            {
+                try
+                {
+                    InstallInBackgroundAsync(new ConsoleMainViewModel()).Wait(cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore
+                }
+                return exitCode;
+            }
+
             var avaloniaApp = BuildAvaloniaApp<App>()
                 .AfterSetup(builder =>
                 {
                     MainWindow.Environment = environment;
-                    MainWindow.ViewModel = new MainWindowViewModel(snapInstallerEmbeddedResources,
+                    MainWindow.ViewModel = new AvaloniaMainWindowViewModel(snapInstallerEmbeddedResources,
                         installerProgressSource, () => onFirstAnimationRenderedEvent.Set(), cancellationToken);
 
                     Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
@@ -395,7 +418,7 @@ namespace Snap.Installer
             return exitCode;
         }
 
-        static void SetStatusText([NotNull] MainWindowViewModel mainWindowViewModel, [NotNull] string statusText)
+        static void SetStatusText([NotNull] IMainWindowViewModel mainWindowViewModel, [NotNull] string statusText)
         {
             if (mainWindowViewModel == null) throw new ArgumentNullException(nameof(mainWindowViewModel));
             if (statusText == null) throw new ArgumentNullException(nameof(statusText));

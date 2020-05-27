@@ -13,7 +13,7 @@ using Snap.Installer.Core;
 
 namespace Snap.Installer.ViewModels
 {
-    internal sealed class MainWindowViewModel : ViewModelBase
+    internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowViewModel
     {
         [NotNull] readonly ISnapInstallerEmbeddedResources _snapInstallerEmbeddedResources;
         readonly Action _onFirstFrameAnimatedCallback;
@@ -23,6 +23,8 @@ namespace Snap.Installer.ViewModels
         Bitmap _bitmap;
         string _statusText;
         double _progress;
+
+        public bool Headless => true;
 
         [UsedImplicitly]
         public double Progress
@@ -45,7 +47,7 @@ namespace Snap.Installer.ViewModels
             set => this.RaiseAndSetIfChanged(ref _bitmap, value);
         }
 
-        public MainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, 
+        public AvaloniaMainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, 
             [NotNull] ISnapProgressSource progressSource, [NotNull] Action onFirstFrameAnimatedCallback, CancellationToken cancellationToken)
         {
             if (progressSource == null) throw new ArgumentNullException(nameof(progressSource));

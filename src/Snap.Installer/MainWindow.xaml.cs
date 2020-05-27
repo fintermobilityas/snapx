@@ -14,7 +14,7 @@ namespace Snap.Installer
     internal sealed class MainWindow : ChromeLessWindow
     {
         public static ISnapInstallerEnvironment Environment { get; set; }
-        public static MainWindowViewModel ViewModel { get; set; }
+        public static AvaloniaMainWindowViewModel ViewModel { get; set; }
 
         public MainWindow()
         {

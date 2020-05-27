@@ -228,7 +228,7 @@ namespace snapx
 
             const string snapxYamlFilename = "snapx.yml";
 
-            var snapsFilename = filesystem.PathCombine(workingDirectory, snapxYamlFilename);
+            var snapsFilename = filesystem.PathCombine(workingDirectory, ".snapx", snapxYamlFilename);
             if (!filesystem.FileExists(snapsFilename))
             {
                 SnapLogger.Error($"Snap manifest does not exist on disk: {snapsFilename}");
@@ -290,7 +290,7 @@ namespace snapx
             };
             
             return snapAppsGeneric.Artifacts == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(properties) :
+                filesystem.PathCombine(workingDirectory, ".snapx", "artifacts", "$id$/$rid$/$version$").ExpandProperties(properties) :
                 filesystem.PathCombine(workingDirectory, snapAppsGeneric.Artifacts.ExpandProperties(properties));           
         }
 
@@ -309,7 +309,7 @@ namespace snapx
             };
             
             return snapAppsGeneric.Installers == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "installers", "$id$/$rid$").ExpandProperties(properties) :
+                filesystem.PathCombine(workingDirectory, ".snapx", "installers", "$id$/$rid$").ExpandProperties(properties) :
                 filesystem.PathCombine(workingDirectory, snapAppsGeneric.Artifacts.ExpandProperties(properties));           
         }
 
@@ -328,7 +328,7 @@ namespace snapx
             };
             
             return snapAppsGeneric.Packages == null ? 
-                filesystem.PathCombine(workingDirectory, "snapx", "packages", "$id$/$rid$").ExpandProperties(properties) :
+                filesystem.PathCombine(workingDirectory, ".snapx", "packages", "$id$/$rid$").ExpandProperties(properties) :
                 filesystem.PathGetFullPath(snapAppsGeneric.Packages).ExpandProperties(properties);            
         }
 

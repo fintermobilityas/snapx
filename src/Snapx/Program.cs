@@ -332,19 +332,6 @@ namespace snapx
                 filesystem.PathGetFullPath(snapAppsGeneric.Packages).ExpandProperties(properties);            
         }
 
-        static string BuildNuspecsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,
-            [NotNull] SnapApp snapApp)
-        {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            if (snapAppsGeneric == null) throw new ArgumentNullException(nameof(snapAppsGeneric));
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            
-            return snapAppsGeneric.Nuspecs == null ?
-                filesystem.PathCombine(workingDirectory, "snapx", "nuspecs") :
-                filesystem.PathGetFullPath(snapAppsGeneric.Nuspecs);           
-        }
-
         static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
             [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken)

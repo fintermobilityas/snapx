@@ -73,8 +73,7 @@ namespace snapx
             var artifactsDirectory = BuildArtifactsDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
-            var nuspecsDirectory = BuildNuspecsDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
-
+    
             filesystem.DirectoryCreateIfNotExists(installersDirectory);
             filesystem.DirectoryCreateIfNotExists(packagesDirectory);
 
@@ -84,7 +83,6 @@ namespace snapx
             logger.Info($"Packages directory: {packagesDirectory}");
             logger.Info($"Artifacts directory: {artifactsDirectory}");
             logger.Info($"Installers directory: {installersDirectory}");
-            logger.Info($"Nuspecs directory: {nuspecsDirectory}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
             logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"Id: {snapApp.Id}");

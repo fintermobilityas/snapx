@@ -203,6 +203,7 @@ namespace Snap.Core.Models
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapAppsGeneric
     {
+        public string Token { get; set; }
         public string Artifacts { get; set; }
         public string Packages { get; set; }
         public string Nuspecs { get; set; }

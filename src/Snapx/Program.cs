@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using JetBrains.Annotations;
+using ServiceStack;
 using snapx.Core;
 using snapx.Options;
 using Snap;
@@ -136,10 +137,12 @@ namespace snapx
                 nugetServiceCommandPack, snapHttpClient,
                 snapCryptoProvider, snapExtractor, snapAppReader, snapPack);
 
+            var distributedMutexClient = new DistributedMutexClient(new JsonServiceClient("https://snapx.dev"));
+
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
-                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger,
+                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger, distributedMutexClient,
                 toolWorkingDirectory, workingDirectory, cancellationToken);
         }
 
@@ -152,6 +155,7 @@ namespace snapx
             [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
             [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, INugetService nugetServiceCommandRestore,
             [NotNull] INugetService nugetServiceNoopLogger,
+            [NotNull] IDistributedMutexClient distributedMutexClient,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
@@ -170,6 +174,7 @@ namespace snapx
             if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
+            if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
@@ -185,7 +190,7 @@ namespace snapx
                          SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                         nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapPackageManager, coreRunLib, 
-                        snapNetworkTimeProvider, SnapPackLogger, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                        snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     (Sha256Options opts) => CommandSha256(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
                     (ListOptions opts) => CommandListAsync(opts, snapFilesystem,  snapAppReader,

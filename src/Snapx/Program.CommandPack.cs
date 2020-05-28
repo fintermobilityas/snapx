@@ -27,7 +27,7 @@ namespace snapx
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
-            [NotNull] ILog logger,
+            [NotNull] ILog logger, [NotNull] IDistributedMutexClient distributedMutexClient,
             [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -44,6 +44,7 @@ namespace snapx
             if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
             if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
             if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
@@ -79,6 +80,8 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
+            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, $"{snapApps.Generic.Token}-{snapApp.Id}", cancellationToken);
+
             logger.Info($"Schema version: {snapApps.Schema}");
             logger.Info($"Packages directory: {packagesDirectory}");
             logger.Info($"Artifacts directory: {artifactsDirectory}");
@@ -94,6 +97,18 @@ namespace snapx
             logger.Info($"Installers: {installersStr}");
             var shortcutsStr = !snapApp.Target.Shortcuts.Any() ? "None" : string.Join(", ", snapApp.Target.Shortcuts);
             logger.Info($"Shortcuts: {shortcutsStr}");
+
+
+            if (snapApps.Generic.Token != null)
+            {
+                logger.Info('-'.Repeat(TerminalDashesWidth));
+
+                if (!await distributedMutex.TryAquireAsync())
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    return -1;
+                }
+            }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
 
@@ -342,7 +357,7 @@ namespace snapx
             if (snapApps.Generic.PackStrategy == SnapAppsPackStrategy.push)
             {
                 await PushPackagesAsync(packOptions, logger, filesystem, nugetService,
-                    snapPackageManager, snapAppsReleases, fullOrDeltaSnapApp, snapAppChannel, pushPackages, cancellationToken);
+                    snapPackageManager, distributedMutex, snapAppsReleases, fullOrDeltaSnapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
             logger.Info('-'.Repeat(TerminalDashesWidth));
@@ -358,7 +373,7 @@ namespace snapx
         }
 
         static async Task PushPackagesAsync([NotNull] PackOptions packOptions, [NotNull] ILog logger, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] SnapAppsReleases snapAppsReleases,
+            [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager, [NotNull] IDistributedMutex distributedMutex, [NotNull] SnapAppsReleases snapAppsReleases,
             [NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel,
             [NotNull] List<string> packages, CancellationToken cancellationToken)
         {
@@ -367,6 +382,7 @@ namespace snapx
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
+            if (distributedMutex == null) throw new ArgumentNullException(nameof(distributedMutex));
             if (snapAppsReleases == null) throw new ArgumentNullException(nameof(snapAppsReleases));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
@@ -418,6 +434,12 @@ namespace snapx
 
                 return SnapUtility.RetryAsync(async () =>
                 {
+                    if (!distributedMutex.Acquired)
+                    {
+                        throw new Exception("Distributed mutex has expired. This is most likely due to intermittent internet connection issues " +
+                                            "or another user is attempting to publish a new version. Please retry pack operation.");
+                    }
+
                     logger.Info($"Pushing {packageName} to {packageSource.Name}");
                     var pushStopwatch = new Stopwatch();
                     pushStopwatch.Restart();

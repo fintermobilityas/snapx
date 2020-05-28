@@ -116,7 +116,7 @@ namespace snapx
                         return 1;
                     }
 
-                    using (uncached.releasesMemoryStream)
+                    await using (uncached.releasesMemoryStream)
                     {
                         await filesystem.FileWriteAsync(uncached.releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
                     }

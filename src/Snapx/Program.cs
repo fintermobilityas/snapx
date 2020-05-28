@@ -478,12 +478,12 @@ namespace snapx
                 var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,
                     snapOs.Filesystem.PathGetFileName(releasesNupkgAbsolutePath));
 
-                using (installerZipMemoryStream)
-                using (warpPackerMemoryStream)
+                await using (installerZipMemoryStream)
+                await using (warpPackerMemoryStream)
                 {
                     using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
-                    using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
-                    using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
+                    await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
+                    await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
                     using var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read);
                     snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
 
@@ -522,13 +522,13 @@ namespace snapx
             {
                 var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
 
-                using (installerZipMemoryStream)
-                using (warpPackerMemoryStream)
+                await using (installerZipMemoryStream)
+                await using (warpPackerMemoryStream)
                 {
-                    using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
+                    await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
                     using var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read);
                     using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
-                    using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
+                    await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
                     snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
                         
                     progressSource.Raise(10);

@@ -236,8 +236,8 @@ namespace snapx
 
             var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
 
-            using (fullNupkgMemoryStream)
-            using (deltaNupkgMemorystream)
+            await using (fullNupkgMemoryStream)
+            await using (deltaNupkgMemorystream)
             {
                 logger.Info($"Writing full nupkg to disk: {fullSnapRelease.Filename}. File size: {fullSnapRelease.FullFilesize.BytesAsHumanReadable()}");
                 await filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, default);
@@ -285,7 +285,7 @@ namespace snapx
 
             logger.Info("Finished building releases manifest");
 
-            using (releasesMemoryStream)
+            await using (releasesMemoryStream)
             {
                 if (fullOrDeltaSnapApp.Target.Installers.Any())
                 {

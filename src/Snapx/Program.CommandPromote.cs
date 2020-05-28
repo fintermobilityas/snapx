@@ -194,7 +194,7 @@ namespace snapx
 
             const int pushRetries = 3;
 
-            using (releasesPackageMemoryStream)
+            await using (releasesPackageMemoryStream)
             {
                 using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
                 var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();

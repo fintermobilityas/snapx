@@ -3,8 +3,6 @@ name: snapx
 on: push
 
 env:
-  POWERSHELL_VERSION: 7.0.1
-  DOTNET_VERSION: 3.1.300
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   SNAPX_VERSION: 2.2.${{ github.run_number }}
 
@@ -34,14 +32,17 @@ jobs:
             lfs: true
             token: ${{ secrets.CI_PAT }}
             submodules: true
-    
-      - name: Setup .NET Core
+
+      - name: Read dotnet sdk version from global.json
+        shell: pwsh
+        run: |
+          $DOTNET_VERSION = Get-Content ".\$GITHUB_WORKSPACE\global.json" | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version    
+          echo "::set-env name=DOTNET_VERSION::$DOTNET_VERSION"
+          
+      - name: Setup dotnet
         uses: actions/setup-dotnet@v1.4.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Setup powershell
-        run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
 
       - name: Install build dependencies
         run: |
@@ -99,13 +100,16 @@ jobs:
           token: ${{ secrets.CI_PAT }}
           submodules: true
 
-      - name: Setup .NET Core
+      - name: Read dotnet sdk version from global.json
+        shell: pwsh
+        run: |
+          $DOTNET_VERSION = Get-Content ".\$GITHUB_WORKSPACE\global.json" | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version    
+          echo "::set-env name=DOTNET_VERSION::$DOTNET_VERSION"
+          
+      - name: Setup dotnet
         uses: actions/setup-dotnet@v1.4.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Setup powershell
-        run: dotnet tool update powershell --version ${{ env.POWERSHELL_VERSION }} --global
 
       - name: Download unix artifacts
         uses: actions/download-artifact@v2

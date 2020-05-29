@@ -71,7 +71,7 @@ namespace Snap.Core.Logging
             var message = string.Format(CultureInfo.InvariantCulture, messageFunc(), formatParameters);
             if (exception != null)
             {
-                message = message + "|" + exception;
+                message = message + " | " + exception;
             }
 
             if (exception != null)

@@ -9,7 +9,7 @@ namespace snapx.Options
     {
         [Option('a', "app", HelpText = "Application id", Required = true)]
         public string Id { get; [UsedImplicitly] set; }
-        [Option("release", HelpText = "Release of lock for application")]
+        [Option("release", HelpText = "Release lock for application")]
         public bool Release { get; [UsedImplicitly] set; }
     }
 }

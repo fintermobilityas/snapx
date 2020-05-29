@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Logging;
-using Snap.NuGet;
 using snapx.Core;
 using snapx.Options;
 
@@ -14,7 +13,7 @@ namespace snapx
     internal partial class Program
     {
         static async Task<int> CommandLock([NotNull] LockOptions lockOptions, [NotNull] IDistributedMutexClient distributedMutexClient,
-            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader appReader,
             [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (lockOptions == null) throw new ArgumentNullException(nameof(lockOptions));
@@ -22,9 +21,9 @@ namespace snapx
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var (snapApps, snapAppses, _, _) = BuildSnapAppsFromDirectory(filesystem, appReader, nuGetPackageSources, workingDirectory);
+            var snapApps = BuildSnapAppsFromDirectory(filesystem, appReader, workingDirectory);
 
-            var snapApp = snapAppses.FirstOrDefault(x => string.Equals(x.Id, lockOptions.Id, StringComparison.OrdinalIgnoreCase));
+            var snapApp = snapApps.Apps.FirstOrDefault(x => string.Equals(x.Id, lockOptions.Id, StringComparison.OrdinalIgnoreCase));
             if (snapApp == null)
             {
                 return -1;

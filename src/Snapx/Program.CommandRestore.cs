@@ -45,7 +45,7 @@ namespace snapx
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
 
-            var (snapApps, snapAppTargets, errorBuildingSnapApps, _) = BuildSnapAppsFromDirectory(filesystem, snapAppReader, nuGetPackageSources, workingDirectory);
+            var (snapApps, snapAppTargets, errorBuildingSnapApps, _) = BuildSnapAppsesFromDirectory(filesystem, snapAppReader, nuGetPackageSources, workingDirectory);
 
             if (!snapApps.Apps.Any() || errorBuildingSnapApps)
             {

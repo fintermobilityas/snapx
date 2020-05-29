@@ -38,6 +38,8 @@ namespace snapx
         static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
 
         static int TerminalDashesWidth => Console.BufferWidth;
+        
+        const string SnapxYamlFilename = "snapx.yml";
 
         internal static int Main(string[] args)
         {
@@ -93,18 +95,6 @@ namespace snapx
                 return -1;
             }
 
-            INuGetPackageSources nuGetPackageSources;
-
-            try
-            {
-                nuGetPackageSources = new NuGetMachineWidePackageSources(snapOs.Filesystem, snapOs.Filesystem.DirectoryWorkingDirectory());
-            }
-            catch (Exception e)
-            {
-                SnapLogger.Error($"Exception thrown while parsing nuget sources: {e.Message}");
-                return -1;
-            }
-
             var workingDirectory = Environment.CurrentDirectory;
             if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparator))
             {
@@ -124,7 +114,6 @@ namespace snapx
             var snapAppWriter = new SnapAppWriter();
             var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
-            var snapInstaller = new SnapInstaller(snapExtractor, snapPack, snapOs, snapEmbeddedResources, snapAppWriter);
             var snapSpecsReader = new SnapAppReader();
             var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);
             var snapHttpClient = new SnapHttpClient(new HttpClient());
@@ -141,7 +130,7 @@ namespace snapx
             var distributedMutexClient = new DistributedMutexClient(new JsonServiceClient("https://snapx.dev"));
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
-                snapInstaller, snapSpecsReader, snapCryptoProvider, nuGetPackageSources, 
+                snapSpecsReader, snapCryptoProvider,
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger, distributedMutexClient,
                 toolWorkingDirectory, workingDirectory, cancellationToken);
@@ -150,8 +139,8 @@ namespace snapx
         static int MainAsync([NotNull] string[] args,
             [NotNull] CoreRunLib coreRunLib,
             [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
-            [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapInstaller snapInstaller, [NotNull] ISnapAppReader snapAppReader,
-            [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPack snapPack,
+            [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapPack snapPack,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapxEmbeddedResources snapXEmbeddedResources, [NotNull] SnapPackageManager snapPackageManager,
             [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
             [NotNull] INugetService nugetServiceCommandPack, [NotNull] INugetService nugetServiceCommandPromote, INugetService nugetServiceCommandRestore,
@@ -164,10 +153,8 @@ namespace snapx
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
-            if (snapInstaller == null) throw new ArgumentNullException(nameof(snapInstaller));
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapCryptoProvider == null) throw new ArgumentNullException(nameof(snapCryptoProvider));
-            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
@@ -181,57 +168,92 @@ namespace snapx
 
             if (args == null) throw new ArgumentNullException(nameof(args));
 
+
             return Parser
                 .Default
                 .ParseArguments<PromoteOptions, PackOptions, Sha256Options, RcEditOptions, ListOptions, RestoreOptions, LockOptions>(args)
                 .MapResult(
-                    (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader, snapAppWriter,
-                        nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
-                        snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
-                         SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
-                    (PackOptions opts) => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                        nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources, snapExtractor, snapPackageManager, coreRunLib, 
-                        snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient, toolWorkingDirectory, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (PromoteOptions opts) =>
+                    {
+                        var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapPromoteLogger);
+                        if (nuGetPackageSources == null)
+                        {
+                            return -1;
+                        }
+                        return CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                            nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack,
+                            snapOs.SpecialFolders,
+                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
+                            SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                    },
+                    (PackOptions opts) =>
+                    {
+                        var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapPackLogger);
+                        if (nuGetPackageSources == null)
+                        {
+                            return -1;
+                        }
+                        return CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                            nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
+                            snapExtractor, snapPackageManager, coreRunLib,
+                            snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient, toolWorkingDirectory,
+                            workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                    },
                     (Sha256Options opts) => CommandSha256(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
-                    (ListOptions opts) => CommandListAsync(opts, snapFilesystem,  snapAppReader,
-                        nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
-                        (RestoreOptions opts) => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
-                            nugetServiceCommandRestore, snapExtractor, snapPackageManager, snapOs, snapXEmbeddedResources, coreRunLib, snapPack,
-                             SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
-                    (LockOptions opts) => CommandLock(opts, distributedMutexClient, snapFilesystem, snapAppReader, 
-                        nuGetPackageSources, SnapLockLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (ListOptions opts) =>
+                    {
+                        var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapListLogger);
+                        if (nuGetPackageSources == null)
+                        {
+                            return -1;
+                        }
+                        return CommandListAsync(opts, snapFilesystem, snapAppReader,
+                            nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger,
+                            workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                    },
+                    (RestoreOptions opts) =>
+                    {
+                        var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapRestoreLogger);
+                        if (nuGetPackageSources == null)
+                        {
+                            return -1;
+                        }
+                        return CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                            nuGetPackageSources,
+                            nugetServiceCommandRestore, snapExtractor, snapPackageManager, snapOs,
+                            snapXEmbeddedResources, coreRunLib, snapPack,
+                            SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                    },
+                    (LockOptions opts) => CommandLock(opts, distributedMutexClient, snapFilesystem, snapAppReader, SnapLockLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     errs =>
                     {
                         snapOs.EnsureConsole();
                         return 0;
                     });
         }
-        
-        static (SnapApps snapApps, SnapApp snapApp, bool error, string snapsAbsoluteFilename) BuildSnapAppFromDirectory(
-            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
-            string id, [NotNull] string rid, [NotNull] string workingDirectory)
+
+        static INuGetPackageSources BuildNuGetPackageSources([NotNull] ISnapFilesystem filesystem, [NotNull] ILog logger)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            if (rid == null) throw new ArgumentNullException(nameof(rid));
-            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
 
-            var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
-            var snapApp = snapAppTargets.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
-                                                            && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
-
-            return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
+            try
+            {
+                return new NuGetMachineWidePackageSources(filesystem, filesystem.DirectoryWorkingDirectory());
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Exception thrown while parsing nuget sources: {e.Message}");
+                return null;
+            }
         }
 
-        static (SnapApps snapApps, List<SnapApp> snapAppTargets, bool error, string snapsAbsoluteFilename) BuildSnapAppsFromDirectory(
-            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] string workingDirectory)
+        static SnapApps BuildSnapAppsFromDirectory(
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] string workingDirectory)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (reader == null) throw new ArgumentNullException(nameof(reader));
-            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             const string snapxYamlFilename = "snapx.yml";
@@ -265,8 +287,10 @@ namespace snapx
                 }
 
                 snapApps.Generic ??= new SnapAppsGeneric();
+                snapApps.Apps ??= new List<SnapsApp>();
+                snapApps.Channels ??=new List<SnapsChannel>(); 
 
-                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), false, snapsFilename);
+                return snapApps;
             }
             catch (YamlException yamlException)
             {
@@ -276,6 +300,66 @@ namespace snapx
             catch (Exception e)
             {
                 SnapLogger.ErrorException($"Unknown error deserializing {snapxYamlFilename}", e);
+            }
+
+            error:
+            return new SnapApps();
+        }
+        
+        static (SnapApps snapApps, SnapApp snapApp, bool error, string snapsAbsoluteFilename) BuildSnapAppFromDirectory(
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            string id, [NotNull] string rid, [NotNull] string workingDirectory)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (rid == null) throw new ArgumentNullException(nameof(rid));
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+            var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsesFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
+            var snapApp = snapAppTargets.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
+                                                            && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
+
+            return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
+        }
+
+        static (SnapApps snapApps, List<SnapApp> snapAppTargets, bool error, string snapsAbsoluteFilename) BuildSnapAppsesFromDirectory(
+            [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
+            [NotNull] string workingDirectory)
+        {
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+            var snapsFilename = filesystem.PathCombine(workingDirectory, ".snapx", SnapxYamlFilename);
+
+            try
+            {
+                var snapApps = BuildSnapAppsFromDirectory(filesystem, reader, workingDirectory);
+                if (snapApps == null)
+                {
+                    goto error;
+                }
+
+                const int expectedSchemaVersion = 1;
+                if (snapApps.Schema != expectedSchemaVersion)
+                {
+                    throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {expectedSchemaVersion}.");
+                }
+
+                snapApps.Generic ??= new SnapAppsGeneric();
+
+                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), false, snapsFilename);
+            }
+            catch (YamlException yamlException)
+            {
+                var moreHelpfulExceptionMaybe = yamlException.InnerException ?? yamlException;
+                SnapLogger.ErrorException($"{SnapxYamlFilename} file contains incorrect yaml syntax. Error message: {moreHelpfulExceptionMaybe.Message}.", moreHelpfulExceptionMaybe);                
+            }
+            catch (Exception e)
+            {
+                SnapLogger.ErrorException($"Unknown error deserializing {SnapxYamlFilename}", e);
             }
 
             error:

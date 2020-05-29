@@ -34,7 +34,7 @@ namespace snapx
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var (snapApps, snapAppses, errorBuildingSnapApps, _) = BuildSnapAppsFromDirectory(filesystem, appReader, nuGetPackageSources, workingDirectory);
+            var (snapApps, snapAppses, errorBuildingSnapApps, _) = BuildSnapAppsesFromDirectory(filesystem, appReader, nuGetPackageSources, workingDirectory);
 
             if (!snapApps.Apps.Any() || errorBuildingSnapApps)
             {

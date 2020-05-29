@@ -43,11 +43,9 @@ namespace snapx.Core
 
     internal interface IDistributedMutex : IAsyncDisposable
     {
-        int RenewEveryNSecond { get; }
         string Name { get; }
         bool Acquired { get; }
         bool Disposed { get;  }
-        long RenewalCount { get; }
         Task<bool> TryAquireAsync();
     }
 
@@ -55,19 +53,16 @@ namespace snapx.Core
     {
         long _acquired;
         long _disposed;
-        long _renewalCount;
-
+        
         readonly IDistributedMutexClient _distributedMutexClient;
         readonly ILog _logger;
         readonly CancellationToken _cancellationToken;
         readonly SemaphoreSlim _semaphore;
         string _challenge;
 
-        public int RenewEveryNSecond { get; set; } = 15;
         public string Name { get; }
         public bool Acquired => Interlocked.Read(ref _acquired) == 1;
         public bool Disposed => Interlocked.Read(ref _disposed) == 1;
-        public long RenewalCount => Interlocked.Read(ref _renewalCount);
 
         public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient, [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken)
         {
@@ -99,14 +94,11 @@ namespace snapx.Core
 
                 try
                 {
-                    _challenge = await _distributedMutexClient.AcquireAsync(Name, TimeSpan.FromSeconds(60));
+                    _challenge = await _distributedMutexClient.AcquireAsync(Name, TimeSpan.FromHours(24));
                     if (!string.IsNullOrEmpty(_challenge))
                     {
                         Interlocked.Exchange(ref _acquired, 1);
-                        _logger.Info($"Successfully acquired mutex: {Name}. It will be renewed every {RenewEveryNSecond} seconds.");
-#pragma warning disable 4014
-                        RenewAsync();
-#pragma warning restore 4014
+                        _logger.Info($"Successfully acquired mutex: {Name}. ");
                         return true;
                     }
                 }
@@ -149,45 +141,6 @@ namespace snapx.Core
                 Interlocked.Exchange(ref _acquired, 0);
 
                 _logger.Debug($"Successfully disposed mutex: {Name}.");
-            }
-        }
-
-        async Task RenewAsync()
-        {
-            while (!_cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    var renewEveryNSecond = RenewEveryNSecond;
-
-                    await Task.Delay(TimeSpan.FromSeconds(renewEveryNSecond), _cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-
-                _logger.Debug($"Attempting to renew mutex with name: {Name}. Challenge: {_challenge}");
-
-                try
-                {
-                    await _distributedMutexClient.RenewAsync(Name, _challenge);
-
-                    Interlocked.Increment(ref _renewalCount);
-
-                    _logger.Debug($"Successfully renewed mutex: {Name}.");
-                }
-                catch (WebServiceException webServiceException)
-                {
-                    if (webServiceException.IsNotFound())
-                    {
-                        _logger.DebugException($"Unable to renew mutex with name: {Name}. It has expired.", webServiceException);
-                        break;
-                    }
-
-                    _logger.DebugException($"Unknown error renewing mutex: {Name}", webServiceException);
-                }
-
             }
         }
     }

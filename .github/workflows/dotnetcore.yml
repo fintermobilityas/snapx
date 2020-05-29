@@ -3,28 +3,16 @@ name: snapx
 on: push
 
 env:
+  GITVERSION_VERSION: 5.3.4
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  SNAPX_VERSION: 2.2.${{ github.run_number }}
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1 
 
 jobs:
 
-  setup:
-   runs-on: ubuntu-latest
-   outputs:
-      version: ${{ steps.set-version.outputs.version }}
-   steps:
-    - id: set-version
-      name: Set version
-      run: |
-        if [ "$GITHUB_REF" == "refs/heads/master" ]; then
-           echo "::set-output name=version::${{ env.SNAPX_VERSION }}"
-        else
-           echo "::set-output name=version::${{ env.SNAPX_VERSION }}-prerelease"
-        fi
-  
   unix:
     runs-on: ubuntu-latest
-    needs: [setup]
+    outputs:
+      SNAPX_VERSION: ${{ steps.set-version.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -33,6 +21,9 @@ jobs:
             token: ${{ secrets.CI_PAT }}
             submodules: true
 
+      - name: Fetch all history for all tags and branches (gitversion requirement)
+        run: git fetch --prune --unshallow
+        
       - name: Read dotnet sdk version from global.json
         shell: pwsh
         run: |
@@ -44,6 +35,15 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - id: set-version
+        name: Setup GitVersion and set build version
+        shell: pwsh
+        run: |
+          dotnet tool update GitVersion.Tool --global --version ${{ env.GITVERSION_VERSION }}
+          $SNAPX_VERSION = (dotnet gitversion /showVariable NugetVersionv2) | out-string
+          echo "::set-env name=SNAPX_VERSION::$SNAPX_VERSION"
+          echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
+          
       - name: Install build dependencies
         run: |
           sudo apt-get update 
@@ -51,7 +51,7 @@ jobs:
           
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ needs.setup.outputs.version }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
     
       - name: Collect artifacts
         env:
@@ -91,7 +91,9 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    needs: [setup, unix]
+    needs: [unix]
+    env:
+      SNAPX_VERSION: ${{ needs.build-linux.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -119,7 +121,7 @@ jobs:
 
       - name: Build & Run Tests
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ needs.setup.outputs.version }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
 
       - name: Upload artifacts
         if: success()
@@ -130,7 +132,9 @@ jobs:
             
   publish:
     runs-on: ubuntu-latest
-    needs: [setup, unix, windows]
+    needs: [unix, windows]
+    env:
+      SNAPX_VERSION: ${{ needs.build-linux.outputs.SNAPX_VERSION }}
     steps:
       - name: Download nupkgs artifacts
         uses: actions/download-artifact@v2
@@ -140,8 +144,8 @@ jobs:
             
       - name: Push nuget packages MyGet
         run: | 
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ needs.setup.outputs.version }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_API_KEY }}
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ needs.setup.outputs.version }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_API_KEY }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_API_KEY }}
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source https://www.myget.org/F/youpark/api/v2/package --api-key ${{ secrets.FINTER_MYGET_API_KEY }}
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'
@@ -149,7 +153,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ needs.setup.outputs.version }}
-          release_name: Release v${{ needs.setup.outputs.version }}
+          tag_name: v${{ env.SNAPX_VERSION }}
+          release_name: Release v${{ env.SNAPX_VERSION }}
           draft: true
           prerelease: false

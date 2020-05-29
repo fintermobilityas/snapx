@@ -88,7 +88,7 @@ namespace snapx
 
                 tables.Add((snapApp, new ConsoleTable(tableColumns)
                 {
-                    Header = $"Release summary: {snapApp.Id}\nF = Full / D = Delta"
+                    Header = $"Release summary: {snapApp.Id}"
                 }));
             }
 

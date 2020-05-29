@@ -1,0 +1,8 @@
+next-version: 2.3.0
+mode: ContinuousDeployment
+continuous-delivery-fallback-tag: ''
+branches:
+  develop:
+    regex: ^develop
+    increment: Patch
+    tag: 'prerelease'

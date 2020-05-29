@@ -103,7 +103,8 @@ namespace snapx
             {
                 logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), 3))
+                var tryAcquireRetries = packOptions.LockRetries == -1 ? int.MaxValue : packOptions.LockRetries;
+                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
                 {
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     return -1;

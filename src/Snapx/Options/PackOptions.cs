@@ -21,5 +21,7 @@ namespace snapx.Options
         public bool Gc { get; set; }
         [Option("db-version", HelpText = "Manually specify next db version. Has to be greater than current version.")]
         public int DbVersion { get; set; } = -1;
+        [Option("lock-retries", HelpText = "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.")]
+        public int LockRetries { get; set; } = 3;
     }
 }

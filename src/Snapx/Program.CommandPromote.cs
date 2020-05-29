@@ -21,7 +21,8 @@ namespace snapx
     internal partial class Program
     {
         static async Task<int> CommandPromoteAsync([NotNull] PromoteOptions options, [NotNull] ISnapFilesystem filesystem,
-            [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
+            [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources, 
+            [NotNull] INugetService nugetService, [NotNull] IDistributedMutexClient distributedMutexClient,
             [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack, [NotNull] ISnapOsSpecialFolders specialFolders,
             [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
@@ -33,6 +34,7 @@ namespace snapx
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
+            if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (specialFolders == null) throw new ArgumentNullException(nameof(specialFolders));
@@ -77,6 +79,20 @@ namespace snapx
             {
                 logger.Error($"Unable to find channel: {options.Channel}.");
                 return 1;
+            }
+
+            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
+            {
+                logger.Info('-'.Repeat(TerminalDashesWidth));
+
+                var tryAcquireRetries = options.LockRetries == -1 ? int.MaxValue : options.LockRetries;
+                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
+                {
+                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    return -1;
+                }
             }
 
             var availableChannelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));

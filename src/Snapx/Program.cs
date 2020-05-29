@@ -196,7 +196,7 @@ namespace snapx
                             return -1;
                         }
                         return CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                            nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack,
+                            nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
                             snapOs.SpecialFolders,
                             snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
                             SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();

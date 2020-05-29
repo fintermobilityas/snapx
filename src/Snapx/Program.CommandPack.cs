@@ -80,7 +80,7 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
-            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, $"{snapApps.Generic.Token}-{snapApp.Id}", cancellationToken);
+            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
 
             logger.Info($"Schema version: {snapApps.Schema}");
             logger.Info($"Packages directory: {packagesDirectory}");
@@ -99,11 +99,11 @@ namespace snapx
             logger.Info($"Shortcuts: {shortcutsStr}");
 
 
-            if (snapApps.Generic.Token != null)
+            if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
                 logger.Info('-'.Repeat(TerminalDashesWidth));
 
-                if (!await distributedMutex.TryAquireAsync())
+                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), 3))
                 {
                     logger.Info('-'.Repeat(TerminalDashesWidth));
                     return -1;

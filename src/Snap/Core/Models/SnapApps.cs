@@ -259,5 +259,11 @@ namespace Snap.Core.Models
             Schema = snapApps.Schema;
         }
 
+        public string BuildLockKey([NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return $"{Generic.Token}-{snapApp.Id}";
+        }
+
     }
 }

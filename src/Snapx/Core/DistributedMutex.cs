@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -9,10 +8,18 @@ using snapx.Api;
 
 namespace snapx.Core
 {
+    internal sealed class DistributedMutexUnknownException : Exception
+    {
+        public DistributedMutexUnknownException(string message) : base(message, null)
+        {
+            
+        }
+    }
+
     internal interface IDistributedMutexClient
     {
         Task<string> AcquireAsync(string name, TimeSpan lockDuration);
-        Task ReleaseLockAsync(string name, string challenge);
+        Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod = null);
         Task RenewAsync(string name, string challenge);
     }
 
@@ -30,9 +37,9 @@ namespace snapx.Core
             return _httpRestClientAsync.PostAsync(new Lock { Name = name, Duration = lockDuration });
         }
 
-        public Task ReleaseLockAsync(string name, string challenge)
+        public Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod)
         {
-            return _httpRestClientAsync.DeleteAsync(new Unlock { Name = name, Challenge = challenge });
+            return _httpRestClientAsync.DeleteAsync(new Unlock { Name = name, Challenge = challenge, BreakPeriod = breakPeriod });
         }
 
         public Task RenewAsync(string name, string challenge)
@@ -45,18 +52,20 @@ namespace snapx.Core
     {
         string Name { get; }
         bool Acquired { get; }
-        bool Disposed { get;  }
-        Task<bool> TryAquireAsync();
+        bool Disposed { get; }
+        Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0);
+        Task<bool> TryReleaseAsync();
     }
 
     internal sealed class DistributedMutex : IDistributedMutex
     {
         long _acquired;
         long _disposed;
-        
+
         readonly IDistributedMutexClient _distributedMutexClient;
         readonly ILog _logger;
         readonly CancellationToken _cancellationToken;
+        readonly bool _releaseOnDispose;
         readonly SemaphoreSlim _semaphore;
         string _challenge;
 
@@ -64,16 +73,18 @@ namespace snapx.Core
         public bool Acquired => Interlocked.Read(ref _acquired) == 1;
         public bool Disposed => Interlocked.Read(ref _disposed) == 1;
 
-        public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient, [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken)
+        public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient,
+            [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken, bool releaseOnDispose = true)
         {
             _distributedMutexClient = distributedMutexClient ?? throw new ArgumentNullException(nameof(distributedMutexClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             Name = name ?? throw new ArgumentNullException(nameof(name));
             _cancellationToken = cancellationToken;
+            _releaseOnDispose = releaseOnDispose;
             _semaphore = new SemaphoreSlim(1, 1);
         }
 
-        public async Task<bool> TryAquireAsync()
+        public async Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0)
         {
             if (Disposed)
             {
@@ -87,38 +98,80 @@ namespace snapx.Core
 
             await _semaphore.WaitAsync(_cancellationToken);
 
-            var attempts = Math.Max(1, int.MaxValue);
-            while (!_cancellationToken.IsCancellationRequested && attempts-- > 0)
+            retries = Math.Max(0, retries);
+
+            return await RetryAsync(async () =>
             {
+                if (_cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
                 _logger.Info($"Attempting to acquire mutex: {Name}.");
 
                 try
                 {
                     _challenge = await _distributedMutexClient.AcquireAsync(Name, TimeSpan.FromHours(24));
-                    if (!string.IsNullOrEmpty(_challenge))
-                    {
-                        Interlocked.Exchange(ref _acquired, 1);
-                        _logger.Info($"Successfully acquired mutex: {Name}. ");
-                        return true;
-                    }
                 }
-                catch (WebServiceException webServiceException)
+                catch (Exception e)
                 {
-                    var conflict = webServiceException.StatusCode == (int)HttpStatusCode.Conflict;
-                    var serviceUnavailable = webServiceException.StatusCode == (int)HttpStatusCode.ServiceUnavailable;
-                    var retry = conflict || !serviceUnavailable;
-
-                    _logger.ErrorException($"Error acquiring mutex: {Name}. Retry: {retry}. ", webServiceException);
-
-                    if (retry)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(15), _cancellationToken);
-                    }
-
+                    _logger.InfoException($"Failed to acquire mutex: {Name}.", e);
+                    throw;
                 }
+
+                if (!string.IsNullOrEmpty(_challenge))
+                {
+                    Interlocked.Exchange(ref _acquired, 1);
+                    _logger.Info($"Successfully acquired mutex: {Name}. ");
+                    return true;
+                }
+
+                throw new DistributedMutexUnknownException($"Challenge should not be null or empty. Mutex: {Name}. Challenge: {_challenge}");
+
+            }, retryDelayTs, retries, ex => ex is DistributedMutexUnknownException);
+        }
+
+        public async Task<bool> TryReleaseAsync()
+        {
+            if (Disposed || !Acquired)
+            {
+                return false;
             }
 
-            return false;
+            try
+            {
+                _logger.Info($"Attempting to force release of lock: {Name}.");
+                await _distributedMutexClient.ReleaseLockAsync(Name, _challenge, TimeSpan.Zero);
+                Interlocked.Exchange(ref _acquired, 0);
+                _logger.Info("Lock was successfully released.");
+                return true;
+            }
+            catch (WebServiceException exception)
+            {
+                _logger.InfoException($"Failed to force release lock with name: {Name}.", exception);
+                return false;
+            }
+        }
+
+        public static async Task<bool> TryForceReleaseAsync([NotNull] string name, [NotNull] IDistributedMutexClient distributedMutexClient,
+            [NotNull] ILog logger)
+        {
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+
+            try
+            {
+                logger.Info($"Attempting to force release of mutex: {name}.");
+                await distributedMutexClient.ReleaseLockAsync(name, null, TimeSpan.Zero);
+                logger.Info("Mutex was successfully released.");
+                return true;
+            }
+            catch (WebServiceException exception)
+            {
+                logger.InfoException($"Failed to force release mutex with name: {name}.", exception);
+                return false;
+            }
         }
 
         public async ValueTask DisposeAsync()
@@ -132,16 +185,63 @@ namespace snapx.Core
 
             _semaphore.Dispose();
 
-            if (acquired)
+            if (acquired && _releaseOnDispose)
             {
-                _logger.Debug($"Disposing mutex: {Name}");
+                var success = await RetryAsync(async () =>
+                {
+                    _logger.Info($"Disposing mutex: {Name}");
+                    await _distributedMutexClient.ReleaseLockAsync(Name, _challenge);
+                    Interlocked.Exchange(ref _acquired, 0);
+                    _logger.Info("Successfully disposed mutex.");
+                    return true;
+                }, TimeSpan.FromMilliseconds(500), 3, ex =>
+                {
+                    _logger.ErrorException("Unknown error disposing mutex.", ex);
+                    return false;
+                });
 
-                await _distributedMutexClient.ReleaseLockAsync(Name, _challenge);
-
-                Interlocked.Exchange(ref _acquired, 0);
-
-                _logger.Debug($"Successfully disposed mutex: {Name}.");
+                if (!success)
+                {
+                    _logger.Error("Unknown error disposed mutex-");
+                }
             }
+        }
+
+        async Task<T> RetryAsync<T>(Func<Task<T>> retryFunc, TimeSpan delayTs, int retries = 0, Func<Exception, bool> shouldThrowFunc = null)
+        {
+            while (!_cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    return await retryFunc();
+                }
+                catch (Exception e)
+                {
+                    if (--retries > 0)
+                    {
+                        try
+                        {
+                            await Task.Delay(delayTs, _cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    var shouldThrow = shouldThrowFunc?.Invoke(e) ?? false;
+                    if (shouldThrow)
+                    {
+                        throw;
+                    }
+
+                    return default;
+                }
+            }
+
+            return default;
         }
     }
 }

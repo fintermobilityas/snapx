@@ -27,5 +27,6 @@ namespace snapx.Api
     {
         public string Name { get; set; }
         public string Challenge { get; set; }
+        public TimeSpan? BreakPeriod { get; set; }
     }
 }

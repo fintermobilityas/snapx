@@ -35,6 +35,7 @@ namespace snapx
         static readonly ILog SnapPromoteLogger = LogProvider.GetLogger("Snapx.Promote");
         static readonly ILog SnapRestoreLogger = LogProvider.GetLogger("Snapx.Restore");
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
+        static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
 
         const int TerminalDashesWidth = 80;
 
@@ -182,7 +183,7 @@ namespace snapx
 
             return Parser
                 .Default
-                .ParseArguments<PromoteOptions, PackOptions, Sha256Options, RcEditOptions, ListOptions, RestoreOptions>(args)
+                .ParseArguments<PromoteOptions, PackOptions, Sha256Options, RcEditOptions, ListOptions, RestoreOptions, LockOptions>(args)
                 .MapResult(
                     (PromoteOptions opts) => CommandPromoteAsync(opts, snapFilesystem,  snapAppReader, snapAppWriter,
                         nuGetPackageSources, nugetServiceCommandPromote, snapPackageManager, snapPack, snapOs.SpecialFolders, 
@@ -198,6 +199,8 @@ namespace snapx
                         (RestoreOptions opts) => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
                             nugetServiceCommandRestore, snapExtractor, snapPackageManager, snapOs, snapXEmbeddedResources, coreRunLib, snapPack,
                              SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (LockOptions opts) => CommandLock(opts, distributedMutexClient, snapFilesystem, snapAppReader, 
+                        nuGetPackageSources, SnapLockLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
                     errs =>
                     {
                         snapOs.EnsureConsole();

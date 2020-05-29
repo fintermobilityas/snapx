@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 
 namespace snapx.Options
 {
-    [Verb("list", HelpText = "Show published applications release graph summary")]
+    [Verb("list", true, HelpText = "Show published applications release graph summary")]
     [UsedImplicitly]
     internal class ListOptions : BaseSubOptions
     {

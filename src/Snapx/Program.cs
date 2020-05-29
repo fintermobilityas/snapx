@@ -37,8 +37,22 @@ namespace snapx
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
         static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
 
-        static int TerminalDashesWidth => Console.BufferWidth;
-        
+        static int TerminalDashesWidth
+        {
+            get
+            {
+                const int defaultBufferWidth = 80;
+                try
+                {
+                    return Console.BufferWidth <= 0 ? defaultBufferWidth : Console.BufferWidth;
+                }
+                catch
+                {
+                    return defaultBufferWidth;
+                }
+            }
+        }
+
         const string SnapxYamlFilename = "snapx.yml";
 
         internal static int Main(string[] args)

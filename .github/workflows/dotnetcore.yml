@@ -16,16 +16,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with: 
-            lfs: true
-            token: ${{ secrets.CI_PAT }}
-            submodules: true
 
       - name: Fetch all history for all tags and branches (gitversion requirement)
         run: | 
           git config remote.origin.url https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git fetch --prune --unshallow
-        
+          
+      - name: Checkout submodules 
+        run: git submodule update --init --recursive
+         
+      - name: Cache git lfs
+        uses: actions/cache@v2
+        with:
+          path: .git/lfs
+          key: .git/lfs
+    
+      - name: Pull lfs data
+        run: |
+          git lfs pull
+                  
       - name: Read dotnet sdk version from global.json
         shell: pwsh
         run: |
@@ -99,11 +108,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with: 
-          lfs: true
-          token: ${{ secrets.CI_PAT }}
-          submodules: true
 
+      - name: Cache git lfs
+        uses: actions/cache@v2
+        with:
+          path: .git/lfs
+          key: .git/lfs
+    
+      - name: Pull lfs data
+        run: |
+          git lfs pull
+
+      - name: Checkout submodules 
+        run: git submodule update --init --recursive
+             
       - name: Read dotnet sdk version from global.json
         shell: pwsh
         run: |

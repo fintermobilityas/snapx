@@ -44,7 +44,8 @@ namespace snapx
                 const int defaultBufferWidth = 80;
                 try
                 {
-                    return Console.BufferWidth <= 0 ? defaultBufferWidth : Console.BufferWidth;
+                    var bufferWidth = Console.BufferWidth;
+                    return bufferWidth <= 0 ? defaultBufferWidth : bufferWidth;
                 }
                 catch
                 {

@@ -97,32 +97,32 @@ namespace snapx.Core
                              .Select(i => "| {" + i + ",-" + columnLengths[i] + "} ")
                              .Aggregate((s, a) => s + a) + " |";
 
+            // remove last pipe (|)
+            format = format.Substring(0, format.Length - 1);
+
             // find the longest formatted line
             var maxRowLength = Math.Max(0, Rows.Any() ? Rows.Max(row => string.Format(format, row).Length) : 0);
             var columnHeaders = string.Format(format, Columns.ToArray());
 
             // longest line is greater of formatted columnHeader and longest row
-            var longestLine = Math.Max(maxRowLength, columnHeaders.Length);
+            var longestLine = Math.Min(Console.BufferWidth, Math.Max(maxRowLength, columnHeaders.Length));
 
             // add each row
             var results = Rows.Select(row => string.Format(format, row)).ToList();
 
             // create the divider
-            var divider = $" {string.Join("", Enumerable.Repeat("-", longestLine - 1))} ";
+            var divider = $"{string.Join(string.Empty, Enumerable.Repeat("-", longestLine))} ";
 
             if (Header != null)
             {
-                var dividerHeader = string.Join("", Enumerable.Repeat("=", longestLine));
-                foreach (var line in Header.Split("\n") ?? new[] {Header})
+                var dividerHeader = string.Join(string.Empty, Enumerable.Repeat("=", longestLine));
+                foreach (var line in Header.Split("\n"))
                 {
                     logger.Info(line);
                 }
                 logger.Info(dividerHeader);
             }
-            else
-            {
-                logger.Info(divider);
-            }
+
             logger.Info(columnHeaders);
 
             foreach (var row in results)
@@ -130,8 +130,6 @@ namespace snapx.Core
                 logger.Info(divider);
                 logger.Info(row);
             }
-
-            logger.Info(divider);
 
             if (!Options.EnableCount) return;
             

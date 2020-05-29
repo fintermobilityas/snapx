@@ -37,7 +37,7 @@ namespace snapx
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
         static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
 
-        const int TerminalDashesWidth = 80;
+        static int TerminalDashesWidth => Console.BufferWidth;
 
         internal static int Main(string[] args)
         {

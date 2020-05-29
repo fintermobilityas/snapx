@@ -150,34 +150,19 @@ namespace snapx
 
                     foreach (var channelName in thisSnapApps.Channels)
                     {         
-                        var genesisRelease = snapAppReleases.GetGenesisRelease(channelName);
-                        var deltaRelease = snapAppReleases.GetMostRecentDeltaRelease(channelName);
+                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(channelName);
 
-                        var rowValue = genesisRelease == null && deltaRelease == null ? "-" : string.Empty;
-                        if (rowValue != string.Empty)
+                        string rowValue = null;
+                        if (mostRecentRelease == null)
                         {
-                            goto done;
-                        }
-
-                        if (genesisRelease != null)
-                        {
-                            rowValue += $"F: {genesisRelease.Version} ({genesisRelease.FullFilesize.BytesAsHumanReadable()})";
+                            rowValue += "-";
                         }
                         else
                         {
-                            rowValue += "F: -";
+                            var fullOrDeltaTxt = mostRecentRelease.IsGenesis ? "full" : "delta";
+                            rowValue = $"{mostRecentRelease.Version} ({fullOrDeltaTxt}) - {mostRecentRelease.DeltaFilesize.BytesAsHumanReadable()}";
                         }
 
-                        if (deltaRelease != null)
-                        {
-                            rowValue += $" - D: {deltaRelease.Version} ({deltaRelease.DeltaFilesize.BytesAsHumanReadable()})";
-                        }
-                        else
-                        {
-                            rowValue += " - D: -";
-                        }
-
-                        done:
                         rowValues.Add(rowValue);
                     }
 
@@ -188,7 +173,8 @@ namespace snapx
                 
                 table.Write(logger);
             }
-            
+
+            logger.Info('-'.Repeat(TerminalDashesWidth));
             logger.Info($"List completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;

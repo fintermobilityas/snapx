@@ -140,15 +140,15 @@ namespace snapx.Core
 
             try
             {
-                _logger.Info($"Attempting to force release of lock: {Name}.");
+                _logger.Info($"Attempting to force release of mutex: {Name}.");
                 await _distributedMutexClient.ReleaseLockAsync(Name, _challenge, TimeSpan.Zero);
                 Interlocked.Exchange(ref _acquired, 0);
-                _logger.Info("Lock was successfully released.");
+                _logger.Info($"Successfully released mutex: {Name}.");
                 return true;
             }
             catch (WebServiceException exception)
             {
-                _logger.InfoException($"Failed to force release lock with name: {Name}.", exception);
+                _logger.InfoException($"Failed to force release mutex with name: {Name}.", exception);
                 return false;
             }
         }
@@ -164,7 +164,7 @@ namespace snapx.Core
             {
                 logger.Info($"Attempting to force release of mutex: {name}.");
                 await distributedMutexClient.ReleaseLockAsync(name, null, TimeSpan.Zero);
-                logger.Info("Mutex was successfully released.");
+                logger.Info($"Successfully released mutex: {name}.");
                 return true;
             }
             catch (WebServiceException exception)
@@ -192,11 +192,11 @@ namespace snapx.Core
                     _logger.Info($"Disposing mutex: {Name}");
                     await _distributedMutexClient.ReleaseLockAsync(Name, _challenge);
                     Interlocked.Exchange(ref _acquired, 0);
-                    _logger.Info("Successfully disposed mutex.");
+                    _logger.Info($"Successfully disposed mutex: {Name}");
                     return true;
                 }, TimeSpan.FromMilliseconds(500), 3, ex =>
                 {
-                    _logger.ErrorException("Unknown error disposing mutex.", ex);
+                    _logger.ErrorException($"Unknown error disposing mutex: {Name}", ex);
                     return false;
                 });
 

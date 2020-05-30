@@ -141,7 +141,7 @@ namespace snapx
                 .ToList();
             if (!promotableChannels.Any())
             {
-                logger.Info($"Version {snapApp.Version} is already promoted to all available channels.");
+                logger.Info($"Version {snapApp.Version} is already promoted to all channels.");
                 return 0;
             }
 

@@ -169,7 +169,7 @@ namespace snapx
 
         static async Task OnExitAsync()
         {
-            Console.WriteLine("Caught exit signal.");
+            SnapLogger.Info("Caught exit signal.");
 
             await DistributedMutexes.ForEachAsync(async x =>
             {

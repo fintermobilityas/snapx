@@ -285,7 +285,7 @@ namespace snapx
             [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken,
             bool releaseOnDispose = true)
         {
-            var mutex = new DistributedMutex(distributedMutexClient, logger, name, cancellationToken);
+            var mutex = new DistributedMutex(distributedMutexClient, logger, name, cancellationToken, releaseOnDispose);
             DistributedMutexes.Add(mutex);
             return mutex;
         }

@@ -5,6 +5,17 @@ namespace Snap.Extensions
 {
     internal static class StringExtensions
     {
+        public static bool IsTrue(this string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            value = value.Trim();
+            return value == "1" || value.ToLowerInvariant() == "true";
+        }
+
         public static string ForwardSlashesSafe(this string value)
         {
             return value?.Replace('\\', '/');

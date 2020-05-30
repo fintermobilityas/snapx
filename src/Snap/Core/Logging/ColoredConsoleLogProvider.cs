@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using Snap.Extensions;
 using Snap.Logging;
 using Snap.Logging.LogProviders;
 
@@ -68,10 +70,20 @@ namespace Snap.Core.Logging
                 return;
             }
 
+            var exceptionsEnabled = Debugger.IsAttached 
+                                    || Environment.GetEnvironmentVariable("SNAPX_LOG_EXCEPTIONS").IsTrue();
+
             var message = string.Format(CultureInfo.InvariantCulture, messageFunc(), formatParameters);
             if (exception != null)
             {
-                message = message + " | " + exception;
+                if (exceptionsEnabled)
+                {
+                    message = message + " | " + exception;
+                }
+                else
+                {
+                    message = message + " | " + exception.Message;
+                }
             }
 
             if (exception != null)

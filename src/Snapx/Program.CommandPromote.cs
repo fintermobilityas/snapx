@@ -81,7 +81,7 @@ namespace snapx
                 return 1;
             }
 
-            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
+            await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {

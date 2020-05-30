@@ -209,7 +209,7 @@ namespace snapx.Core
 
         async Task<T> RetryAsync<T>(Func<Task<T>> retryFunc, TimeSpan delayTs, int retries = 0, Func<Exception, bool> shouldThrowFunc = null)
         {
-            while (!_cancellationToken.IsCancellationRequested)
+            while (true)
             {
                 try
                 {
@@ -224,6 +224,11 @@ namespace snapx.Core
                             await Task.Delay(delayTs, _cancellationToken);
                         }
                         catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+
+                        if (_cancellationToken.IsCancellationRequested)
                         {
                             break;
                         }

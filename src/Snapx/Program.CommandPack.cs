@@ -80,8 +80,8 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
-            await using var distributedMutex = new DistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
-
+            await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
+            
             logger.Info($"Schema version: {snapApps.Schema}");
             logger.Info($"Packages directory: {packagesDirectory}");
             logger.Info($"Artifacts directory: {artifactsDirectory}");

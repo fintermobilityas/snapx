@@ -36,6 +36,7 @@ namespace snapx
         static readonly ILog SnapRestoreLogger = LogProvider.GetLogger("Snapx.Restore");
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
         static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
+        static readonly List<IDistributedMutex> DistributedMutexes = new List<IDistributedMutex>();
 
         static int TerminalDashesWidth
         {
@@ -92,7 +93,7 @@ namespace snapx
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
 
-            var cancellationToken = CancellationToken.None;
+            using var cts = new CancellationTokenSource();
             
             ISnapOs snapOs;
             try
@@ -144,11 +145,29 @@ namespace snapx
 
             var distributedMutexClient = new DistributedMutexClient(new JsonServiceClient("https://snapx.dev"));
 
+            Console.CancelKeyPress += async (sender, eventArgs) =>
+            {
+                eventArgs.Cancel = !cts.IsCancellationRequested;
+                cts.Cancel();
+
+                await DistributedMutexes.ForEachAsync(async x =>
+                {
+                    try
+                    {
+                        await x.DisposeAsync();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // ignore
+                    }
+                });
+            };
+
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapSpecsReader, snapCryptoProvider,
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger, distributedMutexClient,
-                toolWorkingDirectory, workingDirectory, cancellationToken);
+                toolWorkingDirectory, workingDirectory, cts.Token);
         }
 
         static int MainAsync([NotNull] string[] args,
@@ -246,6 +265,15 @@ namespace snapx
                         snapOs.EnsureConsole();
                         return 0;
                     });
+        }
+
+        static IDistributedMutex WithDistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient,
+            [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken,
+            bool releaseOnDispose = true)
+        {
+            var mutex = new DistributedMutex(distributedMutexClient, logger, name, cancellationToken);
+            DistributedMutexes.Add(mutex);
+            return mutex;
         }
 
         static INuGetPackageSources BuildNuGetPackageSources([NotNull] ISnapFilesystem filesystem, [NotNull] ILog logger)

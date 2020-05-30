@@ -27,7 +27,7 @@ namespace Snap.AnyOS.Unix
 
         public SnapOsUnixExitSignal()
         {
-            Task.Factory.StartNew(() =>
+            ThreadPool.QueueUserWorkItem(_ =>
             {
                 // blocking call to wait for any kill signal
                 UnixSignal.WaitAny(_signals, -1);

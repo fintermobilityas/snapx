@@ -29,7 +29,6 @@ namespace Snap.AnyOS
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapOs
     {
-        EventHandler OnExit { get; set; }
         ISnapOsTaskbar Taskbar { get; }
         OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
@@ -45,7 +44,7 @@ namespace Snap.AnyOS
         void Kill(int pid);
         void Kill(SnapOsProcess process);
         void Exit(int exitCode = 0);
-        void InstallExitSignalHandler();
+        void InstallExitSignalHandler([NotNull] Action onExit);
     }
 
     internal interface ISnapOsImpl
@@ -153,10 +152,11 @@ namespace Snap.AnyOS
             Environment.Exit(exitCode);
         }
 
-        public void InstallExitSignalHandler()
+        public void InstallExitSignalHandler([NotNull] Action onExit)
         {
+            if (onExit == null) throw new ArgumentNullException(nameof(onExit));
             var exitSignalHandler = OsImpl.InstallExitSignalHandler();
-            exitSignalHandler.Exit += OnExit;
+            exitSignalHandler.Exit += (sender, args) => { onExit(); };
         }
     }
 }

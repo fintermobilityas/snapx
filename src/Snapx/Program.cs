@@ -111,12 +111,11 @@ namespace snapx
                 return -1;
             }
 
-            snapOs.InstallExitSignalHandler();
-            snapOs.OnExit += async (sender, eventArgs) =>
+            snapOs.InstallExitSignalHandler(async () =>
             {
                 cts.Cancel();
                 await OnExitAsync();
-            };
+            });
 
             var workingDirectory = Environment.CurrentDirectory;
             if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparator))

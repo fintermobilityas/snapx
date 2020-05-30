@@ -202,7 +202,7 @@ namespace snapx.Core
 
                 if (!success)
                 {
-                    _logger.Error("Unknown error disposed mutex-");
+                    _logger.Error($"Unknown error disposing mutex: {Name}.");
                 }
             }
         }

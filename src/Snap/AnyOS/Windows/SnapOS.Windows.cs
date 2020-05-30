@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.Core;
@@ -18,6 +18,65 @@ using Snap.Logging;
 
 namespace Snap.AnyOS.Windows
 {
+    // https://stackoverflow.com/a/32716784/2470592
+    internal class SnapOsWindowsExitSignal : ISnapOsExitSignal
+    {
+        public event EventHandler Exit;
+
+        [DllImport("kernel32.dll")] 
+        static extern bool SetConsoleCtrlHandler(HandlerRoutine handler, bool add);
+
+        // A delegate type to be used as the handler routine
+        // for SetConsoleCtrlHandler.
+        [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+        public delegate bool HandlerRoutine(CtrlTypes ctrlType);
+
+        // An enumerated type for the control messages
+        // sent to the handler routine.
+        public enum CtrlTypes
+        {
+            CtrlCEvent = 0,
+            CtrlBreakEvent,
+            CtrlCloseEvent,
+            CtrlLogoffEvent = 5,
+            CtrlShutdownEvent
+        }
+
+        /// <summary>
+        /// Need this as a member variable to avoid it being garbage collected.
+        /// </summary>
+        [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")] readonly HandlerRoutine _handlerRoutine;
+
+        public SnapOsWindowsExitSignal()
+        {
+            _handlerRoutine = ConsoleCtrlCheck;
+
+            SetConsoleCtrlHandler(_handlerRoutine, true);
+
+        }
+
+        /// <summary>
+        /// Handle the ctrl types
+        /// </summary>
+        /// <param name="ctrlType"></param>
+        /// <returns></returns>
+        bool ConsoleCtrlCheck(CtrlTypes ctrlType)
+        {
+            switch (ctrlType)
+            {
+                case CtrlTypes.CtrlCEvent:
+                case CtrlTypes.CtrlBreakEvent:
+                case CtrlTypes.CtrlCloseEvent:
+                case CtrlTypes.CtrlLogoffEvent:
+                case CtrlTypes.CtrlShutdownEvent:
+                    Exit?.Invoke(this, EventArgs.Empty);
+                    break;
+            }
+            return true;
+        }
+
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapOsWindows : ISnapOsImpl
     {
@@ -49,8 +108,8 @@ namespace Snap.AnyOS.Windows
         public SnapOsDistroType DistroType => SnapOsDistroType.Windows;
         public ISnapOsSpecialFolders SpecialFolders { get; }
 
-        public SnapOsWindows(ISnapFilesystem snapFilesystem, [NotNull] ISnapOsProcessManager snapOsProcessManager,
-            [NotNull] ISnapOsSpecialFolders snapOsSpecialFolders, bool isUnitTest = false)
+        public SnapOsWindows(ISnapFilesystem snapFilesystem, [JetBrains.Annotations.NotNull] ISnapOsProcessManager snapOsProcessManager,
+            [JetBrains.Annotations.NotNull] ISnapOsSpecialFolders snapOsSpecialFolders, bool isUnitTest = false)
         {
             Filesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
             OsProcessManager = snapOsProcessManager ?? throw new ArgumentNullException(nameof(snapOsProcessManager));
@@ -250,7 +309,7 @@ namespace Snap.AnyOS.Windows
             }
         }
 
-        void UpdateShellLink([NotNull] string baseDirectory, [NotNull] ShellLink shortcut, [NotNull] string newAppPath, ILog logger = null)
+        void UpdateShellLink([JetBrains.Annotations.NotNull] string baseDirectory, [JetBrains.Annotations.NotNull] ShellLink shortcut, [JetBrains.Annotations.NotNull] string newAppPath, ILog logger = null)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (shortcut == null) throw new ArgumentNullException(nameof(shortcut));
@@ -289,6 +348,11 @@ namespace Snap.AnyOS.Windows
             }).ToList();
 
             return processes;
+        }
+
+        public ISnapOsExitSignal InstallExitSignalHandler()
+        {
+            return new SnapOsWindowsExitSignal();
         }
 
         public bool EnsureConsole()

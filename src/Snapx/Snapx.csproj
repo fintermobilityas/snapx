@@ -29,8 +29,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommandLineParser" Version="2.8.0" /> 
+        <PackageReference Include="CommandLineParser" Version="2.8.0" />
         <PackageReference Include="ServiceStack" Version="5.8.*" />
+    </ItemGroup>
+
+    <ItemGroup Condition="!$(IsNetFullFramework)">
+        <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" /> 
     </ItemGroup>
 
     <ItemGroup>

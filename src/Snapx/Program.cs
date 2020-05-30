@@ -111,6 +111,9 @@ namespace snapx
                 return -1;
             }
 
+            snapOs.InstallExitSignalHandler();
+            snapOs.OnExit += async (sender, eventArgs) => await OnExitAsync();
+
             var workingDirectory = Environment.CurrentDirectory;
             if (!workingDirectory.EndsWith(snapOs.Filesystem.DirectorySeparator))
             {
@@ -150,17 +153,7 @@ namespace snapx
                 eventArgs.Cancel = !cts.IsCancellationRequested;
                 cts.Cancel();
 
-                await DistributedMutexes.ForEachAsync(async x =>
-                {
-                    try
-                    {
-                        await x.DisposeAsync();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // ignore
-                    }
-                });
+                await OnExitAsync();
             };
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
@@ -168,6 +161,23 @@ namespace snapx
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandRestore, nugetServiceNoopLogger, distributedMutexClient,
                 toolWorkingDirectory, workingDirectory, cts.Token);
+        }
+
+        static async Task OnExitAsync()
+        {
+            Console.WriteLine("Caught exit signal.");
+
+            await DistributedMutexes.ForEachAsync(async x =>
+            {
+                try
+                {
+                    await x.DisposeAsync();
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore
+                }
+            });
         }
 
         static int MainAsync([NotNull] string[] args,

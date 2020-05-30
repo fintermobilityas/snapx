@@ -13,6 +13,11 @@ using Snap.Logging;
 
 namespace Snap.AnyOS
 {
+    public interface ISnapOsExitSignal
+    {
+        event EventHandler Exit;
+    }
+
     public enum SnapOsDistroType
     {
         Unknown,
@@ -24,6 +29,7 @@ namespace Snap.AnyOS
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapOs
     {
+        EventHandler OnExit { get; set; }
         ISnapOsTaskbar Taskbar { get; }
         OSPlatform OsPlatform { get; }
         ISnapFilesystem Filesystem { get; }
@@ -39,9 +45,10 @@ namespace Snap.AnyOS
         void Kill(int pid);
         void Kill(SnapOsProcess process);
         void Exit(int exitCode = 0);
+        void InstallExitSignalHandler();
     }
 
-    internal interface ISnapOsImpl 
+    internal interface ISnapOsImpl
     {
         ISnapOsTaskbar Taskbar {get;}
         OSPlatform OsPlatform { get; }
@@ -53,6 +60,7 @@ namespace Snap.AnyOS
             CancellationToken cancellationToken = default);
         bool EnsureConsole();
         List<SnapOsProcess> GetProcesses();
+        ISnapOsExitSignal InstallExitSignalHandler();
     }
 
     internal sealed class SnapOs : ISnapOs
@@ -79,6 +87,7 @@ namespace Snap.AnyOS
             }
         }
 
+        public EventHandler OnExit { get; set; }
         public ISnapOsTaskbar Taskbar => OsImpl.Taskbar;
         public OSPlatform OsPlatform => OsImpl.OsPlatform;
         public ISnapFilesystem Filesystem => OsImpl.Filesystem;
@@ -142,6 +151,12 @@ namespace Snap.AnyOS
         public void Exit(int exitCode = 0)
         {
             Environment.Exit(exitCode);
+        }
+
+        public void InstallExitSignalHandler()
+        {
+            var exitSignalHandler = OsImpl.InstallExitSignalHandler();
+            exitSignalHandler.Exit += OnExit;
         }
     }
 }

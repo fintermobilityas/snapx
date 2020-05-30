@@ -6,12 +6,38 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Mono.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Logging;
 
 namespace Snap.AnyOS.Unix
 {
+    #if !NETFULLFRAMEWORK
+    // https://stackoverflow.com/a/32716784/2470592
+    internal sealed class SnapOsUnixExitSignal : ISnapOsExitSignal
+    {
+        public event EventHandler Exit;
+
+        readonly UnixSignal[] _signals = {
+            new UnixSignal(Mono.Unix.Native.Signum.SIGTERM), 
+            new UnixSignal(Mono.Unix.Native.Signum.SIGINT),
+            new UnixSignal(Mono.Unix.Native.Signum.SIGUSR1)
+        };
+
+        public SnapOsUnixExitSignal()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                // blocking call to wait for any kill signal
+                UnixSignal.WaitAny(_signals, -1);
+
+                Exit?.Invoke(null, EventArgs.Empty);
+            });
+        }
+    }
+    #endif
+
     internal sealed class SnapOsUnix : ISnapOsImpl
     {
         readonly ILog _logger = LogProvider.For<SnapOsUnix>();
@@ -160,6 +186,15 @@ namespace Snap.AnyOS.Unix
         {
             var processes = Process.GetProcesses().Select(process => OsProcessManager.Build(process.Id, process.ProcessName)).ToList();
             return processes;
+        }
+
+        public ISnapOsExitSignal InstallExitSignalHandler()
+        {
+            #if !NETFULLFRAMEWORK
+            return new SnapOsUnixExitSignal();
+            #else 
+            throw new PlatformNotSupportedException();
+            #endif
         }
 
         public (string distributorId, string description, string release, string codeName) ParseLsbRelease(string text)

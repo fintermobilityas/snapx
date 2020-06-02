@@ -105,7 +105,7 @@ namespace snapx.Core
             var columnHeaders = string.Format(format, Columns.ToArray());
 
             // longest line is greater of formatted columnHeader and longest row
-            var longestLine = Math.Min(Console.BufferWidth, Math.Max(maxRowLength, columnHeaders.Length));
+            var longestLine = Math.Min(Program.TerminalBufferWidth, Math.Max(maxRowLength, columnHeaders.Length));
 
             // add each row
             var results = Rows.Select(row => string.Format(format, row)).ToList();

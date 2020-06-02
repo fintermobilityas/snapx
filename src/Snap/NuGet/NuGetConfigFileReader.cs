@@ -24,7 +24,7 @@ namespace Snap.NuGet
 
             foreach (var file in settings.GetConfigFilePaths())
             {
-                Logger.Info($"Reading file {file} for package sources");
+                Logger.Info($"Adding package sources from {file}");
             }
 
             var enabledSources = SettingsUtility.GetEnabledSources(settings).ToList();

@@ -85,24 +85,24 @@ namespace snapx
 
             if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
 
                 var tryAcquireRetries = options.LockRetries == -1 ? int.MaxValue : options.LockRetries;
                 if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
                 {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
                     return -1;
                 }
             }
 
             var availableChannelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Snap id: {options.AppId}");
             logger.Info($"Rid: {options.Rid}");
             logger.Info($"Source channel: {options.Channel}");
             logger.Info($"Available channels: {availableChannelsStr}");
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             logger.Info("Downloading releases nupkg.");
             var (snapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
@@ -228,7 +228,7 @@ namespace snapx
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                         {
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
+                            logger.Info('-'.Repeat(TerminalBufferWidth));
 
                             var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
                                 snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
@@ -239,7 +239,7 @@ namespace snapx
                             {
                                 if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                                 {
-                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Info('-'.Repeat(TerminalBufferWidth));
                                     logger.Error("Unknown error building offline installer.");
                                     return 1;
                                 }
@@ -253,7 +253,7 @@ namespace snapx
 
                         if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
+                            logger.Info('-'.Repeat(TerminalBufferWidth));
 
                             var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
@@ -265,7 +265,7 @@ namespace snapx
                                 if (!canContinueIfError
                                     || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                                 {
-                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Info('-'.Repeat(TerminalBufferWidth));
                                     logger.Error("Unknown error building web installer.");
                                     return 1;
                                 }
@@ -279,7 +279,7 @@ namespace snapx
                     }
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
 
                 foreach (var (channel, packageSource) in promoteToChannels.Select(snapChannel =>
                 {
@@ -308,7 +308,7 @@ namespace snapx
                         cancellationToken);
 
                     logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
                 }
             }
 

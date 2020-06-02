@@ -288,7 +288,7 @@ namespace snapx
 
             await using (releasesMemoryStream)
             {
-                if (fullOrDeltaSnapApp.Target.Installers.Any())
+                if (!packOptions.SkipInstallers && fullOrDeltaSnapApp.Target.Installers.Any())
                 {
                     var channels = fullOrDeltaSnapApp.IsGenesis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
 

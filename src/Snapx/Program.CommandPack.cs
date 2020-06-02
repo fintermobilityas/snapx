@@ -87,7 +87,7 @@ namespace snapx
             logger.Info($"Artifacts directory: {artifactsDirectory}");
             logger.Info($"Installers directory: {installersDirectory}");
             logger.Info($"Pack strategy: {snapApps.Generic.PackStrategy}");
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Id: {snapApp.Id}");
             logger.Info($"Version: {snapApp.Version}");
             logger.Info($"Channel: {snapAppChannel.Name}");
@@ -101,17 +101,17 @@ namespace snapx
 
             if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
 
                 var tryAcquireRetries = packOptions.LockRetries == -1 ? int.MaxValue : packOptions.LockRetries;
                 if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
                 {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
                     return -1;
                 }
             }
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             var pushFeed = nuGetPackageSources.Items.Single(x => x.Name == snapAppChannel.PushFeed.Name
                                                                  && x.SourceUri == snapAppChannel.PushFeed.Source);
@@ -149,7 +149,7 @@ namespace snapx
 
                 if (!packOptions.Gc)
                 {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
                 }
 
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
@@ -161,7 +161,7 @@ namespace snapx
 
                 if (!packOptions.Gc)
                 {
-                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
                 }
 
                 if (snapAppChannelReleases.Any(x => x.Version >= snapApp.Version))
@@ -217,7 +217,7 @@ namespace snapx
                     }
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
             }
 
             var snapPackageDetails = new SnapPackageDetails
@@ -256,7 +256,7 @@ namespace snapx
             var fullOrDeltaNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullOrDeltaSnapApp.BuildNugetFilename());
             pushPackages.Add(fullOrDeltaNupkgAbsolutePath);
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info("Building releases manifest");
 
             var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
@@ -299,7 +299,7 @@ namespace snapx
                         
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                         {
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
+                            logger.Info('-'.Repeat(TerminalBufferWidth));
 
                             var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
                                 snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
@@ -312,7 +312,7 @@ namespace snapx
                                     || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
                                         infoOnly: packOptions.YesToAllPrompts))
                                 {
-                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Info('-'.Repeat(TerminalBufferWidth));
                                     logger.Error("Unknown error building offline installer.");
                                     return 1;
                                 }                                
@@ -327,7 +327,7 @@ namespace snapx
 
                         if (fullOrDeltaSnapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                         {
-                            logger.Info('-'.Repeat(TerminalDashesWidth));
+                            logger.Info('-'.Repeat(TerminalBufferWidth));
 
                             var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
                                 snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
@@ -340,7 +340,7 @@ namespace snapx
                                     || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", 
                                         infoOnly: packOptions.YesToAllPrompts))
                                 {
-                                    logger.Info('-'.Repeat(TerminalDashesWidth));
+                                    logger.Info('-'.Repeat(TerminalBufferWidth));
                                     logger.Error("Unknown error building offline installer.");
                                     return 1;
                                 }          
@@ -361,13 +361,13 @@ namespace snapx
                     snapPackageManager, distributedMutex, snapAppsReleases, fullOrDeltaSnapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Fetching releases overview from feed {pushFeed.Name}.");
 
             await CommandListAsync(new ListOptions {Id = fullOrDeltaSnapApp.Id}, filesystem, snapAppReader,
                 nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Pack completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;
@@ -390,7 +390,7 @@ namespace snapx
             if (packages == null) throw new ArgumentNullException(nameof(packages));
             if (packages.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(packages));
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Count);
 
@@ -456,7 +456,7 @@ namespace snapx
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             var retryInterval = TimeSpan.FromSeconds(15);
 

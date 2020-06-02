@@ -170,12 +170,12 @@ namespace snapx
                     table.AddRow(rowValues.ToArray());
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
                 
                 table.Write(logger);
             }
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"List completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
             return 0;

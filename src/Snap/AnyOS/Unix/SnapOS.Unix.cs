@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Mono.Unix;
 using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Logging;
@@ -14,6 +13,8 @@ using Snap.Logging;
 namespace Snap.AnyOS.Unix
 {
     #if !NETFULLFRAMEWORK
+    using Mono.Unix;
+
     // https://stackoverflow.com/a/32716784/2470592
     internal sealed class SnapOsUnixExitSignal : ISnapOsExitSignal
     {

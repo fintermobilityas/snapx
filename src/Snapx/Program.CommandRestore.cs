@@ -90,7 +90,7 @@ namespace snapx
                 filesystem.DirectoryCreateIfNotExists(packagesDirectory);
                 filesystem.DirectoryCreateIfNotExists(installersDirectory);
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
                 logger.Info($"Id: {snapApp.Id}.");
                 logger.Info($"Rid: {snapApp.Target.Rid}");
                 logger.Info($"Packages directory: {packagesDirectory}");
@@ -128,7 +128,7 @@ namespace snapx
                     logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
                 }
 
-                logger.Info('-'.Repeat(TerminalDashesWidth));
+                logger.Info('-'.Repeat(TerminalBufferWidth));
 
                 var snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetDefaultChannelOrThrow());
                 if (!snapAppReleases.Any())
@@ -168,7 +168,7 @@ namespace snapx
                     if (restoreOptions.BuildInstallers 
                         || snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
-                        logger.Info('-'.Repeat(TerminalDashesWidth));
+                        logger.Info('-'.Repeat(TerminalBufferWidth));
 
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, null, releasesNupkgAbsolutePath, false, cancellationToken);
@@ -177,7 +177,7 @@ namespace snapx
                     if (restoreOptions.BuildInstallers 
                         || snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
-                        logger.Info('-'.Repeat(TerminalDashesWidth));
+                        logger.Info('-'.Repeat(TerminalBufferWidth));
 
                         var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, mostRecentSnapRelease.BuildNugetFullFilename());
  
@@ -187,7 +187,7 @@ namespace snapx
                 }                                
             }
 
-            logger.Info('-'.Repeat(TerminalDashesWidth));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Restore completed in {stopwatch.Elapsed.TotalSeconds:0.0}s.");
 
             return 0;

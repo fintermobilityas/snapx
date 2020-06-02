@@ -159,8 +159,9 @@ namespace snapx
                         }
                         else
                         {
-                            var fullOrDeltaTxt = mostRecentRelease.IsGenesis ? "full" : "delta";
-                            rowValue = $"{mostRecentRelease.Version} ({fullOrDeltaTxt}) - {mostRecentRelease.DeltaFilesize.BytesAsHumanReadable()}";
+                            var fullOrDeltaTxt = mostRecentRelease.IsFull ? "full" : "delta";
+                            var fullOrDeltaSize = mostRecentRelease.IsFull ? mostRecentRelease.FullFilesize : mostRecentRelease.DeltaFilesize;
+                            rowValue = $"{mostRecentRelease.Version} ({fullOrDeltaTxt}) - {fullOrDeltaSize.BytesAsHumanReadable()}";
                         }
 
                         rowValues.Add(rowValue);

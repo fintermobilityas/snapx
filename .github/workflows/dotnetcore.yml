@@ -63,6 +63,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends cmake make gcc g++ mingw-w64 g++-mingw-w64-x86-64 g++-mingw-w64-i686 uuid-dev
           
       - name: Build & Run Tests
+        timeout-minutes: 10
         run:  
           pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Unix -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
     
@@ -142,6 +143,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Build & Run Tests
+        timeout-minutes: 10
         run:  
           pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" -Target Bootstrap-CI-Windows -CIBuild "1" -Version ${{ env.SNAPX_VERSION }}
 

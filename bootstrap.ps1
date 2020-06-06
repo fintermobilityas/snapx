@@ -333,12 +333,15 @@ function Invoke-Dotnet-Unit-Tests
 
     foreach($Project in $Projects)
     {
+        $TestAdapterPath = Split-Path $Project
+
         Invoke-Command-Colored $CommandDotnet @(
             "test"
             "$Project"
-            "--logger xunit",
-            "--verbosity normal"
             "--configuration=$Configuration"
+            "--verbosity normal"
+			"--test-adapter-path:""$TestAdapterPath"""
+			"--logger:""xunit;LogFileName=TestResults.xml"""
             "--", # RunSettings
             "RunConfiguration.TestSessionTimeout=300000" # 5 minutes
         )    

@@ -358,10 +358,10 @@ switch ($Target) {
             exit $LASTEXITCODE
         } 
 
-        Invoke-Dotnet-Unit-Tests
-        if(0 -ne $LASTEXITCODE) {
-            exit $LASTEXITCODE
-        }        
+        #Invoke-Dotnet-Unit-Tests
+        #if(0 -ne $LASTEXITCODE) {
+        #    exit $LASTEXITCODE
+        #}        
 
         Invoke-Summary
     }

@@ -342,8 +342,6 @@ function Invoke-Dotnet-Unit-Tests
             "--verbosity normal"
 			"--test-adapter-path:""$TestAdapterPath"""
 			"--logger:""xunit;LogFileName=TestResults.xml"""
-            "--", # RunSettings
-            "RunConfiguration.TestSessionTimeout=300000" # 5 minutes
         )    
     }
 

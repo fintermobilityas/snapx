@@ -125,7 +125,11 @@ namespace snapx
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
             var (snapAppsReleases, _, currentReleasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-            currentReleasesMemoryStream?.Dispose();
+            if (currentReleasesMemoryStream != null)
+            {
+                await currentReleasesMemoryStream.DisposeAsync();
+            }
+
             if (snapAppsReleases == null)
             {
                 if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +

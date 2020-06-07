@@ -74,8 +74,8 @@ namespace snapx
             var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
 
-            var promoteSrcChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.OrdinalIgnoreCase));
-            if (promoteSrcChannel == null)
+            var promoteBaseChannel = snapApp.Channels.SingleOrDefault(x => string.Equals(x.Name, options.Channel, StringComparison.OrdinalIgnoreCase));
+            if (promoteBaseChannel == null)
             {
                 logger.Error($"Unable to find channel: {options.Channel}.");
                 return 1;
@@ -109,25 +109,28 @@ namespace snapx
 
             logger.Info("Downloading releases nupkg.");
             var (snapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-            releasesMemoryStream?.Dispose();
+            if (releasesMemoryStream != null)
+            {
+                await releasesMemoryStream.DisposeAsync();
+            }
             if (snapAppsReleases == null)
             {
                 logger.Error($"Unknown error downloading releases nupkg: {snapApp.BuildNugetReleasesFilename()}.");
                 return 1;
             }
 
-            var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, promoteSrcChannel);
+            var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, promoteBaseChannel);
 
             var mostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
             if (mostRecentRelease == null)
             {
-                logger.Error($"Unable to find any releases in channel: {promoteSrcChannel.Name}.");
+                logger.Error($"Unable to find any releases in channel: {promoteBaseChannel.Name}.");
                 return 1;
             }
 
             snapApp.Version = mostRecentRelease.Version;
 
-            var currentChannelIndex = mostRecentRelease.Channels.FindIndex(channelName => channelName == promoteSrcChannel.Name);
+            var currentChannelIndex = mostRecentRelease.Channels.FindIndex(channelName => channelName == promoteBaseChannel.Name);
             var promotableChannels = snapApp.Channels
                 .Skip(currentChannelIndex + 1)
                 .Select(channel =>
@@ -190,7 +193,7 @@ namespace snapx
 
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
 
-            var releasesPackageMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapAppsReleases);
+            await using var releasesPackageMemoryStream = snapPack.BuildReleasesPackage(snapApp, snapAppsReleases);
             logger.Info("Finished building releases nupkg.");
 
             var restoreOptions = new RestoreOptions
@@ -213,106 +216,103 @@ namespace snapx
 
             const int pushRetries = 3;
 
-            await using (releasesPackageMemoryStream)
+            using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
+            var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();
+            var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
+            await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);
+
+            if (snapApp.Target.Installers.Any())
             {
-                using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
-                var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();
-                var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
-                await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);
+                foreach (var channel in promoteToChannels)
+                {
+                    var snapAppInstaller = new SnapApp(snapApp);
+                    snapAppInstaller.SetCurrentChannel(channel.Name);
 
-                if (snapApp.Target.Installers.Any())
-                {                    
-                    foreach (var channel in promoteToChannels)
+                    var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFullFilename());
+
+                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
                     {
-                        var snapAppInstaller = new SnapApp(snapApp);
-                        snapAppInstaller.SetCurrentChannel(channel.Name);
+                        logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                        var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapApp.BuildNugetFullFilename());
+                        var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
+                            snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                            installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
+                            true, cancellationToken);
 
-                        if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Offline)))
+                        if (!installerOfflineSuccess)
                         {
-                            logger.Info('-'.Repeat(TerminalBufferWidth));
-
-                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
-                                snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
-                                installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
-                                true, cancellationToken);
-
-                            if (!installerOfflineSuccess)
+                            if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
                             {
-                                if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
-                                {
-                                    logger.Info('-'.Repeat(TerminalBufferWidth));
-                                    logger.Error("Unknown error building offline installer.");
-                                    return 1;
-                                }
-                            }
-                            else
-                            {
-                                var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
-                                logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                                logger.Info('-'.Repeat(TerminalBufferWidth));
+                                logger.Error("Unknown error building offline installer.");
+                                return 1;
                             }
                         }
-
-                        if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
+                        else
                         {
-                            logger.Info('-'.Repeat(TerminalBufferWidth));
-
-                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
-                                snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
-                                installersDirectory, null, releasesPackageAbsolutePath,
-                                false, cancellationToken);
-
-                            if (!installerWebSuccess)
-                            {
-                                if (!canContinueIfError
-                                    || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
-                                {
-                                    logger.Info('-'.Repeat(TerminalBufferWidth));
-                                    logger.Error("Unknown error building web installer.");
-                                    return 1;
-                                }
-                            }
-                            else
-                            {
-                                var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
-                                logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
-                            }
-                        }    
+                            var installerOfflineExeStat = filesystem.FileStat(installerOfflineExeAbsolutePath);
+                            logger.Info($"Successfully built offline installer. File size: {installerOfflineExeStat.Length.BytesAsHumanReadable()}.");
+                        }
                     }
-                }
 
-                logger.Info('-'.Repeat(TerminalBufferWidth));
-
-                foreach (var (channel, packageSource) in promoteToChannels.Select(snapChannel =>
-                {
-                    var packageSource = nuGetPackageSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
-                    return (snapChannel, packageSource);
-                }).DistinctBy(x => x.packageSource.SourceUri))
-                {                   
-                    logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
-
-                    var success = await SnapUtility.RetryAsync(
-                        async () =>
-                        {
-                            await nugetService.PushAsync(releasesPackageAbsolutePath, nuGetPackageSources, packageSource, cancellationToken: cancellationToken);
-                            return true;
-                        }, pushRetries);
-
-                    if (!success)
+                    if (snapApp.Target.Installers.Any(x => x.HasFlag(SnapInstallerType.Web)))
                     {
-                        logger.Error("Unknown error while uploading nupkg.");
-                        return 1;
+                        logger.Info('-'.Repeat(TerminalBufferWidth));
+
+                        var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
+                            snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                            installersDirectory, null, releasesPackageAbsolutePath,
+                            false, cancellationToken);
+
+                        if (!installerWebSuccess)
+                        {
+                            if (!canContinueIfError
+                                || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                            {
+                                logger.Info('-'.Repeat(TerminalBufferWidth));
+                                logger.Error("Unknown error building web installer.");
+                                return 1;
+                            }
+                        }
+                        else
+                        {
+                            var installerWebExeStat = filesystem.FileStat(installerWebExeAbsolutePath);
+                            logger.Info($"Successfully built web installer. File size: {installerWebExeStat.Length.BytesAsHumanReadable()}.");
+                        }
                     }
-
-                    var retryInterval = TimeSpan.FromSeconds(15);
-
-                    await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, channel, retryInterval,
-                        cancellationToken);
-
-                    logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
-                    logger.Info('-'.Repeat(TerminalBufferWidth));
                 }
+            }
+
+            logger.Info('-'.Repeat(TerminalBufferWidth));
+
+            foreach (var (channel, packageSource) in promoteToChannels.Select(snapChannel =>
+            {
+                var packageSource = nuGetPackageSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
+                return (snapChannel, packageSource);
+            }).DistinctBy(x => x.packageSource.SourceUri))
+            {
+                logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
+
+                var success = await SnapUtility.RetryAsync(
+                    async () =>
+                    {
+                        await nugetService.PushAsync(releasesPackageAbsolutePath, nuGetPackageSources, packageSource, cancellationToken: cancellationToken);
+                        return true;
+                    }, pushRetries);
+
+                if (!success)
+                {
+                    logger.Error("Unknown error while uploading nupkg.");
+                    return 1;
+                }
+
+                var retryInterval = TimeSpan.FromSeconds(15);
+
+                await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, channel, retryInterval,
+                    cancellationToken);
+
+                logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
+                logger.Info('-'.Repeat(TerminalBufferWidth));
             }
 
             logger.Info($"Promote completed in {stopWatch.Elapsed.TotalSeconds:0.0}s.");

@@ -83,25 +83,28 @@ namespace snapx
 
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
 
-            if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
+            if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
-                logger.Info('-'.Repeat(TerminalBufferWidth));
-
-                var tryAcquireRetries = options.LockRetries == -1 ? int.MaxValue : options.LockRetries;
-                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
-                {
-                    logger.Info('-'.Repeat(TerminalBufferWidth));
-                    return -1;
-                }
+                logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
+                return -1;
             }
 
-            var availableChannelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
+
+            var tryAcquireRetries = options.LockRetries == -1 ? int.MaxValue : options.LockRetries;
+            if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
+            {
+                logger.Info('-'.Repeat(TerminalBufferWidth));
+                return -1;
+            }
+
+            var channelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Snap id: {options.AppId}");
             logger.Info($"Rid: {options.Rid}");
             logger.Info($"Source channel: {options.Channel}");
-            logger.Info($"Available channels: {availableChannelsStr}");
+            logger.Info($"Channels: {channelsStr}");
             logger.Info('-'.Repeat(TerminalBufferWidth));
 
             logger.Info("Downloading releases nupkg.");

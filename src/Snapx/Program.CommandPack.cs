@@ -80,6 +80,12 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
+            if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
+            {
+                logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
+                return -1;
+            }
+
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
             
             logger.Info($"Schema version: {snapApps.Schema}");
@@ -99,16 +105,13 @@ namespace snapx
             logger.Info($"Shortcuts: {shortcutsStr}");
 
 
-            if (!string.IsNullOrWhiteSpace(snapApps.Generic.Token))
+            logger.Info('-'.Repeat(TerminalBufferWidth));
+
+            var tryAcquireRetries = packOptions.LockRetries == -1 ? int.MaxValue : packOptions.LockRetries;
+            if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
             {
                 logger.Info('-'.Repeat(TerminalBufferWidth));
-
-                var tryAcquireRetries = packOptions.LockRetries == -1 ? int.MaxValue : packOptions.LockRetries;
-                if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
-                {
-                    logger.Info('-'.Repeat(TerminalBufferWidth));
-                    return -1;
-                }
+                return -1;
             }
 
             logger.Info('-'.Repeat(TerminalBufferWidth));

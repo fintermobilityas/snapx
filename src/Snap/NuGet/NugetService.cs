@@ -77,6 +77,9 @@ namespace Snap.NuGet
 
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
+
+        Task DeleteAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+            ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
             [NotNull] PackageSource source, CancellationToken cancellationToken);
@@ -150,25 +153,25 @@ namespace Snap.NuGet
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
-            string GetApiKey()
-            {
-                if (packageSources.Settings == null
-                    || packageSource.Source == null)
-                {
-                    return string.Empty;
-                }
+            var sourceRepository = _packageSources.Get(packageSource);
+            var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-                var decryptedApikey = SettingsUtility.GetDecryptedValueForAddItem(
-                    packageSources.Settings, ConfigurationConstants.ApiKeys, packageSource.Source);
+            await packageUpdateResource.Push(packagePath, null, timeOutInSeconds, false, _ => BuildApiKey(packageSources, packageSource), _ => null,
+                false, false, null, nugetLogger ?? NullLogger.Instance);
+        }
 
-                return decryptedApikey ?? string.Empty; // NB! Has to be string.Empty
-            }
+        public async Task DeleteAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+            ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
+        {
+            if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
+            if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
             var sourceRepository = _packageSources.Get(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-            await packageUpdateResource.Push(packagePath, null, timeOutInSeconds, false, _ => GetApiKey(), _ => null,
-                false, false, null, nugetLogger ?? NullLogger.Instance);
+            await packageUpdateResource.Delete(packagePath, packageVersion, 
+                _ => BuildApiKey(packageSources, packageSource), _ => true, false, nugetLogger ?? NullLogger.Instance);
         }
 
         public async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync([NotNull] string searchTerm, [NotNull] SearchFilter filters, int skip, int take,
@@ -355,6 +358,21 @@ namespace Snap.NuGet
                 .Distinct();
 
             return new NuGetPackageSearchMedatadata(metadata.Identity, source, metadata.Published, deps);
+        }
+
+        
+        static string BuildApiKey(INuGetPackageSources packageSources, PackageSource packageSource)
+        {
+            if (packageSources.Settings == null
+                || packageSource.Source == null)
+            {
+                return string.Empty;
+            }
+
+            var decryptedApikey = SettingsUtility.GetDecryptedValueForAddItem(
+                packageSources.Settings, ConfigurationConstants.ApiKeys, packageSource.Source);
+
+            return decryptedApikey ?? string.Empty; // NB! Has to be string.Empty
         }
     }
 }

@@ -1,9 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using JetBrains.Annotations;
-using NuGet.Common;
 using NuGet.Configuration;
 using Snap.Core;
 using Snap.Logging;
@@ -12,8 +11,6 @@ namespace Snap.NuGet
 {
     internal class NuGetMachineWideSettings : IMachineWideSettings
     {
-        static readonly string[] EmptyStringArray = { };
-
         readonly Lazy<ISettings> _settings;
 
         public ISettings Settings => _settings.Value;
@@ -25,40 +22,25 @@ namespace Snap.NuGet
 
             logger ??= LogProvider.For<NuGetMachineWideSettings>();
 
-            var baseDirectory = NuGetEnvironment.GetFolderPath(NuGetFolderPath.MachineWideConfigDirectory);
+            // https://github.com/NuGet/NuGet.Client/blob/8cb7886a7e9052308cfa51308f6f901c7caf5004/src/NuGet.Core/NuGet.Commands/SourcesCommands/SourceRunners.cs#L102
+
             _settings = new Lazy<ISettings>(() =>
             {
                 ISettings settings;
-                var nugetExtraConfigPaths = GetNugetExtraConfigPaths(filesystem, workingDirectory);
-
                 try
                 {
-                    try
-                    {
-                        settings = global::NuGet.Configuration.Settings.LoadMachineWideSettings(baseDirectory,
-                            nugetExtraConfigPaths);
-                    }
-                    catch (NuGetConfigurationException ex) when (ex.InnerException is UnauthorizedAccessException)
-                    {
-                        settings =
-                            global::NuGet.Configuration.Settings.LoadSettingsGivenConfigPaths(nugetExtraConfigPaths);
-                    }
+                    settings = global::NuGet.Configuration.Settings.LoadDefaultSettings(workingDirectory,
+                        configFileName: null,
+                        machineWideSettings: new XPlatMachineWideSetting());
                 }
-                catch (Exception e)
+                catch (NuGetConfigurationException ex) when (ex.InnerException is UnauthorizedAccessException)
                 {
-                    logger.ErrorException("Error loading machine wide settings", e.InnerException ?? e);
+                    logger.ErrorException("Error loading machine wide settings", ex.InnerException ?? ex);
                     return new NullSettings();
                 }
 
                 return settings;
             });
-        }
-
-        static string[] GetNugetExtraConfigPaths([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
-        {
-            var nugetConfig = filesystem.DirectoryGetAllFiles(workingDirectory)
-                .SingleOrDefault(x => x.EndsWith("nuget.config", StringComparison.OrdinalIgnoreCase));
-            return nugetConfig == null ? EmptyStringArray : new[] {nugetConfig};
         }
     }
 
@@ -97,21 +79,31 @@ namespace Snap.NuGet
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-            var nuGetConfigFileReader = new NuGetConfigFileReader();
             var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
-            var configFilePaths = nugetMachineWideSettings.Settings.GetConfigFilePaths();
+            
+            var nugetConfigAbsolutePath = filesystem.DirectoryGetAllFiles(workingDirectory)
+                .FirstOrDefault(x => x.EndsWith("nuget.config", StringComparison.OrdinalIgnoreCase));
 
-            if (!configFilePaths.Any() && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            var packageSources = new List<PackageSource>();
+
+            if (nugetConfigAbsolutePath != null)
             {
-                configFilePaths.Add("~/");
+                var nugetConfigReader = new NuGetConfigFileReader();
+                foreach (var packageSource in nugetConfigReader.ReadNugetSources(workingDirectory).Where(x => x.IsEnabled))
+                {
+                    if (!packageSources.Contains(packageSource))
+                    {
+                        packageSources.Add(packageSource);
+                    }
+                }
             }
-                        
-            var packageSources = configFilePaths
-                .Select(filesystem.PathGetDirectoryName)
-                .Distinct()
-                .Select(configFilePath => nuGetConfigFileReader.ReadNugetSources(configFilePath)).ToList();
+            else
+            {
+                var packageSourceProvider = new PackageSourceProvider(nugetMachineWideSettings.Settings);
+                packageSources = packageSourceProvider.LoadPackageSources().Where(x => x.IsEnabled).ToList();
+            }
 
-            Items = packageSources.SelectMany(x => x.Items).ToList();
+            Items = packageSources;
             Settings = nugetMachineWideSettings.Settings;
         }
     }
@@ -124,7 +116,7 @@ namespace Snap.NuGet
         }
     }
 
-    internal interface INuGetPackageSources
+    internal interface INuGetPackageSources : IEnumerable<PackageSource>
     {
         ISettings Settings { get; }
         IReadOnlyCollection<PackageSource> Items { get; }
@@ -166,9 +158,19 @@ namespace Snap.NuGet
             Settings = settings;
         }
 
+        public IEnumerator<PackageSource> GetEnumerator()
+        {
+            return Items.GetEnumerator();
+        }
+
         public override string ToString()
         {
             return string.Join(",", Items.Select(s => s.SourceUri.ToString()));
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

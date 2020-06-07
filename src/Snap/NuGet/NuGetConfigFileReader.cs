@@ -27,12 +27,11 @@ namespace Snap.NuGet
                 Logger.Info($"Adding package sources from {file}");
             }
 
-            var enabledSources = SettingsUtility.GetEnabledSources(settings).ToList();
-
-            return ReadFromFile(settings, enabledSources);
+            var packageSources = PackageSourceProvider.LoadPackageSources(settings).ToList();
+            return ReadFromFile(settings, packageSources);
         }
 
-        NuGetPackageSources ReadFromFile([JetBrains.Annotations.NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
+        static NuGetPackageSources ReadFromFile([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (sources == null) throw new ArgumentNullException(nameof(sources));

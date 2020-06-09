@@ -193,6 +193,7 @@ namespace Snap.Core
                             IgnoreNullValues = true,
                             PropertyNameCaseInsensitive = true
                         });
+
                         if (packageManagerNugetHttp == null)
                         {
                             throw new Exception($"Unable to deserialize nuget http feed. Url: {feed.Source}. Response length: {stream.Position}");

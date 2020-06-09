@@ -87,6 +87,50 @@ namespace Snap.Tests.Core
             Assert.Null(snapAppAfterChannel.PushFeed.Username);
             Assert.Null(snapAppAfterChannel.PushFeed.Password);
         }
+
+        [InlineData("https://www.nuget.org")]
+        [InlineData("https://nuget.org")]
+        [Theory]
+        [ExcludeFromCodeCoverage]
+        public void TestBuildSnapAppAssembly_Prunes_UpdateFeed_Credentials_If_Nuget_Org_Domain(string nugetOrgDomain)
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            snapAppBefore.Channels.Clear();
+            snapAppBefore.Channels.Add(new SnapChannel
+            {
+                Name = "test",
+                PushFeed = new SnapNugetFeed
+                {
+                    Source = new Uri(nugetOrgDomain),
+                    ApiKey = "myapikey",
+                    Password = "mypassword",
+                    Username = "myusername"
+                },
+                UpdateFeed = new SnapNugetFeed
+                {
+                    Source = new Uri(nugetOrgDomain),
+                    ApiKey = "myapikey",
+                    Password = "mypassword",
+                    Username = "myusername"
+                },
+            });
+
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
+
+            var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
+
+            var nugetPushFeed = (SnapNugetFeed) snapAppAfterChannel.UpdateFeed;
+            Assert.Null(nugetPushFeed.ApiKey);
+            Assert.Null(nugetPushFeed.Username);
+            Assert.Null(nugetPushFeed.Password);
+
+            var nugetUpdateFeed = (SnapNugetFeed) snapAppAfterChannel.UpdateFeed;
+            Assert.Null(nugetUpdateFeed.ApiKey);
+            Assert.Null(nugetUpdateFeed.Username);
+            Assert.Null(nugetUpdateFeed.Password);
+        }
         
         [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly_Include_Persistent_Assets()

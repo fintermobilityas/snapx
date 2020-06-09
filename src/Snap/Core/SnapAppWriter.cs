@@ -66,6 +66,15 @@ namespace Snap.Core
                 channel.PushFeed.ApiKey = null;
                 channel.PushFeed.Username = null;
                 channel.PushFeed.Password = null;
+
+                // Prevent publishing nuget.org credentials.
+                if (channel.UpdateFeed is SnapNugetFeed updateFeed
+                    && updateFeed.Source.Host.IndexOf("nuget.org", StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    updateFeed.ApiKey = null;
+                    updateFeed.Username = null;
+                    updateFeed.Password = null;
+                }
             }
                                                          
             var snapAppYamlStr = ToSnapAppYamlString(snapApp);

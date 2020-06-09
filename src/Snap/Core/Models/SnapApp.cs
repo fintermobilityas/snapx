@@ -10,7 +10,30 @@ using Snap.NuGet;
 using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
-{    
+{
+    public sealed class SnapAppNuspec
+    {
+        public string ReleaseNotes { get; set; }
+        public string Description { get; set; }
+        public string RepositoryUrl { get; set; } 
+        public string RepositoryType { get; set; }
+        public string Authors { get; set; }
+
+        public SnapAppNuspec()
+        {
+            
+        }
+
+        public SnapAppNuspec(SnapAppNuspec nuspec)
+        {
+            ReleaseNotes = nuspec.ReleaseNotes;
+            Description = nuspec.Description;
+            RepositoryUrl = nuspec.RepositoryUrl;
+            RepositoryType = nuspec.RepositoryType;
+            Authors = nuspec.Authors;
+        }
+    }
+
     public sealed class SnapApp
     {
         public string Id { get; set; }
@@ -20,7 +43,13 @@ namespace Snap.Core.Models
         public bool IsGenesis { get; set; }
         public bool IsFull { get; set; }
         [YamlIgnore] public bool IsDelta => !IsGenesis && !IsFull;
+
+        // Nuspec
         public string ReleaseNotes { get; set; }
+        public string Description { get; set; }
+        public string RepositoryUrl { get; set; } 
+        public string RepositoryType { get; set; }
+        public string Authors { get; set; }
         
         [UsedImplicitly]
         public SnapApp()
@@ -42,6 +71,10 @@ namespace Snap.Core.Models
             IsGenesis = app.IsGenesis;
             IsFull = app.IsFull;
             ReleaseNotes = app.ReleaseNotes;
+            Description = app.Description;
+            RepositoryUrl = app.RepositoryUrl;
+            RepositoryType = app.RepositoryType;
+            Authors = app.Authors;
         }
 
         internal void SetCurrentChannel([NotNull] string channelName)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -23,13 +24,13 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapsNugetFeed([NotNull] SnapsNugetFeed feed)
+        public SnapsNugetFeed([JetBrains.Annotations.NotNull] SnapsNugetFeed feed)
         {
             if (feed == null) throw new ArgumentNullException(nameof(feed));
             Name = feed.Name;
         }
 
-        public SnapsNugetFeed([NotNull] SnapNugetFeed feed) : this(new SnapsNugetFeed
+        public SnapsNugetFeed([JetBrains.Annotations.NotNull] SnapNugetFeed feed) : this(new SnapsNugetFeed
         {
             Name = feed.Name
         })
@@ -51,13 +52,13 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapsHttpFeed([NotNull] SnapsHttpFeed feed)
+        public SnapsHttpFeed([JetBrains.Annotations.NotNull] SnapsHttpFeed feed)
         {
             if (feed == null) throw new ArgumentNullException(nameof(feed));
             Source = feed.Source;
         }
 
-        public SnapsHttpFeed([NotNull] SnapHttpFeed feed) : this(new SnapsHttpFeed
+        public SnapsHttpFeed([JetBrains.Annotations.NotNull] SnapHttpFeed feed) : this(new SnapsHttpFeed
         {
             Source = feed.Source
         })
@@ -81,7 +82,7 @@ namespace Snap.Core.Models
             
         }
 
-        internal SnapsChannel([NotNull] SnapChannel snapChannel)
+        internal SnapsChannel([JetBrains.Annotations.NotNull] SnapChannel snapChannel)
         {
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             Name = snapChannel.Name;
@@ -100,7 +101,7 @@ namespace Snap.Core.Models
             }
         }
 
-        public SnapsChannel([NotNull] SnapsChannel snapChannel)
+        public SnapsChannel([JetBrains.Annotations.NotNull] SnapsChannel snapChannel)
         {
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             Name = snapChannel.Name;
@@ -130,7 +131,7 @@ namespace Snap.Core.Models
             Installers = new List<SnapInstallerType>();
         }
 
-        internal SnapsTarget([NotNull] SnapTarget target)
+        internal SnapsTarget([JetBrains.Annotations.NotNull] SnapTarget target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
@@ -142,7 +143,7 @@ namespace Snap.Core.Models
             Installers = target.Installers;
         }
 
-        public SnapsTarget([NotNull] SnapsTarget target)
+        public SnapsTarget([JetBrains.Annotations.NotNull] SnapsTarget target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
@@ -155,6 +156,40 @@ namespace Snap.Core.Models
         }
     }
 
+    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    public sealed class SnapsAppNuspec
+    {
+        public string ReleaseNotes { get; set; }
+        public string Description { get; set; }
+        public string RepositoryUrl { get; set; } 
+        public string RepositoryType { get; set; }
+        public string Authors { get; set; }
+
+        public SnapsAppNuspec()
+        {
+            
+        }
+
+        public SnapsAppNuspec(SnapApp snapApp)
+        {
+            ReleaseNotes = snapApp.ReleaseNotes;
+            Description = snapApp.Description;
+            RepositoryUrl = snapApp.RepositoryUrl;
+            RepositoryType = snapApp.RepositoryType;
+            Authors = snapApp.Authors;
+        }
+
+        public SnapsAppNuspec(SnapsAppNuspec nuspec)
+        {
+            ReleaseNotes = nuspec.ReleaseNotes;
+            Description = nuspec.Description;
+            RepositoryUrl = nuspec.RepositoryUrl;
+            RepositoryType = nuspec.RepositoryType;
+            Authors = nuspec.Authors;
+        }
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
@@ -163,31 +198,32 @@ namespace Snap.Core.Models
         public string Id { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
-        public string ReleaseNotes { get; set; }
-        
+        public SnapsAppNuspec Nuspec { get; set; }
+
         [UsedImplicitly]
         public SnapsApp()
         {
             Channels = new List<string>();
             Targets = new List<SnapsTarget>();
+            Nuspec = new SnapsAppNuspec();
         }
 
-        internal SnapsApp([NotNull] SnapApp snapApp)
+        internal SnapsApp([JetBrains.Annotations.NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
-            ReleaseNotes = snapApp.ReleaseNotes;
+            Nuspec = new SnapsAppNuspec(snapApp);
         }
 
-        public SnapsApp([NotNull] SnapsApp snapApp)
+        public SnapsApp([JetBrains.Annotations.NotNull] SnapsApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
             Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
-            ReleaseNotes = snapApp.ReleaseNotes;
+            Nuspec = new SnapsAppNuspec(snapApp.Nuspec);
         }
     }
 
@@ -216,7 +252,7 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapAppsGeneric([NotNull] SnapAppsGeneric snapAppsGeneric)
+        public SnapAppsGeneric([JetBrains.Annotations.NotNull] SnapAppsGeneric snapAppsGeneric)
         {
             if (snapAppsGeneric == null) throw new ArgumentNullException(nameof(snapAppsGeneric));
             Artifacts = snapAppsGeneric.Artifacts;
@@ -242,7 +278,7 @@ namespace Snap.Core.Models
             Generic = new SnapAppsGeneric();
         }
 
-        internal SnapApps([NotNull] SnapApp snapApp)
+        internal SnapApps([JetBrains.Annotations.NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
@@ -250,7 +286,7 @@ namespace Snap.Core.Models
             Generic = new SnapAppsGeneric();            
         }
 
-        public SnapApps([NotNull] SnapApps snapApps)
+        public SnapApps([JetBrains.Annotations.NotNull] SnapApps snapApps)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             Channels = snapApps.Channels.Select(x => new SnapsChannel(x)).ToList();
@@ -259,13 +295,13 @@ namespace Snap.Core.Models
             Schema = snapApps.Schema;
         }
 
-        public string BuildLockKey([NotNull] SnapApp snapApp)
+        public string BuildLockKey([JetBrains.Annotations.NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{Generic.Token}-{snapApp.Id}";
         }
 
-        public string BuildLockKey([NotNull] SnapsApp snapApp)
+        public string BuildLockKey([JetBrains.Annotations.NotNull] SnapsApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{Generic.Token}-{snapApp.Id}";

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using System.Xml.Linq;
 using DotNet.Globbing;
 using JetBrains.Annotations;
@@ -228,8 +229,7 @@ namespace Snap.Core
             var snapAppMetadataOnly = new SnapApp(packageDetails.SnapApp)
             {
                 IsFull = false,
-                IsGenesis = false,
-                ReleaseNotes = null
+                IsGenesis = false
             };
 
             var snapReleaseMetadataOnly = new SnapRelease
@@ -305,11 +305,21 @@ namespace Snap.Core
 
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(snapNuspecDetails.NuspecProperties);
 
+            var version = new NuGetVersion(fullSnapApp.Version.ToFullString());
+            var description = fullSnapApp.Description ?? "snapx application";
+            var authors = fullSnapApp.Authors ?? "snapx";
+            var upstreamPackageId = fullSnapApp.BuildNugetUpstreamId();
+
             var nuspecXml = $@"<?xml version=""1.0""?>
 <package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
     <metadata>
+        <id>{upstreamPackageId}</id>
         <title>{fullSnapApp.Id}</title>
-        <authors>snapx</authors>
+        <authors>{authors}</authors>
+        <version>{version}</version>
+        <releaseNotes>{fullSnapApp.ReleaseNotes}</releaseNotes>
+        <repository url=""{fullSnapApp.RepositoryUrl}"" type=""{fullSnapApp.RepositoryType}"" />
+        <description>{description}</description>
     </metadata>
 </package>";
 
@@ -960,7 +970,6 @@ namespace Snap.Core
 
             const string nuspecXmlNs = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
 
-            var nugetVersion = new NuGetVersion(snapApp.Version.ToFullString());
             var upstreamPackageId = snapApp.BuildNugetUpstreamId();
             var packageFiles = new List<(string filename, string targetPath)>();
 
@@ -977,41 +986,6 @@ namespace Snap.Core
                 {
                     throw new Exception("The required element 'metadata' is missing from the nuspec");
                 }
-
-                var id = metadata.SingleOrDefault(XName.Get("id", nuspecXmlNs));
-                if (id != null)
-                {
-                    id.Value = upstreamPackageId;
-                }
-                else
-                {
-                    metadata.Add(new XElement("id", upstreamPackageId));
-                }
-
-                var title = metadata.SingleOrDefault(XName.Get("title", nuspecXmlNs));
-                if (title == null)
-                {
-                    throw new Exception("The required element 'title' is missing from the nuspec");
-                }
-
-                var version = metadata.SingleOrDefault(XName.Get("version", nuspecXmlNs));
-                if (version == null)
-                {
-                    metadata.Add(new XElement("version", nugetVersion));
-                }
-                else
-                {
-                    version.Value = nugetVersion.ToFullString();
-                }
-
-                var description = metadata.SingleOrDefault(XName.Get("description", nuspecXmlNs));
-                if (description == null)
-                {
-                    metadata.Add(new XElement("description", title.Value));
-                }
-
-                snapApp.ReleaseNotes = 
-                    snapRelease.ReleaseNotes = metadata.SingleOrDefault(XName.Get("releasenotes", nuspecXmlNs))?.Value;
 
                 nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs))?.Remove();
 

@@ -547,7 +547,11 @@ namespace Snap.Extensions
                 Id = snapApp.Id,
                 Channels = snapAppChannels,
                 Target = new SnapTarget(snapAppTarget),
-                ReleaseNotes = snapApp.ReleaseNotes
+                Authors = snapApp.Nuspec.Authors,
+                Description = snapApp.Nuspec.Description,
+                ReleaseNotes = snapApp.Nuspec.ReleaseNotes,
+                RepositoryUrl = snapApp.Nuspec.RepositoryUrl,
+                RepositoryType = snapApp.Nuspec.RepositoryType
             };
         }
 

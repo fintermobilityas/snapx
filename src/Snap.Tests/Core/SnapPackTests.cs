@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Moq;
+using NuGet.Packaging;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
@@ -81,6 +82,42 @@ namespace Snap.Tests.Core
             }.Select(x => x.ForwardSlashesSafe()).ToList();
 
             Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
+        }
+
+        [Fact]
+        public async Task TestBuildPackageAsync_Nuspec()
+        {
+            var snapAppsReleases = new SnapAppsReleases();
+            var genesisSnapApp = _baseFixture.BuildSnapApp(isGenesis: true);
+
+            genesisSnapApp.RepositoryUrl = "https://github.com/fintermobilityas/snapx.git";
+            genesisSnapApp.RepositoryType = "git";
+            genesisSnapApp.ReleaseNotes = "release notes";
+            genesisSnapApp.Description = "a description";
+            genesisSnapApp.Authors = "peter";
+
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            using var genesisSnapReleaseBuilder = _baseFixture
+                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
+                .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
+                .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
+                .AddSnapDll();
+
+            using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
+            using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
+            var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(default);
+
+            Assert.Equal(genesisSnapApp.BuildNugetUpstreamId(), nuspecReader.GetId());
+            Assert.Equal(genesisSnapApp.Id, nuspecReader.GetTitle());
+            Assert.Equal("peter", nuspecReader.GetAuthors());
+            Assert.Equal("release notes", nuspecReader.GetReleaseNotes());
+            Assert.Equal("a description", nuspecReader.GetDescription());
+
+            var repositoryMetadata = nuspecReader.GetRepositoryMetadata();
+            Assert.NotNull(repositoryMetadata);
+            Assert.Equal("https://github.com/fintermobilityas/snapx.git", repositoryMetadata.Url);
+            Assert.Equal("git", repositoryMetadata.Type);
         }
 
         [Fact]

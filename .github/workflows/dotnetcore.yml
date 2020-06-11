@@ -5,7 +5,8 @@ on: push
 env:
   GITVERSION_VERSION: 5.3.4
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1 
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  FINTER_NUGET_FEED: https://nuget.pkg.github.com/fintermobilityas/index.json        
 
 jobs:
 
@@ -182,8 +183,9 @@ jobs:
             
       - name: Push nuget packages
         run: | 
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source https://nuget.pkg.github.com/fintermobilityas/index.json --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source https://nuget.pkg.github.com/fintermobilityas/index.json --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
+          dotnet nuget add source ${{ env.FINTER_NUGET_FEED }} --name fintermobilityas --username fintermobilityas --password ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }} --store-password-in-clear-text                
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ env.FINTER_NUGET_FEED }} --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ env.FINTER_NUGET_FEED }} --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

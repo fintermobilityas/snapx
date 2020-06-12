@@ -184,8 +184,8 @@ jobs:
       - name: Push nuget packages
         run: | 
           dotnet nuget add source ${{ env.FINTER_NUGET_FEED }} --name fintermobilityas --username fintermobilityas --password ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }} --store-password-in-clear-text                
-          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source ${{ env.FINTER_NUGET_FEED }} --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
-          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source ${{ env.FINTER_NUGET_FEED }} --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
+          dotnet nuget push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --source fintermobilityas --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
+          dotnet nuget push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --source fintermobilityas --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}  
           
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

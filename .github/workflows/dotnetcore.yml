@@ -18,14 +18,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
+        
+      - name: Fetch all history for all tags and branches (gitversion requirement)
+        run: | 
+          git fetch --prune --unshallow
+          
+      - name: Checkout submodules
+        uses: actions/checkout@v2.2.0
         with:
           token: ${{ secrets.CI_PAT }}
           lfs: true
           submodules: true
-          
-      - name: Fetch all history for all tags and branches (gitversion requirement)
-        run: | 
-          git fetch --prune --unshallow
 
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0

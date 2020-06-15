@@ -26,7 +26,7 @@ jobs:
       - name: Checkout submodules
         uses: actions/checkout@v2.2.0
         with:
-          token: ${{ secrets.CI_PAT }}
+          token: ${{ secrets.FINTER_CI_PAT }}
           lfs: true
           submodules: true
 
@@ -104,7 +104,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.2.0
         with:
-            token: ${{ secrets.CI_PAT }}
+            token: ${{ secrets.FINTER_CI_PAT }}
             lfs: true
             submodules: true 
 

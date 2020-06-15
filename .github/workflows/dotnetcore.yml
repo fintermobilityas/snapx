@@ -18,28 +18,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        
+        with:
+          lfs: true
+          submodules: true
+          
       - name: Fetch all history for all tags and branches (gitversion requirement)
         run: | 
           git fetch --prune --unshallow
-          
-      - name: Checkout submodules
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.CI_PAT }}
-          lfs: true
-          submodules: true
-                  
-      - name: Read dotnet sdk version from global.json
-        shell: pwsh
-        run: |
-          $DOTNET_VERSION = Get-Content ".\$GITHUB_WORKSPACE\global.json" | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version    
-          echo "::set-env name=DOTNET_VERSION::$DOTNET_VERSION"
-          
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v1.4.0
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
 
       - id: set-version
         name: Setup GitVersion and set build version
@@ -112,20 +100,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-            token: ${{ secrets.CI_PAT }}
             lfs: true
             submodules: true 
-             
-      - name: Read dotnet sdk version from global.json
-        shell: pwsh
-        run: |
-          $DOTNET_VERSION = Get-Content ".\$GITHUB_WORKSPACE\global.json" | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version    
-          echo "::set-env name=DOTNET_VERSION::$DOTNET_VERSION"
-          
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v1.4.0
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
 
       - name: Download unix artifacts
         uses: actions/download-artifact@v2

@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CI_PAT }}
           lfs: true
           submodules: true
           
@@ -101,7 +101,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-            token: ${{ secrets.GITHUB_TOKEN }}
+            token: ${{ secrets.CI_PAT }}
             lfs: true
             submodules: true 
 

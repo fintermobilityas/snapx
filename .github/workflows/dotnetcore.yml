@@ -19,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           lfs: true
           submodules: true
           
@@ -100,6 +101,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+            token: ${{ secrets.GITHUB_TOKEN }}
             lfs: true
             submodules: true 
 

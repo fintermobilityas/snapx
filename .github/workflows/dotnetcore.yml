@@ -18,11 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
+        with:
+          fetch-depth: 0
         
-      - name: Fetch all history for all tags and branches (gitversion requirement)
-        run: | 
-          git fetch --prune --unshallow
-          
       - name: Checkout submodules
         uses: actions/checkout@v2.2.0
         with:

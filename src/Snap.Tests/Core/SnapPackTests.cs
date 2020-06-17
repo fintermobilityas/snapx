@@ -85,14 +85,31 @@ namespace Snap.Tests.Core
             Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
         }
 
-        [InlineData(null, "2.0.0")]
-        [InlineData(2, "2.0.0")]
+        [InlineData(0, "1.0.0")]
+        [InlineData(1, "2.0.0")]
+        [InlineData(9, "10.0.0")]
         [Theory]
-        public void TestBumpSnapAppsReleasesVersion(int? version, string expectedVersion)
+        public void TestBumpSnapAppsReleasesVersion(int version, string expectedVersion)
         {
             var snapAppsReleases = new SnapAppsReleases
             {
-                DbVersion = 1
+                DbVersion = version
+            };
+
+            snapAppsReleases.Bump();
+
+            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToFullString());
+        }
+
+        [InlineData(0, "0.0.0")]
+        [InlineData(1, "1.0.0")]
+        [InlineData(9, "9.0.0")]
+        [Theory]
+        public void TestBumpSnapAppsReleasesVersion_Force(int version, string expectedVersion)
+        {
+            var snapAppsReleases = new SnapAppsReleases
+            {
+                DbVersion = 0
             };
 
             snapAppsReleases.Bump(version);

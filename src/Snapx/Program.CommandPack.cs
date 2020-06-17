@@ -243,7 +243,7 @@ namespace snapx
                 logger.Warn($"Db version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
             } else if (fullOrDeltaSnapApp.IsGenesis)
             {
-                forcedDbVersion = Math.Max(0, fullOrDeltaSnapApp.Version.Major - 1 /* Major is bumped when invoking BuildReleasePackage */);
+                forcedDbVersion = Math.Max(0, fullOrDeltaSnapApp.Version.Major);
             }
 
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases, forcedDbVersion);
@@ -251,7 +251,7 @@ namespace snapx
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
 
-            logger.Info($"Finished building releases nupkg: {releasesNupkgAbsolutePath}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId.ToString("N")}");
+            logger.Info($"Finished building releases nupkg: {releasesNupkgAbsolutePath}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
 
             await using (releasesMemoryStream)
             {

@@ -47,10 +47,10 @@ namespace Snap.Core.Models
 
         // Nuspec
         public string ReleaseNotes { get; set; }
-        public string Description { get; set; }
-        public string RepositoryUrl { get; set; } 
-        public string RepositoryType { get; set; }
-        public string Authors { get; set; }
+        [YamlIgnore] public string Description { get; set; }
+        [YamlIgnore] public string RepositoryUrl { get; set; }
+        [YamlIgnore] public string RepositoryType { get; set; }
+        [YamlIgnore] public string Authors { get; set; }
         
         [UsedImplicitly]
         public SnapApp()

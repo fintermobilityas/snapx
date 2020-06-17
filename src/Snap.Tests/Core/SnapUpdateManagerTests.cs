@@ -161,7 +161,8 @@ namespace Snap.Tests.Core
                     It.Is<string>(v => v == update1PackageContext.DeltaPackageSnapApp.BuildNugetReleasesUpstreamId()),
                     It.IsAny<PackageSource>(),
                     It.IsAny<CancellationToken>(), 
-                    It.Is<bool>(includePreRelease => includePreRelease == false)), Times.Once);
+                    It.Is<bool>(includePreRelease => includePreRelease == false),
+                    It.Is<bool>(noCache => noCache)), Times.Once);
 
             _nugetServiceMock.Verify(x => x
                 .DownloadAsyncWithProgressAsync(

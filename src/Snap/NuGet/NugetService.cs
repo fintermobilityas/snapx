@@ -82,7 +82,7 @@ namespace Snap.NuGet
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
-            [NotNull] PackageSource source, CancellationToken cancellationToken, bool includePreRelease);
+            [NotNull] PackageSource source, CancellationToken cancellationToken, bool includePreRelease, bool noCache = false);
 
         Task<DownloadResourceResult> DownloadAsync([NotNull] PackageSource packageSource, PackageIdentity packageIdentity, CancellationToken cancellationToken);
         
@@ -135,9 +135,10 @@ namespace Snap.NuGet
             return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
-        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource source, CancellationToken cancellationToken, bool includePreRelease)
+        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource source, 
+            CancellationToken cancellationToken, bool includePreRelease, bool noCache = false)
         {
-            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, includePreRelease);
+            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, includePreRelease, noCache);
             if (metadata == null)
             {
                 return null;

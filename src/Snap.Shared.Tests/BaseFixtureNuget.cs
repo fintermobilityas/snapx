@@ -108,6 +108,7 @@ namespace Snap.Shared.Tests
                         It.Is<string>(v => v.Equals(upstreamPackageId)),
                         It.IsAny<PackageSource>(), 
                         It.IsAny<CancellationToken>(),
+                        It.IsAny<bool>(),
                         It.IsAny<bool>())
                 )
                 .ReturnsAsync( () => downloadResourceResult);

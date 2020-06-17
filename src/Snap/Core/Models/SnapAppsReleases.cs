@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using JetBrains.Annotations;
 using MessagePack;
 using NuGet.Versioning;
-using Snap.Core.MessagePack.Formatters;
 using Snap.Extensions;
 
 namespace Snap.Core.Models
@@ -16,27 +16,24 @@ namespace Snap.Core.Models
     {
         [Key(0)]
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
+        [IgnoreDataMember]
+        public SemanticVersion Version => SemanticVersion.Parse($"{DbVersion}.0.0");
         [Key(1)]
-        [MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
-        public SemanticVersion Version { get; set; }
-        [Key(2)]
         public DateTime LastWriteAccessUtc { get; set; }
+        [Key(2)]
+        public int DbVersion { get; set; }
 
         [UsedImplicitly]
         public SnapAppsReleases()
         {
             Releases = new List<SnapRelease>();
-            Version = SemanticVersion.Parse("0.0.0");
+            DbVersion = 0;
         }
 
-        public void Bump()
+        public void Bump(int? overrideDbVersion = null)
         {
-            Version = Version.BumpMajor();
-        }
-
-        public void SetMajor(int major)
-        {
-            Version = Version.SetMajor(major);
+            var dbVersionCurrent = DbVersion;
+            DbVersion = overrideDbVersion ?? dbVersionCurrent + 1;
         }
 
         internal SnapAppsReleases([NotNull] SnapAppsReleases releases)

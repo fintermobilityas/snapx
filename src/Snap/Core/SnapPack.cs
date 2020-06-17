@@ -1063,14 +1063,7 @@ namespace Snap.Core
                 throw new Exception($"Genesis release must be full release: {genesisRelease.Filename}");
             }
 
-            if (version.HasValue)
-            {
-                snapAppsReleases.SetMajor(version.Value);
-            }
-            else
-            {
-                snapAppsReleases.Bump();
-            }
+            snapAppsReleases.Bump(version);
 
             var packageBuilder = new PackageBuilder
             {

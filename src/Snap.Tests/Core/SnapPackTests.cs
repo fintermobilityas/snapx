@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Moq;
 using NuGet.Packaging;
+using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
@@ -82,6 +83,21 @@ namespace Snap.Tests.Core
             }.Select(x => x.ForwardSlashesSafe()).ToList();
 
             Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
+        }
+
+        [InlineData(null, "2.0.0")]
+        [InlineData(2, "2.0.0")]
+        [Theory]
+        public void TestBumpSnapAppsReleasesVersion(int? version, string expectedVersion)
+        {
+            var snapAppsReleases = new SnapAppsReleases
+            {
+                DbVersion = 1
+            };
+
+            snapAppsReleases.Bump(version);
+
+            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToFullString());
         }
 
         [Fact]

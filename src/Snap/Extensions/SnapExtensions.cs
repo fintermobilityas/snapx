@@ -541,7 +541,7 @@ namespace Snap.Extensions
             var snapChannelNugetFeedNames = snapAppChannels.Select(x => x.PushFeed.Name).Distinct().ToList();
             if (snapChannelNugetFeedNames.Count > 1)
             {
-                throw new Exception($"Multiple nuget feed names is not supported: {string.Join(",", snapChannelNugetFeedNames)}. Application id: {snapApp.Id}");
+                throw new Exception($"Multiple nuget push feeds is not supported: {string.Join(",", snapChannelNugetFeedNames)}. Application id: {snapApp.Id}");
             }
 
             if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.OrdinalIgnoreCase)))

@@ -877,7 +877,7 @@ namespace Snap.Tests.Core.Extensions
             var snapApps = new SnapApps(snapAppBefore);
 
             var ex = Assert.Throws<Exception>(() => snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem));
-            Assert.Equal($"Multiple nuget feed names is not supported: nuget.org,nuget2.org. Application id: {snapAppBefore.Id}", ex.Message);
+            Assert.Equal($"Multiple nuget push feeds is not supported: nuget.org,nuget2.org. Application id: {snapAppBefore.Id}", ex.Message);
         }
 
         [Fact]

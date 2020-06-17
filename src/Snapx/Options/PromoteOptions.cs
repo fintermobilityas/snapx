@@ -11,7 +11,7 @@ namespace snapx.Options
     {
         [Option('a', "app", HelpText = "Application id", Required = true)]
         public string AppId { get; [UsedImplicitly] set; }
-        [Option('r', "rid", HelpText = "Runtime identifier target name, e.g win-x64", Required = true)]
+        [Option('r', "rid", HelpText = "Runtime identifier (RID), e.g win-x64", Required = true)]
         public string Rid { get; [UsedImplicitly] set; }
         [Option('c', "channel", HelpText = "Channel name", Required = true)]
         public string Channel { get; [UsedImplicitly] set; }

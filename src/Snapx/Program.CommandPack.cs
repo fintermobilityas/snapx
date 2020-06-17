@@ -241,6 +241,9 @@ namespace snapx
             if (forcedDbVersion.HasValue)
             {
                 logger.Warn($"Db version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
+            } else if (fullOrDeltaSnapApp.IsGenesis)
+            {
+                forcedDbVersion = Math.Max(0, fullOrDeltaSnapApp.Version.Major - 1 /* Major is bumped when invoking BuildReleasePackage */);
             }
 
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases, forcedDbVersion);

@@ -504,12 +504,7 @@ namespace Snap.Extensions
             snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed).OfType<SnapsHttpFeed>().DistinctBy(x => x.Source).Select(x => new SnapHttpFeed(x)));
 
             var snapNugetFeeds = snapFeeds.Where(x => x is SnapNugetFeed).Cast<SnapNugetFeed>().ToList();
-            var snapNugetFeedNames = snapNugetFeeds.Select(x => x.Name).Distinct().ToList();
-            if (snapNugetFeedNames.Count > 1)
-            {
-                throw new Exception($"Multiple nuget feed names is not supported: {string.Join(",", snapNugetFeedNames)}");
-            }
-
+            
             var snapHttpFeeds = snapFeeds.Where(x => x is SnapHttpFeed).Cast<SnapHttpFeed>().ToList();
             var snapAppChannels = new List<SnapChannel>();
 
@@ -541,6 +536,12 @@ namespace Snap.Extensions
 
                 var currentChannel = i == 0; // Default snap channel is always the first one defined. 
                 snapAppChannels.Add(new SnapChannel(snapsChannel.Name, currentChannel, pushFeed, updateFeed));
+            }
+
+            var snapChannelNugetFeedNames = snapAppChannels.Select(x => x.PushFeed.Name).Distinct().ToList();
+            if (snapChannelNugetFeedNames.Count > 1)
+            {
+                throw new Exception($"Multiple nuget feed names is not supported: {string.Join(",", snapChannelNugetFeedNames)}. Application id: {snapApp.Id}");
             }
 
             if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.OrdinalIgnoreCase)))

@@ -824,11 +824,6 @@ namespace Snap.Tests.Core.Extensions
                 ApiKey = "myapikey"
             };
 
-            var updateFeedHttp = new SnapHttpFeed
-            {
-                Source = new Uri("https://mydynamicupdatefeed.com")
-            };
-
             var testChannel = new SnapChannel
             {
                 Name = "test",
@@ -882,7 +877,7 @@ namespace Snap.Tests.Core.Extensions
             var snapApps = new SnapApps(snapAppBefore);
 
             var ex = Assert.Throws<Exception>(() => snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem));
-            Assert.Equal("Multiple nuget feed names is not supported: nuget.org,nuget2.org", ex.Message);
+            Assert.Equal($"Multiple nuget feed names is not supported: nuget.org,nuget2.org. Application id: {snapAppBefore.Id}", ex.Message);
         }
 
         [Fact]

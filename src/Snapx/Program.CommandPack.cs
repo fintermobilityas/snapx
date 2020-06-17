@@ -251,7 +251,7 @@ namespace snapx
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
 
-            logger.Info($"Finished building releases nupkg: {releasesNupkgAbsolutePath}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
+            logger.Info($"Finished building releases nupkg: {filesystem.PathGetFileName(releasesNupkgAbsolutePath)}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
 
             await using (releasesMemoryStream)
             {

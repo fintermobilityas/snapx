@@ -88,7 +88,7 @@ namespace snapx
 
                 tables.Add((snapApp, new ConsoleTable(tableColumns)
                 {
-                    Header = $"Release summary: {snapApp.Id}"
+                    Header = $"Application: {snapApp.Id}"
                 }));
             }
 
@@ -136,7 +136,10 @@ namespace snapx
                     }                    
                 }
 
-                table.Header += $"\nVersion: {snapAppsReleases.Version}\nLast updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}\nDatabase size: {databaseSize.BytesAsHumanReadable()}";
+                table.Header += $"\nDatabase version: {snapAppsReleases.Version}" +
+                                $"\nDatabase last updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}" +
+                                $"\nDatabase size: {databaseSize.BytesAsHumanReadable()}" +
+                                $"\nDatabase pack id: {snapAppsReleases.PackId:N}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    

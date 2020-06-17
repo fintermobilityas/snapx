@@ -79,7 +79,7 @@ namespace snapx
 
             logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}.");
 
-            var releaseManifests = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
+            var releaseNupkgs = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
 
             foreach (var snapApp in snapAppTargets)
             {
@@ -99,20 +99,20 @@ namespace snapx
 
                 SnapAppsReleases snapAppsReleases;
                 PackageSource packageSource;
-                if (releaseManifests.TryGetValue(snapApp.Id, out var cached))
+                if (releaseNupkgs.TryGetValue(snapApp.Id, out var cached))
                 {
                     snapAppsReleases = cached.snapReleases;
                     packageSource = cached.packageSource;
                 }
                 else
                 {
-                    logger.Info("Downloading releases manifest");
+                    logger.Info("Downloading releases nupkg.");
 
                     // ReSharper disable once UseDeconstruction
                     var uncached = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
                     if (uncached.snapAppsReleases == null)
                     {
-                        logger.Error("Failed to download releases manifest");
+                        logger.Error("Failed to download releases nupkg.");
                         return 1;
                     }
 
@@ -123,9 +123,9 @@ namespace snapx
 
                     snapAppsReleases = uncached.snapAppsReleases;
                     packageSource = uncached.packageSource;
-                    releaseManifests.Add(snapApp.Id, (uncached.snapAppsReleases, uncached.packageSource));
+                    releaseNupkgs.Add(snapApp.Id, (uncached.snapAppsReleases, uncached.packageSource));
 
-                    logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
+                    logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
                 }
 
                 logger.Info('-'.Repeat(TerminalBufferWidth));

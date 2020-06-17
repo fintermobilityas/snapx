@@ -123,7 +123,7 @@ namespace snapx
             var pushFeed = nuGetPackageSources.Items.Single(x => x.Name == snapAppChannel.PushFeed.Name
                                                                  && x.SourceUri == snapAppChannel.PushFeed.Source);
 
-            logger.Info("Downloading releases manifest");
+            logger.Info("Downloading releases nupkg");
 
             var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(packagesDirectory);
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
@@ -148,7 +148,7 @@ namespace snapx
             }
             else
             {
-                logger.Info($"Downloaded releases manifest. Current version: {snapAppsReleases.Version}.");
+                logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
 
                 if (packOptions.Gc)
                 {

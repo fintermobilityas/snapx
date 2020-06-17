@@ -120,7 +120,7 @@ namespace snapx
 
                 if (!downloadSuccess)
                 {
-                    logger.Error($"Failed to download release manifest for application: {thisSnapApps.Id}.");
+                    logger.Error($"Failed to download releases nupkg for application: {thisSnapApps.Id}.");
                     continue;
                 }
 

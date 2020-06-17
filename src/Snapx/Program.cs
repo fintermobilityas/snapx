@@ -318,14 +318,14 @@ namespace snapx
             var snapsFilename = filesystem.PathCombine(workingDirectory, ".snapx", snapxYamlFilename);
             if (!filesystem.FileExists(snapsFilename))
             {
-                SnapLogger.Error($"Snap manifest does not exist on disk: {snapsFilename}");
+                SnapLogger.Error($"Unable to find application YML definition, it does not exist: {snapsFilename}");
                 goto error;
             }
 
             var content = filesystem.FileReadAllText(snapsFilename);
             if (string.IsNullOrWhiteSpace(content))
             {
-                SnapLogger.Error($"Snap manifest exists but does not contain valid yaml content: {snapsFilename}");
+                SnapLogger.Error($"Application yml file is empty (does not containy any YML): {snapsFilename}");
                 goto error;
             }
 

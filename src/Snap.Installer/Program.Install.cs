@@ -126,7 +126,7 @@ namespace Snap.Installer
                     // Offline installer
                     if (snapFilesystem.FileExists(nupkgAbsolutePath))
                     {
-                        mainWindowLogger.Info("Offline installer is loading manifest");
+                        mainWindowLogger.Info("Offline installer is loading releases nupkg");
 
                         try
                         {
@@ -148,7 +148,7 @@ namespace Snap.Installer
                     // Web installer
                     else if (snapFilesystem.FileExists(snapAppDllAbsolutePath))
                     {
-                        mainWindowLogger.Info("Web installer is downloading manifest");
+                        mainWindowLogger.Info("Web installer is downloading releases nupkg");
 
                         try
                         {
@@ -157,7 +157,7 @@ namespace Snap.Installer
                             releasesMemoryStream?.Dispose();
                             if (snapAppsReleases == null)
                             {
-                                mainWindowLogger.Error("Failed to download releases manifest. Try rerunning the installer.");
+                                mainWindowLogger.Error("Failed to download releases nupkg. Try rerunning the installer.");
                                 goto done;
                             }
 

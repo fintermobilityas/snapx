@@ -78,7 +78,7 @@ namespace Snap.NuGet
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
 
-        Task DeleteAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+        Task DeleteAsync([NotNull] string packageId, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
@@ -160,17 +160,17 @@ namespace Snap.NuGet
                 false, false, null, nugetLogger ?? NullLogger.Instance);
         }
 
-        public async Task DeleteAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+        public async Task DeleteAsync([NotNull] string packageId, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
         {
-            if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
+            if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
             var sourceRepository = _packageSources.Get(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-            await packageUpdateResource.Delete(packagePath, packageVersion, 
+            await packageUpdateResource.Delete(packageId, packageVersion, 
                 _ => BuildApiKey(packageSources, packageSource), _ => true, false, nugetLogger ?? NullLogger.Instance);
         }
 

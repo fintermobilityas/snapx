@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NuGet.Packaging;
 using NuGet.Versioning;
 using snapx.Core;
 using snapx.Options;
@@ -111,7 +109,6 @@ namespace snapx
             var shortcutsStr = !snapApp.Target.Shortcuts.Any() ? "None" : string.Join(", ", snapApp.Target.Shortcuts);
             logger.Info($"Shortcuts: {shortcutsStr}");
 
-
             logger.Info('-'.Repeat(TerminalBufferWidth));
 
             var tryAcquireRetries = packOptions.LockRetries == -1 ? int.MaxValue : packOptions.LockRetries;
@@ -184,51 +181,13 @@ namespace snapx
                     return 1;
                 }
 
-                var snapAppMostRecentRelease = snapAppChannelReleases.GetMostRecentRelease();
-                if (snapAppMostRecentRelease != null)
-                {
-                    logger.Info($"Most recent release is: {snapAppMostRecentRelease.Version}");
-
-                    var persistentDisk = filesystem
-                        .EnumerateFiles(packagesDirectory)
-                        .Select(x => (nupkg: x.Name.ParseNugetFilename(StringComparison.OrdinalIgnoreCase), fullName: x.FullName))
-                        .Where(x => x.nupkg.valid
-                                    && string.Equals(x.nupkg.id, snapApp.Id, StringComparison.OrdinalIgnoreCase)
-                                    && string.Equals(x.nupkg.rid, snapApp.Target.Rid, StringComparison.OrdinalIgnoreCase))
-                        .OrderByDescending(x => x.nupkg.semanticVersion)
-                        .FirstOrDefault();
-
-                    if (persistentDisk != default
-                        && persistentDisk.nupkg.semanticVersion > snapAppMostRecentRelease.Version)
-                    {
-                        logger.Error($"A newer version of {snapApp.Id} exists on disk: {persistentDisk.fullName}. " +
-                                     $"Upstream version: {snapAppMostRecentRelease.Version}. " +
-                                     "If you have recently published a new release than this may because of upstream caching. " +
-                                     "You should wait at least one minute before publishing a new version. " +
-                                     "Aborting!");
-                        return 1;
-                    }
-
-                    logger.Info($"Attempting to read release information from: {snapAppMostRecentRelease.Filename}.");
-
-                    var mostRecentReleaseNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, snapAppMostRecentRelease.Filename);
-                    using (var packageArchiveReader = new PackageArchiveReader(mostRecentReleaseNupkgAbsolutePath))
-                    {
-                        await snapPack.GetSnapAppAsync(packageArchiveReader, cancellationToken);
-                    }
-
-                    logger.Info("Successfully read release information.");
-                }
-                else
-                {
-                    if (!packOptions.Gc 
-                        && !logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
-                                                "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]",
+                if (!packOptions.Gc
+                    && !logger.Prompt("y|yes", "A previous release for current application does not exist. If you have recently published a new version " +
+                                               "then it may not yet be visible in the feed because of upstream caching. Do still want to continue with the release? [y/n]",
                         infoOnly: packOptions.YesToAllPrompts)
-                    )
-                    {
-                        return 1;
-                    }
+                )
+                {
+                    return 1;
                 }
 
                 logger.Info('-'.Repeat(TerminalBufferWidth));
@@ -271,7 +230,7 @@ namespace snapx
             pushPackages.Add(fullOrDeltaNupkgAbsolutePath);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
-            logger.Info("Building releases manifest");
+            logger.Info("Building releases nupkg.");
 
             var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
             if (!nowUtc.HasValue)

@@ -301,7 +301,7 @@ namespace Snap.Core
 
             // Reassamble
             stopwatch.Restart();
-            restoreSummary.Success = await ReassembleAsync();
+            restoreSummary.Success = restoreSummary.Success && await ReassembleAsync();
             restoreSummary.Sort();
             
             return restoreSummary;

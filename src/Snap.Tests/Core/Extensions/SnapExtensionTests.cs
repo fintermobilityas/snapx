@@ -802,6 +802,90 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
+        public void TestBuildSnapApp_Throws_If_Multiple_Nuget_Push_Feed_Names()
+        {
+            var nugetOrgFeed = new SnapNugetFeed
+            {
+                Name = "nuget.org",
+                Source = new Uri(NuGetConstants.V3FeedUrl),
+                ProtocolVersion = NuGetProtocolVersion.V3,
+                Username = "myusername",
+                Password = "mypassword",
+                ApiKey = "myapikey"
+            };
+
+            var nugetOrgFeed2 = new SnapNugetFeed
+            {
+                Name = "nuget2.org",
+                Source = new Uri(NuGetConstants.V3FeedUrl),
+                ProtocolVersion = NuGetProtocolVersion.V3,
+                Username = "myusername",
+                Password = "mypassword",
+                ApiKey = "myapikey"
+            };
+
+            var updateFeedHttp = new SnapHttpFeed
+            {
+                Source = new Uri("https://mydynamicupdatefeed.com")
+            };
+
+            var testChannel = new SnapChannel
+            {
+                Name = "test",
+                PushFeed = nugetOrgFeed,
+                UpdateFeed = nugetOrgFeed,
+                Current = true
+            };
+
+            var stagingChannel = new SnapChannel
+            {
+                Name = "staging",
+                PushFeed = nugetOrgFeed2,
+                UpdateFeed = nugetOrgFeed2
+            };
+
+            var productionChannel = new SnapChannel
+            {
+                Name = "production",
+                PushFeed = nugetOrgFeed,
+                UpdateFeed = nugetOrgFeed
+            };
+
+            var snapAppBefore = new SnapApp
+            {
+                Id = "demoapp",
+                Version = new SemanticVersion(1, 0, 0),
+                Channels = new List<SnapChannel>
+                {
+                    testChannel,
+                    stagingChannel,
+                    productionChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win-x64",
+                    Shortcuts = new List<SnapShortcutLocation>
+                    {
+                        SnapShortcutLocation.Desktop,
+                        SnapShortcutLocation.Startup
+                    },
+                    PersistentAssets = new List<string>
+                    {
+                        "subdirectory",
+                        "myjsonfile.json"
+                    }
+                }
+            };
+
+            var snapApps = new SnapApps(snapAppBefore);
+
+            var ex = Assert.Throws<Exception>(() => snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem));
+            Assert.Equal("Multiple nuget feed names is not supported: nuget.org,nuget2.org", ex.Message);
+        }
+
+        [Fact]
         public void TestBuildNugetSources_SnapApp()
         {
             var nugetOrgFeed = new SnapNugetFeed

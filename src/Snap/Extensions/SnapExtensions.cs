@@ -504,6 +504,12 @@ namespace Snap.Extensions
             snapFeeds.AddRange(snapApps.Channels.Select(x => x.UpdateFeed).OfType<SnapsHttpFeed>().DistinctBy(x => x.Source).Select(x => new SnapHttpFeed(x)));
 
             var snapNugetFeeds = snapFeeds.Where(x => x is SnapNugetFeed).Cast<SnapNugetFeed>().ToList();
+            var snapNugetFeedNames = snapNugetFeeds.Select(x => x.Name).Distinct().ToList();
+            if (snapNugetFeedNames.Count > 1)
+            {
+                throw new Exception($"Multiple nuget feed names is not supported: {string.Join(",", snapNugetFeedNames)}");
+            }
+
             var snapHttpFeeds = snapFeeds.Where(x => x is SnapHttpFeed).Cast<SnapHttpFeed>().ToList();
             var snapAppChannels = new List<SnapChannel>();
 

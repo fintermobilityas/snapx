@@ -491,8 +491,8 @@ namespace snapx
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             
-            var waitForManifestStopwatch = new Stopwatch();
-            waitForManifestStopwatch.Restart();
+            var stopwatch = new Stopwatch();
+            stopwatch.Restart();
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -506,16 +506,16 @@ namespace snapx
                     goto sleep;
                 }
 
-                if (upstreamSnapAppsReleases.Version >= snapAppsReleases.Version)
+                if (upstreamSnapAppsReleases.PackId == snapAppsReleases.PackId)
                 {
-                    logger.Info($"{snapChannel.PushFeed.Name} release manifest has been successfully updated to version: {upstreamSnapAppsReleases.Version}. " +
-                                $"Completed in {waitForManifestStopwatch.Elapsed.TotalSeconds:0.0}s.");
+                    logger.Info($"{snapChannel.PushFeed.Name} release nupkg has been successfully updated to version: {upstreamSnapAppsReleases.Version}. Pack id: {upstreamSnapAppsReleases.PackId:N}. " +
+                                $"Completed in {stopwatch.Elapsed.TotalSeconds:0.0}s.");
                     break;
                 }
 
                 logger.Info(
-                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapAppsReleases.Version}. " +
-                    $"Local version: {snapAppsReleases.Version}. " +
+                    $"Current {snapChannel.PushFeed.Name} version: {upstreamSnapAppsReleases.Version}. Current pack id: {upstreamSnapAppsReleases.PackId:N} " +
+                    $"Local version: {snapAppsReleases.Version}. Local pack id: {snapAppsReleases.PackId:N} " +
                     $"Retry in {retryInterval.TotalSeconds:0.0}s.");
             }
         }

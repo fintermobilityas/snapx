@@ -1064,6 +1064,7 @@ namespace Snap.Core
             }
 
             snapAppsReleases.Bump(version);
+            snapAppsReleases.PackId = Guid.NewGuid();
 
             var packageBuilder = new PackageBuilder
             {

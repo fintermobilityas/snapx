@@ -22,6 +22,8 @@ namespace Snap.Core.Models
         public DateTime LastWriteAccessUtc { get; set; }
         [Key(2)]
         public int DbVersion { get; set; }
+        [Key(3)]
+        public Guid PackId { get; set; }
 
         [UsedImplicitly]
         public SnapAppsReleases()
@@ -34,12 +36,6 @@ namespace Snap.Core.Models
         {
             var dbVersionCurrent = DbVersion;
             DbVersion = overrideDbVersion ?? dbVersionCurrent + 1;
-        }
-
-        internal SnapAppsReleases([NotNull] SnapAppsReleases releases)
-        {
-            if (releases == null) throw new ArgumentNullException(nameof(releases));
-            Releases = releases.Releases.Select(x => new SnapRelease(x)).ToList();
         }
 
         internal ISnapAppReleases GetReleases([NotNull] SnapApp snapApp)

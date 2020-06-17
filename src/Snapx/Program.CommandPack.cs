@@ -248,7 +248,7 @@ namespace snapx
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
 
-            logger.Info($"Finished building releases nupkg: {releasesNupkgAbsolutePath}. Version: {snapAppsReleases.Version}.");
+            logger.Info($"Finished building releases nupkg: {releasesNupkgAbsolutePath}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId.ToString("N")}");
 
             await using (releasesMemoryStream)
             {
@@ -371,6 +371,7 @@ namespace snapx
             }
 
             logger.Info("Ready to publish application!");
+
             logger.Info($"Id: {snapApp.Id}");
             logger.Info($"Rid: {snapApp.Target.Rid}");
             logger.Info($"Channel: {snapChannel.Name}");
@@ -399,7 +400,7 @@ namespace snapx
             var retryInterval = TimeSpan.FromSeconds(15);
 
             logger.Info(
-                $"Waiting until uploaded release manifest is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
+                $"Waiting until uploaded release nupkg is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
 
             await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, retryInterval, cancellationToken);
         }

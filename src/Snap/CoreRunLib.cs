@@ -32,16 +32,16 @@ namespace Snap
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_set_icon_delegate(
-            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string exeFilename, 
-            [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string iconFilename);
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string exeFilename, 
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string iconFilename);
         readonly Delegate<pal_set_icon_delegate> pal_set_icon;
             
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_fs_chmod_delegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string filename, int mode);
+        delegate int pal_fs_chmod_delegate([MarshalAs(UnmanagedType.LPUTF8Str)] string filename, int mode);
         readonly Delegate<pal_fs_chmod_delegate> pal_fs_chmod;
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_fs_file_exists_delegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8StringMarshaler))] string filename);
+        delegate int pal_fs_file_exists_delegate([MarshalAs(UnmanagedType.LPUTF8Str)] string filename);
         readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
         public CoreRunLib([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [JetBrains.Annotations.NotNull] string workingDirectory)
@@ -277,75 +277,5 @@ namespace Snap
             }
         }
         
-        // https://www.cnblogs.com/lonelyxmas/p/4602655.html
-        class Utf8StringMarshaler : ICustomMarshaler
-        {           
-            static readonly Utf8StringMarshaler Instance = new Utf8StringMarshaler();
-
-            public void CleanUpManagedData(object ManagedObj)
-            {
-
-            }
-
-            public void CleanUpNativeData(IntPtr pNativeData)
-            {
-                Marshal.Release(pNativeData);
-            }
-
-            public int GetNativeDataSize()
-            {
-                return Marshal.SizeOf(typeof(byte));
-            }
-
-            public IntPtr MarshalManagedToNative(object ManagedObj)
-            {
-                if (ManagedObj == null)
-                {
-                    return IntPtr.Zero;
-                }
-
-                if (ManagedObj.GetType() != typeof(string))
-                {
-                    throw new ArgumentException("ManagedObj", "Can only marshal type of System.String");
-                }
-
-                var array = Encoding.UTF8.GetBytes((string)ManagedObj);
-                var size = Marshal.SizeOf(array[0]) * array.Length + Marshal.SizeOf(array[0]);
-                var ptr = Marshal.AllocHGlobal(size);
-                Marshal.Copy(array, 0, ptr, array.Length);
-                Marshal.WriteByte(ptr, size - 1, 0);
-                
-                return ptr;
-            }
-
-            public object MarshalNativeToManaged(IntPtr pNativeData)
-            {
-                if (pNativeData == IntPtr.Zero)
-                {
-                    return null;
-                }
-
-                var size = GetNativeDataSize(pNativeData);
-                var array = new byte[size - 1];
-                Marshal.Copy(pNativeData, array, 0, size - 1);
-                return Encoding.UTF8.GetString(array);
-            }
-            
-            static int GetNativeDataSize(IntPtr ptr)
-            {
-                int size;
-                for (size = 0; Marshal.ReadByte(ptr, size) > 0; size++)
-                {
-                }
-
-                return size;
-            }
-            
-            [UsedImplicitly]
-            public static ICustomMarshaler GetInstance(string cookie)
-            {
-                return Instance;
-            }
-        }
     }
 }

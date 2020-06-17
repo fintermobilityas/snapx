@@ -19,6 +19,7 @@ namespace Snap.Core.Models
         public string RepositoryType { get; set; }
         public string Authors { get; set; }
 
+        [UsedImplicitly]
         public SnapAppNuspec()
         {
             

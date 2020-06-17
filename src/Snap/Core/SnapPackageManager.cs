@@ -242,7 +242,7 @@ namespace Snap.Core
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
-                    logger?.Error($"Unknown error while downloadin releases nupkg {packageId} from {packageSource.Source}.");
+                    logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {packageSource.Source}.");
                     return (null, null, null);
                 }
 

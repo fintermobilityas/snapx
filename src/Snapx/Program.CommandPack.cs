@@ -86,6 +86,13 @@ namespace snapx
                 return -1;
             }
 
+            if (!string.IsNullOrWhiteSpace(packOptions.LockToken))
+            {
+                snapApps.Generic.Token = packOptions.LockToken;
+
+                logger.Warn("Lock token updated because '--lock-token' has been specified.");
+            }
+
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
             
             logger.Info($"Schema version: {snapApps.Schema}");

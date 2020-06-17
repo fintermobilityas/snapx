@@ -231,16 +231,18 @@ namespace Snap.Core
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
+            var packageId = snapApp.BuildNugetReleasesUpstreamId();
+
             try
             {
                 var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId);
 
                 var snapReleasesDownloadResult =
-                    await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken, false);
+                    await _nugetService.DownloadLatestAsync(packageId, packageSource, cancellationToken, false);
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
-                    logger?.Error($"Unknown error while downloading {snapApp.BuildNugetReleasesUpstreamId()} from {packageSource.Source}.");
+                    logger?.Error($"Unknown error while downloadin releases nupkg {packageId} from {packageSource.Source}.");
                     return (null, null, null);
                 }
 
@@ -252,12 +254,12 @@ namespace Snap.Core
                     return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream);
                 }
 
-                logger?.Error("Unknown error unpacking releases nupkg");
+                logger?.Error($"Unknown error unpacking releases nupkg: {packageId}.");
                 return (null, null, null);
             }
             catch (Exception e)
             {
-                logger?.ErrorException("Exception thrown while checking for updates", e);
+                logger?.ErrorException($"Exception thrown while downloading releases nupkg: {packageId}.", e);
                 return (null, null, null);
             }
         }

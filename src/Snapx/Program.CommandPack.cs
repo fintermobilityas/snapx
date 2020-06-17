@@ -395,37 +395,11 @@ namespace snapx
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
 
-            Task PushPackageAsync(string packageAbsolutePath)
-            {
-                if (packageAbsolutePath == null) throw new ArgumentNullException(nameof(packageAbsolutePath));
-
-                if (!filesystem.FileExists(packageAbsolutePath))
-                {
-                    throw new FileNotFoundException(packageAbsolutePath);
-                }
-
-                var packageName = filesystem.PathGetFileName(packageAbsolutePath);
-
-                return SnapUtility.RetryAsync(async () =>
-                {
-                    if (!distributedMutex.Acquired)
-                    {
-                        throw new Exception("Distributed mutex has expired. This is most likely due to intermittent internet connection issues " +
-                                            "or another user is attempting to publish a new version. Please retry pack operation.");
-                    }
-
-                    logger.Info($"Pushing {packageName} to {packageSource.Name}");
-                    var pushStopwatch = new Stopwatch();
-                    pushStopwatch.Restart();
-                    await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
-                    logger.Info($"Pushed {packageName} to {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
-                });
-            }
-
             logger.Info($"Pushing packages to default channel: {snapChannel.Name}. Feed: {snapChannel.PushFeed.Name}.");
 
             await packages.ForEachAsync(async packageAbsolutePath =>
-                await PushPackageAsync(packageAbsolutePath), pushDegreeOfParallelism);
+                await PushPackageAsync(nugetService, filesystem, distributedMutex,
+                    nugetSources, packageSource, snapChannel, packageAbsolutePath, cancellationToken, logger), pushDegreeOfParallelism);
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using JetBrains.Annotations;
+using NuGet.Configuration;
 using ServiceStack;
 using snapx.Core;
 using snapx.Options;
@@ -518,7 +519,44 @@ namespace snapx
                     $"Retry in {retryInterval.TotalSeconds:0.0}s.");
             }
         }
-        
+
+        static Task PushPackageAsync([NotNull] INugetService nugetService, [NotNull] ISnapFilesystem filesystem,
+            [NotNull] IDistributedMutex distributedMutex, [NotNull] INuGetPackageSources nugetSources,
+            [NotNull] PackageSource packageSource, SnapChannel channel, [NotNull] string packageAbsolutePath,
+            CancellationToken cancellationToken,
+            [NotNull] ILog logger)
+        {
+            if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+            if (distributedMutex == null) throw new ArgumentNullException(nameof(distributedMutex));
+            if (nugetSources == null) throw new ArgumentNullException(nameof(nugetSources));
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            if (packageAbsolutePath == null) throw new ArgumentNullException(nameof(packageAbsolutePath));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+
+            if (!filesystem.FileExists(packageAbsolutePath))
+            {
+                throw new FileNotFoundException(packageAbsolutePath);
+            }
+
+            var packageName = filesystem.PathGetFileName(packageAbsolutePath);
+
+            return SnapUtility.RetryAsync(async () =>
+            {
+                if (!distributedMutex.Acquired)
+                {
+                    throw new Exception("Distributed mutex has expired. This is most likely due to intermittent internet connection issues " +
+                                        "or another user is attempting to publish a new version. Please retry pack operation.");
+                }
+
+                logger.Info($"Pushing {packageName} to channel {channel.Name} using package source {packageSource.Name}");
+                var pushStopwatch = new Stopwatch();
+                pushStopwatch.Restart();
+                await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
+                logger.Info($"Pushed {packageName} to channel {channel.Name} using package source {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
+            });
+        }
+
         static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapPack snapPack, [NotNull] ISnapAppReader snapAppReader,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ICoreRunLib coreRunLib, 
@@ -593,7 +631,6 @@ namespace snapx
                     {
                         setupIcon = snapApp.Target.Icon;
                     }
-
                     break;
                 case "linux-x64":
                     installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;

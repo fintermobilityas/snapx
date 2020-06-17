@@ -81,13 +81,20 @@ namespace snapx
                 return 1;
             }
 
-            await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
+            if (!string.IsNullOrWhiteSpace(options.LockToken))
+            {
+                snapApps.Generic.Token = options.LockToken;
+
+                logger.Warn("Lock token updated because '--lock-token' has been specified.");
+            }
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
-                logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
+                logger.Error("Please specify a lock token in your snapx.yml file. It's sufficient to generate random UUID (Guid).");
                 return -1;
             }
+
+            await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
 

@@ -79,17 +79,17 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
-            if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
-            {
-                logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
-                return -1;
-            }
-
             if (!string.IsNullOrWhiteSpace(packOptions.LockToken))
             {
                 snapApps.Generic.Token = packOptions.LockToken;
 
                 logger.Warn("Lock token updated because '--lock-token' has been specified.");
+            }
+
+            if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
+            {
+                logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
+                return -1;
             }
 
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);

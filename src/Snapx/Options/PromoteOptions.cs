@@ -19,5 +19,7 @@ namespace snapx.Options
         public bool ToAllRemainingChannels { get; [UsedImplicitly] set; }
         [Option("lock-retries", HelpText = "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.")]
         public int LockRetries { get; set; } = 3;
+        [Option("lock-token", HelpText = "Override default lock token")]
+        public string LockToken { get; set; }
     }
 }

@@ -236,7 +236,7 @@ namespace Snap.Core
                 var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId);
 
                 var snapReleasesDownloadResult =
-                    await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken, true);
+                    await _nugetService.DownloadLatestAsync(snapApp.BuildNugetReleasesUpstreamId(), packageSource, cancellationToken, false);
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {

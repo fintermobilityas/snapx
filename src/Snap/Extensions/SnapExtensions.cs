@@ -177,13 +177,13 @@ namespace Snap.Extensions
         internal static string BuildNugetFullFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToNuGetVersion()}.nupkg".ToLowerInvariant();
         }
 
         internal static string BuildNugetDeltaFilename([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            return $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToNuGetVersion()}.nupkg".ToLowerInvariant();
         }
         
         internal static string BuildNugetFilename([NotNull] this SnapRelease snapRelease)
@@ -195,13 +195,13 @@ namespace Snap.Extensions
         internal static string BuildNugetFullFilename([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            return $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            return $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToNuGetVersion()}.nupkg".ToLowerInvariant();
         }
 
         internal static string BuildNugetDeltaFilename([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            return $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToMajorMinorPatch()}.nupkg".ToLowerInvariant();
+            return $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToNuGetVersion()}.nupkg".ToLowerInvariant();
         }
 
         internal static string BuildNugetReleasesUpstreamId([NotNull] this SnapApp snapApp)

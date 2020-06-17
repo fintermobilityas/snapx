@@ -280,6 +280,8 @@ namespace Snap.Core
             var genesisRelease = snapAppChannelReleases.GetGenesisRelease();
             if (genesisRelease == null)
             {
+                logger?.Info($"Nothing to restore. Genesis release does not exist in channel: {snapAppChannelReleases.Channel.Name}.");
+
                 restoreSummary.Success = true;
                 return restoreSummary;
             }

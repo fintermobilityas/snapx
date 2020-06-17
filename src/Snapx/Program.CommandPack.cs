@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -123,7 +124,7 @@ namespace snapx
             var pushFeed = nuGetPackageSources.Items.Single(x => x.Name == snapAppChannel.PushFeed.Name
                                                                  && x.SourceUri == snapAppChannel.PushFeed.Source);
 
-            logger.Info("Downloading releases nupkg");
+            logger.Info("Downloading releases nupkg.");
 
             var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(packagesDirectory);
             filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
@@ -158,21 +159,11 @@ namespace snapx
 
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
-                if (!packOptions.Gc)
-                {
-                    logger.Info('-'.Repeat(TerminalBufferWidth));
-                }
-
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
                     pushFeed, SnapPackageManagerRestoreType.Pack, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
                 {
                     return 1;
-                }
-
-                if (!packOptions.Gc)
-                {
-                    logger.Info('-'.Repeat(TerminalBufferWidth));
                 }
 
                 if (snapAppChannelReleases.Any(x => x.Version >= snapApp.Version))
@@ -181,7 +172,6 @@ namespace snapx
                     return 1;
                 }
 
-                logger.Info('-'.Repeat(TerminalBufferWidth));
             }
 
             var snapPackageDetails = new SnapPackageDetails
@@ -192,6 +182,7 @@ namespace snapx
                 SnapAppsReleases = snapAppsReleases
             };
 
+            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Building nupkg: {snapApp.Version}.");
 
             var pushPackages = new List<string>();
@@ -221,14 +212,20 @@ namespace snapx
             pushPackages.Add(fullOrDeltaNupkgAbsolutePath);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
-            logger.Info("Building releases nupkg.");
+            logger.Info($"Retrieving network time from: {snapNetworkTimeProvider}.");
 
             var nowUtc = await SnapUtility.RetryAsync(async () => await snapNetworkTimeProvider.NowUtcAsync(), 3);
             if (!nowUtc.HasValue)
             {
-                logger.Error($"Unknown error while retrieving NTP timestamp from server: {snapNetworkTimeProvider}");
+                logger.Error($"Unknown error retrieving network time from: {snapNetworkTimeProvider}");
                 return 1;
             }
+
+            var localTimeStr = TimeZoneInfo
+                .ConvertTimeFromUtc(nowUtc.Value, TimeZoneInfo.Local)
+                .ToString("F", CultureInfo.CurrentCulture);
+            logger.Info($"Successfully retrieved network time. Time is now: {localTimeStr}");
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             fullSnapRelease.CreatedDateUtc = nowUtc.Value;
             if (deltaSnapRelease != null)
@@ -240,18 +237,23 @@ namespace snapx
             var forcedDbVersion = packOptions.DbVersion > snapAppsReleases.Version.Major ? packOptions.DbVersion : (int?) null;
             if (forcedDbVersion.HasValue)
             {
-                logger.Warn($"Db version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
+                logger.Warn($"Database version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
             } else if (fullOrDeltaSnapApp.IsGenesis)
             {
                 forcedDbVersion = Math.Max(0, fullOrDeltaSnapApp.Version.Major);
+                logger.Info($"Genesis nupkg detected. Initial database version {forcedDbVersion}");
             }
+
+            logger.Info($"Building releases nupkg. Current database version: {snapAppsReleases.Version}.");
 
             var releasesMemoryStream = snapPack.BuildReleasesPackage(fullOrDeltaSnapApp, snapAppsReleases, forcedDbVersion);
             var releasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(snapReleasesPackageDirectory, fullOrDeltaSnapApp.BuildNugetReleasesFilename());
+            var releasesNupkgFilename = filesystem.PathGetFileName(releasesNupkgAbsolutePath);
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
 
-            logger.Info($"Finished building releases nupkg: {filesystem.PathGetFileName(releasesNupkgAbsolutePath)}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
+            logger.Info($"Finished building releases nupkg: {releasesNupkgFilename}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
             await using (releasesMemoryStream)
             {

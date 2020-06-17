@@ -71,7 +71,7 @@ namespace Snap.Tests.NuGet
             var packageSources = new NugetOrgOfficialV3PackageSources();
 
             var packages = await _nugetService
-                .GetMetadatasAsync("Nuget.Packaging", false, packageSources, CancellationToken.None);
+                .GetMetadatasAsync("Nuget.Packaging", packageSources, CancellationToken.None, false);
 
             Assert.NotEmpty(packages);
 
@@ -79,6 +79,18 @@ namespace Snap.Tests.NuGet
             var v492Release = packages.SingleOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.9.2"));
             Assert.NotNull(v492Release);
             Assert.NotNull(v450Release);
+        }
+
+        [Fact]
+        public async Task TestGetMetadatasAsync_Include_PreRelease()
+        {
+            var packageSources = new NugetOrgOfficialV3PackageSources();
+
+            var packages = await _nugetService
+                .GetMetadatasAsync("Nuget.Packaging", packageSources, CancellationToken.None, true);
+
+            Assert.NotEmpty(packages.Where(x => x.Identity.Version.IsPrerelease));
+            Assert.NotEmpty(packages.Where(x => !x.Identity.Version.IsPrerelease));
         }
 
         [Fact]

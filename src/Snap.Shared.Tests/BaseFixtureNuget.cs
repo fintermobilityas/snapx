@@ -48,9 +48,9 @@ namespace Snap.Shared.Tests
             nugetServiceMock.Setup(x =>
                     x.GetMetadatasAsync(
                         It.Is<string>(v => string.Equals(v, upstreamPackageId)),
-                        It.IsAny<bool>(),
                         It.IsAny<NuGetPackageSources>(),
                         It.IsAny<CancellationToken>(),
+                        It.IsAny<bool>(),
                         It.IsAny<bool>()))
                 .ReturnsAsync(() =>
                 {
@@ -63,8 +63,12 @@ namespace Snap.Shared.Tests
                         It.Is<string>(v => string.Equals(v, upstreamPackageId)),
                         It.IsAny<PackageSource>(),
                         It.IsAny<CancellationToken>(),
-                        It.IsAny<bool>()))
-                .ReturnsAsync(() => snapApp.BuildPackageSearchMetadata(nuGetPackageSources));
+                        It.IsAny<bool>(),
+                                It.IsAny<bool>()))
+                .ReturnsAsync(() =>
+                {
+                    return snapApp.BuildPackageSearchMetadata(nuGetPackageSources);
+                });
         }
         
         internal void SetupDownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 
@@ -103,7 +107,8 @@ namespace Snap.Shared.Tests
                     .DownloadLatestAsync(
                         It.Is<string>(v => v.Equals(upstreamPackageId)),
                         It.IsAny<PackageSource>(), 
-                        It.IsAny<CancellationToken>())
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<bool>())
                 )
                 .ReturnsAsync( () => downloadResourceResult);
         }

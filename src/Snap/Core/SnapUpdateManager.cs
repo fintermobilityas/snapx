@@ -239,8 +239,8 @@ namespace Snap.Core
                 var deltaUpstreamId = _snapApp.BuildNugetDeltaUpstreamId();
 
                 medatadatas = await Task.WhenAll(
-                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, cancellationToken, true),
-                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, cancellationToken, true)
+                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, cancellationToken, true, true),
+                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, cancellationToken, true, true)
                 );
             }
             catch (Exception e)

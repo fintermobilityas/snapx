@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Moq;
 using NuGet.Configuration;
+using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
@@ -103,11 +104,14 @@ namespace Snap.Tests.Core
                     It.Is<Dictionary<string, string>>(v => v.Count == 3)), Times.Once);
         }
 
-        [Fact]
-        public async Task TestUpdateToLatestReleaseAsync()
+        [InlineData("1.0.0")]
+        [InlineData("1.0.0-prerelease")]
+        [Theory]
+        public async Task TestUpdateToLatestReleaseAsync(string genesisVersion)
         {
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
+            genesisSnapApp.Version = SemanticVersion.Parse(genesisVersion);
             var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
 
             using var nugetPackageSourcesDirectory = _snapOs.Filesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
@@ -156,7 +160,8 @@ namespace Snap.Tests.Core
                 .DownloadLatestAsync(
                     It.Is<string>(v => v == update1PackageContext.DeltaPackageSnapApp.BuildNugetReleasesUpstreamId()),
                     It.IsAny<PackageSource>(),
-                    It.IsAny<CancellationToken>()), Times.Once);
+                    It.IsAny<CancellationToken>(), 
+                    It.Is<bool>(includePreRelease => includePreRelease)), Times.Once);
 
             _nugetServiceMock.Verify(x => x
                 .DownloadAsyncWithProgressAsync(
@@ -164,6 +169,13 @@ namespace Snap.Tests.Core
                     It.Is<DownloadContext>(v => v.PackageIdentity.Id.StartsWith(update1PackageContext.DeltaPackageSnapApp.BuildNugetUpstreamId())),
                     It.IsAny<INugetServiceProgressSource>(),
                     It.IsAny<CancellationToken>()), Times.Once);
+
+            _nugetServiceMock.Verify(x => x.GetLatestMetadataAsync(
+                It.IsAny<string>(), 
+                It.IsAny<PackageSource>(), 
+                It.IsAny<CancellationToken>(),
+                It.Is<bool>(includePreRelease => includePreRelease),
+                It.Is<bool>(noCache => noCache)), Times.Exactly(2));
 
             progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                 It.Is<int>(v => v == 0),

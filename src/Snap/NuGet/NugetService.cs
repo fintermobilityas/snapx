@@ -66,14 +66,14 @@ namespace Snap.NuGet
         Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, INuGetPackageSources packageSources,
             CancellationToken cancellationToken);
 
-        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync(string packageId, bool includePrerelease, INuGetPackageSources packageSources,
-            CancellationToken cancellationToken, bool noCache = false);
+        Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync(string packageId, INuGetPackageSources packageSources,
+            CancellationToken cancellationToken, bool includePrerelease, bool noCache = false);
 
-        Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, INuGetPackageSources packageSources, CancellationToken cancellationToken,
-            bool noCache = false);
+        Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, INuGetPackageSources packageSources, CancellationToken cancellationToken, 
+            bool includePreRelease, bool noCache = false);
 
         Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken,
-            bool noCache = false);
+            bool includePreRelease, bool noCache = false);
 
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
@@ -82,7 +82,7 @@ namespace Snap.NuGet
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
-            [NotNull] PackageSource source, CancellationToken cancellationToken);
+            [NotNull] PackageSource source, CancellationToken cancellationToken, bool includePreRelease);
 
         Task<DownloadResourceResult> DownloadAsync([NotNull] PackageSource packageSource, PackageIdentity packageIdentity, CancellationToken cancellationToken);
         
@@ -105,13 +105,13 @@ namespace Snap.NuGet
             _nugetLogger = snapNugetLogger ?? throw new ArgumentNullException(nameof(snapNugetLogger));
         }
 
-        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId, bool includePrerelease,
-            [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken, bool noCache = false)
+        public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId, 
+            [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
         {
             if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
 
-            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, includePrerelease, x, cancellationToken, noCache));
+            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, x, cancellationToken, includePrerelease, noCache));
 
             var results = await Task.WhenAll(tasks);
 
@@ -122,22 +122,22 @@ namespace Snap.NuGet
         }
 
         public async Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, INuGetPackageSources packageSources,
-            CancellationToken cancellationToken, bool noCache = false)
+            CancellationToken cancellationToken, bool includePreRelease, bool noCache = false)
         {
-            var results = await GetMetadatasAsync(packageId, false, packageSources, cancellationToken, noCache);
+            var results = await GetMetadatasAsync(packageId, packageSources, cancellationToken, includePreRelease, noCache);
             return results.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
         public async Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource,
-            CancellationToken cancellationToken, bool noCache = false)
+            CancellationToken cancellationToken, bool includePreRelease = true, bool noCache = false)
         {
-            var medatadatas = (await FindByPackageIdAsync(packageId, false, packageSource, cancellationToken, noCache)).ToList();
+            var medatadatas = (await FindByPackageIdAsync(packageId, packageSource, cancellationToken, includePreRelease, noCache)).ToList();
             return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
-        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource source, CancellationToken cancellationToken)
+        public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource source, CancellationToken cancellationToken, bool includePreRelease)
         {
-            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, true);
+            var metadata = await GetLatestMetadataAsync(packageId, source, cancellationToken, includePreRelease);
             if (metadata == null)
             {
                 return null;
@@ -329,8 +329,8 @@ namespace Snap.NuGet
             return metadatas;
         }
 
-        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, bool includePrerelease, PackageSource source,
-            CancellationToken cancellationToken, bool noCache = false)
+        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, PackageSource source,
+            CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
         {
             var sourceRepository = _packageSources.Get(source);
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);

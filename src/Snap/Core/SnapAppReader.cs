@@ -52,7 +52,9 @@ namespace Snap.Core
  
         static IDeserializer Build(DeserializerBuilder builder)
         {
-            return builder.WithNamingConvention(CamelCaseNamingConvention.Instance)
+            return builder
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
                 .WithTypeConverter(new SemanticVersionYamlTypeConverter())
                 .WithTypeConverter(new UriYamlTypeConverter())
                 .WithTypeConverter(new OsPlatformYamlTypeConverter())

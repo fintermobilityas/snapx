@@ -11,7 +11,7 @@
         <PackageReference Include="Jetbrains.Annotations" Version="2020.1.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="MessagePackAnalyzer" Version="2.1.115">
+        <PackageReference Include="MessagePackAnalyzer" Version="2.1.143">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="System.Net.Http" Version="4.3.4" />

@@ -28,7 +28,7 @@ namespace Snap.Extensions
             }
             if (infoOnly)
             {
-                Console.WriteLine("y");
+                Console.Write("y");
                 return true;
             }
             var verbs = verbsStr.Split(delimeter).ToList();

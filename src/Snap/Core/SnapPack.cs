@@ -123,6 +123,7 @@ namespace Snap.Core
         Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
             [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, 
             IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default);
+        MemoryStream BuildEmptyReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases);
         MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases, int? version = null);
         Task<SnapApp> GetSnapAppAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
         Task<MemoryStream> GetSnapAssetAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] string filename,
@@ -1036,6 +1037,61 @@ namespace Snap.Core
             return (outputStream, packageFiles);
         }
 
+        public MemoryStream BuildEmptyReleasesPackage(SnapApp snapApp, SnapAppsReleases snapAppsReleases)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (snapAppsReleases == null) throw new ArgumentNullException(nameof(snapAppsReleases));
+
+            var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
+            if (snapAppReleases.Any())
+            {
+                throw new Exception($"Expected {nameof(snapAppsReleases)} to not contain any releases.");
+            }
+
+            snapAppsReleases.Bump();
+            snapAppsReleases.PackId = Guid.NewGuid();
+            snapAppsReleases.PackVersion = null;
+
+            if (SemanticVersion.TryParse(Assembly
+                    .GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+                    out var snapxVersion))
+            {
+                snapAppsReleases.PackVersion = snapxVersion;
+            }
+
+            var packageBuilder = new PackageBuilder
+            {
+                Id = snapApp.BuildNugetReleasesUpstreamId(),
+                Version = snapAppsReleases.Version.ToNuGetVersion(),
+                Description =
+                    $"Snapx application database. This file contains release details for application: {snapApp.Id}. " +
+                    $"Channels: {string.Join(", ", snapApp.Channels.Select(x => x.Name))}.",
+                Authors = {"Snapx"}
+            };
+
+            var snapsReleasesCompressedStream = new MemoryStream();            
+            var snapAppsReleasesBytes = _snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
+            
+            using (var snapsReleasesStream = new MemoryStream(snapAppsReleasesBytes))
+            {
+                using var writer = WriterFactory.Open(snapsReleasesCompressedStream, ArchiveType.Tar, new WriterOptions(CompressionType.BZip2)
+                {
+                    LeaveStreamOpen = true
+                });
+                writer.Write(SnapConstants.ReleasesFilename, snapsReleasesStream);
+            }
+
+            AddPackageFile(packageBuilder, snapsReleasesCompressedStream, SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
+
+            var outputStream = new MemoryStream();
+            packageBuilder.Save(outputStream);
+
+            outputStream.Seek(0, SeekOrigin.Begin);
+
+            return outputStream;            
+        }
+
         public MemoryStream BuildReleasesPackage(SnapApp snapApp, SnapAppsReleases snapAppsReleases, int? version = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -1132,7 +1188,7 @@ namespace Snap.Core
                     throw new Exception($"Invalid checksum: {snapRelease.FullSha256Checksum}. Filename: {snapRelease.Filename}");
                 }
             }
-
+            
             var snapsReleasesCompressedStream = new MemoryStream();            
             var snapAppsReleasesBytes = _snapAppWriter.ToSnapAppsReleases(snapAppsReleases);
             

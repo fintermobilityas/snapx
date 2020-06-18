@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace Snap.Tests.Core
         readonly ISnapPack _snapPack;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapExtractor _snapExtractor;
+        readonly ISnapAppReader _snapAppReader;
         readonly SnapReleaseBuilderContext _snapReleaseBuilderContext;
 
         public SnapPackTests(BaseFixturePackaging baseFixture)
@@ -31,7 +33,8 @@ namespace Snap.Tests.Core
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             ISnapEmbeddedResources snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), snapCryptoProvider, snapEmbeddedResources);
+            _snapAppReader = new SnapAppReader();
+            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, new SnapAppWriter(), snapCryptoProvider, snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, snapEmbeddedResources);
             _snapReleaseBuilderContext =
                 new SnapReleaseBuilderContext(coreRunLibMock.Object, _snapFilesystem, snapCryptoProvider, snapEmbeddedResources, _snapPack);
@@ -1151,6 +1154,88 @@ namespace Snap.Tests.Core
                 Assert.Equal(update3PackageContext.FullPackageSnapApp.BuildNugetFilename(), fullSnapApp.BuildNugetFilename());
                 Assert.Equal(update3PackageContext.FullPackageSnapRelease.BuildNugetFilename(), fullSnapRelease.BuildNugetFilename());
             }
+        }
+
+        [Fact]
+        public async Task TestBuildReleasesNupkg()
+        {
+            var snapAppsReleasesBefore = new SnapAppsReleases
+            {
+                DbVersion = 1
+            };
+
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            using var releaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleasesBefore, snapApp, _snapReleaseBuilderContext)
+                    .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
+                    .AddSnapDll();
+
+            using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
+
+            using var releasesMemoryStream = _snapPack.BuildReleasesPackage(snapApp, snapAppsReleasesBefore);
+            using var packageArchiveReader = new PackageArchiveReader(releasesMemoryStream, true);
+            
+            var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);
+            Assert.Equal(snapApp.BuildNugetReleasesUpstreamId(), manifest.Metadata.Id);
+            Assert.Equal(NuGetVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version.ToNuGetVersion());
+            Assert.NotEmpty(manifest.Metadata.Description);
+            Assert.Equal("Snapx", manifest.Metadata.Authors.SingleOrDefault());
+
+            var snapAppsReleasesAfter = await _snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, _snapAppReader);
+            Assert.NotNull(snapAppsReleasesAfter);
+            Assert.Equal(2, snapAppsReleasesAfter.DbVersion);
+            Assert.Single(snapAppsReleasesAfter);
+        }
+
+        [Fact]
+        public async Task TestBuildEmptyReleasesNupkg()
+        {
+            var snapAppsReleasesBefore = new SnapAppsReleases
+            {
+                DbVersion = 1
+            };
+
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            using var releasesMemoryStream = _snapPack.BuildEmptyReleasesPackage(snapApp, snapAppsReleasesBefore);
+            using var packageArchiveReader = new PackageArchiveReader(releasesMemoryStream, true);
+            
+            var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);
+            Assert.Equal(snapApp.BuildNugetReleasesUpstreamId(), manifest.Metadata.Id);
+            Assert.Equal(NuGetVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version.ToNuGetVersion());
+            Assert.NotEmpty(manifest.Metadata.Description);
+            Assert.Equal("Snapx", manifest.Metadata.Authors.SingleOrDefault());
+
+            var snapAppsReleasesAfter = await _snapExtractor.GetSnapAppsReleasesAsync(packageArchiveReader, _snapAppReader);
+            Assert.NotNull(snapAppsReleasesAfter);
+            Assert.Equal(2, snapAppsReleasesAfter.DbVersion);
+            Assert.Empty(snapAppsReleasesAfter);
+        }
+
+        [Fact]
+        public async Task TestBuildEmptyReleasesNupkg_Throws_If_Not_Empty()
+        {
+            var snapAppsReleases = new SnapAppsReleases
+            {
+                DbVersion = 1
+            };
+
+            var snapApp = _baseFixture.BuildSnapApp();
+
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            using var releaseBuilder =
+                _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, snapApp, _snapReleaseBuilderContext)
+                            .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
+                            .AddSnapDll();
+                
+            using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
+
+            var ex = Assert.Throws<Exception>(() => _snapPack.BuildEmptyReleasesPackage(snapApp, snapAppsReleases));
+            Assert.StartsWith("Expected snapAppsReleases to not contain", ex.Message);
         }
     }
 }

@@ -81,12 +81,7 @@ namespace snapx
                 return 1;
             }
 
-            if (!string.IsNullOrWhiteSpace(options.LockToken))
-            {
-                snapApps.Generic.Token = options.LockToken;
-
-                logger.Warn("Lock token updated because '--lock-token' option.");
-            }
+            MaybeOverrideLockToken(snapApps, logger, options.AppId, options.LockToken);
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {

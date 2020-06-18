@@ -79,12 +79,7 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
-            if (!string.IsNullOrWhiteSpace(packOptions.LockToken))
-            {
-                snapApps.Generic.Token = packOptions.LockToken;
-
-                logger.Warn("Lock token updated because '--lock-token' option.");
-            }
+            MaybeOverrideLockToken(snapApps, logger, packOptions.AppId, packOptions.LockToken);
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {

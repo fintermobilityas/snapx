@@ -362,6 +362,36 @@ namespace snapx
             error:
             return new SnapApps();
         }
+
+        static bool MaybeOverrideLockToken([NotNull] SnapApps snapApps, [NotNull] ILog logger, [NotNull] string applicationId, string userInputLockToken)
+        {
+            if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+
+            if (!string.IsNullOrWhiteSpace(applicationId))
+            {
+                var lockTokenEnvironmentVariableName = $"SNAPX_{applicationId.ToUpperInvariant()}_LOCK_TOKEN";
+                var lockTokenEnvironmentVariableValue = Environment.GetEnvironmentVariable(lockTokenEnvironmentVariableName);
+
+                if (!string.IsNullOrWhiteSpace(lockTokenEnvironmentVariableValue))
+                {
+                    snapApps.Generic.Token = lockTokenEnvironmentVariableValue;
+
+                    logger.Warn($"Lock token updated because of environment variable with name: {lockTokenEnvironmentVariableName}.");
+                    return true;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(userInputLockToken))
+            {
+                snapApps.Generic.Token = userInputLockToken;
+
+                logger.Warn("Lock token updated because '--lock-token' option.");
+                return true;
+            }
+
+            return false;
+        }
         
         static (SnapApps snapApps, SnapApp snapApp, bool error, string snapsAbsoluteFilename) BuildSnapAppFromDirectory(
             [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,

@@ -12,6 +12,9 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class RestoreOptions : BaseSubOptions
     {
+        const int DefaultRestoreConcurrency = 4;
+        const int DefaultDownloadConcurrency = 4;
+
         [Option('r', "rid",
             HelpText = "The runtime identifier (RID), e.g win-x64. If left unspecified all runtime identifiers will be restored.")]
         public string Rid { get; [UsedImplicitly] set; }
@@ -20,15 +23,15 @@ namespace snapx.Options
             HelpText = "Build installers.")]
         public bool BuildInstallers { get; set; }
 
-        [Option("rc|restore-concurrency", 
-            HelpText = "The number of concurrent restores.", 
-            Default = 4)]
-        public int RestoreConcurrency { get; set; }
+        [Option("rc|restore-concurrency",
+            HelpText = "The number of concurrent restores.",
+            Default = DefaultRestoreConcurrency)]
+        public int RestoreConcurrency { get; set; } = DefaultRestoreConcurrency;
 
-        [Option("dc|download-concurrency", 
+        [Option("dc|download-concurrency",
             HelpText = "The number of concurrent downloads for missing packages.",
-            Default = 4)]
-        public int DownloadConcurrency { get; set; }
+            Default = DefaultDownloadConcurrency)]
+        public int DownloadConcurrency { get; set; } = DefaultDownloadConcurrency;
         
         [Value(0, 
             HelpText = "The application id to restore. Leave this value empty if you want to restore all applications.")]

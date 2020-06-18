@@ -11,6 +11,9 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PackOptions : BaseSubOptions
     {
+        const int DefaultDbVersion = -1;
+        const int DefaultLockRetries = 3;
+
         [Option('r', "rid", 
             HelpText = "Runtime identifier (RID), e.g win-x64",
             Required = true)]
@@ -28,15 +31,16 @@ namespace snapx.Options
             HelpText = "Removes all delta releases and creates a new full release")]
         public bool Gc { get; set; }
 
-        [Option("db-version", 
-            HelpText = "Manually specify next db version. Has to be greater than current version.", 
-            Default = -1)]
-        public int DbVersion { get; set; }
+        [Option("db-version",
+            HelpText = "Manually specify next db version. Has to be greater than current version.",
+            Default = DefaultDbVersion)]
+        public int DbVersion { get; set; } = DefaultDbVersion;
 
-        [Option("lock-retries", 
-            HelpText = "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.",
-            Default = 3)]
-        public int LockRetries { get; set; }
+        [Option("lock-retries",
+            HelpText =
+                "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.",
+            Default = DefaultLockRetries)]
+        public int LockRetries { get; set; } = DefaultLockRetries;
 
         [Option("lock-token", 
             HelpText = "Override default lock token")]

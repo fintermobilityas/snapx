@@ -11,6 +11,8 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PromoteOptions : BaseSubOptions
     {
+        const int DefaultLockRetries = 3;
+
         [Option('r', "rid",
             HelpText = "The runtime identifier (RID), e.g win-x64", 
             Required = true)]
@@ -26,9 +28,9 @@ namespace snapx.Options
         public bool ToAllRemainingChannels { get; [UsedImplicitly] set; }
 
         [Option("lock-retries",
-            Default = 3,
+            Default = DefaultLockRetries,
             HelpText = "The number of retries if a mutex fails to be acquired. Set -1 if you want to retry forever.")]
-        public int LockRetries { get; set; }
+        public int LockRetries { get; set; } = DefaultLockRetries;
 
         [Option("lock-token",
             HelpText = "Override lock token.")]

@@ -11,6 +11,8 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class DemoteOptions : BaseSubOptions
     {
+        const int DefaultLockRetries = 3;
+
         [Option('r', "rid", 
             HelpText = "The Runtime identifier (RID), e.g win-x64.")]
         public string Rid { get; [UsedImplicitly] set; }
@@ -24,10 +26,10 @@ namespace snapx.Options
             HelpText = "Remove all matching releases.")]
         public bool RemoveAll { get; set; }
 
-        [Option("lock-retries", 
-            Default = 3, 
+        [Option("lock-retries",
+            Default = DefaultLockRetries,
             HelpText = "The number of retries if a mutex fails to be acquired. Set -1 if you want to retry forever.")]
-        public int LockRetries { get; set; }
+        public int LockRetries { get; set; } = DefaultLockRetries;
 
         [Option("lock-token", 
             HelpText = "Override lock token.")]

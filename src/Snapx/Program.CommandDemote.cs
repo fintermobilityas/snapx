@@ -64,6 +64,12 @@ namespace snapx
                     Console.WriteLine($"Unable to parse from version: {options.FromVersion}");
                     return 1;
                 }
+
+                if (!options.RemoveAll)
+                {
+                    Console.WriteLine("You must specify --remove-all if you want to demote releases newer than --from-version.");
+                    return 1;
+                }
             }
 
             var snapApps = BuildSnapAppsFromDirectory(filesystem, snapAppReader, workingDirectory);
@@ -158,7 +164,7 @@ namespace snapx
 
             logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
 
-            var snapAppReleases = options.All ? 
+            var snapAppReleases = options.RemoveAll ? 
                 snapAppsReleases.GetReleases(anyRidSnapApp, x =>
                 {
                     bool VersionFilter()
@@ -197,7 +203,7 @@ namespace snapx
             foreach (var (rid, releases) in snapAppReleases.ToDictionaryByKey(x => x.Target.Rid))
             {
                 var channels = releases.SelectMany(x => x.Channels).Distinct().ToList();
-                var releaseVersion = options.All ? "All versions" : releases.First().Version.ToString(); 
+                var releaseVersion = options.RemoveAll ? "All versions" : releases.First().Version.ToString(); 
                 consoleTable.AddRow(new object[]
                 {
                     rid, 

@@ -16,14 +16,13 @@ namespace snapx.Options
         public string Rid { get; [UsedImplicitly] set; }
 
         [Option("from-version", 
-            HelpText = "Remove all releases newer than this version.", 
-            SetName = "all")]
+            HelpText = "Remove all releases newer than this version."
+        )]
         public string FromVersion { get; set; }
 
-        [Option("all",
-            HelpText = "Remove all matching releases", 
-            SetName = "all")]
-        public bool All { get; set; }
+        [Option("remove-all",
+            HelpText = "Remove all matching releases.")]
+        public bool RemoveAll { get; set; }
 
         [Option("lock-retries", 
             Default = 3, 
@@ -61,13 +60,13 @@ namespace snapx.Options
                 yield return new Example("Remove all releases from all runtime identifiers", new DemoteOptions
                 {
                     Id = "demoapp",
-                    All = true
+                    RemoveAll = true
                 });
                 yield return new Example("Remove all releases from all runtime identifiers greater than --from-version", new DemoteOptions
                 {
                     Id = "demoapp",
                     FromVersion = "1.0.0",
-                    All = true
+                    RemoveAll = true
                 });
             }
         }

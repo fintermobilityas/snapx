@@ -26,6 +26,7 @@ namespace snapx
             var snapApp = snapApps.Apps.FirstOrDefault(x => string.Equals(x.Id, lockOptions.Id, StringComparison.OrdinalIgnoreCase));
             if (snapApp == null)
             {
+                logger.Error($"Unable to find application with id: {lockOptions.Id}.");
                 return 1;
             }
 

@@ -23,7 +23,8 @@ namespace snapx
     {   
         static async Task<int> CommandListAsync([NotNull] ListOptions options, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
-            [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
+            [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog logger,
+            [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -81,14 +82,14 @@ namespace snapx
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);
                 if (table != default) continue;
 
-                var tableColumns = new List<string>
-                {
-                    "Rid"
-                }.Concat(snapApp.Channels.Select(x => $"Channel: {x.Name}")).ToArray();
+                var tableColumns = new List<string>();
+                tableColumns.Add("Rid");
+                tableColumns.AddRange(snapApp.Channels.Select(x => $"Channel: {x.Name}"));
+                tableColumns.Add("Summary");
 
                 tables.Add((snapApp, new ConsoleTable(tableColumns)
                 {
-                    Header = $"Application: {snapApp.Id}"
+                    Header = $"Id: {snapApp.Id}"
                 }));
             }
 
@@ -139,11 +140,12 @@ namespace snapx
                 var lastUpdatedDateStr = TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc,
                     TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture);
 
-                table.Header += $"\nDatabase version: {snapAppsReleases.Version}" +
-                                $"\nDatabase last updated: {lastUpdatedDateStr}" +
-                                $"\nDatabase size: {databaseSize.BytesAsHumanReadable()}" +
-                                $"\nDatabase pack id: {snapAppsReleases.PackId:N}" +
-                                $"\nDatabase snapx version: {snapAppsReleases.SnapxVersion}";
+                table.Header += $"\nVersion: {snapAppsReleases.Version}" +
+                                $"\nTotal database size: {databaseSize.BytesAsHumanReadable()}" +
+                                $"\nTotal release count: {snapAppsReleases.Count()}" +
+                                $"\nPublish date: {lastUpdatedDateStr}" +
+                                $"\nSnapx pack id: {snapAppsReleases.PackId:N}" +
+                                $"\nSnapx version: {snapAppsReleases.PackVersion}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    
@@ -152,12 +154,12 @@ namespace snapx
                         target.Rid
                     };
 
-                    var snapApp = snapAppses.Single(x => x.Id == thisSnapApps.Id && x.Target.Rid == target.Rid);                    
-                    var snapAppReleases = snapAppsReleases.GetReleases(snapApp);
+                    var targetSnapApp = snapAppses.Single(x => x.Id == thisSnapApps.Id && x.Target.Rid == target.Rid);                    
+                    var targetSnapAppReleases = snapAppsReleases.GetReleases(targetSnapApp);
 
                     foreach (var channelName in thisSnapApps.Channels)
                     {         
-                        var mostRecentRelease = snapAppReleases.GetMostRecentRelease(channelName);
+                        var mostRecentRelease = targetSnapAppReleases.GetMostRecentRelease(channelName);
 
                         string rowValue = null;
                         if (mostRecentRelease == null)
@@ -172,7 +174,11 @@ namespace snapx
                         }
 
                         rowValues.Add(rowValue);
+
                     }
+
+                    var totalRidBytes = targetSnapAppReleases.Sum(x => x.IsFull ? x.FullFilesize : x.DeltaFilesize);
+                    rowValues.Add($"{targetSnapAppReleases.Count()} releases - {totalRidBytes.BytesAsHumanReadable()}");
 
                     table.AddRow(rowValues.ToArray());
                 }

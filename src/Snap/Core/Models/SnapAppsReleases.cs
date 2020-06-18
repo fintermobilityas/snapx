@@ -26,7 +26,7 @@ namespace Snap.Core.Models
         [Key(3)]
         public Guid PackId { get; set; }
         [Key(4)]
-        public SemanticVersion SnapxVersion { get; set; }
+        public SemanticVersion PackVersion { get; set; }
 
         [UsedImplicitly]
         public SnapAppsReleases()

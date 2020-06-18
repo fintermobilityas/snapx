@@ -26,8 +26,7 @@ namespace snapx
             [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
-            [NotNull] ILog logger, [NotNull] IDistributedMutexClient distributedMutexClient,
-            [NotNull] string toolWorkingDirectory, [NotNull] string workingDirectory, CancellationToken cancellationToken)
+            [NotNull] ILog logger, [NotNull] IDistributedMutexClient distributedMutexClient, [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -44,7 +43,6 @@ namespace snapx
             if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
-            if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var stopwatch = new Stopwatch();

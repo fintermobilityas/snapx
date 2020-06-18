@@ -244,7 +244,7 @@ namespace snapx
                         return CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
                             snapExtractor, snapPackageManager, coreRunLib,
-                            snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient, toolWorkingDirectory,
+                            snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient,
                             workingDirectory, cancellationToken).GetAwaiter().GetResult();
                     },
                     (Sha256Options opts) => CommandSha256(opts, snapFilesystem, snapCryptoProvider, SnapLogger),

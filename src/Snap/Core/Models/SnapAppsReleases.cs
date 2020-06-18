@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using JetBrains.Annotations;
 using MessagePack;
 using NuGet.Versioning;
+using Snap.Core.MessagePack.Formatters;
 using Snap.Extensions;
 
 namespace Snap.Core.Models
@@ -25,7 +26,7 @@ namespace Snap.Core.Models
         public int DbVersion { get; set; }
         [Key(3)]
         public Guid PackId { get; set; }
-        [Key(4)]
+        [Key(4), MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
         public SemanticVersion PackVersion { get; set; }
 
         [UsedImplicitly]

@@ -40,10 +40,21 @@ namespace snapx.Core
         [UsedImplicitly] public ConsoleTableOptions Options { get; }
 
         public ConsoleTable([NotNull] params string[] columns)
-            :this(new ConsoleTableOptions { Columns = new List<string>(columns) })
+            :this(columns.ToList())
+        {
+        }
+
+        public ConsoleTable([NotNull] IEnumerable<string> columns)
+            : this(columns.ToList())
+        {
+
+        }
+
+        public ConsoleTable([NotNull] List<string> columns)
+            : this(new ConsoleTableOptions { Columns = new List<string>(columns) })
         {
             if (columns == null) throw new ArgumentNullException(nameof(columns));
-            if (columns.Length == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(columns));
+            if (columns.Count == 0) throw new ArgumentException("Value cannot be an empty collection.", nameof(columns));
         }
 
         public ConsoleTable([NotNull] ConsoleTableOptions options)

@@ -234,14 +234,25 @@ namespace snapx
             }
             snapAppsReleases.LastWriteAccessUtc = nowUtc.Value;
 
-            var forcedDbVersion = packOptions.DbVersion > snapAppsReleases.Version.Major ? packOptions.DbVersion : (int?) null;
-            if (forcedDbVersion.HasValue)
+            int? forcedDbVersion = null;
+            if (packOptions.DbVersion > 0)
             {
-                logger.Warn($"Database version is forced. This may have unintended consequences. Db version: {forcedDbVersion}");
-            } else if (fullOrDeltaSnapApp.IsGenesis)
+                if (packOptions.DbVersion <= snapAppsReleases.DbVersion)
+                {
+                    logger.Error($"Unable to force database version because version is less than or equal to current database version. \n" +
+                                 $"Forced version: {packOptions.DbVersion}.\n" +
+                                 $"Current database version: {snapAppsReleases.DbVersion}.");
+                    return 1;
+                }
+
+                forcedDbVersion = packOptions.DbVersion;
+
+                logger.Info($"Database version is forced because of '--db-version' option. Initial database version: {forcedDbVersion}.");
+            } else if (fullOrDeltaSnapApp.IsGenesis
+                       && fullOrDeltaSnapApp.Version.Major > snapAppsReleases.Version.Major)
             {
-                forcedDbVersion = Math.Max(0, fullOrDeltaSnapApp.Version.Major);
-                logger.Info($"Genesis nupkg detected. Initial database version {forcedDbVersion}");
+                forcedDbVersion = fullOrDeltaSnapApp.Version.Major;
+                logger.Info($"Database version is forced because genesis nupkg detected. Initial database version: {forcedDbVersion}");
             }
 
             logger.Info($"Building releases nupkg. Current database version: {snapAppsReleases.Version}.");
@@ -255,7 +266,7 @@ namespace snapx
             logger.Info("Finished building releases nupkg.\n" +
                         $"Filename: {releasesNupkgFilename}.\n" +
                         $"Size: {releasesMemoryStream.Length.BytesAsHumanReadable()}.\n" +
-                        $"Database version: {snapAppsReleases.Version}.\n" +
+                        $"New database version: {snapAppsReleases.Version}.\n" +
                         $"Pack id: {snapAppsReleases.PackId:N}.");
 
             logger.Info('-'.Repeat(TerminalBufferWidth));

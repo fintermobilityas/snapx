@@ -183,13 +183,7 @@ namespace snapx
 
             if (!snapAppReleases.Any())
             {
-                if (anyRid)
-                {
-                    logger.Error("Unable to find any releases to demote.");
-                    return 1;
-                }
-
-                logger.Error($"Rid {options.Rid} does not contain any releases.");
+                logger.Error("Unable to find any releases that matches demotion criterias.");
                 return 1;
             }
 

@@ -111,7 +111,7 @@ namespace Snap.NuGet
             if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
 
-            var tasks = packageSources.Items.Select(x => FindByPackageIdAsync(packageId, x, cancellationToken, includePrerelease, noCache));
+            var tasks = packageSources.Items.Select(x => GetMetadatasAsync(packageId, x, cancellationToken, includePrerelease, noCache));
 
             var results = await Task.WhenAll(tasks);
 
@@ -131,7 +131,7 @@ namespace Snap.NuGet
         public async Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource,
             CancellationToken cancellationToken, bool includePreRelease = true, bool noCache = false)
         {
-            var medatadatas = (await FindByPackageIdAsync(packageId, packageSource, cancellationToken, includePreRelease, noCache)).ToList();
+            var medatadatas = (await GetMetadatasAsync(packageId, packageSource, cancellationToken, includePreRelease, noCache)).ToList();
             return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
@@ -330,26 +330,26 @@ namespace Snap.NuGet
             return metadatas;
         }
 
-        async Task<IEnumerable<NuGetPackageSearchMedatadata>> FindByPackageIdAsync(string packageId, PackageSource source,
+        async Task<IEnumerable<NuGetPackageSearchMedatadata>> GetMetadatasAsync(string packageId, PackageSource source,
             CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
         {
             var sourceRepository = _packageSources.Get(source);
             var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
-            var metadatas = await FindPackageByIdAsync(metadataResource, packageId, includePrerelease, cancellationToken, noCache);
+            var metadatas = await GetMetadataAsync();
             return metadatas.Select(m => BuildNuGetPackageSearchMedatadata(source, m));
-        }
 
-        async Task<IEnumerable<IPackageSearchMetadata>> FindPackageByIdAsync(PackageMetadataResource metadataResource, string packageName,
-            bool includePrerelease, CancellationToken cancellationToken, bool noCache = false)
-        {
-            using var cacheContext = new SourceCacheContext();
-            if (noCache)
+            async Task<IEnumerable<IPackageSearchMetadata>> GetMetadataAsync()
             {
-                cacheContext.NoCache = true;
-                cacheContext.WithRefreshCacheTrue();
-            }
+                using var cacheContext = new SourceCacheContext();
 
-            return await metadataResource.GetMetadataAsync(packageName, includePrerelease, false, cacheContext, _nugetLogger, cancellationToken);
+                if (noCache)
+                {
+                    cacheContext.NoCache = true;
+                    cacheContext.WithRefreshCacheTrue();
+                }
+
+                return await metadataResource.GetMetadataAsync(packageId, includePrerelease, false, cacheContext, _nugetLogger, cancellationToken);
+            }
         }
 
         static NuGetPackageSearchMedatadata BuildNuGetPackageSearchMedatadata(PackageSource source, IPackageSearchMetadata metadata)

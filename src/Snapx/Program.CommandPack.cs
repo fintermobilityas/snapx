@@ -68,6 +68,11 @@ namespace snapx
 
             snapApp.Version = semanticVersion;
 
+            if (packOptions.ReleasesNotes != null)
+            {
+                snapApp.ReleaseNotes = packOptions.ReleasesNotes;
+            }
+
             var artifactsDirectory = BuildArtifactsDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var installersDirectory = BuildInstallersDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);
             var packagesDirectory = BuildPackagesDirectory(filesystem, workingDirectory, snapApps.Generic, snapApp);

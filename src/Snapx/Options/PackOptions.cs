@@ -27,5 +27,7 @@ namespace snapx.Options
         public string LockToken { get; set; } 
         [Option("skip-installers", HelpText = "Skip building installers.")]
         public bool SkipInstallers { get; set; }
+        [Option("release-notes", HelpText = "Overwrite release notes defined in YML manifest.")]
+        public string ReleasesNotes { get; set; }
     }
 }

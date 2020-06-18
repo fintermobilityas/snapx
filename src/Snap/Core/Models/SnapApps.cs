@@ -307,5 +307,27 @@ namespace Snap.Core.Models
             return $"{Generic.Token}-{snapApp.Id}";
         }
 
+        public IEnumerable<string> GetRids([JetBrains.Annotations.NotNull] SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return GetRids(snapApp.Id);
+        } 
+
+        public IEnumerable<string> GetRids([JetBrains.Annotations.NotNull] SnapsApp snapsApp)
+        {
+            if (snapsApp == null) throw new ArgumentNullException(nameof(snapsApp));
+            return GetRids(snapsApp.Id);
+        } 
+
+        List<string> GetRids([JetBrains.Annotations.NotNull] string snapId)
+        {
+            if (snapId == null) throw new ArgumentNullException(nameof(snapId));
+            return Apps.Where(x => x.Id == snapId)
+                .SelectMany(x => x.Targets)
+                .Select(x => x.Rid)
+                .Distinct()
+                .ToList();
+        } 
+
     }
 }

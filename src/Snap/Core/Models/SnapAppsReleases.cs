@@ -13,7 +13,7 @@ namespace Snap.Core.Models
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [MessagePackObject]
-    public sealed class SnapAppsReleases
+    public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
     {
         [Key(0)]
         public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
@@ -89,6 +89,32 @@ namespace Snap.Core.Models
             return new SnapAppChannelReleases(snapApp, channel, snapReleasesForChannel);
         }
         
+        internal ISnapAppReleases GetReleases([NotNull] SnapApp snapApp, [NotNull] Func<SnapRelease, bool> filterFunc)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (filterFunc == null) throw new ArgumentNullException(nameof(filterFunc));
+            var releases = Releases.Where(x => x.Id == snapApp.Id && filterFunc(x)).ToList();
+            return new SnapAppReleases(snapApp, releases);
+        }
+
+        internal ISnapAppReleases GetMostRecentReleases([NotNull] SnapApp snapApp, [NotNull] Func<SnapRelease, bool> filterFunc)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            if (filterFunc == null) throw new ArgumentNullException(nameof(filterFunc));
+            var snapAppReleases = Releases.Where(x => x.Id == snapApp.Id).ToList();
+
+            var mostRecentRelease = snapAppReleases.LastOrDefault();
+            if (mostRecentRelease == null)
+            {
+                return new SnapAppReleases(snapApp, new List<SnapRelease>());
+            }
+
+            var mostRecentReleaseForRid = snapAppReleases
+                .Where(x => x.Version == mostRecentRelease.Version && filterFunc(x)).ToList();
+
+            return new SnapAppReleases(snapApp, mostRecentReleaseForRid);
+        }
+
         internal SnapRelease GetMostRecentRelease([NotNull] SnapApp snapApp, [NotNull] SnapChannel channel)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -111,6 +137,29 @@ namespace Snap.Core.Models
                 throw new Exception($"Release already exists: {existingRelease.BuildNugetFilename()}");
             }
             Releases.Add(snapRelease);
+        }
+
+        public int Demote(ISnapAppReleases releases)
+        {
+            var releasesRemoved = Releases.RemoveAll(snapRelease => 
+                releases.Any(snapDemotedRelease => snapDemotedRelease.Filename == snapRelease.Filename));
+            if (releasesRemoved <= 0)
+            {
+                return 0;
+            }
+
+            Releases = Releases.OrderBy(x => x.Version, new VersionComparer(VersionComparison.Default)).ToList();
+            return releasesRemoved;
+        }
+
+        public IEnumerator<SnapRelease> GetEnumerator()
+        {
+            return Releases.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

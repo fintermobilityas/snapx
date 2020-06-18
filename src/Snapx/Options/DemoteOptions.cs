@@ -9,7 +9,7 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class DemoteOptions : BaseSubOptions
     {
-        [Option('a', "app", HelpText = "Application id", Required = true)]
+        [Option('a',"app", HelpText = "Application id", Required = true)]
         public string Id { get; [UsedImplicitly] set; }
         [Option('r', "rid", HelpText = "Runtime identifier (RID), e.g win-x64.")]
         public string Rid { get; [UsedImplicitly] set; }

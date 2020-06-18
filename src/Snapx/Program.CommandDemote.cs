@@ -272,11 +272,11 @@ namespace snapx
 
             await CommandRestoreAsync(new RestoreOptions
                 {
-                    AppId = anyRidSnapApp.Id,
+                    Id = anyRidSnapApp.Id,
                     Rid = anyRid ? null : anyRidSnapApp.Target.Rid,
                     BuildInstallers = true
                 }, filesystem, snapAppReader, snapAppWriter,
-                nuGetPackageSources, nugetService, snapExtractor, snapPackageManager, snapOs, snapxEmbeddedResources,
+                nuGetPackageSources, snapPackageManager, snapOs, snapxEmbeddedResources,
                 coreRunLib, snapPack, logger, workingDirectory, cancellationToken);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));

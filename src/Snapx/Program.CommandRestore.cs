@@ -22,8 +22,7 @@ namespace snapx
     {
         static async Task<int> CommandRestoreAsync([NotNull] RestoreOptions restoreOptions,
             [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader, ISnapAppWriter snapAppWriter,
-            [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] INugetService nugetService, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapPackageManager snapPackageManager,
+            [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
             [NotNull] ISnapPack snapPack, [NotNull] ILog logger,
             [NotNull] string workingDirectory, CancellationToken cancellationToken)
@@ -32,8 +31,6 @@ namespace snapx
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
-            if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
-            if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
@@ -52,10 +49,10 @@ namespace snapx
                 return 1;
             }
 
-            if (restoreOptions.AppId != null)
+            if (restoreOptions.Id != null)
             {
                 snapAppTargets.RemoveAll(x =>
-                    !string.Equals(x.Id, restoreOptions.AppId, StringComparison.OrdinalIgnoreCase));
+                    !string.Equals(x.Id, restoreOptions.Id, StringComparison.OrdinalIgnoreCase));
 
                 if (restoreOptions.Rid != null)
                 {
@@ -65,7 +62,7 @@ namespace snapx
 
                 if (!snapAppTargets.Any())
                 {
-                    logger.Error($"Unable to restore {restoreOptions.AppId} because it does not exist");
+                    logger.Error($"Unable to restore {restoreOptions.Id} because it does not exist");
                     return 1;
                 }
             }

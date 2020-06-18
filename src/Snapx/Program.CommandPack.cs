@@ -49,12 +49,12 @@ namespace snapx
             stopwatch.Restart();
 
             var (snapApps, snapApp, error, snapsManifestAbsoluteFilename) = BuildSnapAppFromDirectory(filesystem, snapAppReader,
-                nuGetPackageSources, packOptions.AppId, packOptions.Rid, workingDirectory);
+                nuGetPackageSources, packOptions.Id, packOptions.Rid, workingDirectory);
             if (snapApp == null)
             {
                 if (!error)
                 {
-                    logger.Error($"Snap with id {packOptions.AppId} was not found in manifest: {snapsManifestAbsoluteFilename}");
+                    logger.Error($"Snap with id {packOptions.Id} was not found in manifest: {snapsManifestAbsoluteFilename}");
                 }
 
                 return 1;
@@ -82,7 +82,7 @@ namespace snapx
 
             var snapAppChannel = snapApp.GetDefaultChannelOrThrow();
 
-            MaybeOverrideLockToken(snapApps, logger, packOptions.AppId, packOptions.LockToken);
+            MaybeOverrideLockToken(snapApps, logger, packOptions.Id, packOptions.LockToken);
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {

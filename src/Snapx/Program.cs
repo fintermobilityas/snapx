@@ -291,8 +291,7 @@ namespace snapx
                             return 1;
                         }
                         return CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                            nuGetPackageSources,
-                            nugetServiceCommandRestore, snapExtractor, snapPackageManager, snapOs,
+                            nuGetPackageSources, snapPackageManager, snapOs,
                             snapXEmbeddedResources, coreRunLib, snapPack,
                             SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
                     },

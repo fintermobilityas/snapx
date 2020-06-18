@@ -60,12 +60,12 @@ namespace snapx
             }
 
             var (snapApps, snapApp, error, _) = BuildSnapAppFromDirectory(filesystem, snapAppReader,
-                nuGetPackageSources, options.AppId, options.Rid, workingDirectory);
+                nuGetPackageSources, options.Id, options.Rid, workingDirectory);
             if (snapApp == null)
             {
                 if (!error)
                 {
-                    logger.Error($"Unable to find snap with id: {options.AppId}. Rid: {options.Rid}.");
+                    logger.Error($"Unable to find snap with id: {options.Id}. Rid: {options.Rid}.");
                 }
 
                 return 1;
@@ -81,7 +81,7 @@ namespace snapx
                 return 1;
             }
 
-            MaybeOverrideLockToken(snapApps, logger, options.AppId, options.LockToken);
+            MaybeOverrideLockToken(snapApps, logger, options.Id, options.LockToken);
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
@@ -103,7 +103,7 @@ namespace snapx
             var channelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
-            logger.Info($"Snap id: {options.AppId}");
+            logger.Info($"Snap id: {options.Id}");
             logger.Info($"Rid: {options.Rid}");
             logger.Info($"Source channel: {options.Channel}");
             logger.Info($"Channels: {channelsStr}");
@@ -200,14 +200,14 @@ namespace snapx
 
             var restoreOptions = new RestoreOptions
             {
-                AppId = options.AppId,
+                Id = options.Id,
                 Rid = options.Rid,
                 BuildInstallers = false,
                 RestoreStrategyType = SnapPackageManagerRestoreType.Default
             };
             
             var restoreSuccess = 0 == await CommandRestoreAsync(
-                                     restoreOptions, filesystem, snapAppReader, snapAppWriter, nuGetPackageSources, nugetService, snapExtractor,
+                                     restoreOptions, filesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
                                      snapPackageManager, snapOs, snapxEmbeddedResources, coreRunLib, snapPack,
                                      logger, workingDirectory, cancellationToken
                                 );

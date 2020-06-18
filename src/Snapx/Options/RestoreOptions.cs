@@ -11,7 +11,7 @@ namespace snapx.Options
     internal class RestoreOptions : BaseSubOptions
     {
         [Option('a', "app", HelpText = "Application id. If empty then all applications will be restored")]
-        public string AppId { get; [UsedImplicitly] set; }
+        public string Id { get; [UsedImplicitly] set; }
         [Option('r', "rid", HelpText = "Runtime identifier (RID), e.g win-x64. If left unspecified all runtime identifiers will be restored.")]
         public string Rid { get; [UsedImplicitly] set; }
         [Option('i', "installers", HelpText = "Rebuild installers")]

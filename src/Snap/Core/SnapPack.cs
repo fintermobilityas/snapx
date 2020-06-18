@@ -1065,6 +1065,15 @@ namespace Snap.Core
 
             snapAppsReleases.Bump(version);
             snapAppsReleases.PackId = Guid.NewGuid();
+            snapAppsReleases.SnapxVersion = null;
+
+            if (SemanticVersion.TryParse(Assembly
+                    .GetExecutingAssembly()
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,
+                    out var snapxVersion))
+            {
+                snapAppsReleases.SnapxVersion = snapxVersion;
+            }
 
             var packageBuilder = new PackageBuilder
             {

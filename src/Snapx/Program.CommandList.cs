@@ -136,10 +136,14 @@ namespace snapx
                     }                    
                 }
 
+                var lastUpdatedDateStr = TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc,
+                    TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture);
+
                 table.Header += $"\nDatabase version: {snapAppsReleases.Version}" +
-                                $"\nDatabase last updated: {TimeZoneInfo.ConvertTimeFromUtc(snapAppsReleases.LastWriteAccessUtc, TimeZoneInfo.Local).ToString("F", CultureInfo.CurrentCulture)}" +
+                                $"\nDatabase last updated: {lastUpdatedDateStr}" +
                                 $"\nDatabase size: {databaseSize.BytesAsHumanReadable()}" +
-                                $"\nDatabase pack id: {snapAppsReleases.PackId:N}";
+                                $"\nDatabase pack id: {snapAppsReleases.PackId:N}" +
+                                $"\nDatabase snapx version: {snapAppsReleases.SnapxVersion}";
                                 
                 foreach (var target in thisSnapApps.Targets)
                 {                    

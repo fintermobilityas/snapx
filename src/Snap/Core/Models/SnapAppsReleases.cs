@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -24,6 +25,8 @@ namespace Snap.Core.Models
         public int DbVersion { get; set; }
         [Key(3)]
         public Guid PackId { get; set; }
+        [Key(4)]
+        public SemanticVersion SnapxVersion { get; set; }
 
         [UsedImplicitly]
         public SnapAppsReleases()

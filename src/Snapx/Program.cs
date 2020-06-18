@@ -385,7 +385,7 @@ namespace snapx
             return new SnapApps();
         }
 
-        static bool MaybeOverrideLockToken([NotNull] SnapApps snapApps, [NotNull] ILog logger, [NotNull] string applicationId, string userInputLockToken)
+        static bool MaybeOverrideLockToken([NotNull] SnapApps snapApps, [NotNull] ILog logger, [NotNull] string applicationId, string userInputLockToken, string optionName = "--lock-token")
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             if (logger == null) throw new ArgumentNullException(nameof(logger));
@@ -408,7 +408,7 @@ namespace snapx
             {
                 snapApps.Generic.Token = userInputLockToken;
 
-                logger.Warn("Lock token updated because '--lock-token' option.");
+                logger.Warn($"Lock token updated because '{optionName}' option.");
                 return true;
             }
 

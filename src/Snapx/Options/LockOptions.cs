@@ -12,6 +12,9 @@ namespace snapx.Options
         [Option("release", HelpText = "Force release lock specified in snapx.yml.", Required = true)]
         public bool Release { get; [UsedImplicitly] set; }
 
+        [Option("token", HelpText = "Input lock token to release.")]
+        public string Token { get; [UsedImplicitly] set; }
+
         [Value(0,
             HelpText = "The application id",
             Required = true)]
@@ -22,10 +25,16 @@ namespace snapx.Options
         {
             get
             {
-                yield return new Example("Force the release of demoapp's lock. Use with care!", new LockOptions
+                yield return new Example("Release demoapp lock token", new LockOptions
                 {
                     Id = "demoapp",
                     Release = true
+                });
+                yield return new Example("Release demoapp using custom input lock token", new LockOptions
+                {
+                    Id = "demoapp",
+                    Release = true,
+                    Token = "abc123"
                 });
             }
         }

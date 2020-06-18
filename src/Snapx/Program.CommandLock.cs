@@ -30,6 +30,8 @@ namespace snapx
                 return 1;
             }
 
+            MaybeOverrideLockToken(snapApps, logger, lockOptions.Id, lockOptions.Token, "--token");
+
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
                 logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");

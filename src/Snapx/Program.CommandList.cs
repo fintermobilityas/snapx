@@ -39,7 +39,7 @@ namespace snapx
 
             if (!snapApps.Apps.Any() || errorBuildingSnapApps)
             {
-                return -1;
+                return 1;
             }
 
             if (options.Id != null)
@@ -47,7 +47,7 @@ namespace snapx
                 if (!snapApps.Apps.Any(x => string.Equals(x.Id, options.Id, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger.Error($"Unable to find application with id: {options.Id}");
-                    return -1;
+                    return 1;
                 }
             }
             

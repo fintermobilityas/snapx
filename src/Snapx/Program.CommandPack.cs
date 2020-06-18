@@ -87,7 +87,7 @@ namespace snapx
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
                 logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
-                return -1;
+                return 1;
             }
 
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
@@ -114,7 +114,7 @@ namespace snapx
             if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
             {
                 logger.Info('-'.Repeat(TerminalBufferWidth));
-                return -1;
+                return 1;
             }
 
             logger.Info('-'.Repeat(TerminalBufferWidth));

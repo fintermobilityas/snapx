@@ -49,7 +49,7 @@ namespace snapx
 
             if (!snapApps.Apps.Any() || errorBuildingSnapApps)
             {
-                return -1;
+                return 1;
             }
 
             if (restoreOptions.AppId != null)

@@ -86,7 +86,6 @@ namespace Snap.AnyOS
             }
         }
 
-        public EventHandler OnExit { get; set; }
         public ISnapOsTaskbar Taskbar => OsImpl.Taskbar;
         public OSPlatform OsPlatform => OsImpl.OsPlatform;
         public ISnapFilesystem Filesystem => OsImpl.Filesystem;

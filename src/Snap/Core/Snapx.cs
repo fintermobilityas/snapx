@@ -180,7 +180,7 @@ namespace Snap.Core
             {
                 Logger.ErrorException($"Exception thrown while handling snap event. Action: {actionName}", ex);
                 
-                SnapOs.Exit(-1);
+                SnapOs.Exit(1);
 
                 return true;
             }

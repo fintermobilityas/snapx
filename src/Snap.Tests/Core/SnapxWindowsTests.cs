@@ -172,7 +172,7 @@ namespace Snap.Tests.Core
             Assert.True(shouldExit);
             Assert.False(wasInvoked);
 
-            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
+            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == 1)), Times.Once);
         }
 
         [Fact]
@@ -224,7 +224,7 @@ namespace Snap.Tests.Core
             Assert.True(shouldExit);
             Assert.False(wasInvoked);
 
-            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
+            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == 1)), Times.Once);
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace Snap.Tests.Core
             Assert.True(wasInvoked);
             Assert.Equal(expectedVersion, currentVersion);
 
-            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == -1)), Times.Once);
+            snapOsMock.Verify(x => x.Exit(It.Is<int>(v => v == 1)), Times.Once);
         }
     }
 }

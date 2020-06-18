@@ -19,7 +19,7 @@ namespace snapx
             if (sha256Options.Filename == null || !snapFilesystem.FileExists(sha256Options.Filename))
             {
                 logger.Error($"File not found: {sha256Options.Filename}");
-                return -1;
+                return 1;
             }
 
             try
@@ -31,7 +31,7 @@ namespace snapx
             catch (Exception e)
             {
                 logger.ErrorException($"Error computing SHA256-checksum for filename: {sha256Options.Filename}", e);
-                return -1;
+                return 1;
             }
         }
     }

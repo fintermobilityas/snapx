@@ -86,7 +86,7 @@ namespace snapx
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
                 logger.Error("Please specify a lock token in your snapx.yml file. It's sufficient to generate random UUID (Guid).");
-                return -1;
+                return 1;
             }
 
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, logger, snapApps.BuildLockKey(snapApp), cancellationToken);
@@ -97,7 +97,7 @@ namespace snapx
             if (!await distributedMutex.TryAquireAsync(TimeSpan.FromSeconds(15), tryAcquireRetries))
             {
                 logger.Info('-'.Repeat(TerminalBufferWidth));
-                return -1;
+                return 1;
             }
 
             var channelsStr = string.Join(", ", snapApp.Channels.Select(x => x.Name));

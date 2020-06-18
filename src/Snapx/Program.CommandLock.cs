@@ -26,13 +26,13 @@ namespace snapx
             var snapApp = snapApps.Apps.FirstOrDefault(x => string.Equals(x.Id, lockOptions.Id, StringComparison.OrdinalIgnoreCase));
             if (snapApp == null)
             {
-                return -1;
+                return 1;
             }
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))
             {
                 logger.Error("Please specify a token in your snapx.yml file. A random UUID is sufficient.");
-                return -1;
+                return 1;
             }
 
             await using var distributedMutex = WithDistributedMutex(distributedMutexClient, 
@@ -42,11 +42,11 @@ namespace snapx
             if (!lockOptions.Release)
             {
                 success = await distributedMutex.TryAquireAsync();
-                return success ? 0 : -1;
+                return success ? 0 : 1;
             }
 
             success = await DistributedMutex.TryForceReleaseAsync(distributedMutex.Name, distributedMutexClient, logger);
-            return success ? 0 : -1;
+            return success ? 0 : 1;
         }
     }
 }

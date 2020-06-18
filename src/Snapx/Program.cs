@@ -105,12 +105,12 @@ namespace snapx
             catch (PlatformNotSupportedException)
             {
                 SnapLogger.Error($"Platform is not supported: {RuntimeInformation.OSDescription}");
-                return -1;
+                return 1;
             }
             catch (Exception e)
             {
                 SnapLogger.ErrorException("Exception thrown while initializing snap os", e);
-                return -1;
+                return 1;
             }
 
             snapOs.InstallExitSignalHandler(async () =>
@@ -237,7 +237,7 @@ namespace snapx
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapDemoteLogger);
                         if (nuGetPackageSources == null)
                         {
-                            return -1;
+                            return 1;
                         }
                         return CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandDemote, distributedMutexClient, snapPackageManager, snapPack,
@@ -249,7 +249,7 @@ namespace snapx
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapPromoteLogger);
                         if (nuGetPackageSources == null)
                         {
-                            return -1;
+                            return 1;
                         }
                         return CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
@@ -262,7 +262,7 @@ namespace snapx
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapPackLogger);
                         if (nuGetPackageSources == null)
                         {
-                            return -1;
+                            return 1;
                         }
                         return CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
@@ -277,7 +277,7 @@ namespace snapx
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapListLogger);
                         if (nuGetPackageSources == null)
                         {
-                            return -1;
+                            return 1;
                         }
                         return CommandListAsync(opts, snapFilesystem, snapAppReader,
                             nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger,
@@ -288,7 +288,7 @@ namespace snapx
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapRestoreLogger);
                         if (nuGetPackageSources == null)
                         {
-                            return -1;
+                            return 1;
                         }
                         return CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources,

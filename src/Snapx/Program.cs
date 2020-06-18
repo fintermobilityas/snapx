@@ -555,7 +555,7 @@ namespace snapx
 
                 if (upstreamSnapAppsReleases.PackId == snapAppsReleases.PackId)
                 {
-                    logger.Info($"{snapChannel.PushFeed.Name} release nupkg has been successfully updated to version: {upstreamSnapAppsReleases.Version}.\n" +
+                    logger.Info($"{snapChannel.PushFeed.Name} releases nupkg has been successfully updated to version: {upstreamSnapAppsReleases.Version}.\n" +
                                 $"Pack id: {upstreamSnapAppsReleases.PackId:N}. \n" +
                                 $"Completed in {stopwatch.Elapsed.TotalSeconds:0.0}s. ");
                     break;
@@ -568,6 +568,8 @@ namespace snapx
                     $"Local pack id: {snapAppsReleases.PackId:N} \n" +
                     $"Retry in {retryInterval.TotalSeconds:0.0}s.");
             }
+
+            logger.Info('-'.Repeat(TerminalBufferWidth));
         }
 
         static Task PushPackageAsync([NotNull] INugetService nugetService, [NotNull] ISnapFilesystem filesystem,

@@ -341,7 +341,6 @@ namespace snapx
                     snapPackageManager, distributedMutex, snapAppsReleases, fullOrDeltaSnapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
-            logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Fetching releases overview from feed {pushFeed.Name}.");
 
             await CommandListAsync(new ListOptions {Id = fullOrDeltaSnapApp.Id}, filesystem, snapAppReader,
@@ -411,14 +410,7 @@ namespace snapx
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
-            logger.Info('-'.Repeat(TerminalBufferWidth));
-
-            var retryInterval = TimeSpan.FromSeconds(15);
-
-            logger.Info(
-                $"Waiting until uploaded release nupkg is available in feed {snapChannel.PushFeed.Name}. Retry every {retryInterval.TotalSeconds:0.0}s.");
-
-            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, retryInterval, cancellationToken);
+            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, TimeSpan.FromSeconds(15), cancellationToken);
         }
     }
 }

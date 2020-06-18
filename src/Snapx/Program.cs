@@ -523,16 +523,31 @@ namespace snapx
             
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
+            
+            logger.Info('-'.Repeat(TerminalBufferWidth));
 
+            logger.Info(
+                $"Waiting until uploaded release nupkg is available in feed: {snapChannel.PushFeed.Name}. " +
+                $"Retry every {retryInterval.TotalSeconds:0.0}s.");
+
+            var logDashes = false;
             while (!cancellationToken.IsCancellationRequested)
             {
                 sleep:
                 await Task.Delay(retryInterval, cancellationToken);
- 
-                logger.Info('-'.Repeat(TerminalBufferWidth));
+
+                if (logDashes)
+                {
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
+                }
+
+                logDashes = true;
 
                 var (upstreamSnapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
-                releasesMemoryStream?.Dispose();
+                if (releasesMemoryStream != null)
+                {
+                    await releasesMemoryStream.DisposeAsync();
+                }
                 if (upstreamSnapAppsReleases == null)
                 {
                     goto sleep;

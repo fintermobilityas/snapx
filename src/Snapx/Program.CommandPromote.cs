@@ -85,7 +85,7 @@ namespace snapx
             {
                 snapApps.Generic.Token = options.LockToken;
 
-                logger.Warn("Lock token updated because '--lock-token' has been specified.");
+                logger.Warn("Lock token updated because '--lock-token' option.");
             }
 
             if (string.IsNullOrWhiteSpace(snapApps.Generic.Token))

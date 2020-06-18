@@ -296,23 +296,11 @@ namespace snapx
             {
                 logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
 
-                var success = await SnapUtility.RetryAsync(
-                    async () =>
-                    {
-                        await nugetService.PushAsync(releasesPackageAbsolutePath, nuGetPackageSources, packageSource, cancellationToken: cancellationToken);
-                        return true;
-                    }, pushRetries);
+                await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
+                    channel, releasesPackageAbsolutePath, cancellationToken, logger);
 
-                if (!success)
-                {
-                    logger.Error("Unknown error while uploading nupkg.");
-                    return 1;
-                }
-
-                var retryInterval = TimeSpan.FromSeconds(15);
-
-                await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, channel, retryInterval,
-                    cancellationToken);
+                await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager,
+                    snapAppsReleases, snapApp, channel, TimeSpan.FromSeconds(15), cancellationToken);
 
                 logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
                 logger.Info('-'.Repeat(TerminalBufferWidth));

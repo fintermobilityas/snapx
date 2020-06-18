@@ -88,6 +88,9 @@ namespace Snap.NuGet
         
         Task<DownloadResourceResult> DownloadAsyncWithProgressAsync([NotNull] PackageSource packageSource, [NotNull] DownloadContext downloadContext,
             INugetServiceProgressSource progressSource, CancellationToken cancellationToken);
+
+        Task<IPackageSearchMetadata> GetMetadataByPackageIdentity(PackageIdentity packageIdentity,
+            PackageSource packageSource, ISnapNugetLogger nugetLogger, CancellationToken cancellationToken, bool noCache = false);
     }
 
     internal class NugetService : INugetService
@@ -321,6 +324,27 @@ namespace Snap.NuGet
             }
         }
 
+        public async Task<IPackageSearchMetadata> GetMetadataByPackageIdentity(PackageIdentity packageIdentity, PackageSource packageSource,
+            ISnapNugetLogger nugetLogger, CancellationToken cancellationToken, bool noCache = false)
+        {
+            var sourceRepository = _packageSources.Get(packageSource);
+            var metadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
+            return await GetMetadataAsync();
+
+            async Task<IPackageSearchMetadata> GetMetadataAsync()
+            {
+                using var cacheContext = new SourceCacheContext();
+
+                if (noCache)
+                {
+                    cacheContext.NoCache = true;
+                    cacheContext.WithRefreshCacheTrue();
+                }
+
+                return await metadataResource.GetMetadataAsync(packageIdentity, cacheContext, nugetLogger ?? NullLogger.Instance, cancellationToken);
+            }
+        }
+
         async Task<IEnumerable<IPackageSearchMetadata>> SearchAsync(string searchTerm, SearchFilter filters, int skip, int take, PackageSource source,
             CancellationToken cancellationToken)
         {
@@ -361,7 +385,6 @@ namespace Snap.NuGet
             return new NuGetPackageSearchMedatadata(metadata.Identity, source, metadata.Published, deps);
         }
 
-        
         static string BuildApiKey(INuGetPackageSources packageSources, PackageSource packageSource)
         {
             if (packageSources.Settings == null

@@ -97,6 +97,22 @@ namespace Snap.Tests.NuGet
             var v450Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
             Assert.Null(v450Release);
         }
+
+        [Fact]
+        public async Task TestGetMetadataByPackageIdentity()
+        {
+            var stablePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
+            var preReleasePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.7-build.575"));
+            var packageSource = new NugetOrgOfficialV2PackageSources().Items.Single();
+
+            var stableMetadata = await _nugetService.GetMetadataByPackageIdentity(stablePackageIdentity, packageSource, null, default, true);
+            Assert.NotNull(stableMetadata);
+            Assert.False(stablePackageIdentity.Version.IsPrerelease);
+            
+            var preReleaseMetadata = await _nugetService.GetMetadataByPackageIdentity(preReleasePackageIdentity, packageSource, null, default, true);
+            Assert.NotNull(preReleaseMetadata);
+            Assert.True(preReleasePackageIdentity.Version.IsPrerelease);
+        }
                 
         [Fact]
         public async Task TestDownloadAsyncWithProgressAsync()

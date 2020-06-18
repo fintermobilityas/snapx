@@ -123,6 +123,22 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
+        public async Task TestGetMetadataByPackageIdentity()
+        {
+            var stablePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
+            var preReleasePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.7-build.575"));
+            var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
+
+            var stableMetadata = await _nugetService.GetMetadataByPackageIdentity(stablePackageIdentity, packageSource, null, default, true);
+            Assert.NotNull(stableMetadata);
+            Assert.False(stablePackageIdentity.Version.IsPrerelease);
+            
+            var preReleaseMetadata = await _nugetService.GetMetadataByPackageIdentity(preReleasePackageIdentity, packageSource, null, default, true);
+            Assert.NotNull(preReleaseMetadata);
+            Assert.True(preReleasePackageIdentity.Version.IsPrerelease);
+        }
+
+        [Fact]
         public async Task TestDirectDownloadWithProgressAsync()
         {
             var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();

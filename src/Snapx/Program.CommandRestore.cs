@@ -53,18 +53,18 @@ namespace snapx
             {
                 snapAppTargets.RemoveAll(x =>
                     !string.Equals(x.Id, restoreOptions.Id, StringComparison.OrdinalIgnoreCase));
+            }
 
-                if (restoreOptions.Rid != null)
-                {
-                    snapAppTargets.RemoveAll(x =>
-                        !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.OrdinalIgnoreCase));
-                }
+            if (restoreOptions.Rid != null)
+            {
+                snapAppTargets.RemoveAll(x =>
+                    !string.Equals(x.Target.Rid, restoreOptions.Rid, StringComparison.OrdinalIgnoreCase));
+            }
 
-                if (!snapAppTargets.Any())
-                {
-                    logger.Error($"Unable to restore {restoreOptions.Id} because it does not exist");
-                    return 1;
-                }
+            if (!snapAppTargets.Any())
+            {
+                logger.Error($"Unable to restore application {restoreOptions.Id} because it does not exist.");
+                return 1;
             }
 
             if (restoreOptions.BuildInstallers)
@@ -73,8 +73,9 @@ namespace snapx
             }
 
             var applicationNames = snapAppTargets.Select(x => x.Id).Distinct().ToList();
+            var rids = snapAppTargets.Select(x => x.Target.Rid).Distinct().ToList();
 
-            logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}.");
+            logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}. Runtime identifiers (RID): {string.Join(", ", rids)}.");
 
             var releaseNupkgs = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
 

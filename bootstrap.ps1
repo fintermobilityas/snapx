@@ -246,8 +246,8 @@ function Invoke-Build-Snap-Installer {
     if ($Rid -eq "win-x64") {
         Invoke-Command-Colored $CommandSnapx @(          
             "rcedit"
+            "$SnapInstallerExeAbsolutePath"
             "--gui-app" 
-            "--filename $SnapInstallerExeAbsolutePath"
         )
     }
 

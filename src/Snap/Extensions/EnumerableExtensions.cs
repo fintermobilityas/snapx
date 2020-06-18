@@ -9,6 +9,11 @@ namespace Snap.Extensions
 {
     internal static class EnumerableExtensions
     {
+        public static Dictionary<TKey, List<TValue>> ToDictionaryByKey<TValue, TKey>(this IEnumerable<TValue> list, Func<TValue, TKey> predicate)
+        {
+            return list.GroupBy(predicate).ToDictionary(g => g.Key, values => values.ToList());
+        }
+
         public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> onNext)
         {
             if (source == null)

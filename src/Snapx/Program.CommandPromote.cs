@@ -207,7 +207,8 @@ namespace snapx
             {
                 AppId = options.AppId,
                 Rid = options.Rid,
-                BuildInstallers = false
+                BuildInstallers = false,
+                RestoreStrategyType = SnapPackageManagerRestoreType.Default
             };
             
             var restoreSuccess = 0 == await CommandRestoreAsync(

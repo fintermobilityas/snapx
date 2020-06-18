@@ -64,7 +64,7 @@ namespace Snap.Core
 
     public enum SnapPackageManagerRestoreType
     {
-        InstallOrUpdate,
+        Default,
         Pack
     }
 
@@ -312,7 +312,7 @@ namespace Snap.Core
 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:
+                    case SnapPackageManagerRestoreType.Default:
                         snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
                         if (snapAppChannelReleases.HasDeltaReleases())
                         {
@@ -466,7 +466,7 @@ namespace Snap.Core
 
                 switch (restoreType)
                 {
-                    case SnapPackageManagerRestoreType.InstallOrUpdate:                    
+                    case SnapPackageManagerRestoreType.Default:                    
                         var snapReleases = new List<SnapRelease>();
 
                         var mostRecentDeltaSnapRelease = snapAppChannelReleases.GetDeltaReleases().LastOrDefault();                                

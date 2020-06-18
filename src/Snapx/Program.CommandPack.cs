@@ -252,7 +252,12 @@ namespace snapx
             await snapOs.Filesystem.FileWriteAsync(releasesMemoryStream, releasesNupkgAbsolutePath, cancellationToken);
             pushPackages.Add(releasesNupkgAbsolutePath);
 
-            logger.Info($"Finished building releases nupkg: {releasesNupkgFilename}. Version: {snapAppsReleases.Version}. Pack id: {snapAppsReleases.PackId:N}");
+            logger.Info("Finished building releases nupkg.\n" +
+                        $"Filename: {releasesNupkgFilename}.\n" +
+                        $"Size: {releasesMemoryStream.Length.BytesAsHumanReadable()}.\n" +
+                        $"Database version: {snapAppsReleases.Version}.\n" +
+                        $"Pack id: {snapAppsReleases.PackId:N}.");
+
             logger.Info('-'.Repeat(TerminalBufferWidth));
 
             await using (releasesMemoryStream)

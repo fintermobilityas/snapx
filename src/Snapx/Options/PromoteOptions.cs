@@ -1,5 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using CommandLine;
+using CommandLine.Text;
 using JetBrains.Annotations;
 
 namespace snapx.Options
@@ -9,17 +11,57 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class PromoteOptions : BaseSubOptions
     {
-        [Option('a', "app", HelpText = "Application id", Required = true)]
-        public string Id { get; [UsedImplicitly] set; }
-        [Option('r', "rid", HelpText = "Runtime identifier (RID), e.g win-x64", Required = true)]
+        [Option('r', "rid",
+            HelpText = "The runtime identifier (RID), e.g win-x64", 
+            Required = true)]
         public string Rid { get; [UsedImplicitly] set; }
-        [Option('c', "channel", HelpText = "Channel name", Required = true)]
+
+        [Option('c', "channel",
+            HelpText = "The base channel to promote from.", 
+            Required = true)]
         public string Channel { get; [UsedImplicitly] set; }
-        [Option("all", HelpText = "Promote to remaining channels")]
+
+        [Option("all",
+            HelpText = "Promote to all remaining channels.")]
         public bool ToAllRemainingChannels { get; [UsedImplicitly] set; }
-        [Option("lock-retries", HelpText = "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.")]
-        public int LockRetries { get; set; } = 3;
-        [Option("lock-token", HelpText = "Override default lock token")]
+
+        [Option("lock-retries",
+            Default = 3,
+            HelpText = "The number of retries if a mutex fails to be acquired. Set -1 if you want to retry forever.")]
+        public int LockRetries { get; set; }
+
+        [Option("lock-token",
+            HelpText = "Override lock token.")]
         public string LockToken { get; set; }
+
+        [Value(0, HelpText = "Application id", Required = true)]
+        public string Id { get; [UsedImplicitly] set; }
+
+        [Usage(ApplicationAlias = "snapx")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Promote current win-x64 release from test to staging", new PromoteOptions
+                {
+                    Id = "demoapp",
+                    Channel = "test",
+                    Rid = "win-x64"
+                });
+                yield return new Example("Promote current win-x64 release from staging to production", new PromoteOptions
+                {
+                    Id = "demoapp",
+                    Channel = "staging",
+                    Rid = "win-x64"
+                });
+                yield return new Example("Promote current win-x64 release from test to staging, production", new PromoteOptions
+                {
+                    Id = "demoapp",
+                    Channel = "test",
+                    Rid = "win-x64",
+                    ToAllRemainingChannels = true
+                });
+            }
+        }
     }
 }

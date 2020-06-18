@@ -1,5 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using CommandLine;
+using CommandLine.Text;
 using JetBrains.Annotations;
 
 namespace snapx.Options
@@ -9,17 +11,65 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class DemoteOptions : BaseSubOptions
     {
-        [Option('a',"app", HelpText = "Application id", Required = true)]
-        public string Id { get; [UsedImplicitly] set; }
-        [Option('r', "rid", HelpText = "Runtime identifier (RID), e.g win-x64.")]
+        [Option('r', "rid", 
+            HelpText = "The Runtime identifier (RID), e.g win-x64.")]
         public string Rid { get; [UsedImplicitly] set; }
-        [Option("from-version", HelpText = "Remove all releases newer than this version.")]
+
+        [Option("from-version", 
+            HelpText = "Remove all releases newer than this version.", 
+            SetName = "all")]
         public string FromVersion { get; set; }
-        [Option("all", HelpText = "Remove all matching release")]
+
+        [Option("all",
+            HelpText = "Remove all matching releases", 
+            SetName = "all")]
         public bool All { get; set; }
-        [Option("lock-retries", HelpText = "The number of retries if a mutex fails to be acquired (default: 3). Specify -1 if you want to retry forever.")]
-        public int LockRetries { get; set; } = 3;
-        [Option("lock-token", HelpText = "Override default lock token")]
+
+        [Option("lock-retries", 
+            Default = 3, 
+            HelpText = "The number of retries if a mutex fails to be acquired. Set -1 if you want to retry forever.")]
+        public int LockRetries { get; set; }
+
+        [Option("lock-token", 
+            HelpText = "Override lock token.")]
         public string LockToken { get; set; }
+
+        [Value(0,
+            HelpText = "The Application id.",
+            Required = true)]
+        public string Id { get; [UsedImplicitly] set; }
+
+        [Usage(ApplicationAlias = "snapx")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Remove current release from all runtime identifiers", new DemoteOptions
+                {
+                    Id = "demoapp"
+                });
+                yield return new Example("Remove current release from win-x64", new DemoteOptions
+                {
+                    Id = "demoapp",
+                    Rid = "win-x64"
+                });
+                yield return new Example("Remove all releases from win-x64", new DemoteOptions
+                {
+                    Id = "demoapp",
+                    Rid = "win-x64"
+                });
+                yield return new Example("Remove all releases from all runtime identifiers", new DemoteOptions
+                {
+                    Id = "demoapp",
+                    All = true
+                });
+                yield return new Example("Remove all releases from all runtime identifiers greater than --from-version", new DemoteOptions
+                {
+                    Id = "demoapp",
+                    FromVersion = "1.0.0",
+                    All = true
+                });
+            }
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿using CommandLine;
+﻿using System.Collections.Generic;
+using CommandLine;
+using CommandLine.Text;
 using JetBrains.Annotations;
 
 namespace snapx.Options
@@ -7,11 +9,35 @@ namespace snapx.Options
     [UsedImplicitly]
     internal class RcEditOptions : BaseSubOptions
     {
-        [Option('f', "filename", HelpText = "Input filename", Required = true)]
-        public string Filename { get; set; }
-        [Option("gui-app", HelpText = "Change console application subsystem Windows GUI")]
+        [Option("gui-app",
+            HelpText = "Change Windows Subsystem from Console to WindowsGui")]
         public bool ConvertSubSystemToWindowsGui { get; set; }
-        [Option("icon", HelpText = "Set icon for a windows executable")]
+
+        [Option("icon",
+            HelpText = "Set icon for a windows executable")]
         public string IconFilename { get; set; }
+
+        [Value(0,
+            HelpText = "The input filename.",
+            Required = true)]
+        public string Filename { get; set; }
+
+        [Usage(ApplicationAlias = "snapx")]
+        public static IEnumerable<Example> Examples
+        {
+            get
+            {
+                yield return new Example("Change Windows Subsystem from Console to WindowsGui", new RcEditOptions
+                {
+                    Filename = "demoapp.exe",
+                    ConvertSubSystemToWindowsGui = true
+                });
+                yield return new Example("Set icon for windows executable", new RcEditOptions
+                {
+                    Filename = "demoapp.exe",
+                    IconFilename = "path/to/my/my.ico"
+                });
+            }
+        }
     }
 }

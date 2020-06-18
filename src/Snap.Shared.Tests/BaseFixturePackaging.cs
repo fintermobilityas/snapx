@@ -498,7 +498,7 @@ namespace Snap.Shared.Tests
             return new SnapReleaseBuilder(disposableDirectory, snapAppsReleases, snapApp, builderContext);
         }
     
-        internal async Task<BuildPackageContext> BuildPackageAsync([NotNull] SnapReleaseBuilder releaseBuilder, string releaseNotes = "My Release Notes?", CancellationToken cancellationToken = default)
+        internal async Task<BuildPackageContext> BuildPackageAsync([NotNull] SnapReleaseBuilder releaseBuilder, CancellationToken cancellationToken = default)
         {
             if (releaseBuilder == null) throw new ArgumentNullException(nameof(releaseBuilder));
 

@@ -8,7 +8,7 @@
 | Github Actions | Linux (x64), Windows (x64) | develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
 | Github Actions | Linux (x64), Windows (x64) | master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=develop) |
 
-**snapx** Snapx is a powerful xplat library with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. 
+**snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. 
 
 # Table of Contents
 

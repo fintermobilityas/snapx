@@ -7,8 +7,8 @@
 
 | Build server | Platforms | Build status |
 |--------------|----------|--------------|
-| Github Actions | Linux (x64), Windows (x64) | develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
-| Github Actions | Linux (x64), Windows (x64) | master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=develop) |
+| Github Actions | linux-latest, windows-latest | Branch: develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=develop) |
+| Github Actions | linux-latest, windows-latest | Branch: master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. 
 

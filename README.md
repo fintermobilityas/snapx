@@ -3,6 +3,8 @@
 | [docs](.) / README.md |
 |:---|
 
+![dependabot](https://api.dependabot.com/badges/status?host=github&repo=fintermobilityas/snapx)
+
 | Build server | Platforms | Build status |
 |--------------|----------|--------------|
 | Github Actions | Linux (x64), Windows (x64) | develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
@@ -10,32 +12,15 @@
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. 
 
-# Table of Contents
-
-This document provides a table of contents for all the Snapx documentation.
-
-## General Documentation
-
-...
-
 ## Getting Started Guide
 
-...
+Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
 
-## Using Snapx
+## Using snapx
 
-...
+All available commands has usage examples if you append `snapx [command] --help` in your favourite shell. 
 
-## Contribution guidelines
-
-Why not give back and help make Snapx even better by contributing to the project.
-
-**If you want to contribute to Snapx, be sure to review the [contribution
-guidelines](CONTRIBUTING.md). This project adheres to Snapx's
-[code of conduct](CODE_OF_CONDUCT.md). By participating, you are expected to
-uphold this code.**
-
-...
+![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
 
 ## Sponsors
 <p align="center">

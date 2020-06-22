@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:7.0.1-ubuntu-18.04 as env-build
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1.301-focal as env-build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -13,4 +13,5 @@ RUN \
 RUN \ 
 	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
 
+FROM env-build as env-run
 CMD ["sh", "-c", "$SNAPX_DOCKER_WORKING_DIR/docker/entry.sh"]

@@ -16,7 +16,7 @@ function Resolve-Windows {
     )
     if ($OSPlatform -ne "Windows") {
         Write-Error "Unable to continue because OS version is not Windows but $OSVersion"
-    }	
+    }
 }
 function Resolve-Unix {
     param(
@@ -25,7 +25,7 @@ function Resolve-Unix {
     )
     if ($OSPlatform -ne "Unix") {
         Write-Error "Unable to continue because OS version is not Unix but $OSVersion"
-    }	
+    }
 }
 function Write-Output-Colored {
     param(
@@ -42,8 +42,8 @@ function Write-Output-Colored {
     Write-Output $Message
 
     $host.UI.RawUI.ForegroundColor = $fc
-} 
-function Write-Output-Header { 
+}
+function Write-Output-Header {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $Message
@@ -77,14 +77,14 @@ function Invoke-Command-Clean-Dotnet-Directory {
     $Bin = Join-Path $Directory bin
     if(Test-Path $Bin)
     {
-        Write-Output "Removing directory: $Bin" 
+        Write-Output "Removing directory: $Bin"
         Get-ChildItem -Path $Bin -Recurse | Remove-Item -Force -Recurse
     }
 
     $Obj = Join-Path $Directory obj
     if(Test-Path $Obj)
     {
-        Write-Output "Removing directory: $Obj" 
+        Write-Output "Removing directory: $Obj"
         Get-ChildItem -Path $Obj -Recurse | Remove-Item -Force -Recurse
     }
 
@@ -112,7 +112,7 @@ function Invoke-Command-Colored {
         if([console]::BufferWidth -gt 0)
         {
             $DashsesRepeatCount = [console]::BufferWidth
-        }    
+        }
     } catch {
         $DashsesRepeatCount = 80
     }
@@ -181,7 +181,7 @@ function Get-Is-String-False
     return $false
 }
 
-function Use-Msvs-Toolchain 
+function Use-Msvs-Toolchain
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -219,7 +219,7 @@ function Use-Msvs-Toolchain
 
 # Build targets
 
-function Invoke-Google-Tests 
+function Invoke-Google-Tests
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -227,20 +227,20 @@ function Invoke-Google-Tests
         [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $GTestsExe,
         [Parameter(Position = 2, ValueFromPipeline = $true)]
-        [string[]] $GTestsArguments 
+        [string[]] $GTestsArguments
     )
-    try 
+    try
     {
         if($null -eq $GTestsArguments) {
             $GTestsArguments = @()
         }
-        
+
         Push-Location $GTestsDirectory
         $GTestsExe = Join-Path $GTestsDirectory $GTestsExe
-        $GTestsArguments += "--gtest_output=""xml:./googletestsummary.xml"""        
+        $GTestsArguments += "--gtest_output=""xml:./googletestsummary.xml"""
         Invoke-Command-Colored $GTestsExe $GTestsArguments
-    } finally {             
-        Pop-Location 
+    } finally {
+        Pop-Location
     }
 }
 
@@ -248,10 +248,10 @@ function Convert-Boolean-MSBuild {
     param(
         [boolean] $Value
     )
-    
+
     if ($true -eq $Value) {
         return "true"
     }
-    
+
     return "false"
 }

@@ -21,8 +21,8 @@ param(
     [string] $Version = "0.0.0"
 )
 
-$ErrorActionPreference = "Stop"; 
-$ConfirmPreference = "None"; 
+$ErrorActionPreference = "Stop";
+$ConfirmPreference = "None";
 
 # Global Variables
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -74,12 +74,12 @@ switch -regex ($OSVersion) {
         $CommandMake = "make"
         $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
-        $ArchCross = "x86_64-w64-mingw32-gcc"    
+        $ArchCross = "x86_64-w64-mingw32-gcc"
 
         if($env:SNAPX_CI_BUILD -eq $true) {
             $CommandSnapx = Join-Path $ToolsDir snapx\snapx
         }
-    }	
+    }
     default {
         Write-Error "Unsupported os: $OSVersion"
     }
@@ -96,7 +96,7 @@ $SnapCoreRunSrcDir = Join-Path $WorkingDir src
 $SnapDotnetSrcDir = Join-Path $WorkingDir src\Snap
 $SnapInstallerDotnetSrcDir = Join-Path $WorkingDir src\Snap.Installer
 
-function Invoke-Build-Native {	
+function Invoke-Build-Native {
     Write-Output-Header "Building native dependencies"
 
     Resolve-Shell-Dependency $CommandCmake
@@ -122,7 +122,7 @@ function Invoke-Build-Native {
         "-H""$SnapCoreRunSrcDir"""
         "-B""$SnapCoreRunBuildOutputDir"""
     )
-    
+
     if ($Lto) {
         $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"
     }
@@ -141,12 +141,12 @@ function Invoke-Build-Native {
     elseif ($Cross -eq $TRUE) {
         Write-Error "Cross compiling is not support on: $OSPlatform"
     }
-			
+
     Write-Output "Build src directory: $SnapCoreRunSrcDir"
     Write-Output "Build output directory: $SnapCoreRunBuildOutputDir"
     Write-Output "Arch: $TargetArch"
     Write-Output ""
-    
+
     Invoke-Command-Colored $CommandCmake $CmakeArguments
 
     switch ($OSPlatform) {
@@ -154,9 +154,9 @@ function Invoke-Build-Native {
             sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
         }
         "Windows" {
-            Invoke-Command-Colored $CommandCmake @(                
+            Invoke-Command-Colored $CommandCmake @(
                 "--build `"$SnapCoreRunBuildOutputDir`" --config $Configuration"
-            )      
+            )
         }
         default {
             Write-Error "Unsupported os platform: $OSPlatform"
@@ -194,7 +194,7 @@ function Invoke-Build-Snap-Installer {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [ValidateSet("win-x64", "linux-x64")]
-        [string] $Rid 
+        [string] $Rid
     )
     Write-Output-Header "Building Snap.Installer"
 
@@ -244,10 +244,10 @@ function Invoke-Build-Snap-Installer {
     )
 
     if ($Rid -eq "win-x64") {
-        Invoke-Command-Colored $CommandSnapx @(          
+        Invoke-Command-Colored $CommandSnapx @(
             "rcedit"
             "$SnapInstallerExeAbsolutePath"
-            "--gui-app" 
+            "--gui-app"
         )
     }
 
@@ -270,16 +270,16 @@ function Invoke-Native-Unit-Tests
 {
     switch($OSPlatform)
     {
-        "Windows" {          
+        "Windows" {
 
-            $Projects = @() 
+            $Projects = @()
 
             # MINGW
             if($env:SNAPX_CI_BUILD -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug\Snap.CoreRun.Tests)
             }
             $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)
-            
+
             # MSVS
             if($env:SNAPX_CI_BUILD -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
@@ -291,23 +291,23 @@ function Invoke-Native-Unit-Tests
 
             foreach ($GoogleTestsDir in $Projects) {
                 Invoke-Google-Tests $GoogleTestsDir corerun_tests.exe $CommandGTestsDefaultArguments
-            }                
+            }
         }
-        "Unix" {                
+        "Unix" {
             $Projects = @()
 
             # GCC
             if($env:SNAPX_CI_BUILD -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
-            }            
+            }
             $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release\Snap.CoreRun.Tests)
-            
+
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
 
             foreach ($GoogleTestsDir in $Projects) {
                 Invoke-Google-Tests $GoogleTestsDir corerun_tests $CommandGTestsDefaultArguments
-            }                
+            }
 
         }
         default {
@@ -345,24 +345,24 @@ function Invoke-Dotnet-Unit-Tests
 			"--test-adapter-path:""$TestAdapterPath"""
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$TestResultsOutputDirectoryPath"""
-        )    
+        )
     }
 
 }
 
-Write-Output-Header "----------------------- CONFIGURATION DETAILS ------------------------" 
+Write-Output-Header "----------------------- CONFIGURATION DETAILS ------------------------"
 Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
-Write-Output "Docker: ${env:SNAPX_DOCKER_BUILD}" 
+Write-Output "Docker: ${env:SNAPX_DOCKER_BUILD}"
 Write-Output "CI Build: ${env:SNAPX_CI_BUILD}"
 
 if ($Cross) {
-    Write-Output "Native target arch: $ArchCross"		
+    Write-Output "Native target arch: $ArchCross"
 }
 else {
-    Write-Output "Native target arch: $Arch"				
+    Write-Output "Native target arch: $Arch"
     if($OSPlatform -eq "Windows")
     {
         Write-Output "Visual Studio Version: $VisualStudioVersion"
@@ -371,8 +371,8 @@ else {
 
 switch ($OSPlatform) {
     "Windows" {
-        Resolve-Windows $OSPlatform 			
-        Resolve-Shell-Dependency $CommandVsWhere				
+        Resolve-Windows $OSPlatform
+        Resolve-Shell-Dependency $CommandVsWhere
         Use-Msvs-Toolchain -VisualStudioVersion $VisualStudioVersion
     }
     "Unix" {
@@ -383,20 +383,20 @@ switch ($OSPlatform) {
         Write-Error "Unsupported os platform: $OSPlatform"
     }
 }
-			
+
 switch ($Target) {
     "Native" {
         switch ($OSPlatform) {
-            "Windows" {		
+            "Windows" {
                 if ($Cross -eq $FALSE) {
-                    Invoke-Build-Native		
+                    Invoke-Build-Native
                 }
                 else {
                     Write-Error "Cross compiling is not supported on Windows."
-                } 
+                }
             }
             "Unix" {
-                Invoke-Build-Native		
+                Invoke-Build-Native
             }
             default {
                 Write-Error "Unsupported os platform: $OSPlatform"
@@ -410,7 +410,7 @@ switch ($Target) {
         Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
-        Invoke-Native-Unit-Tests   
+        Invoke-Native-Unit-Tests
     }
     "Run-Dotnet-UnitTests" {
         Invoke-Dotnet-Unit-Tests

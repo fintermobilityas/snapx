@@ -81,7 +81,7 @@ jobs:
             }
           }
           
-          ./build.ps1 $target -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }}
+          ./build.ps1 $target -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild 
     
       - name: Collect artifacts 
         env:

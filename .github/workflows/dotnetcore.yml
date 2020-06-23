@@ -154,6 +154,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
+        with:
+          lfs: true
   
       - name: Download artifacts
         uses: actions/download-artifact@v2

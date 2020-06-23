@@ -61,6 +61,10 @@ namespace snapx
 
         internal static int Main(string[] args)
         {
+#if SNAP_BOOTSTRAP
+            Console.WriteLine("Warning! SNAP_BOOTSTRAP has been defined. This is only normal when bootstraping this project.");
+#endif
+
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
                 var process = Process.GetCurrentProcess();

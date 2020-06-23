@@ -62,10 +62,6 @@ switch -regex ($OSVersion) {
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
         $Arch = "win-msvs-$($VisualStudioVersion)-x64"
         $ArchCross = "x86_64-win64-gcc"
-
-        if($CIBuild -eq $true) {
-            $CommandSnapx = Join-Path $ToolsDir snapx\snapx.exe
-        }
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -76,10 +72,6 @@ switch -regex ($OSVersion) {
         $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
-
-        if($CIBuild -eq $true) {
-            $CommandSnapx = Join-Path $ToolsDir snapx\snapx
-        }
     }
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -152,7 +144,7 @@ function Invoke-Build-Native {
 
     switch ($OSPlatform) {
         "Unix" {
-            sh -c "(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)"
+            Invoke-Command-Colored sh @("-c ""(cd $SnapCoreRunBuildOutputDir && make -j $ProcessorCount)""")
         }
         "Windows" {
             Invoke-Command-Colored $CommandCmake @(

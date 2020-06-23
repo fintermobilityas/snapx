@@ -63,7 +63,7 @@ jobs:
     
       - name: Collect artifacts 
         env:
-          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/${{ env.NetCoreAppVersion }}/${{ matrix.configuration }}/publish
+          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
           SNAPX_MINGW_CORERUN_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun
@@ -122,7 +122,7 @@ jobs:
         
       - name: Collect artifacts 
         env:
-          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/${{ env.NetCoreAppVersion }}/${{ matrix.configuration }}/publish
+          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
           SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
         run: |

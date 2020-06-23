@@ -4,7 +4,7 @@ param(
     [string] $Target = "Bootstrap",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
-    [string] $Configuration = "Release",
+    [string] $Configuration = "Debug",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(ValueFromPipelineByPropertyName = $true)]
@@ -303,10 +303,6 @@ switch ($Target) {
         Invoke-Summary
     }
     "Bootstrap" {
-        $Configuration = "Debug"
-        Invoke-Bootstrap-Unix
-        Invoke-Bootstrap-Windows
-        $Configuration = "Release"
         Invoke-Bootstrap-Unix
         Invoke-Bootstrap-Windows
         Invoke-Summary

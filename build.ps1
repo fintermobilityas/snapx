@@ -199,7 +199,6 @@ function Invoke-Build-Snapx
     Invoke-Install-Snapx-Ps1 @("-Bootstrap", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
     Invoke-Install-Snapx-Ps1 @("-Configuration $Configuration")
-    Invoke-Build-Snap 
 }
 
 function Invoke-Bootstrap-Unix 
@@ -213,7 +212,6 @@ function Invoke-Bootstrap-Unix
     Invoke-Build-Native 
     Invoke-Native-UnitTests 
     Invoke-Build-Snapx
-    Invoke-Build-Snap
 }
 
 function Invoke-Bootstrap-Windows {
@@ -222,7 +220,6 @@ function Invoke-Bootstrap-Windows {
         Invoke-Native-UnitTests 
     }
     Invoke-Build-Snapx 
-    Invoke-Build-Snap
 }
 
 function Invoke-Summary {

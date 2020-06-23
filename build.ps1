@@ -116,7 +116,6 @@ function Invoke-Install-Snapx-Ps1 {
         $Target,
         "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
-        "-Configuration $Configuration"
         "-Version $Version"
         "-CIBuild:$CIBuild"
         "-DockerBuild:" + ($DockerBuild ? "True" : "False")
@@ -130,93 +129,100 @@ function Invoke-Install-Snapx-Ps1 {
 }
 
 function Invoke-Build-Native {
-    if ($OSPlatform -eq "Windows") {
-
-        if($CIBuild) {
+    switch($OSPlatform) {
+        "Windows" {
             $WindowsArguments = @("-Configuration $Configuration")
             if($Configuration -eq "Release") {
                 $WindowsArguments += "-Lto"
             }
-
-            Invoke-Bootstrap-Ps1 Native $WindowsArguments
-        } else {
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
+            Invoke-Bootstrap-Ps1 Native $WindowsArguments         
         }
-
-        return
-    }
-
-    if ($OSPlatform -eq "Unix") {
-
-        if($CIBuild) {
+        "Unix" {
             $UnixArguments = @("-Configuration $Configuration")
             if($Configuration -eq "Release") {
                 $UnixArguments += "-Lto"
             }
-
             Invoke-Bootstrap-Ps1 Native $UnixArguments
-            Invoke-Bootstrap-Ps1 Native @("-Cross", $UnixArguments)
-        } else {
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
+            Invoke-Bootstrap-Ps1 Native @("-Cross", $UnixArguments)    
         }
-
-        return
+        Default {
+            Write-Error "Unsupported OS platform: $OSVersion"
+        }
     }
-
-    Write-Error "Unsupported OS platform: $OSVersion"
 }
 
 function Invoke-Build-Snap-Installer {
-    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid linux-x64")
-    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid win-x64")
+
+    $Rids = @()
+    if($CIBuild) {
+        switch ($OSPlatform) {
+            "Unix" { 
+                $Rids += "linux-x64"
+            }
+            "Windows" {
+                $Rids += "win-x64"
+            }
+            Default {
+                Write-Error "Unsupported os: $OSPlatform"
+            }
+        }        
+
+        return;
+    } else {
+        $Rids += "linux-x64"
+        $Rids += "win-x64"
+    }
+
+    $Rids | ForEach-Object {
+        $Rid = $_
+        Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid $Rid")            
+    }
+
 }
 
 function Invoke-Build-Snap {
-    Invoke-Bootstrap-Ps1 Snap @()
+    Invoke-Bootstrap-Ps1 Snap @("-Configuration $Configuration")
 }
 
 function Invoke-Native-UnitTests
 {
-    Invoke-Bootstrap-Ps1 Run-Native-UnitTests @()
+    Invoke-Bootstrap-Ps1 Run-Native-UnitTests @("-Configuration $Configuration")
 }
 
 function Invoke-Dotnet-Unit-Tests
 {
-    Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @()
+    Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration")
 }
 
 function Invoke-Build-Snapx
 {
-    Invoke-Install-Snapx-Ps1 @("-Bootstrap")
+    Invoke-Install-Snapx-Ps1 @("-Bootstrap", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
-    Invoke-Install-Snapx-Ps1 @()
-    Invoke-Build-Snap
+    Invoke-Install-Snapx-Ps1 @("-Configuration $Configuration")
+    Invoke-Build-Snap 
 }
 
-function Invoke-Bootstrap-Unix {
+function Invoke-Bootstrap-Unix 
+{
     if($env:BUILD_IS_DOCKER -ne 1)
     {
         Invoke-Docker -Entrypoint "Bootstrap-Unix"
-        return
+        exit 0
     }
 
-    Invoke-Build-Native
-    Invoke-Native-UnitTests
+    Invoke-Build-Native 
+    Invoke-Native-UnitTests 
     Invoke-Build-Snapx
     Invoke-Build-Snap
-    Invoke-Summary
 }
 
 function Invoke-Bootstrap-Windows {
-    Invoke-Build-Native
-    if($CIBuild -eq $false) {
-        Invoke-Native-UnitTests
+    Invoke-Build-Native 
+    if($CIBuild -eq $false) { 
+        Invoke-Native-UnitTests 
     }
-    Invoke-Build-Snapx
+    Invoke-Build-Snapx 
     Invoke-Build-Snap
-    Invoke-Summary
 }
 
 function Invoke-Summary {
@@ -228,7 +234,7 @@ function Invoke-Summary {
 function Invoke-Docker
 {
     param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipelineByPropertyName)]
+        [Parameter(Position = 0, ValueFromPipeline = $true, Mandatory = $true)]
         [string] $Entrypoint
     )
 
@@ -242,6 +248,7 @@ function Invoke-Docker
 
     $DockerParameters = @(
 		"-Target ${Target}"
+        "-Configuration $Configuration"
 		"-DockerImageName ${DockerImageName}"
 		"-DockerVersion ${DockerVersion}"
 		"-DockerLocal:" + ($DockerLocal ? "True" : "False")
@@ -307,17 +314,20 @@ switch ($Target) {
     "Bootstrap-Unix"
     {
         Invoke-Bootstrap-Unix
+        Invoke-Summary
     }
     "Bootstrap-Windows"
     {
         Invoke-Bootstrap-Windows
+        Invoke-Summary
     }
     "Bootstrap" {
         Invoke-Bootstrap-Unix
         Invoke-Bootstrap-Windows
+        Invoke-Summary
     }
     "Snap" {
-        Invoke-Build-Snap
+        Invoke-Build-Snap 
         Invoke-Summary
     }
     "Snap-Installer" {
@@ -330,6 +340,7 @@ switch ($Target) {
     }
     "Run-Native-UnitTests" {
         Invoke-Native-UnitTests
+        Invoke-Summary
     }
     "Publish-Docker-Image" {
 		$DockerFileContent = Get-Content $DockerFilenamePath

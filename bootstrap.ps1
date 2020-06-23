@@ -259,7 +259,7 @@ function Invoke-Build-Snap-Installer {
         -DestinationPath $SnapInstallerExeZipAbsolutePath
 }
 
-function Invoke-Native-Unit-Tests
+function Invoke-Native-UnitTests
 {
     switch($OSPlatform)
     {
@@ -268,12 +268,10 @@ function Invoke-Native-Unit-Tests
             $Projects = @()
 
             # MINGW
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug\Snap.CoreRun.Tests)
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)    
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\$Configuration\Snap.CoreRun.Tests)
 
             # MSVS
-            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
-            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun.Tests\Release)
+            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-${VisualStudioVersion}-x64\${Configuration}\Snap.CoreRun.Tests\${Configuration})
 
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
@@ -286,8 +284,7 @@ function Invoke-Native-Unit-Tests
             $Projects = @()
 
             # GCC
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release\Snap.CoreRun.Tests)
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\${Configuration}\Snap.CoreRun.Tests)
 
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
@@ -303,7 +300,7 @@ function Invoke-Native-Unit-Tests
     }
 }
 
-function Invoke-Dotnet-Unit-Tests
+function Invoke-Dotnet-UnitTests
 {
     Push-Location $WorkingDir
 
@@ -397,9 +394,9 @@ switch ($Target) {
         Invoke-Build-Snap-Installer -Rid $DotNetRid
     }
     "Run-Native-UnitTests" {
-        Invoke-Native-Unit-Tests
+        Invoke-Native-UnitTests
     }
     "Run-Dotnet-UnitTests" {
-        Invoke-Dotnet-Unit-Tests
+        Invoke-Dotnet-UnitTests
     }
 }

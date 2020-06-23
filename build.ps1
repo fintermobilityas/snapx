@@ -196,7 +196,6 @@ function Invoke-Dotnet-Unit-Tests
 
 function Invoke-Build-Snapx
 {
-    Invoke-Build-Snap-Installer
     Invoke-Install-Snapx-Ps1 @("-DotnetRid:pack -Configuration $Configuration")
 }
 

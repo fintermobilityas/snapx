@@ -20,7 +20,9 @@ param(
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [switch] $CIBuild
+    [switch] $CIBuild,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $DockerBuild
 )
 
 $ErrorActionPreference = "Stop";
@@ -354,7 +356,7 @@ Write-Output "OS: $OSVersion"
 Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
-Write-Output "Docker: ${env:SNAPX_DOCKER_BUILD}"
+Write-Output "Docker: $DockerBuild"
 Write-Output "CI Build: $CIBuild"
 
 if ($Cross) {

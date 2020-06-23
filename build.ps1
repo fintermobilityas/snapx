@@ -33,6 +33,7 @@ $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
 $DotnetVersion = Get-Content global.json | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version
+$DockerBuild = $env:BUILD_IS_DOCKER -eq 1
 
 if($false -eq (Test-Path "env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE"))
 {
@@ -92,6 +93,7 @@ function Invoke-Bootstrap-Ps1 {
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
         "-CIBuild:$CIBuild"
+        "-DockerBuild:" + ($DockerBuild ? "True" : "False")
         $Arguments
     )
 
@@ -107,15 +109,13 @@ function Invoke-Install-Snapx-Ps1 {
         [string[]] $Arguments
     )
 
-    $IsDockerBuild = $env:BUILD_IS_DOCKER
-
     $DefaultArguments = @(
         $Target,
         "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
         "-CIBuild:$CIBuild"
-        "-DockerBuild:" + ($IsDockerBuild ? "True" : "False")
+        "-DockerBuild:" + ($DockerBuild ? "True" : "False")
         $Arguments
     )
 

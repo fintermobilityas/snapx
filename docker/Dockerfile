@@ -14,5 +14,6 @@ RUN \
 	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
 
 FROM env-build as env-run
-ENV PATH $PATH:/root/.dotnet/tools
+RUN mkdir /root/.dotnet/tools
+ENV PATH="/root/.dotnet/tools:${PATH}"
 CMD ["sh", "-c", "(cd $SNAPX_DOCKER_WORKING_DIR && pwsh ./build.ps1 $BUILD_PS_PARAMETERS)"]

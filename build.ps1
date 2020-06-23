@@ -324,6 +324,10 @@ switch ($Target) {
         Invoke-Summary
     }
     "Bootstrap" {
+        $Configuration = "Debug"
+        Invoke-Bootstrap-Unix
+        Invoke-Bootstrap-Windows
+        $Configuration = "Release"
         Invoke-Bootstrap-Unix
         Invoke-Bootstrap-Windows
         Invoke-Summary

@@ -108,7 +108,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.2.0
         with:
-            fetch-depth: 0
+            token: ${{ secrets.FINTER_CI_PAT }}
             lfs: true
             submodules: true 
 

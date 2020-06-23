@@ -34,6 +34,7 @@ jobs:
             
   linux-latest:
     runs-on: ubuntu-latest
+    name: Linux
     needs: [setup]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
@@ -94,6 +95,7 @@ jobs:
 
   windows-latest:
     runs-on: windows-latest
+    name: Windows
     needs: [setup]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
@@ -136,6 +138,7 @@ jobs:
           
   publish:
     runs-on: windows-latest
+    name: Publish
     needs: [setup, linux-latest, windows-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}

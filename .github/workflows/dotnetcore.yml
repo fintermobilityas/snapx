@@ -5,7 +5,8 @@ on: push
 env:
   GPR_VERSION: 0.1.125
   GITVERSION_VERSION: 5.3.4
-  MSMVS_TOOLSET_VERSION: 16
+  MSVS_TOOLSET_VERSION: 16
+  DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   FINTER_NUGET_FEED: https://nuget.pkg.github.com/fintermobilityas/index.json        
@@ -32,13 +33,12 @@ jobs:
           echo "::set-env name=SNAPX_VERSION::$SNAPX_VERSION"
           echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
             
-  build:
-    runs-on: ${{ matrix.os }}
-    name: Build ${{ matrix.os }} (${{ matrix.configuration }})
+  linux:
+    runs-on: linux-latest
+    name: Build linux-latest (${{ matrix.configuration }})
     needs: [setup]
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
         configuration: [Debug, Release]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
@@ -46,7 +46,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.2.0
         with:
-          fetch-depth: 0
           lfs: true
           submodules: true
 
@@ -55,101 +54,123 @@ jobs:
         with:
           login-server: docker.pkg.github.com
           username: ${{ github.actor }} 
-          password:  ${{secrets.GITHUB_TOKEN }}     
-
-      - name: Setup dotnet using global.json
-        if: matrix.os == 'windows-latest'
-        uses: actions/setup-dotnet@v1.5.0
+          password: ${{secrets.GITHUB_TOKEN }}     
 
       - name: Build and test
         timeout-minutes: 10
         shell: pwsh
-        run: |
-          $matrix_os = "${{ matrix.os}}";
-          $target = $null;
-
-          switch($matrix_os)
-          {
-            "ubuntu-latest" {
-              $target = "Bootstrap-Unix";
-            }
-            "windows-latest" {
-              $target = "Bootstrap-Windows";
-            }
-            default {
-              Write-Error "Unsupported os: $matrix_os"
-            }
-          }
-          
-          ./build.ps1 $target -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild 
+        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }}
     
       - name: Collect artifacts 
         env:
-          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/netcoreapp3.1/Release/publish
-          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
-          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
-          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/netcoreapp3.1/Release/publish
-          SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun
-          SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun.Pal
-          SNAPX_MINGW_CORERUN_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun
-          SNAPX_MINGW_PAL_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun.Pal
-          SNAPX_MINGW_TESTS_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/Release/Snap.CoreRun.Tests
+          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/${{ env.NetCoreAppVersion }}/${{ matrix.configuration }}/publish
+          SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun
+          SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
+          SNAPX_MINGW_CORERUN_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun
+          SNAPX_MINGW_PAL_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
+          SNAPX_MINGW_TESTS_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun.Tests
         run: |
-          $matrix_os = "${{ matrix.os }}";
-          $matrix_configuration = "${{ matrix.configuration }}";
-          
-          switch($matrix_os) {
-            "windows-latest" {
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip
 
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
 
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/pal.dll
-            }
-            "ubuntu-latest" {   
-              if($matrix_configuration -ne "Release") {
-                return;
-              }
-              
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
 
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe
 
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll
 
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe
-
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll
-
-              mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}
-              cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe
-              cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe
-              cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe
-            }
-            default {
-               Write-Error "Unsupported os: $matrix_os" 
-            }
-          }
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe
+          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe
           
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.os }}-${{ matrix.configuration }}
+          name: ubuntu-latest-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
-          
+
+  windows:
+    runs-on: windows-latest
+    name: Build windows-latest (${{ matrix.configuration }})
+    needs: [setup]
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    env:
+      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.2.0
+        with:
+          lfs: true
+          submodules: true   
+
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
+
+      - name: Build and test
+        timeout-minutes: 10
+        run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }}
+        
+      - name: Collect artifacts 
+        env:
+          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/${{ env.NetCoreAppVersion }}/${{ matrix.configuration }}/publish
+          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
+          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
+        run: |
+         mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/pal.dll
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-latest-${{ matrix.configuration }}
+          path: ${{ github.workspace }}/artifacts/**/*
+
+  mingw:
+    runs-on: windows-latest
+    needs: [windows]
+    name: Run mingw tests
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    env:
+      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.2.0
+  
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-latest-${{ matrix.configuration }}
+          path: ${{ github.workspace }}
+ 
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
+      
+      - name: Run windows native tests
+        run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
+  
   publish:
     runs-on: windows-latest
     name: Publish
-    needs: [setup, build]
+    needs: [setup, windows, linux, mingw]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
@@ -162,12 +183,6 @@ jobs:
           name: linux-latest-Release
           path: ${{ github.workspace }}
           
-      - name: Download windows-latest-Debug artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: windows-latest-Debug
-          path: ${{ github.workspace }}
-
       - name: Download windows-latest-Release artifacts
         uses: actions/download-artifact@v2
         with:
@@ -180,9 +195,6 @@ jobs:
       - name: Setup gpr v${{ env.GPR_VERSION }} 
         shell: pwsh
         run: dotnet tool update gpr --global --version ${{ env.GPR_VERSION }}
-
-      - name: Run windows native tests
-        run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
 
       - name: Build snapx
         run: ./build.ps1 Snapx-Nupkg -CIBuild -Version ${{ env.SNAPX_VERSION }}

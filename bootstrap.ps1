@@ -46,7 +46,6 @@ $CmakeGenerator = $null
 $CommandCmake = $null
 $CommandDotnet = $null
 $CommandMake = $null
-$CommandSnapx = $null
 $CommandVsWhere = $null
 $CommandGTestsDefaultArguments = @(
     "--gtest_break_on_failure"
@@ -58,7 +57,6 @@ switch -regex ($OSVersion) {
         $CmakeGenerator = "Visual Studio $VisualStudioVersion"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
-        $CommandSnapx = "snapx.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
         $Arch = "win-msvs-$($VisualStudioVersion)-x64"
         $ArchCross = "x86_64-win64-gcc"
@@ -69,7 +67,6 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake"
         $CommandDotnet = "dotnet"
         $CommandMake = "make"
-        $CommandSnapx = "snapx"
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
     }
@@ -163,7 +160,6 @@ function Invoke-Build-Snap {
     Write-Output-Header "Building Snap"
 
     Resolve-Shell-Dependency $CommandDotnet
-    Resolve-Shell-Dependency $CommandSnapx
 
     Invoke-Command-Clean-Dotnet-Directory $SnapDotnetSrcDir
 
@@ -189,7 +185,6 @@ function Invoke-Build-Snapx {
     Write-Output-Header "Building Snapx"
 
     Resolve-Shell-Dependency $CommandDotnet
-    Resolve-Shell-Dependency $CommandSnapx
 
     Invoke-Command-Clean-Dotnet-Directory $SnapxDotnetSrcDir
 
@@ -220,7 +215,6 @@ function Invoke-Build-Snap-Installer {
     Write-Output-Header "Building Snap.Installer"
 
     Resolve-Shell-Dependency $CommandDotnet
-    Resolve-Shell-Dependency $CommandSnapx
 
     $PackerArch = $null
     $SnapInstallerExeName = $null

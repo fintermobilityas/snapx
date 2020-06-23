@@ -201,9 +201,7 @@ function Invoke-Bootstrap-Unix
 
 function Invoke-Bootstrap-Windows {
     Invoke-Build-Native
-    if($CIBuild -eq $false) {
-        Invoke-Native-UnitTests
-    }
+    Invoke-Native-UnitTests
     Invoke-Build-Snap-Installer -DotnetRid win-x64
 }
 

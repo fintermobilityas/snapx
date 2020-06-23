@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Publish-Docker-Image")]
+    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
@@ -185,17 +185,16 @@ function Invoke-Bootstrap-Unix {
     Invoke-Native-UnitTests
     Invoke-Build-Snapx
     Invoke-Build-Snap
-    # TODO: ENABLE ME
-    #Invoke-Dotnet-Unit-Tests
     Invoke-Summary
 }
 
 function Invoke-Bootstrap-Windows {
     Invoke-Build-Native
-    Invoke-Native-UnitTests
+    if($CIBuild -eq $false) {
+        Invoke-Native-UnitTests
+    }
     Invoke-Build-Snapx
     Invoke-Build-Snap
-    #Invoke-Dotnet-Unit-Tests
     Invoke-Summary
 }
 
@@ -307,6 +306,9 @@ switch ($Target) {
     "Snapx" {
         Invoke-Build-Snapx
         Invoke-Summary
+    }
+    "Run-Native-UnitTests" {
+        Invoke-Native-UnitTests
     }
     "Publish-Docker-Image" {
 		$DockerFileContent = Get-Content $DockerFilenamePath

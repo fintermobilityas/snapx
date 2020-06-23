@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using snapx.Core;
 using Snap.Shared.Tests;
 using Xunit;
@@ -20,10 +22,21 @@ namespace Snapx.Tests.Resources
         [Fact]
         public void TestContainsResourcesForAllSupportedPlatforms()
         {
-            Assert.NotNull(_snapxEmbeddedResources.SetupWindows);
-            Assert.NotNull(_snapxEmbeddedResources.SetupLinux);
-            Assert.NotNull(_snapxEmbeddedResources.WarpPackerWindows);
-            Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinux);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.NotNull(_snapxEmbeddedResources.SetupWindows);
+                Assert.NotNull(_snapxEmbeddedResources.WarpPackerWindows);
+                return;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Assert.NotNull(_snapxEmbeddedResources.SetupLinux);
+                Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinux);
+                return;
+            }
+
+            throw new PlatformNotSupportedException();
         }
     }
 }

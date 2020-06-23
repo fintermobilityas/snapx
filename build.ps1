@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Snapx-Nupkg", "Run-Native-UnitTests", "Publish-Docker-Image")]
+    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
@@ -27,6 +27,10 @@ param(
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+$SnapxSrcDir = Join-Path $WorkingDir src/Snapx
+$SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
+$NupkgsDir = Join-Path $WorkingDir nupkgs
+
 . $WorkingDir\common.ps1
 
 $ErrorActionPreference = "Stop";
@@ -108,26 +112,34 @@ function Invoke-Bootstrap-Ps1 {
     )
 }
 
-function Invoke-Install-Snapx-Ps1 {
-    param(
-        [string] $Target,
-        [string[]] $Arguments
+function Invoke-Install-Snapx 
+{
+    Invoke-Command-Colored dotnet @(
+        "tool",
+        "uninstall",
+        "--global",
+        "snapx"
+    ) -IgnoreExitCode
+
+    Invoke-Command-Colored dotnet @(
+        "build"
+        "/p:Version=$Version"
+        "/p:SnapRid=pack"
+        "/p:GeneratePackageOnBuild=true"
+        "--configuration $Configuration"
+        $SnapxCsProjPath
     )
 
-    $DefaultArguments = @(
-        $Target,
-        "-VisualStudioVersion $VisualStudioVersion"
-        "-NetCoreAppVersion $NetCoreAppVersion"
-        "-Version $Version"
-        "-CIBuild:$CIBuild"
-        "-DockerBuild:" + ($DockerBuild ? "True" : "False")
-        $Arguments
+    Invoke-Command-Colored dotnet @(
+        "tool"
+        "update"
+        "snapx"
+        "--global"
+        "--add-source $NupkgsDir"
+        "--version $Version"
     )
 
-    Invoke-Command-Colored pwsh @(
-        "install_snapx.ps1"
-        $DefaultArguments
-    )
+    Resolve-Shell-Dependency snapx
 }
 
 function Invoke-Build-Native {
@@ -174,16 +186,6 @@ function Invoke-Native-UnitTests
 function Invoke-Dotnet-Unit-Tests
 {
     Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration")
-}
-
-function Invoke-Build-Snapx
-{
-    Invoke-Install-Snapx-Ps1 @("-DotnetRid:pack -Configuration $Configuration")
-}
-
-function Invoke-Build-Snapx-Nupkg
-{
-    Invoke-Install-Snapx-Ps1 @("-DotnetRid:pack", "-Configuration $Configuration")
 }
 
 function Invoke-Bootstrap-Unix
@@ -316,11 +318,7 @@ switch ($Target) {
         Invoke-Summary
     }
     "Snapx" {
-        Invoke-Build-Snapx
-        Invoke-Summary
-    }
-    "Snapx-Nupkg" {
-        Invoke-Build-Snapx-Nupkg
+        Invoke-Install-Snapx
         Invoke-Summary
     }
     "Run-Native-UnitTests" {

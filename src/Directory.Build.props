@@ -15,6 +15,7 @@
         <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
+        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
         <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
     </PropertyGroup>
 

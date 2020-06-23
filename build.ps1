@@ -116,6 +116,7 @@ function Invoke-Install-Snapx-Ps1 {
         $Target,
         "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
+        "-Configuration $Configuration"
         "-Version $Version"
         "-CIBuild:$CIBuild"
         "-DockerBuild:" + ($DockerBuild ? "True" : "False")
@@ -168,8 +169,8 @@ function Invoke-Build-Native {
 }
 
 function Invoke-Build-Snap-Installer {
-    Invoke-Bootstrap-Ps1 Snap-Installer @("-DotNetRid linux-x64")
-    Invoke-Bootstrap-Ps1 Snap-Installer @("-DotNetRid win-x64")
+    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid linux-x64")
+    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid win-x64")
 }
 
 function Invoke-Build-Snap {

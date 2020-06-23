@@ -270,13 +270,11 @@ function Invoke-Native-Unit-Tests
             # MINGW
             if($CIBuild -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug\Snap.CoreRun.Tests)
+                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)    
             }
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)
 
             # MSVS
-            if($CIBuild -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
-            }
+            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
             $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun.Tests\Release)
 
             $TestRunnerCount = $Projects.Length
@@ -290,9 +288,7 @@ function Invoke-Native-Unit-Tests
             $Projects = @()
 
             # GCC
-            if($CIBuild -eq $false) {
-                $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
-            }
+            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
             $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release\Snap.CoreRun.Tests)
 
             $TestRunnerCount = $Projects.Length

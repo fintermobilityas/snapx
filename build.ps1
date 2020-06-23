@@ -128,10 +128,7 @@ function Invoke-Install-Snapx-Ps1 {
 function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
 
-        if($CIBuild -eq $false) {
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-        }
-
+        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
         Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
 
         return
@@ -139,11 +136,8 @@ function Invoke-Build-Native {
 
     if ($OSPlatform -eq "Unix") {
 
-        if($CIBuild -eq $false) {
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug -Cross")
-        }
-
+        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
+        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug -Cross")
         Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
         Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Cross -Lto")
 

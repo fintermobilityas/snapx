@@ -90,7 +90,8 @@ function Invoke-Bootstrap-Ps1 {
         $Target,
         "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
-        "-Version $Version",
+        "-Version $Version"
+        "-CIBuild:$CIBuild"
         $Arguments
     )
 

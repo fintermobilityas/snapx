@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup]
     env:
-      SNAPX_VERSION: ${{ steps.setup.outputs.SNAPX_VERSION }}
+      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -106,7 +106,7 @@ jobs:
     runs-on: windows-latest
     needs: [setup, unix]
     env:
-      SNAPX_VERSION: ${{ steps.setup.outputs.SNAPX_VERSION }}
+      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0

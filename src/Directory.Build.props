@@ -17,8 +17,6 @@
         <IsCIBuild Condition="$(IsCIBuild) == ''">false</IsCIBuild>
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
-        <SnapNativeConfiguration Condition="$(IsCIBuild)">Release</SnapNativeConfiguration>
-        <SnapNativeConfiguration Condition="$(SnapNativeConfiguration) == ''">$(Configuration)</SnapNativeConfiguration>
         <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
     </PropertyGroup>
 

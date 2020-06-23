@@ -302,11 +302,15 @@ function Invoke-Native-UnitTests
 
             $Projects = @()
 
-            # MINGW
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\$Configuration\Snap.CoreRun.Tests)
+            $MingwProject = Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\$Configuration\Snap.CoreRun.Tests
+            if($env:SNAPX_CI_WINDOWS_DISABLE_MINGW_TESTS -ne 1) {
+                $Projects += $MingwProject 
+            }
 
-            # MSVS
-            $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-${VisualStudioVersion}-x64\${Configuration}\Snap.CoreRun.Tests\${Configuration})
+            $MsvsProject = Join-Path $WorkingDir build\native\Windows\win-msvs-${VisualStudioVersion}-x64\${Configuration}\Snap.CoreRun.Tests\${Configuration}
+            if($env:SNAPX_CI_WINDOWS_DISABLE_MSVS_TESTS -ne 1) {
+                $Projects += $MsvsProject
+            }
 
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native windows unit tests. Test runner count: $TestRunnerCount"
@@ -319,8 +323,11 @@ function Invoke-Native-UnitTests
             $Projects = @()
 
             # GCC
-            $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\${Configuration}\Snap.CoreRun.Tests)
-
+            $GccProject = Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\${Configuration}\Snap.CoreRun.Tests
+            if($env:SNAPX_CI_UNIX_DISABLE_GCC_TESTS -ne 1) {
+                $Projects += $GccProject
+            }
+            
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
 

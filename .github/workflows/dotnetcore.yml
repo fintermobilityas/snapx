@@ -106,7 +106,6 @@ jobs:
         configuration: [Debug, Release]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-      SNAPX_CI_WINDOWS_DISABLE_MINGW_TESTS: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -143,38 +142,10 @@ jobs:
           name: windows-latest-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
-  mingw:
-    runs-on: windows-latest
-    needs: [setup, linux]
-    name: Run mingw tests
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-    env:
-      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-      SNAPX_CI_WINDOWS_DISABLE_MSVS_TESTS: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.2.0
-        with:
-          lfs: true
-  
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ubuntu-latest-${{ matrix.configuration }}
-          path: ${{ github.workspace }}
- 
-      - name: Setup dotnet using global.json
-        uses: actions/setup-dotnet@v1.5.0
-      
-      - name: Run windows native tests
-        run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
-  
   publish:
     runs-on: ubuntu-latest
     name: Publish
-    needs: [setup, windows, linux, mingw]
+    needs: [setup, windows, linux]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:

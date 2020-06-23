@@ -35,7 +35,7 @@ jobs:
             
   linux:
     runs-on: ubuntu-latest
-    name: Build linux-latest (${{ matrix.configuration }})
+    name: Build Linux (${{ matrix.configuration }})
     needs: [setup]
     strategy:
       matrix:
@@ -126,7 +126,7 @@ jobs:
           SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
           SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
         run: |
-         mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}
@@ -158,7 +158,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v2
         with:
-          name: windows-latest-${{ matrix.configuration }}
+          name: ubuntu-latest-${{ matrix.configuration }}
           path: ${{ github.workspace }}
  
       - name: Setup dotnet using global.json
@@ -180,7 +180,7 @@ jobs:
       - name: Download linux-latest-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: linux-latest-Release
+          name: ubuntu-latest-Release
           path: ${{ github.workspace }}
           
       - name: Download windows-latest-Release artifacts

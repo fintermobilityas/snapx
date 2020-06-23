@@ -37,8 +37,6 @@
 
     <!-- Unix -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'any'">
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-w64-mingw32-gcc/$(Configuration)/Snap.CoreRun/corerun.exe" Link="Resources/corerun/corerun.exe" />
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-w64-mingw32-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.dll" Link="Resources/corerun/libcorerun.dll" />
         <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun" />
         <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun.so" />
     </ItemGroup>

@@ -157,7 +157,6 @@ function Invoke-Build-Native {
                 $UnixArguments += "-Lto"
             }
             Invoke-Bootstrap-Ps1 Native $UnixArguments
-            Invoke-Bootstrap-Ps1 Native @("-Cross", $UnixArguments)
         }
         Default {
             Write-Error "Unsupported OS platform: $OSVersion"

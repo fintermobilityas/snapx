@@ -23,13 +23,6 @@ if(WIN32)
     list(APPEND corerun_tests_SOURCES
         ../Snap.CoreRun.Pal/test/windows.cpp
     )
-    if (CMAKE_COMPILER_IS_GNUCXX)
-        set(CMAKE_RC_COMPILER_INIT windres)
-        ENABLE_LANGUAGE(RC)        
-        list(APPEND corerun_tests_SOURCES
-           src/resources_mingw.rc
-        )
-    endif()
     list(APPEND corerun_tests_DEFINES		
 	    GUID_WINDOWS
     )

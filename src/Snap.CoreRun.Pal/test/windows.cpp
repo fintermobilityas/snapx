@@ -96,7 +96,7 @@ namespace
     TEST(PAL_FS_WINDOWS, pal_fs_get_cwd_ReturnsCurrentWorkingDirectoryForThisProcess)
     {
         const auto process_working_dir = testutils::get_process_cwd();
-#if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS)
         pal_utf16_string process_working_dir_utf16_str(process_working_dir);
         EXPECT_STRNE(process_working_dir_utf16_str.data(), nullptr);
         EXPECT_GT(SetCurrentDirectory(process_working_dir_utf16_str.data()), 0);

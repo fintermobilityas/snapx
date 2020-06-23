@@ -3,7 +3,7 @@
 
 pal_semaphore_machine_wide::pal_semaphore_machine_wide(const std::string& name) :
     m_semaphore(nullptr),
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) 
     m_semaphore_name("Global\\" + name)
 #else
     m_semaphore_name("/" + name)
@@ -16,7 +16,7 @@ pal_semaphore_machine_wide::~pal_semaphore_machine_wide() {
 }
 
 bool pal_semaphore_machine_wide::try_create() {
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string semaphore_name_utf16_string(m_semaphore_name);
     auto mutex = ::OpenMutex(SYNCHRONIZE, TRUE, semaphore_name_utf16_string.data());
     if(mutex != nullptr) {

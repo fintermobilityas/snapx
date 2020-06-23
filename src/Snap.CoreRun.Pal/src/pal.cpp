@@ -79,7 +79,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_isdebuggerpresent()
 
 PAL_API BOOL pal_mitigate_dll_hijacking()
 {
-#if defined(PAL_PLATFORM_WINDOWS) && !defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) 
     LOGV << "Dll mitigation enabled";
 
     // https://github.com/Squirrel/Squirrel.Windows/pull/1444
@@ -288,7 +288,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(const char * filename_in, const
         return FALSE;
     }
 
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
     pal_utf16_string icon_filename_in_utf16_string(icon_filename_in);
     snap::rcedit::ResourceUpdater resourceUpdater;
@@ -317,7 +317,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_has_icon(const char * filename_in)
         return FALSE;
     }
 
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) 
     pal_utf16_string filename_in_utf16_string(filename_in);
     snap::rcedit::ResourceUpdater resourceUpdater;
     if (!resourceUpdater.Load(filename_in_utf16_string.data()))
@@ -750,7 +750,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_set(const char* name_in, const char*
     {
         return FALSE;
     }
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) 
     pal_utf16_string name_in_utf16_string(name_in);
     pal_utf16_string value_in_utf16_string(value_in == nullptr ? "" : value_in);
     const auto success = SetEnvironmentVariable(name_in_utf16_string.data(), value_in_utf16_string.empty() ? nullptr : value_in_utf16_string.data());
@@ -770,7 +770,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
         return FALSE;
     }
 
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
     const auto buffer_size = 65535;
     const auto buffer = new wchar_t[buffer_size];

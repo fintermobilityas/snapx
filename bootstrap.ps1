@@ -6,8 +6,6 @@ param(
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [switch] $Cross,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [switch] $Lto,
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $DotNetRid = $null,
@@ -40,7 +38,6 @@ $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $ProcessorCount = [Environment]::ProcessorCount
 $Arch = $null
-$ArchCross = $null
 
 $CmakeGenerator = $null
 $CommandCmake = $null
@@ -58,8 +55,7 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
-        $Arch = "win-msvs-$($VisualStudioVersion)-x64"
-        $ArchCross = "x86_64-win64-gcc"
+        $Arch = "win-msvs-${VisualStudioVersion}-x64"
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -68,7 +64,6 @@ switch -regex ($OSVersion) {
         $CommandDotnet = "dotnet"
         $CommandMake = "make"
         $Arch = "x86_64-linux-gcc"
-        $ArchCross = "x86_64-w64-mingw32-gcc"
     }
     default {
         Write-Error "Unsupported os: $OSVersion"
@@ -77,9 +72,6 @@ switch -regex ($OSVersion) {
 
 $TargetArch = $Arch
 $TargetArchDotNet = $NetCoreAppVersion
-if ($Cross) {
-    $TargetArch = $ArchCross
-}
 
 # Projects
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
@@ -123,14 +115,6 @@ function Invoke-Build-Native {
     }
     else {
         $CmakeArguments += "-DCMAKE_BUILD_TYPE=Release"
-    }
-
-    if ($Cross -eq $TRUE -and $OsPlatform -eq "Unix") {
-        $CmakeToolChainFile = Join-Path $WorkingDir cmake\Toolchain-x86_64-w64-mingw32.cmake
-        $CmakeArguments += "-DCMAKE_TOOLCHAIN_FILE=""$CmakeToolChainFile"""
-    }
-    elseif ($Cross -eq $TRUE) {
-        Write-Error "Cross compiling is not support on: $OSPlatform"
     }
 
     Write-Output "Build src directory: $SnapCoreRunSrcDir"
@@ -302,11 +286,6 @@ function Invoke-Native-UnitTests
 
             $Projects = @()
 
-            $MingwProject = Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\$Configuration\Snap.CoreRun.Tests
-            if($env:SNAPX_CI_WINDOWS_DISABLE_MINGW_TESTS -ne 1) {
-                $Projects += $MingwProject 
-            }
-
             $MsvsProject = Join-Path $WorkingDir build\native\Windows\win-msvs-${VisualStudioVersion}-x64\${Configuration}\Snap.CoreRun.Tests\${Configuration}
             if($env:SNAPX_CI_WINDOWS_DISABLE_MSVS_TESTS -ne 1) {
                 $Projects += $MsvsProject
@@ -322,7 +301,6 @@ function Invoke-Native-UnitTests
         "Unix" {
             $Projects = @()
 
-            # GCC
             $GccProject = Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\${Configuration}\Snap.CoreRun.Tests
             if($env:SNAPX_CI_UNIX_DISABLE_GCC_TESTS -ne 1) {
                 $Projects += $GccProject
@@ -383,16 +361,11 @@ Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
 Write-Output "Docker: $DockerBuild"
 Write-Output "CI Build: $CIBuild"
+Write-Output "Native target arch: $Arch"
 
-if ($Cross) {
-    Write-Output "Native target arch: $ArchCross"
-}
-else {
-    Write-Output "Native target arch: $Arch"
-    if($OSPlatform -eq "Windows")
-    {
-        Write-Output "Visual Studio Version: $VisualStudioVersion"
-    }
+if($OSPlatform -eq "Windows")
+{
+    Write-Output "Visual Studio Version: $VisualStudioVersion"
 }
 
 switch ($OSPlatform) {
@@ -414,12 +387,7 @@ switch ($Target) {
     "Native" {
         switch ($OSPlatform) {
             "Windows" {
-                if ($Cross -eq $FALSE) {
-                    Invoke-Build-Native
-                }
-                else {
-                    Write-Error "Cross compiling is not supported on Windows."
-                }
+                Invoke-Build-Native
             }
             "Unix" {
                 Invoke-Build-Native

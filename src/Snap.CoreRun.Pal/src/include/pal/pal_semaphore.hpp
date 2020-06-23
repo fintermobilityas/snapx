@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS)
 #include <synchapi.h>
 #elif defined(PAL_PLATFORM_LINUX)
 #include <fcntl.h>           /* For O_* constants */
@@ -12,7 +12,7 @@
 
 class pal_semaphore_machine_wide final {
 private:
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_MINGW)
+#if defined(PAL_PLATFORM_WINDOWS) 
     HANDLE m_semaphore;
 #elif defined(PAL_PLATFORM_LINUX)
     sem_t* m_semaphore;

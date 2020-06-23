@@ -1,7 +1,7 @@
 #include "main.hpp"
 
 
-// MSVS, MINGW ENTRYPOINT
+// MSVS
 // -->
 #if defined(PAL_PLATFORM_WINDOWS) 
 #include <shellapi.h>

@@ -9,8 +9,6 @@ function(pal_mitigate_dll_hijacking_for_targets targets)
             set(PAL_WIN32_DELAYLOAD_DLLS "user32.dll;advapi32.dll;shell32.dll;ole32.dll;oleaut32.dll;urlmon.dll")
             set_property(TARGET ${targets} PROPERTY LINK_FLAGS "/DELAYLOAD:${PAL_WIN32_DELAYLOAD_DLLS}")
             message(STATUS "Dll mitigation enabled for targets: ${targets}")
-        elseif (CMAKE_COMPILER_IS_GNUCXX)
-            message(WARNING "Dll mitigation disabled. Does anyone know how this could be achieved when targeting mingw? Then please submit a pull request on Github :)")
         endif()
     else()
         message(FATAL_ERROR "Dll hijack mitigation is only supported on Windows")
@@ -54,16 +52,6 @@ add_library(pal SHARED
         )
 
 if(WIN32)
-
-    if (CMAKE_COMPILER_IS_GNUCXX)
-        list(APPEND pal_DEFINES
-                PAL_PLATFORM_MINGW
-                )
-        list(APPEND pal_static_LIBS
-                -static-libgcc
-                -static-libstdc++
-                )
-    endif()
 
     list(APPEND pal_DEFINES
             PAL_PLATFORM_WINDOWS

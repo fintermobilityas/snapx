@@ -217,8 +217,6 @@ namespace snapx
                 return 1;
             }
 
-            const int pushRetries = 3;
-
             using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
             var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();
             var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);

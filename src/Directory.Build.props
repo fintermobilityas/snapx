@@ -18,6 +18,7 @@
         <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
         <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
         <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
+        <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -41,7 +42,7 @@
         <LangVersion>8.0</LangVersion>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(SnapBootstrap)">
+    <PropertyGroup Condition="$(SnapRid) == 'none'">
         <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
     </PropertyGroup>
 

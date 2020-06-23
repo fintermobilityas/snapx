@@ -1,7 +1,5 @@
 param(
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [switch] $Bootstrap,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerBuild,
@@ -15,7 +13,9 @@ param(
     [ValidateSet("netcoreapp3.1")]
     [string] $NetCoreAppVersion = "netcoreapp3.1",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [string] $Version = "0.0.0"
+    [string] $Version = "0.0.0",
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [string] $Rid = "any"
 )
 
 $ErrorActionPreference = "Stop";
@@ -29,7 +29,9 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 
-$Properties = @()
+$Properties = @(
+    "/p:SnapRid=$Rid"
+)
 
 $SnapxSrcDir = Join-Path $WorkingDir src/Snapx
 $NupkgsDir = Join-Path $WorkingDir nupkgs
@@ -55,11 +57,6 @@ switch -regex ($OSVersion) {
     default {
         Write-Error "Unsupported os: $OSVersion"
     }
-}
-
-if($Bootstrap)
-{
-    $Properties += "/p:SnapBootstrap=true"
 }
 
 Invoke-Command-Clean-Dotnet-Directory $SnapxSrcDir

@@ -3,6 +3,9 @@ param(
     [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [ValidateSet("Debug", "Release")]
+    [string] $Configuration = "Release",
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerVersion = "2.5.4",
@@ -128,18 +131,35 @@ function Invoke-Install-Snapx-Ps1 {
 function Invoke-Build-Native {
     if ($OSPlatform -eq "Windows") {
 
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
+        if($CIBuild) {
+            $WindowsArguments = @("-Configuration $Configuration")
+            if($Configuration -eq "Release") {
+                $WindowsArguments += "-Lto"
+            }
+
+            Invoke-Bootstrap-Ps1 Native $WindowsArguments
+        } else {
+            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
+            Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
+        }
 
         return
     }
 
     if ($OSPlatform -eq "Unix") {
 
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Debug -Cross")
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
-        Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Cross -Lto")
+        if($CIBuild) {
+            $UnixArguments = @("-Configuration $Configuration")
+            if($Configuration -eq "Release") {
+                $UnixArguments += "-Lto"
+            }
+
+            Invoke-Bootstrap-Ps1 Native $UnixArguments
+            Invoke-Bootstrap-Ps1 Native @("-Cross", $UnixArguments)
+        } else {
+            Invoke-Bootstrap-Ps1 Native @("-Configuration Debug")
+            Invoke-Bootstrap-Ps1 Native @("-Configuration Release -Lto")
+        }
 
         return
     }

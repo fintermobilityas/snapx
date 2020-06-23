@@ -23,7 +23,7 @@ param(
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [string] $NupkgRid = "any"
+    [string] $DotnetRid = "any"
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -198,12 +198,12 @@ function Invoke-Build-Snapx
 {
     Invoke-Install-Snapx-Ps1 @("-Rid:none", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
-    Invoke-Install-Snapx-Ps1 @("-Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-Rid:$DotnetRid -Configuration $Configuration")
 }
 
 function Invoke-Build-Snapx-Nupkg
 {
-    Invoke-Install-Snapx-Ps1 @("-Rid:$NupkgRid", "-Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-Rid:$DotnetRid", "-Configuration $Configuration")
 }
 
 function Invoke-Bootstrap-Unix

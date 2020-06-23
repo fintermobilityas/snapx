@@ -89,41 +89,105 @@ function Invoke-Command-Clean-Dotnet-Directory {
     }
 
 }
+function Invoke-Exit
+{
+	param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Message
+    )
+
+    Write-Host
+    Write-Host $Message -ForegroundColor Red
+	Write-Host
+
+	exit 1
+}
 function Invoke-Command-Colored {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $Filename,
         [Parameter(Position = 1, ValueFromPipeline = $true)]
-        [string[]] $Arguments
+        [string[]] $Arguments,
+		[Parameter(Position = 2, ValueFromPipeline = $true)]
+        [Hashtable[]] $EnvironmentVariables,
+		[Parameter(Position = 3, ValueFromPipeline = $true)]
+        [switch] $StartProcess,
+		[Parameter(Position = 4, ValueFromPipeline = $true)]
+        [switch] $IgnoreExitCode
     )
-    $CommandStr = $Filename
-    $DashsesRepeatCount = $Filename.Length
 
-    if($Arguments.Length -gt 0)
-    {
-        $ArgumentsStr = $Arguments -join " "
-        $CommandStr = "$Filename $ArgumentsStr"
-        $DashsesRepeatCount = $CommandStr.Length
+	$CommandStr = $Filename
+	$ArgumentsStr = $null
+
+	if($Arguments.Length -gt 0)
+	{
+		$ArgumentsStr = $Arguments -join " "
+		$CommandStr = "$Filename $ArgumentsStr"
+	}
+
+	$BufferWidth = 80
+
+	try {
+		$BufferWidthTmp = [console]::BufferWidth
+		if($BufferWidthTmp -gt 0) {
+			$BufferWidth = $BufferWidthTmp
+		}
+	} catch {
+		# Ignore
+	}
+
+	$DashsesRepeatCount = $CommandStr.Length
+	if($DashsesRepeatCount -gt $BufferWidth) {
+		$DashsesRepeatCount = $BufferWidth
+	}
+
+	$DashesStr = "-" * $DashsesRepeatCount
+
+	Write-Output-Colored -Message $DashesStr -ForegroundColor White
+	Write-Output-Colored -Message $CommandStr -ForegroundColor Green
+	Write-Output-Colored -Message $DashesStr -ForegroundColor White
+
+	if($StartProcess -eq $false) {
+		Invoke-Expression $CommandStr
+
+		if($IgnoreExitCode -eq $false) {
+			if($LASTEXITCODE -ne 0) {
+				Invoke-Exit "Command returned a non-zero exit code"
+			}
+		}
+
+		return
+	}
+
+	$StartInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $StartInfo.FileName = $Filename
+    $StartInfo.Arguments = $Arguments
+
+	$StartInfo.EnvironmentVariables.Clear()
+
+	foreach($EnvironmentVariable in $EnvironmentVariables) {
+		$Key = $EnvironmentVariable.Key
+		$Value = $EnvironmentVariable.Value
+        $StartInfo.EnvironmentVariables.Add($Key, $Value)
+	}
+
+    Get-ChildItem -Path env:* | ForEach-Object {
+        $StartInfo.EnvironmentVariables.Add($_.Name, $_.Value)
     }
 
-    try {
-        # NB! Accessing this property during a CI build will throw.
-        # Ref issue: https://github.com/Microsoft/azure-pipelines-tasks/issues/9719
-        if([console]::BufferWidth -gt 0)
-        {
-            $DashsesRepeatCount = [console]::BufferWidth
-        }
-    } catch {
-        $DashsesRepeatCount = 80
-    }
+    $StartInfo.UseShellExecute = $false
+    $StartInfo.CreateNoWindow = $false
 
-    $DashesStr = "-" * $DashsesRepeatCount
+    $Process = New-Object System.Diagnostics.Process
+    $Process.StartInfo = $StartInfo
+    $Process.Start() | Out-Null
+    $Process.WaitForExit()
 
-    Write-Output-Colored -Message $DashesStr -ForegroundColor White
-    Write-Output-Colored -Message $CommandStr -ForegroundColor Green
-    Write-Output-Colored -Message $DashesStr -ForegroundColor White
-
-    Invoke-Expression $CommandStr
+	if($IgnoreExitCode -eq $false) {
+		if($Process.ExitCode -ne 0) {
+			Invoke-Exit "Command returned a non-zero exit code"
+		}
+	}
 }
 function Get-Msvs-Toolchain-Instance
 {
@@ -197,12 +261,10 @@ function Use-Msvs-Toolchain
     if ($null -eq $Instance) {
         if($VisualStudioVersion -eq 16)
         {
-            Write-Error "Visual Studio 2019 was not found on this computer"
-            exit 1
+            Invoke-Exit "Visual Studio 2019 was not found on this computer"
         } elseif($VisualStudioVersion -eq 15)
         {
-            Write-Error "Visual Studio 2017 was not found on this computer"
-            exit 1
+            Invoke-Exit "Visual Studio 2017 was not found on this computer"
         }
     } else {
         if($VisualStudioVersion -eq 16)
@@ -211,8 +273,7 @@ function Use-Msvs-Toolchain
         } elseif($VisualStudioVersion -eq 15) {
             Write-Output "Using Visual Studio 2017 msvs toolset"
         } else {
-            Write-Error "Unknown Visual Studio version: $VisualStudioVersion"
-            exit 1
+            Invoke-Exit "Unknown Visual Studio version: $VisualStudioVersion"
         }
     }
 }

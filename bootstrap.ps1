@@ -2,23 +2,25 @@ param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
     [ValidateSet("Native", "Snap", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Native",
-    [Parameter(Position = 1, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
-    [Parameter(Position = 2, ValueFromPipeline = $true)]
-    [boolean] $Cross = $FALSE,
-    [Parameter(Position = 3, ValueFromPipeline = $true)]
-    [boolean] $Lto = $FALSE,
-    [Parameter(Position = 4, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $Cross,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $Lto,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $DotNetRid = $null,
-    [Parameter(Position = 5, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [Validateset(16)]
     [int] $VisualStudioVersion = 16,
-    [Parameter(Position = 6, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("netcoreapp3.1")]
     [string] $NetCoreAppVersion = "netcoreapp3.1",
-    [Parameter(Position = 7, ValueFromPipeline = $true)]
-    [string] $Version = "0.0.0"
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [string] $Version = "0.0.0",
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $CIBuild
 )
 
 $ErrorActionPreference = "Stop";
@@ -44,12 +46,9 @@ $CommandDotnet = $null
 $CommandMake = $null
 $CommandSnapx = $null
 $CommandVsWhere = $null
-$CommandGTestsDefaultArguments = @()
-
-if($env:SNAPX_CI_BUILD -eq $false)
-{
-    $CommandGTestsDefaultArguments += "--gtest_break_on_failure"
-}
+$CommandGTestsDefaultArguments = @(
+    "--gtest_break_on_failure"
+)
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
@@ -62,7 +61,7 @@ switch -regex ($OSVersion) {
         $Arch = "win-msvs-$($VisualStudioVersion)-x64"
         $ArchCross = "x86_64-win64-gcc"
 
-        if($env:SNAPX_CI_BUILD -eq $true) {
+        if($CIBuild -eq $true) {
             $CommandSnapx = Join-Path $ToolsDir snapx\snapx.exe
         }
     }
@@ -76,7 +75,7 @@ switch -regex ($OSVersion) {
         $Arch = "x86_64-linux-gcc"
         $ArchCross = "x86_64-w64-mingw32-gcc"
 
-        if($env:SNAPX_CI_BUILD -eq $true) {
+        if($CIBuild -eq $true) {
             $CommandSnapx = Join-Path $ToolsDir snapx\snapx
         }
     }
@@ -275,13 +274,13 @@ function Invoke-Native-Unit-Tests
             $Projects = @()
 
             # MINGW
-            if($env:SNAPX_CI_BUILD -eq $false) {
+            if($CIBuild -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Debug\Snap.CoreRun.Tests)
             }
             $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-w64-mingw32-gcc\Release\Snap.CoreRun.Tests)
 
             # MSVS
-            if($env:SNAPX_CI_BUILD -eq $false) {
+            if($CIBuild -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Debug\Snap.CoreRun.Tests\Debug)
             }
             $Projects += (Join-Path $WorkingDir build\native\Windows\win-msvs-$($VisualStudioVersion)-x64\Release\Snap.CoreRun.Tests\Release)
@@ -297,7 +296,7 @@ function Invoke-Native-Unit-Tests
             $Projects = @()
 
             # GCC
-            if($env:SNAPX_CI_BUILD -eq $false) {
+            if($CIBuild -eq $false) {
                 $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Debug\Snap.CoreRun.Tests)
             }
             $Projects += (Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\Release\Snap.CoreRun.Tests)
@@ -356,7 +355,7 @@ Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
 Write-Output "Docker: ${env:SNAPX_DOCKER_BUILD}"
-Write-Output "CI Build: ${env:SNAPX_CI_BUILD}"
+Write-Output "CI Build: $CIBuild"
 
 if ($Cross) {
     Write-Output "Native target arch: $ArchCross"

@@ -1,21 +1,25 @@
 param(
-    [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [bool] $Bootstrap = $false,
-    [Parameter(Position = 1, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $Bootstrap,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $CIBuild,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [switch] $DockerBuild,
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
-    [Parameter(Position = 2, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [Validateset(16)]
     [int] $VisualStudioVersion = 16,
-    [Parameter(Position = 3, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("netcoreapp3.1")]
     [string] $NetCoreAppVersion = "netcoreapp3.1",
-    [Parameter(Position = 4, ValueFromPipeline = $true)]
+    [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0"
 )
 
-$ErrorActionPreference = "Stop"; 
-$ConfirmPreference = "None"; 
+$ErrorActionPreference = "Stop";
+$ConfirmPreference = "None";
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 . $WorkingDir\common.ps1
@@ -27,7 +31,6 @@ $OSVersion = [Environment]::OSVersion
 
 $Properties = @()
 
-$ToolInstallDir = Join-Path $WorkingDir tools\snapx
 $SnapxSrcDir = Join-Path $WorkingDir src/Snapx
 $NupkgsDir = Join-Path $WorkingDir nupkgs
 
@@ -48,7 +51,7 @@ switch -regex ($OSVersion) {
         $OSPlatform = "Unix"
         $CommandSnapx = "snapx"
         $CommandDotnet = "dotnet"
-    }	
+    }
     default {
         Write-Error "Unsupported os: $OSVersion"
     }
@@ -59,26 +62,15 @@ if($Bootstrap)
     $Properties += "/p:SnapBootstrap=true"
 }
 
-if($env:SNAPX_CI_BUILD -eq $true) {
-    if(Test-Path $ToolInstallDir) {
-        Invoke-Command-Colored $CommandDotnet @(
-            "tool",
-            "uninstall",
-            "--tool-path",
-            "$ToolInstallDir",
-            "snapx"
-        )
-    }
-} else {
-    Invoke-Command-Colored $CommandDotnet @(
-        "tool",
-        "uninstall",
-        "--global",
-        "snapx"
-    )
-}
-
 Invoke-Command-Clean-Dotnet-Directory $SnapxSrcDir
+
+Invoke-Command-Colored $CommandDotnet @(
+    "tool",
+    "uninstall",
+    "--global",
+    "snapx"
+) -IgnoreExitCode
+
 Invoke-Command-Colored $CommandDotnet @(
     "build"
     "/p:Version=$Version"
@@ -86,6 +78,7 @@ Invoke-Command-Colored $CommandDotnet @(
     "$SnapxSrcDir"
     "-f ${NetCoreAppVersion} {0}" -f ($Properties -join " ")
 )
+
 Invoke-Command-Colored $CommandDotnet @(
     "pack",
     "/p:PackageVersion=$Version"
@@ -95,24 +88,13 @@ Invoke-Command-Colored $CommandDotnet @(
     "$SnapxSrcDir"
 )
 
-$CommandSnapx = $CommandSnapx
-if($env:SNAPX_CI_BUILD -eq $true) {
-    Invoke-Command-Colored $CommandDotnet @(
-        "tool",
-        "install", 
-        "--tool-path $ToolInstallDir",
-        "--add-source $NupkgsDir",
-        "--version $Version"
-        "snapx"
-    )
-    $CommandSnapx = Join-Path $ToolInstallDir $CommandSnapx
-} else {
-    Invoke-Command-Colored $CommandDotnet @(
-        "tool",
-        "install",
-        "--global",
-        "--add-source $NupkgsDir",
-        "--version $Version"
-        "snapx"
-    )
-}
+Invoke-Command-Colored $CommandDotnet @(
+    "tool"
+    "update"
+    "snapx"
+    "--global"
+    "--add-source $NupkgsDir"
+    "--version $Version"
+)
+
+Resolve-Shell-Dependency $CommandSnapx

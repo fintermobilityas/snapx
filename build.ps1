@@ -153,31 +153,13 @@ function Invoke-Build-Native {
     }
 }
 
-function Invoke-Build-Snap-Installer {
-
-    $Rids = @()
-    if($CIBuild) {
-        switch ($OSPlatform) {
-            "Unix" {
-                $Rids += "linux-x64"
-            }
-            "Windows" {
-                $Rids += "win-x64"
-            }
-            Default {
-                Write-Error "Unsupported os: $OSPlatform"
-            }
-        }
-    } else {
-        $Rids += "linux-x64"
-        $Rids += "win-x64"
-    }
-
-    $Rids | ForEach-Object {
-        $Rid = $_
-        Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid $Rid")
-    }
-
+function Invoke-Build-Snap-Installer 
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $DotnetRid
+    )
+    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid $DotnetRid")
 }
 
 function Invoke-Build-Snap {
@@ -214,7 +196,7 @@ function Invoke-Bootstrap-Unix
 
     Invoke-Build-Native
     Invoke-Native-UnitTests
-    Invoke-Build-Snap-Installer
+    Invoke-Build-Snap-Installer -DotnetRid linux-x64
 }
 
 function Invoke-Bootstrap-Windows {
@@ -222,7 +204,7 @@ function Invoke-Bootstrap-Windows {
     if($CIBuild -eq $false) {
         Invoke-Native-UnitTests
     }
-    Invoke-Build-Snap-Installer
+    Invoke-Build-Snap-Installer -DotnetRid win-x64
 }
 
 function Invoke-Summary {
@@ -336,7 +318,7 @@ switch ($Target) {
         Invoke-Summary
     }
     "Snap-Installer" {
-        Invoke-Build-Snap-Installer
+        Invoke-Build-Snap-Installer -DotnetRid $DotnetRid
         Invoke-Summary
     }
     "Snapx" {

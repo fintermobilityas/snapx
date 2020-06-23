@@ -15,7 +15,7 @@ param(
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [string] $Rid = "any"
+    [string] $DotnetRid = "any"
 )
 
 $ErrorActionPreference = "Stop";
@@ -30,7 +30,7 @@ $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 
 $Properties = @(
-    "/p:SnapRid=$Rid"
+    "/p:SnapRid=$DotnetRid"
 )
 
 $SnapxSrcDir = Join-Path $WorkingDir src/Snapx

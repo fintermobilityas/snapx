@@ -196,14 +196,14 @@ function Invoke-Dotnet-Unit-Tests
 
 function Invoke-Build-Snapx
 {
-    Invoke-Install-Snapx-Ps1 @("-Rid:none", "-Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-DotnetRid:none", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
-    Invoke-Install-Snapx-Ps1 @("-Rid:$DotnetRid -Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-DotnetRid:$DotnetRid -Configuration $Configuration")
 }
 
 function Invoke-Build-Snapx-Nupkg
 {
-    Invoke-Install-Snapx-Ps1 @("-Rid:$DotnetRid", "-Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-DotnetRid:$DotnetRid", "-Configuration $Configuration")
 }
 
 function Invoke-Bootstrap-Unix
@@ -258,6 +258,7 @@ function Invoke-Docker
         "-VisualStudioVersionStr $VisualStudioVersionStr"
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
+        "-DotnetRid $DotnetRid"
     )
 
     $EnvironmentVariables = @(

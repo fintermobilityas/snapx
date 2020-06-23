@@ -262,6 +262,7 @@ function Invoke-Build-Snap-Installer {
         "--framework $TargetArchDotNet"
         "--self-contained true"
         "--output $SnapInstallerDotnetBuildPublishDir"
+        "--configuration $Configuration"
     )
 
     if ($Rid -eq "win-x64") {

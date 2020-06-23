@@ -34,11 +34,12 @@ jobs:
             
   build:
     runs-on: ${{ matrix.os }}
-    name: Build ${{ matrix.os }}
+    name: Build ${{ matrix.os }} (${{ matrix.configuration }})
     needs: [setup]
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest]
+        configuration: [Debug, Release]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
@@ -68,10 +69,10 @@ jobs:
             $target = "Bootstrap-Windows";
           }
           
-          ./build.ps1 $target -CIBuild -Version ${{ env.SNAPX_VERSION }}
+          ./build.ps1 $target -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }}
     
       - name: Collect artifacts 
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.configuration == 'Release'
         env:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/netcoreapp3.1/Release/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun
@@ -104,8 +105,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         env:
           SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/netcoreapp3.1/Release/publish
-          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/Release/Snap.CoreRun/Release
-          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/Release/Snap.CoreRun.Pal/Release
+          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
+          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip
@@ -120,7 +121,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.os }}
+          name: ${{ matrix.os }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
           
   publish:
@@ -133,16 +134,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2.2.0
 
-      - name: Download linux-latest artifacts
+      - name: Download linux-latest-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: linux-latest
+          name: linux-latest-Release
           path: ${{ github.workspace }}
           
-      - name: Download windows-latest artifacts
+      - name: Download windows-latest-Debug artifacts
         uses: actions/download-artifact@v2
         with:
-          name: windows-latest
+          name: windows-latest-Debug
+          path: ${{ github.workspace }}
+
+      - name: Download windows-latest-Release artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-latest-Release
           path: ${{ github.workspace }}
           
       - name: Setup dotnet using global.json

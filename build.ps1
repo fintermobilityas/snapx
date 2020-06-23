@@ -166,8 +166,6 @@ function Invoke-Build-Snap-Installer {
                 Write-Error "Unsupported os: $OSPlatform"
             }
         }        
-
-        return;
     } else {
         $Rids += "linux-x64"
         $Rids += "win-x64"

@@ -180,7 +180,7 @@ function Invoke-Build-Snapx
 }
 
 function Invoke-Bootstrap-Unix {
-    if($env:BUILD_IS_DOCKER -eq $false)
+    if($env:BUILD_IS_DOCKER -ne 1)
     {
         Invoke-Docker -Entrypoint "Bootstrap-Unix"
         return

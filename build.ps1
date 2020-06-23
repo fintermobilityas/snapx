@@ -196,14 +196,13 @@ function Invoke-Dotnet-Unit-Tests
 
 function Invoke-Build-Snapx
 {
-    Invoke-Install-Snapx-Ps1 @("-DotnetRid:none", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
-    Invoke-Install-Snapx-Ps1 @("-DotnetRid:$DotnetRid -Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-DotnetRid:pack -Configuration $Configuration")
 }
 
 function Invoke-Build-Snapx-Nupkg
 {
-    Invoke-Install-Snapx-Ps1 @("-DotnetRid:$DotnetRid", "-Configuration $Configuration")
+    Invoke-Install-Snapx-Ps1 @("-DotnetRid:pack", "-Configuration $Configuration")
 }
 
 function Invoke-Bootstrap-Unix
@@ -216,7 +215,7 @@ function Invoke-Bootstrap-Unix
 
     Invoke-Build-Native
     Invoke-Native-UnitTests
-    Invoke-Build-Snapx
+    Invoke-Build-Snap-Installer
 }
 
 function Invoke-Bootstrap-Windows {
@@ -224,7 +223,7 @@ function Invoke-Bootstrap-Windows {
     if($CIBuild -eq $false) {
         Invoke-Native-UnitTests
     }
-    Invoke-Build-Snapx
+    Invoke-Build-Snap-Installer
 }
 
 function Invoke-Summary {

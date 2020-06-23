@@ -41,18 +41,11 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-
-        <!-- win-x64 -->
-        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" Condition="$(SnapRid) == 'any' OR $(SnapRid) == 'win-x64'" />
-        <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" Condition="$(SnapRid) == 'any' OR $(SnapRid) == 'win-x64'" />
-        <!-- /win-x64 -->
-
-        <!-- linux-x64 -->
-        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" Condition="$(SnapRid) == 'any' OR $(SnapRid) == 'linux-x64'" />
-        <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" Condition="$(SnapRid) == 'any' OR $(SnapRid) == 'linux-x64'" />
-        <!-- /linux-x64 -->
-
+    <ItemGroup Condition="$(SnapRid) != 'none'">
+        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
+        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>
 
 </Project>

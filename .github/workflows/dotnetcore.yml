@@ -34,7 +34,7 @@ jobs:
           echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
             
   linux:
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
     name: Build linux-latest (${{ matrix.configuration }})
     needs: [setup]
     strategy:

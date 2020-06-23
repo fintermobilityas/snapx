@@ -121,7 +121,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.os }}-${{ matrix.configuration}
+          name: ${{ matrix.os }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
           
   publish:

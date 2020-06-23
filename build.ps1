@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
+    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Snapx-Nupkg", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
@@ -194,6 +194,16 @@ function Invoke-Dotnet-Unit-Tests
 
 function Invoke-Build-Snapx
 {
+    param(
+        [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true)]
+        [switch] $SkipInstall
+    )
+
+    if($SkipInstall) {
+        Invoke-Bootstrap-Ps1 Snapx @()
+        return
+    }
+
     Invoke-Install-Snapx-Ps1 @("-Bootstrap", "-Configuration $Configuration")
     Invoke-Build-Snap-Installer
     Invoke-Install-Snapx-Ps1 @("-Configuration $Configuration")
@@ -331,6 +341,10 @@ switch ($Target) {
     }
     "Snapx" {
         Invoke-Build-Snapx
+        Invoke-Summary
+    }
+    "Snapx-Nupkg" {
+        Invoke-Build-Snapx -SkipInstall
         Invoke-Summary
     }
     "Run-Native-UnitTests" {

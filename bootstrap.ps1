@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Native", "Snap", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
+    [ValidateSet("Native", "Snap", "Snapx", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target = "Native",
     [Parameter(ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
@@ -88,6 +88,7 @@ if ($Cross) {
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
 $SnapDotnetSrcDir = Join-Path $WorkingDir src\Snap
 $SnapInstallerDotnetSrcDir = Join-Path $WorkingDir src\Snap.Installer
+$SnapxDotnetSrcDir = Join-Path $WorkingDir src\Snapx
 
 function Invoke-Build-Native {
     Write-Output-Header "Building native dependencies"
@@ -183,6 +184,33 @@ function Invoke-Build-Snap {
         "$SnapDotnetSrcDir"
     )
 }
+
+function Invoke-Build-Snapx {
+    Write-Output-Header "Building Snapx"
+
+    Resolve-Shell-Dependency $CommandDotnet
+    Resolve-Shell-Dependency $CommandSnapx
+
+    Invoke-Command-Clean-Dotnet-Directory $SnapxDotnetSrcDir
+
+    Invoke-Command-Colored $CommandDotnet @(
+        ("build {0}" -f (Join-Path $SnapxDotnetSrcDir Snapx.csproj))
+        "/p:Version=$Version",
+        "/p:SnapNupkg=true",
+        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
+        "--configuration $Configuration"
+    )
+
+    Invoke-Command-Colored $CommandDotnet @(
+        "pack",
+        "/p:PackageVersion=$Version",
+        "--no-build",
+        "--output ${NupkgsDir}",
+        "--configuration $Configuration",
+        "$SnapxDotnetSrcDir"
+    )
+}
+
 function Invoke-Build-Snap-Installer {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -389,6 +417,9 @@ switch ($Target) {
     }
     "Snap" {
         Invoke-Build-Snap
+    }
+    "Snapx" {
+        Invoke-Build-Snapx
     }
     "Snap-Installer" {
         Invoke-Build-Snap-Installer -Rid $DotNetRid

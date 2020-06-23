@@ -57,7 +57,7 @@ jobs:
       - name: Build & Run Tests
         timeout-minutes: 10
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" Bootstrap-CI-Unix -CIBuild -Version ${{ env.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" Bootstrap-Unix -CIBuild -Version ${{ env.SNAPX_VERSION }}
     
       - name: Collect artifacts
         env:
@@ -127,7 +127,7 @@ jobs:
       - name: Build & Run Tests
         timeout-minutes: 10
         run:  
-          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" Bootstrap-CI-Windows -CIBuild -Version ${{ env.SNAPX_VERSION }}
+          pwsh -command ".\${{ env.GITHUB_WORKSPACE }}\build.ps1" Bootstrap-Windows -CIBuild -Version ${{ env.SNAPX_VERSION }}
 
       - name: Upload artifacts
         if: success()

@@ -144,7 +144,7 @@ jobs:
 
   mingw:
     runs-on: windows-latest
-    needs: [linux]
+    needs: [setup, linux]
     name: Run mingw tests
     strategy:
       matrix:

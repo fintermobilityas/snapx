@@ -40,6 +40,10 @@ namespace Snap.Core.Resources
 
         internal SnapEmbeddedResources()
         {
+#if SNAP_BOOTSTRAP
+            return;
+#endif
+
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
 
             _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun.exe");
@@ -129,6 +133,10 @@ namespace Snap.Core.Resources
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (snapCryptoProvider == null) throw new ArgumentNullException(nameof(snapCryptoProvider));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+            #if SNAP_BOOTSTRAP
+            return;
+            #endif
 
             bool ShouldOverwrite(Stream lhsStream, string filename)
             {

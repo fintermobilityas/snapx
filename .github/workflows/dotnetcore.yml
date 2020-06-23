@@ -32,10 +32,13 @@ jobs:
           echo "::set-env name=SNAPX_VERSION::$SNAPX_VERSION"
           echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
             
-  linux-latest:
-    runs-on: ubuntu-latest
-    name: Linux
+  build:
+    runs-on: ${{ matrix.os }}
+    name: Build ${{ matrix.os }}
     needs: [setup]
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
@@ -55,9 +58,20 @@ jobs:
           
       - name: Build and test
         timeout-minutes: 10
-        run: .\build.ps1 Bootstrap-Unix -CIBuild -Version ${{ env.SNAPX_VERSION }}
+        shell: pwsh
+        run: |
+          $matrix_os = "${{ matrix.os}}";
+          $target = $null;
+          if($matrix_os -eq "ubuntu-latest") {
+            $target = "Bootstrap-Unix";
+          } elseif($matrix_os -eq "windows-latest") {
+            $target = "Bootstrap-Windows";
+          }
+          
+          ./build.ps1 $target -CIBuild -Version ${{ env.SNAPX_VERSION }}
     
-      - name: Collect artifacts
+      - name: Collect artifacts 
+        if: matrix.os == 'ubuntu-latest'
         env:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/netcoreapp3.1/Release/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/Release/Snap.CoreRun
@@ -86,35 +100,8 @@ jobs:
           cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe
           cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe
 
-      - name: Upload artifacts
-        if: success()
-        uses: actions/upload-artifact@v2
-        with:
-          name: linux-latest
-          path: ${{ github.workspace }}/artifacts/**/*
-
-  windows-latest:
-    runs-on: windows-latest
-    name: Windows
-    needs: [setup]
-    env:
-      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.2.0
-        with:
-          fetch-depth: 0
-          lfs: true
-          submodules: true
-
-      - name: Setup dotnet using global.json
-        uses: actions/setup-dotnet@v1.5.0
-        
-      - name: Build and test
-        timeout-minutes: 10
-        run: .\build.ps1 Bootstrap-Windows -CIBuild -Version ${{ env.SNAPX_VERSION }}
-    
       - name: Collect artifacts
+        if: matrix.os == 'windows-latest'
         env:
           SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/netcoreapp3.1/Release/publish
           SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSMVS_TOOLSET_VERSION }}-x64/Release/Snap.CoreRun/Release
@@ -133,31 +120,43 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: windows-latest
+          name: ${{ matrix.os }}
           path: ${{ github.workspace }}/artifacts/**/*
           
   publish:
     runs-on: windows-latest
     name: Publish
-    needs: [setup, linux-latest, windows-latest]
+    needs: [setup, build]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
-        
+
+      - name: Download linux-latest artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-latest
+          path: ${{ github.workspace }}
+          
+      - name: Download windows-latest artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-latest
+          path: ${{ github.workspace }}
+          
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
-
-      - name: Run windows native tests
-        run: .\build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
-
-      - name: Build snapx
-        run: .\build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
     
       - name: Setup gpr v${{ env.GPR_VERSION }} 
         shell: pwsh
         run: dotnet tool update gpr --global --version ${{ env.GPR_VERSION }}
+
+      - name: Run windows native tests
+        run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
+
+      - name: Build snapx
+        run: ./build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
            
       - name: Push nuget packages
         run: | 

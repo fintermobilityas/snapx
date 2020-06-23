@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
@@ -32,7 +33,7 @@ namespace Snap.Tests.AnyOS.Windows
             Assert.NotEmpty(_snapOs.SpecialFolders.ApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.LocalApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.DesktopDirectory);
-            #if PLATFORM_UNIX || CI_BUILD
+            #if PLATFORM_UNIX 
                 Assert.Empty(_snapOs.SpecialFolders.StartupDirectory);
                 #if !PLATFORM_WINDOWS
                 Assert.Empty(_snapOs.SpecialFolders.StartMenu);

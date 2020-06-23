@@ -255,8 +255,7 @@ function Invoke-Build-Snap-Installer {
     Invoke-Command-Colored $CommandDotnet @(
         ("publish {0}" -f (Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj))
         "/p:PublishTrimmed=true"
-        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
-        "/p:SnapNativeConfiguration=$Configuration"
+        "/p:VisualStudioVersion=$VisualStudioVersion"
         "/p:Version=$Version"
         "--runtime $Rid"
         "--framework $TargetArchDotNet"

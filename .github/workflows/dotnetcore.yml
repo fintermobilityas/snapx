@@ -70,7 +70,7 @@ jobs:
 
           switch($matrix_os)
           {
-            "ubuntu_latest" {
+            "ubuntu-latest" {
               $target = "Bootstrap-Unix";
             }
             "windows-latest" {

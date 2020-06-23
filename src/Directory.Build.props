@@ -1,27 +1,12 @@
 <Project>
 
     <PropertyGroup>
-        <SnapNupkg Condition="$(SnapNupkg) == ''">false</SnapNupkg>
-        <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
-        <Version Condition="$(Version) == ''">0.0.0</Version>
-    </PropertyGroup>
-
-   <PropertyGroup>
-        <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
-        <OsPlatform Condition="'$(OsPlatform)' == '' AND !$([MSBuild]::IsOsPlatform('Windows'))">Unix</OsPlatform>
-        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
-        <IsNetCoreApp Condition="'$(IsNetCoreApp)' == ''">false</IsNetCoreApp>
-        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
-        <IsNetStandard Condition="'$(IsNetStandard)' == ''">false</IsNetStandard>
-        <IsNetFullFramework Condition="'$(IsNetStandard)' == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
-        <IsNetFullFramework Condition="'$(IsNetFullFramework)' == ''">false</IsNetFullFramework>
-        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
-        <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
+        <LangVersion>8.0</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
         <Authors>Finter Mobility As</Authors>
-        <Product>Snap</Product>
+        <Product>Snapx</Product>
         <Copyright>Copyright © Finter Mobility As</Copyright>
         <NeutralLanguage>en-US</NeutralLanguage>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -30,17 +15,30 @@
         <RepositoryUrl>https://github.com/fintermobilityas/snapx.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <IsPackable>false</IsPackable>
+        <IsTestProject>false</IsTestProject>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)..\nupkgs</PackageOutputPath>
-        <GeneratePackageOnBuild Condition="$(SnapNupkg)">true</GeneratePackageOnBuild>
-        <GeneratePackageOnBuild Condition="$(GeneratePackageOnBuild) == ''">false</GeneratePackageOnBuild>
+    </PropertyGroup>
+
+   <PropertyGroup>
+        <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
+        <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Linux'))">Unix</OsPlatform>
+        <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Osx'))">MACOSX</OsPlatform>
+        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
+        <IsNetCoreApp Condition="$(IsNetCoreApp) == ''">false</IsNetCoreApp>
+        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
+        <IsNetStandard Condition="$(IsNetStandard) == ''">false</IsNetStandard>
+        <IsNetFullFramework Condition="$(IsNetStandard) == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
+        <IsNetFullFramework Condition="$(IsNetFullFramework) == ''">false</IsNetFullFramework>
     </PropertyGroup>
 
     <PropertyGroup>
-        <LangVersion>8.0</LangVersion>
+        <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
+        <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
+        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(SnapRid) == 'none'">
+    <PropertyGroup Condition="$(SnapBootstrap)">
         <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
     </PropertyGroup>
 
@@ -50,6 +48,10 @@
 
     <PropertyGroup Condition="$(OsPlatform) == 'Unix'">
         <DefineConstants>$(DefineConstants);PLATFORM_UNIX;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(OsPlatform) == 'MACOSX'">
+        <DefineConstants>$(DefineConstants);PLATFORM_MAXOSX;</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(IsNetStandard)">

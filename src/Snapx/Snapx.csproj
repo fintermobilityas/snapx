@@ -9,7 +9,6 @@
         <PackageId>snapx</PackageId>
         <Description>Snapx is a powerful .NET cross-platform tool with built-in support for delta updates, release channels (test, staging, production etc.) and staged rollouts via nuget.</Description>
         <IsPackable>true</IsPackable>
-        <IsTestProject>false</IsTestProject>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -41,7 +40,7 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(SnapRid) != 'none'">
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">
         <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/Release/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />

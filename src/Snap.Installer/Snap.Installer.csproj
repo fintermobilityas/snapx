@@ -4,10 +4,9 @@
     <Import Project="Snap.Installer.Deps.targets" />
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
+        <OutputType>Exe</OutputType>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
-        <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
         <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     </PropertyGroup>

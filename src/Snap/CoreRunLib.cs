@@ -58,6 +58,10 @@ namespace Snap
 
             var filename = filesystem.PathCombine(workingDirectory, "libcorerun");
 
+            #if SNAP_BOOTSTRAP
+            return;
+            #endif
+
             if (osPlatform == OSPlatform.Windows)
             {
                 filename += ".dll";

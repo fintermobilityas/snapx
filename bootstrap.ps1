@@ -166,7 +166,6 @@ function Invoke-Build-Snap {
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapDotnetSrcDir Snap.csproj))
         "/p:Version=$Version",
-        "/p:SnapNupkg=true",
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
     )
@@ -191,7 +190,6 @@ function Invoke-Build-Snapx {
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapxDotnetSrcDir Snapx.csproj))
         "/p:Version=$Version",
-        "/p:SnapNupkg=true",
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
     )
@@ -236,6 +234,8 @@ function Invoke-Build-Snap-Installer {
     $SnapInstallerDotnetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
     $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir $SnapInstallerExeName
     $SnapInstallerExeZipAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir "Setup-$Rid.zip"
+    $SnapInstallerCsProj = Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj
+    $SnapxCsProj = Join-Path $SnapxDotnetSrcDir Snapx.csproj
 
     Write-Output "Build src directory: $SnapInstallerDotnetSrcDir"
     Write-Output "Build output directory: $SnapInstallerDotnetBuildPublishDir"
@@ -247,7 +247,7 @@ function Invoke-Build-Snap-Installer {
     Invoke-Command-Clean-Dotnet-Directory $SnapInstallerDotnetSrcDir
 
     Invoke-Command-Colored $CommandDotnet @(
-        ("publish {0}" -f (Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj))
+        "publish $SnapInstallerCsProj"
         "/p:PublishTrimmed=true"
         "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "/p:Version=$Version"
@@ -257,6 +257,27 @@ function Invoke-Build-Snap-Installer {
         "--output $SnapInstallerDotnetBuildPublishDir"
         "--configuration $Configuration"
     )
+
+    if ($Rid -eq "win-x64") {
+        Invoke-Command-Colored $CommandDotnet @(
+            "build $SnapxCsProj" 
+            "-p:SnapBootstrap=True"
+            "--configuration $Configuration"
+            "--framework $TargetArchDotNet"
+        )
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "run"
+            "--project $SnapxCsProj"
+            "--configuration $Configuration"
+            "--framework $TargetArchDotNet"
+            "--no-build"
+            "--"
+            "rcedit"
+            "$SnapInstallerExeAbsolutePath"
+            "--gui-app"
+        )
+    }
 
     if ($OSPlatform -ne "Windows") {
         Invoke-Command-Colored chmod @("+x $SnapInstallerExeAbsolutePath")

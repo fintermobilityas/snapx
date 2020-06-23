@@ -185,7 +185,7 @@ jobs:
         run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
 
       - name: Build snapx
-        run: ./build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
+        run: ./build.ps1 Snapx-Nupkg -CIBuild -Version ${{ env.SNAPX_VERSION }}
            
       - name: Push nuget packages
         run: | 

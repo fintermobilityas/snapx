@@ -3,7 +3,7 @@ name: snapx
 on: push
 
 env:
-  GPR_VERSION: 0.1.125
+  GPR_VERSION: 0.1.217
   GITVERSION_VERSION: 5.3.4
   MSVS_TOOLSET_VERSION: 16
   DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
@@ -106,6 +106,7 @@ jobs:
         configuration: [Debug, Release]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+      SNAPX_CI_WINDOWS_DISABLE_MINGW_TESTS: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -151,6 +152,7 @@ jobs:
         configuration: [Debug, Release]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+      SNAPX_CI_WINDOWS_DISABLE_MSVS_TESTS: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -170,7 +172,7 @@ jobs:
         run: ./build.ps1 Run-Native-UnitTests -CIBuild -Version ${{ env.SNAPX_VERSION }}
   
   publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     name: Publish
     needs: [setup, windows, linux, mingw]
     env:
@@ -198,13 +200,11 @@ jobs:
         shell: pwsh
         run: dotnet tool update gpr --global --version ${{ env.GPR_VERSION }}
 
-      - name: Build snapx
-        run: ./build.ps1 Snapx-Nupkg -CIBuild -Version ${{ env.SNAPX_VERSION }}
+      - name: Build nupkgs
+        run: ./build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
            
       - name: Push nuget packages
-        run: | 
-          gpr push ${{ github.workspace }}/nupkgs/snapx.${{ env.SNAPX_VERSION }}.nupkg --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}
-          gpr push ${{ github.workspace }}/nupkgs/Snapx.Core.${{ env.SNAPX_VERSION }}.nupkg --api-key ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}
+        run: gpr push nupkgs/**/*.nupkg
 
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

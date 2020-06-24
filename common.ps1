@@ -187,94 +187,36 @@ function Invoke-Command-Colored {
 		if($Process.ExitCode -ne 0) {
 			Invoke-Exit "Command returned a non-zero exit code"
 		}
-	}
+    }
+    
 }
-function Get-Msvs-Toolchain-Instance
+
+function Invoke-Configure-Msvs-Toolchain
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [ValidateSet(16)]
-        [int] $VisualStudioVersion
+        [int] $VisualStudioVersion,
+        [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $CommandVsWhere
     )
 
-    $Ids = 'Community', 'Professional', 'Enterprise', 'BuildTools' | ForEach-Object { 'Microsoft.VisualStudio.Product.' + $_ }
-    $Instance = & $CommandVsWhere -version $VisualStudioVersion -products $ids -requires 'Microsoft.Component.MSBuild' -format json `
-        | convertfrom-json `
-        | select-object -first 1
+    Resolve-Shell-Dependency $CommandVsWhere
 
-    return $Instance
-}
+    $Path = & $CommandVsWhere -version $VisualStudioVersion -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
-function Get-Is-String-True
-{
-    param(
-        [Parameter(Position = 0, ValueFromPipeline = $true)]
-        $Value
-    )
+    if($Path) {
+        $Path = Join-Path $Path Common7\Tools\VsDevCmd.bat
 
-    if($Value -ieq "true" -or ($Value -ieq "$true"))
-    {
-        return $true
-    }
-
-    if($Value -eq "1")
-    {
-        return $true
-    }
-
-    return $false
-}
-
-function Get-Is-String-False
-{
-    param(
-        [Parameter(Position = 0, ValueFromPipeline = $true)]
-        $Value
-    )
-
-    if($Value -ieq "false" -or ($Value -ieq "$false"))
-    {
-        return $true
-    }
-
-    if($Value -eq "0")
-    {
-        return $true
-    }
-
-    return $false
-}
-
-function Use-Msvs-Toolchain
-{
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [ValidateSet(15, 16)]
-        [int] $VisualStudioVersion
-    )
-
-    Write-Output-Header "Configuring msvs toolchain"
-
-    $script:CommandMsBuild = $null
-
-    $Instance = Get-Msvs-Toolchain-Instance $VisualStudioVersion
-    if ($null -eq $Instance) {
-        if($VisualStudioVersion -eq 16)
-        {
-            Invoke-Exit "Visual Studio 2019 was not found on this computer"
-        } elseif($VisualStudioVersion -eq 15)
-        {
-            Invoke-Exit "Visual Studio 2017 was not found on this computer"
+        if(-not (Test-Path $Path)) {
+            Invoke-Exit "Unable to find: $Path"
         }
+
+        cmd /s /c """$Path"" $args && set" | Where-Object { $_ -match '(\w+)=(.*)' } | ForEach-Object {
+            $null = New-item -Force -Path "env:\$($Matches[1])" -Value $Matches[2]
+        }
+        
     } else {
-        if($VisualStudioVersion -eq 16)
-        {
-            Write-Output "Using Visual Studio 2019 msvs toolset"
-        } elseif($VisualStudioVersion -eq 15) {
-            Write-Output "Using Visual Studio 2017 msvs toolset"
-        } else {
-            Invoke-Exit "Unknown Visual Studio version: $VisualStudioVersion"
-        }
+        Invoke-Exit "Unable to find visual studio: $VisualStudioVersion"
     }
 }
 
@@ -303,16 +245,4 @@ function Invoke-Google-Tests
     } finally {
         Pop-Location
     }
-}
-
-function Convert-Boolean-MSBuild {
-    param(
-        [boolean] $Value
-    )
-
-    if ($true -eq $Value) {
-        return "true"
-    }
-
-    return "false"
 }

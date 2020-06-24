@@ -371,8 +371,7 @@ if($OSPlatform -eq "Windows")
 switch ($OSPlatform) {
     "Windows" {
         Resolve-Windows $OSPlatform
-        Resolve-Shell-Dependency $CommandVsWhere
-        Use-Msvs-Toolchain -VisualStudioVersion $VisualStudioVersion
+        Invoke-Configure-Msvs-Toolchain $VisualStudioVersion $CommandVsWhere        
     }
     "Unix" {
         Resolve-Unix $OSPlatform

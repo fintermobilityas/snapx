@@ -7,7 +7,7 @@
         <RootNamespace>snapx</RootNamespace>
         <AssemblyName>snapx</AssemblyName>
         <PackageId>snapx</PackageId>
-        <Description>Snapx is a powerful .NET cross-platform tool with built-in support for delta updates, release channels (test, staging, production etc.) and staged rollouts via nuget.</Description>
+        <Description>snapx is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions.</Description>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

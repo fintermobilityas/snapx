@@ -16,10 +16,16 @@
 
 Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
 
-## Supported .NET frameworks
+## .NET frameworks supported
 
-- .NET Core >= 3.1
-- .NET Full Framework >= 4.7.2
+- .NET Core >= 3.1 (netcoreapp3.1)
+- .NET Full Framework >= 4.7.2 (net472)
+
+## Platforms supported
+
+- Windows x64 [7.1 SP 1, 10]
+- Ubuntu Desktop x64 [16.04, 20.04]
+- Ubuntu Server x64 [16.04, 20.04]
 
 ## Using snapx
 

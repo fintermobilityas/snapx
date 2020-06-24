@@ -111,7 +111,7 @@ function Invoke-Install-Snapx
     Invoke-Command-Colored dotnet @(
         "build"
         "/p:Version=$Version"
-        "/p:SnapRid=none"
+        "/p:SnapRid=pack"
         "/p:GeneratePackageOnBuild=true"
         "--configuration $Configuration"
         $SnapCsProjPath

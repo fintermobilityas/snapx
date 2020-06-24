@@ -104,13 +104,6 @@ namespace Snap.Shared.Tests
             return this;
         }
         
-        public SnapReleaseBuilder AddDelayLoadedNuspecItem([NotNull] string targetPath)
-        {
-            if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
-            _nuspec.Add(targetPath, null);
-            return this;
-        }
-
         public Dictionary<string, IDisposable> GetNuspecItems()
         {
             return _nuspec;

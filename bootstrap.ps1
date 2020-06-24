@@ -222,7 +222,11 @@ function Invoke-Build-Snap-Installer {
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
-    Invoke-Command-Clean-Dotnet-Directory $SnapInstallerDotnetSrcDir
+    Invoke-Command-Colored $CommandDotnet @("clean $SnapInstallerDotnetSrcDir") -IgnoreExitCode
+    
+    if(Test-Path $SnapInstallerDotnetBuildPublishDir) {
+        Get-Item $SnapInstallerDotnetBuildPublishDir | Remove-Item -Recurse -Force
+    }
 
     Invoke-Command-Colored $CommandDotnet @(
         "publish $SnapInstallerCsProj"

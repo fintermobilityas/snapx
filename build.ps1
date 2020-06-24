@@ -48,20 +48,17 @@ $DotnetVersion = Get-Content global.json | ConvertFrom-Json | Select-Object -Exp
 $DockerBuild = $env:BUILD_IS_DOCKER -eq 1
 
 $CommandDocker = $null
-$CommandDockerCli = $null
 $CommandGit = $null
 
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
         $CommandDocker = "docker.exe"
-        $CommandDockerCli = Join-Path $env:ProgramFiles docker\docker\dockercli.exe
         $CommandGit = "git.exe"
     }
     "^Unix" {
         $OSPlatform = "Unix"
         $CommandDocker = "docker"
-        $CommandDockerCli = "dockercli"
         $CommandGit = "git"
     }
     default {
@@ -209,10 +206,6 @@ function Invoke-Docker
     Write-Output-Header "Docker entrypoint: $Entrypoint"
 
     Resolve-Shell-Dependency $CommandDocker
-
-    if($OSPlatform -eq "Windows") {
-        Invoke-Command-Colored "& '$CommandDockerCli'" @("-SwitchLinuxEngine")
-    }
 
     $DockerParameters = @(
 		"-Target ${Target}"

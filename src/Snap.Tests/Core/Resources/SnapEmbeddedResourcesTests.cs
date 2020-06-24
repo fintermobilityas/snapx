@@ -84,8 +84,12 @@ namespace Snap.Tests.Core.Resources
         }
         
         [Theory]
+        #if PLATFORM_WINDOWS
         [InlineData("WINDOWS", "libcorerun.dll")]
+        #endif
+        #if PLATFORM_UNIX
         [InlineData("LINUX", "libcorerun.so")]
+        #endif
         public async Task TestExtractCoreRunLibAsync(string osPlatformStr, string expectedDllFilename)
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);

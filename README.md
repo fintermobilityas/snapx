@@ -30,6 +30,11 @@ All available commands has usage examples if you append `snapx [command] --help`
 
 ![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
 
+## Code of Conduct
+
+This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
+For more information see the [Code of Conduct](https://github.com/fintermobilityas/snapx/blob/develop/CODE_OF_CONDUCT.md). 
+
 ## Sponsors
 <p align="center">
 <a href="https://www.finterjobs.com" target="_blank"><img src="https://static.wixstatic.com/media/49c5ac_e5c089f7be224d6e92eb3f2f5edc3535~mv2.png/v1/crop/x_173,y_545,w_938,h_425/fill/w_189,h_87,al_c,q_85,usm_0.66_1.00_0.01/Finter%20Mobility%20AS%20gjennomsiktig%20bakgrun.webp"></a>

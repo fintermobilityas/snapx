@@ -827,7 +827,7 @@ namespace snapx
             }
 
             var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory,
-                $"Setup-{snapAppTargetRid}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
+                $"Setup-{snapAppTargetRid}-{snapApp.Id}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
 
             if (offline)
             {

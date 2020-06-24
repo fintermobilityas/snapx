@@ -62,14 +62,14 @@ jobs:
         run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
     
       - name: GTest
-        timeout-minutes: 5
+        timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
 
-      - name: dotnet test
-        timeout-minutes: 5
-        shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
+      #- name: dotnet test
+      #  timeout-minutes: 10
+      #  shell: pwsh
+      #  run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
 
       - name: Collect artifacts 
         env:
@@ -113,10 +113,19 @@ jobs:
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
 
-      - name: Build and test
-        timeout-minutes: 10
+      - name: Build 
         run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
-        
+      
+      - name: GTest
+        timeout-minutes: 10
+        shell: pwsh
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
+
+      - name: dotnet test
+        timeout-minutes: 10
+        shell: pwsh
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
+
       - name: Collect artifacts 
         env:
           SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish

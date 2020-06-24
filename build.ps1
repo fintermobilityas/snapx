@@ -299,25 +299,25 @@ switch ($Target) {
         Invoke-Summary
     }
     "Run-Native-UnitTests" {
-        if($env:BUILD_IS_DOCKER -ne 1) {
+        if(($CIBuild) -or ($env:BUILD_IS_DOCKER -eq 1)) {
+            Invoke-Native-UnitTests
+        } elseif($env:BUILD_IS_DOCKER -ne 1) {
             Invoke-Docker -Entrypoint "Run-Native-UnitTests"
-            if($CIBuild -eq $false) {
-                Invoke-Native-UnitTests
-            }
-            return
+            Invoke-Native-UnitTests
+        } else {
+            Invoke-Exit "Unknown error running native unit tests. OS: $OSPlatform"
         }
-        Invoke-Native-UnitTests
         Invoke-Summary
     }
     "Run-Dotnet-UnitTests" {
-        if($env:BUILD_IS_DOCKER -ne 1) {
+        if(($CIBuild) -or ($env:BUILD_IS_DOCKER -eq 1)) {
+            Invoke-Dotnet-UnitTests
+        } elseif($env:BUILD_IS_DOCKER -ne 1) {
             Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
-            if($CIBuild -eq $false) {
-                Invoke-Dotnet-UnitTests
-            }
-            return
+            Invoke-Dotnet-UnitTests
+        } else {
+            Invoke-Exit "Unknown error running native unit tests. OS: $OSPlatform"
         }
-        Invoke-Dotnet-UnitTests
         Invoke-Summary
     }
     "Publish-Docker-Image" {

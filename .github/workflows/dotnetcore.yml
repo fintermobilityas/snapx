@@ -3,14 +3,12 @@ name: snapx
 on: push
 
 env:
-  GPR_VERSION: 0.1.217
   GITVERSION_VERSION: 5.3.6
   MSVS_TOOLSET_VERSION: 16
   DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-  FINTER_NUGET_FEED: https://nuget.pkg.github.com/fintermobilityas/index.json        
-  
+
 jobs:
 
   setup:    
@@ -175,16 +173,17 @@ jobs:
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
     
-      - name: Setup gpr v${{ env.GPR_VERSION }} 
-        shell: pwsh
-        run: dotnet tool update gpr --global --version ${{ env.GPR_VERSION }}
-
       - name: Build nupkgs
         shell: pwsh
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release
            
       - name: Push nuget packages
-        run: gpr push nupkgs/**/*.nupkg -k ${{ secrets.FINTER_NUGET_GITHUB_PACKAGES_TOKEN }}
+        run: |
+          $nupkgs = Get-ChildItem ".\${{ env.GITHUB_WORKSPACE }}\nupkgs" -Filter *.nupkg | Select-Object -ExpandProperty FullName
+          
+          $nupkgs | ForEach-Object -Parallel {
+            dotnet nuget push $_ --source nuget.org --api-key ${{ secrets.PETERSUNDE_NUGET_ORG_API_KEY }}       
+          }
 
       - name: Create github release tag
         if: github.ref == 'refs/heads/master'

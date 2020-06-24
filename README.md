@@ -1,8 +1,5 @@
 # Snapx 
 
-| [docs](.) / README.md |
-|:---|
-
 ![dependabot](https://api.dependabot.com/badges/status?host=github&repo=fintermobilityas/snapx)
 
 | Build server | Platforms | Build status |

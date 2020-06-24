@@ -12,12 +12,11 @@
         <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp3.1</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
-        <Description>Snapx support library. This library should be installed into your Console/WPF/Winforms/Avalonia project.</Description>
     </PropertyGroup>
 
     <PropertyGroup>
         <PackageId>Snapx.Core</PackageId>
-        <Description>Core package for the Snapx project.</Description>
+        <Description>Snapx support library. This library should be installed into your Console/WPF/Winforms/Avalonia project.</Description>
     </PropertyGroup>
 
     <ItemGroup>

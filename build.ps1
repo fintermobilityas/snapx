@@ -30,9 +30,12 @@ param(
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 . $WorkingDir\common.ps1
 
-$SnapxSrcDir = Join-Path $WorkingDir src/Snapx
-$SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
 $NupkgsDir = Join-Path $WorkingDir nupkgs
+$SnapSrcDir = Join-Path $WorkingDir src/Snap
+$SnapxSrcDir = Join-Path $WorkingDir src/Snapx
+
+$SnapCsProjPath = Join-Path $SnapSrcDir Snap.csproj
+$SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
 
 # Environment variables
 
@@ -104,6 +107,15 @@ function Invoke-Install-Snapx
         "--global",
         "snapx"
     ) -IgnoreExitCode
+
+    Invoke-Command-Colored dotnet @(
+        "build"
+        "/p:Version=$Version"
+        "/p:SnapRid=none"
+        "/p:GeneratePackageOnBuild=true"
+        "--configuration $Configuration"
+        $SnapCsProjPath
+    )
 
     Invoke-Command-Colored dotnet @(
         "build"

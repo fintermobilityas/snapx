@@ -663,13 +663,6 @@ namespace snapx
             var snapChannel = snapApp.GetCurrentChannelOrThrow();
 
             logger.Info($"Preparing to build {installerPrefix} installer for channel: {snapChannel.Name}. Version: {snapApp.Version}.");
-            
-            if (snapApp.Target.Os != OSPlatform.Windows
-                && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                logger.Error("Skipping building installer because of a limitation in warp-packer where file permissions are not preserved: https://github.com/dgiagio/warp/issues/23.");
-                return (false, true, null);
-            }
 
             var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); } };
 

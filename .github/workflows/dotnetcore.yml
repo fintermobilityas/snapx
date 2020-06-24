@@ -147,6 +147,7 @@ jobs:
           path: ${{ github.workspace }}/artifacts/**/*
 
   publish:
+    if: github.ref == 'refs/head/develop' || github.ref == 'refs/head/master'
     runs-on: ubuntu-latest
     name: Publish
     needs: [setup, windows, linux]

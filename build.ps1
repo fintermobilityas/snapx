@@ -180,13 +180,11 @@ function Invoke-Bootstrap-Unix
     }
 
     Invoke-Build-Native
-    Invoke-Native-UnitTests
     Invoke-Build-Snap-Installer -DotnetRid linux-x64
 }
 
 function Invoke-Bootstrap-Windows {
     Invoke-Build-Native
-    Invoke-Native-UnitTests
     Invoke-Build-Snap-Installer -DotnetRid win-x64
 }
 
@@ -301,10 +299,24 @@ switch ($Target) {
         Invoke-Summary
     }
     "Run-Native-UnitTests" {
+        if($env:BUILD_IS_DOCKER -ne 1) {
+            Invoke-Docker -Entrypoint "Run-Native-UnitTests"
+            if($CIBuild -eq $false) {
+                Invoke-Native-UnitTests
+            }
+            return
+        }
         Invoke-Native-UnitTests
         Invoke-Summary
     }
     "Run-Dotnet-UnitTests" {
+        if($env:BUILD_IS_DOCKER -ne 1) {
+            Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
+            if($CIBuild -eq $false) {
+                Invoke-Dotnet-UnitTests
+            }
+            return
+        }
         Invoke-Dotnet-UnitTests
         Invoke-Summary
     }

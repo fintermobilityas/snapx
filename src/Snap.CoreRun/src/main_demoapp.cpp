@@ -62,7 +62,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
 
     auto json_str = ss.str();
     auto data_len = json_str.size() + 1;
-    auto data = new char[data_len];
+    auto* data = new char[data_len];
 #if defined(PAL_PLATFORM_WINDOWS)
     strcpy_s(data, data_len, json_str.c_str());
 #else
@@ -79,7 +79,7 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     return exit_code;
 }
 
-#if WIN32
+#if defined(WIN32)
 #include <windows.h>
 #include <shellapi.h>
 

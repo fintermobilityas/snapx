@@ -10,7 +10,6 @@
 #include <csignal>
 #endif
 
-#include <iostream>
 #include <memory>
 
 static std::unique_ptr<pal_semaphore_machine_wide> corerun_supervisor_semaphore;
@@ -92,7 +91,7 @@ inline int corerun_command_supervise(
         return 1;
     }
 
-    auto process_name = std::make_unique<char*>(nullptr);
+    const auto process_name = std::make_unique<char*>(nullptr);
     if(!pal_process_get_name(process_name.get())) {
         LOGE << "Unable to get current process name";
         return 1;
@@ -114,7 +113,7 @@ inline int corerun_command_supervise(
         return 1;
     }
 
-    const auto corerun_dash_dash = "--corerun-";
+    const auto* const corerun_dash_dash = "--corerun-";
 
     auto index = 0;
     for (const auto &value : arguments) {

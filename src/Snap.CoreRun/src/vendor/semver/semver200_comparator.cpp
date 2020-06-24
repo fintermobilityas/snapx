@@ -72,7 +72,7 @@ namespace version {
 
 		// Compare prerelease identifiers based on their types.
 		inline int compare_prerel_identifiers(const Prerelease_identifier& l, const Prerelease_identifier& r) {
-			auto cmp = comparators.at({ l.second, r.second });
+            const auto cmp = comparators.at({ l.second, r.second });
 			return cmp(l.first, r.first);
 		}
 
@@ -94,7 +94,7 @@ namespace version {
 
 		// Compare prerelease by looking at each identifier: numeric ones are compared as numbers,
 		// alphanum as ASCII strings.
-		auto shorter = min(l.prerelease_ids.size(), r.prerelease_ids.size());
+        const auto shorter = min(l.prerelease_ids.size(), r.prerelease_ids.size());
 		for (size_t i = 0; i < shorter; i++) {
 			cmp = compare_prerel_identifiers(l.prerelease_ids[i], r.prerelease_ids[i]);
 			if (cmp != 0) return cmp;

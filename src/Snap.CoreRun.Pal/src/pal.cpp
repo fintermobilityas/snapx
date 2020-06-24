@@ -117,7 +117,7 @@ PAL_API BOOL pal_mitigate_dll_hijacking()
         // DLLS from the SYSTEM32 directory.
         SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);
 
-        const auto h_kernel32 = LoadLibrary(L"kernel32.dll");
+        auto* const h_kernel32 = LoadLibrary(L"kernel32.dll");
         assert(h_kernel32 != NULL);
 
         using SetDefaultDllDirectoriesFN = BOOL(WINAPI*)(DWORD DirectoryFlags);
@@ -160,7 +160,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_load_library(const char * name_in, BOOL 
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string name_in_utf16_string(name_in);
 
-    const auto h_module = LoadLibraryEx(name_in_utf16_string.data(), nullptr, 0);
+    auto* const h_module = LoadLibraryEx(name_in_utf16_string.data(), nullptr, 0);
     if (!h_module)
     {
         LOGE << "Failed load dll: " << name_in_utf16_string << ". Error code: " << GetLastError();
@@ -226,7 +226,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_getprocaddress(void* instance_in, const 
     }
 
 #if defined(PAL_PLATFORM_WINDOWS)
-    const auto h_module = static_cast<HMODULE>(instance_in);
+    auto* const h_module = static_cast<HMODULE>(instance_in);
     const auto h_module_ptr_out = GetProcAddress(h_module, name_in);
     if (h_module_ptr_out == nullptr)
     {
@@ -376,7 +376,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_get_real_path(char **real_path_o
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 {
 #if defined(PAL_PLATFORM_WINDOWS)
-    const auto pss = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    auto* const pss = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
     bool is_running = false;
     if (pss != INVALID_HANDLE_VALUE)
@@ -412,7 +412,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_process_is_running(pal_pid_t pid)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_process_kill(pal_pid_t pid)
 {
 #if defined(PAL_PLATFORM_WINDOWS)
-    const auto process = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    auto* const process = OpenProcess(SYNCHRONIZE, FALSE, pid);
     auto process_killed = FALSE;
     if (process != nullptr)
     {
@@ -773,7 +773,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_env_get(const char * environment_variabl
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string environment_variable_in_utf16_string(environment_variable_in);
     const auto buffer_size = 65535;
-    const auto buffer = new wchar_t[buffer_size];
+    auto* const buffer = new wchar_t[buffer_size];
     const auto actual_len = GetEnvironmentVariable(environment_variable_in_utf16_string.data(), buffer, buffer_size);
     if (actual_len <= 0)
     {
@@ -1106,7 +1106,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
     path_root_utf16_string.append(extension_filter_in_utf16_string.c_str());
 
     WIN32_FIND_DATA file;
-    const auto h_file = FindFirstFile(path_root_utf16_string.data(), &file);
+    auto* const h_file = FindFirstFile(path_root_utf16_string.data(), &file);
     if (h_file == INVALID_HANDLE_VALUE)
     {
         return FALSE;
@@ -1264,7 +1264,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_list_impl(const char * path_in, const
 
     *paths_out_len = paths.size();
 
-    const auto paths_array = new char*[*paths_out_len];
+    auto* const paths_array = new char*[*paths_out_len];
 
     for (auto i = 0u; i < *paths_out_len; i++)
     {
@@ -1356,13 +1356,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string path_in_utf16_string(filename_in);
 
-    const auto h_file = CreateFile(path_in_utf16_string.data(),
-        GENERIC_READ,
-        FILE_SHARE_READ,
-        nullptr,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr);
+    auto* const h_file = CreateFile(path_in_utf16_string.data(),
+                                    GENERIC_READ,
+                                    FILE_SHARE_READ,
+                                    nullptr,
+                                    OPEN_EXISTING,
+                                    FILE_ATTRIBUTE_NORMAL,
+                                    nullptr);
 
     if (h_file == INVALID_HANDLE_VALUE)
     {
@@ -1397,13 +1397,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string path_in_utf16_string(filename_in);
 
-    const auto h_file = CreateFile(path_in_utf16_string.data(),
-        GENERIC_READ,
-        FILE_SHARE_READ,
-        nullptr,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr);
+    auto* const h_file = CreateFile(path_in_utf16_string.data(),
+                                    GENERIC_READ,
+                                    FILE_SHARE_READ,
+                                    nullptr,
+                                    OPEN_EXISTING,
+                                    FILE_ATTRIBUTE_NORMAL,
+                                    nullptr);
 
     if (h_file == INVALID_HANDLE_VALUE)
     {
@@ -1513,7 +1513,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_
         return FALSE;
     }
 
-    const auto directory_sep = PAL_DIRECTORY_SEPARATOR_STR;
+    const auto* const directory_sep = PAL_DIRECTORY_SEPARATOR_STR;
     const auto directory_in_str = std::string(*directory_in_normalized);
 
     const auto expand_paths = [&directory_in_str, &directory_sep]()

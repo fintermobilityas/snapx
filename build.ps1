@@ -299,26 +299,62 @@ switch ($Target) {
         Invoke-Summary
     }
     "Run-Native-UnitTests" {
-        if(($CIBuild) -or ($env:BUILD_IS_DOCKER -eq 1)) {
-            Invoke-Native-UnitTests
-        } elseif($env:BUILD_IS_DOCKER -ne 1) {
-            Invoke-Docker -Entrypoint "Run-Native-UnitTests"
-            Invoke-Native-UnitTests
-        } else {
-            Invoke-Exit "Unknown error running native unit tests. OS: $OSPlatform"
+        switch($OSPlatform) {
+            "Windows" {
+                if($CIBuild) {
+                    Invoke-Native-UnitTests
+                    Invoke-Summary
+                    return
+                }
+
+                if($env:BUILD_IS_DOCKER -ne 1) {
+                    Invoke-Docker -Entrypoint "Run-Native-UnitTests"
+                    Invoke-Native-UnitTests
+                    Invoke-Summary
+                    return
+                }
+
+                Invoke-Native-UnitTests
+            }
+            "Unix" {
+                if($env:BUILD_IS_DOCKER -ne 1) {
+                    Invoke-Docker -Entrypoint "Run-Native-UnitTests"
+                    return
+                }
+    
+                Invoke-Native-UnitTests
+                Invoke-Summary
+            }
         }
-        Invoke-Summary
     }
     "Run-Dotnet-UnitTests" {
-        if(($CIBuild) -or ($env:BUILD_IS_DOCKER -eq 1)) {
-            Invoke-Dotnet-UnitTests
-        } elseif($env:BUILD_IS_DOCKER -ne 1) {
-            Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
-            Invoke-Dotnet-UnitTests
-        } else {
-            Invoke-Exit "Unknown error running native unit tests. OS: $OSPlatform"
+        switch($OSPlatform) {
+            "Windows" {
+                if($CIBuild) {
+                    Invoke-Dotnet-UnitTests
+                    Invoke-Summary
+                    return
+                }
+
+                if($env:BUILD_IS_DOCKER -ne 1) {
+                    Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
+                    Invoke-Dotnet-UnitTests
+                    Invoke-Summary
+                    return
+                }
+
+                Invoke-Dotnet-UnitTests
+            }
+            "Unix" {
+                if($env:BUILD_IS_DOCKER -ne 1) {
+                    Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
+                    return
+                }
+    
+                Invoke-Dotnet-UnitTests
+                Invoke-Summary
+            }
         }
-        Invoke-Summary
     }
     "Publish-Docker-Image" {
 		$DockerFileContent = Get-Content $DockerFilenamePath

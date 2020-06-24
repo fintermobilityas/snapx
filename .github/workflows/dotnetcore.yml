@@ -178,6 +178,7 @@ jobs:
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release
            
       - name: Push nuget packages
+        shell: pwsh
         run: |
           $nupkgs = Get-ChildItem ".\${{ env.GITHUB_WORKSPACE }}\nupkgs" -Filter *.nupkg | Select-Object -ExpandProperty FullName
           

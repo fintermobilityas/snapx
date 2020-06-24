@@ -178,6 +178,7 @@ jobs:
         run: dotnet tool update gpr --global --version ${{ env.GPR_VERSION }}
 
       - name: Build nupkgs
+        shell: pwsh
         run: ./build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
            
       - name: Push nuget packages

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -190,10 +191,10 @@ namespace Snap.Tests.Core
             Assert.NotNull(optimizedEmbeddedResources);
 
             Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
-            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
-            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
-            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
-            Assert.Throws<NullReferenceException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
         }
 
     }

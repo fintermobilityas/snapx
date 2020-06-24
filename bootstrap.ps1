@@ -1,30 +1,24 @@
 param(
-    [Parameter(Position = 0, ValueFromPipeline = $true)]
+    [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [ValidateSet("Native", "Snap", "Snapx", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
-    [string] $Target = "Native",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [ValidateSet("Debug", "Release")]
-    [string] $Configuration = "Release",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [string] $Target,
+    [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
+    [string] $Configuration,
+    [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
     [switch] $Lto,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
     [string] $DotNetRid = $null,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [Validateset(16)]
-    [int] $VisualStudioVersion = 16,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [ValidateSet("netcoreapp3.1")]
-    [string] $NetCoreAppVersion = "netcoreapp3.1",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [string] $Version = "0.0.0",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 4, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
+    [string] $VisualStudioVersion,
+    [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
+    [string] $NetCoreAppVersion,
+    [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
+    [string] $Version,
+    [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerBuild
 )
-
-$ErrorActionPreference = "Stop";
-$ConfirmPreference = "None";
 
 # Global Variables
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition

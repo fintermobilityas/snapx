@@ -195,7 +195,7 @@ function Invoke-Configure-Msvs-Toolchain
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [int] $VisualStudioVersion,
+        [string] $VisualStudioVersion,
         [Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $true)]
         [string] $CommandVsWhere
     )

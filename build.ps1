@@ -2,39 +2,42 @@ param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
     [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Debug",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
-	[Parameter(ValueFromPipelineByPropertyName = $true)]
+	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerVersion = "2.5.4",
-	[Parameter(ValueFromPipelineByPropertyName = $true)]
+	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
 	[switch] $DockerContext,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [string] $VisualStudioVersionStr = "16",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
-    [ValidateSet("netcoreapp3.1")]
+    [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
+    [string] $VisualStudioVersion = "16",
+    [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $NetCoreAppVersion = "netcoreapp3.1",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
-    [Parameter(ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true)]
     [string] $DotnetRid = "any"
 )
 
+# Init
+
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
+. $WorkingDir\common.ps1
+
 $SnapxSrcDir = Join-Path $WorkingDir src/Snapx
 $SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
 $NupkgsDir = Join-Path $WorkingDir nupkgs
 
-. $WorkingDir\common.ps1
+# Environment variables
 
-$ErrorActionPreference = "Stop";
-$ConfirmPreference = "None";
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
 
 # Global variables
 
@@ -43,22 +46,6 @@ $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
 $DotnetVersion = Get-Content global.json | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version
 $DockerBuild = $env:BUILD_IS_DOCKER -eq 1
-
-if($false -eq (Test-Path "env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE"))
-{
-    $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
-}
-
-if($false -eq (Test-Path "env:DOTNET_CLI_TELEMETRY_OPTOUT"))
-{
-    $env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
-}
-
-[int] $VisualStudioVersion = 0
-if($false -eq [int]::TryParse($VisualStudioVersionStr, [ref] $VisualStudioVersion))
-{
-    Invoke-Exit "Invalid Visual Studio Version: $VisualStudioVersionStr"
-}
 
 $CommandDocker = $null
 $CommandDockerCli = $null
@@ -234,7 +221,7 @@ function Invoke-Docker
 		"-DockerVersion ${DockerVersion}"
 		"-DockerLocal:" + ($DockerLocal ? "True" : "False")
         "-CIBuild:" + ($CIBuild ? "True" : "False")
-        "-VisualStudioVersionStr $VisualStudioVersionStr"
+        "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
         "-DotnetRid $DotnetRid"

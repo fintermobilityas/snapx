@@ -139,7 +139,7 @@ jobs:
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/pal.dll
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll
 
       - name: Upload artifacts
         if: success()
@@ -179,7 +179,7 @@ jobs:
 
       - name: Build nupkgs
         shell: pwsh
-        run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
+        run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release
            
       - name: Push nuget packages
         run: gpr push nupkgs/**/*.nupkg

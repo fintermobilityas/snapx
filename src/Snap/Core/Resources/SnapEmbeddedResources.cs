@@ -25,6 +25,11 @@ namespace Snap.Core.Resources
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
     {
+        const string CoreRunWindowsFilename = "corerun.exe";
+        const string CoreRunLinuxFilename = "corerun";
+        const string CoreRunLibWindowsFilename = "libcorerun.dll";
+        const string CoreRunLibLinuxFilename = "libcorerun.so";
+
         readonly EmbeddedResource _coreRunWindows;
         readonly EmbeddedResource _coreRunLinux;
         readonly EmbeddedResource _coreRunLibWindows;
@@ -33,48 +38,67 @@ namespace Snap.Core.Resources
         [UsedImplicitly]
         public bool IsOptimized { get; }
 
-        public MemoryStream CoreRunWindows => new MemoryStream(_coreRunWindows.Stream.ToArray());
-        public MemoryStream CoreRunLinux => new MemoryStream(_coreRunLinux.Stream.ToArray());
-        public MemoryStream CoreRunLibWindows => new MemoryStream(_coreRunLibWindows.Stream.ToArray());
-        public MemoryStream CoreRunLibLinux => new MemoryStream(_coreRunLibLinux.Stream.ToArray());
+        public MemoryStream CoreRunWindows
+        {
+            get
+            {
+                if (_coreRunWindows == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunWindowsFilename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunWindows.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLinux
+        {
+            get
+            {
+
+                if (_coreRunLinux == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLinuxFilename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunLinux.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLibWindows
+        {
+            get
+            {
+                if (_coreRunLibWindows == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLibWindowsFilename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunLibWindows.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLibLinux
+        {
+            get
+            {
+                if (_coreRunLibLinux == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLibLinuxFilename} was not found in current assembly resources manifest");
+                }
+                
+                return new MemoryStream(_coreRunLibLinux.Stream.ToArray());
+            }
+        }
 
         internal SnapEmbeddedResources()
         {
-#if SNAP_BOOTSTRAP
-            return;
-#endif
-
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
 
-            _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun.exe");
-            _coreRunLinux = Resources.SingleOrDefault(x => x.Filename == "corerun.corerun");
-            _coreRunLibWindows = Resources.SingleOrDefault(x => x.Filename == "corerun.libcorerun.dll");
-            _coreRunLibLinux = Resources.SingleOrDefault(x => x.Filename == "corerun.libcorerun.so");
-
-            if (IsOptimized)
-            {
-                return;
-            }
-
-            if (_coreRunWindows == null)
-            {
-                throw new Exception("corerun.exe was not found in current assembly resources manifest");
-            }
-
-            if (_coreRunLinux == null)
-            {
-                throw new Exception("corerun was not found in current assembly resources manifest");
-            }
-            
-            if (_coreRunLibWindows == null)
-            {
-                throw new Exception("libcorerun.dll was not found in current assembly resources manifest");
-            }
-
-            if (_coreRunLibLinux == null)
-            {
-                throw new Exception("libcorerun.so was not found in current assembly resources manifest");
-            }
+            _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunWindowsFilename}");
+            _coreRunLinux = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLinuxFilename}");
+            _coreRunLibWindows = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibWindowsFilename}");
+            _coreRunLibLinux = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibLinuxFilename}");
         }
 
         public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp, 

@@ -29,10 +29,21 @@ namespace Snap.Tests.Core.Resources
         [Fact]
         public void TestContainsResourcesForAllSupportedPlatforms()
         {
-            Assert.NotNull(_snapEmbeddedResources.CoreRunLinux);
-            Assert.NotNull(_snapEmbeddedResources.CoreRunWindows);
-            Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindows);
-            Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinux);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindows);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindows);
+                return;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLinux);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinux);
+                return;
+            }
+
+            throw new PlatformNotSupportedException();
         }
 
         [Theory]

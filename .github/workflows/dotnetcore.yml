@@ -179,7 +179,7 @@ jobs:
 
       - name: Build nupkgs
         shell: pwsh
-        run: ./build.ps1 Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
+        run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }}
            
       - name: Push nuget packages
         run: gpr push nupkgs/**/*.nupkg

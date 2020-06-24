@@ -47,8 +47,12 @@ namespace Snap.Tests.Core.Resources
         }
 
         [Theory]
+        #if PLATFORM_WINDOWS
         [InlineData("WINDOWS", "demoapp", "demoapp.exe")]
+        #endif
+        #if PLATFORM_UNIX
         [InlineData("LINUX", "demoapp", "demoapp")]
+        #endif
         public void TestGetCoreRunForSnapApp(string osPlatform, string appId, string expectedExeFilename)
         {
             var snapApp = _baseFixture.BuildSnapApp(appId);

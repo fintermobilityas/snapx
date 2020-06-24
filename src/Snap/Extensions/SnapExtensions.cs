@@ -433,6 +433,16 @@ namespace Snap.Extensions
                 throw new Exception($"Unable to find snap with id: {id}");
             }
 
+            if (!Guid.TryParse(snapApp.SuperVisorId, out var superVisorId))
+            {
+                throw new Exception("Unable to parse supervisor id. Please use a unique guid to identify your application.");
+            }
+
+            if (superVisorId == Guid.Empty)
+            {
+                throw new Exception("Supervisor id cannot be an empty guid.");
+            }
+
             var snapAppUniqueRuntimeIdentifiers = snapApp.Targets.Select(x => x.Rid).ToList();
             if (snapAppUniqueRuntimeIdentifiers.Distinct().Count() != snapApp.Targets.Count)
             {
@@ -552,6 +562,7 @@ namespace Snap.Extensions
             return new SnapApp
             {
                 Id = snapApp.Id,
+                SuperVisorId = superVisorId.ToString(),
                 Channels = snapAppChannels,
                 Target = new SnapTarget(snapAppTarget),
                 Authors = snapApp.Nuspec.Authors,

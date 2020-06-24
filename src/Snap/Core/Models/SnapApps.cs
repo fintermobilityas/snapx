@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
+using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {
@@ -196,6 +197,8 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
+        [YamlMember(Alias = "supervisorid")]
+        public string SuperVisorId { get; set; }
         public List<string> Channels { get; set; }
         public List<SnapsTarget> Targets { get; set; }
         public SnapsAppNuspec Nuspec { get; set; }
@@ -212,6 +215,7 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
+            SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
             Nuspec = new SnapsAppNuspec(snapApp);
@@ -221,6 +225,7 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
+            SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
             Nuspec = new SnapsAppNuspec(snapApp.Nuspec);

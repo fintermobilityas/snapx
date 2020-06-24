@@ -110,6 +110,7 @@ namespace Snap.Shared.Tests
             var snapApp = new SnapApp
             {
                 Id = id,
+                SuperVisorId = Guid.NewGuid().ToString(),
                 Version = new SemanticVersion(1, 0, 0),
                 IsGenesis = isGenesis,
                 IsFull = isGenesis,

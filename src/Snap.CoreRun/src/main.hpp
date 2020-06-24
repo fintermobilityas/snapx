@@ -18,6 +18,7 @@ inline int corerun_command_supervise(
     const std::string& stub_executable_full_path,
     std::vector<std::string>& arguments,
     int process_id,
+    const std::string& process_application_id,
     int cmd_show_windows);
 inline void main_wait_for_pid(pal_pid_t pid);
 inline void snapx_maybe_wait_for_debugger();
@@ -58,12 +59,18 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     cxxopts::Options options(argv[0], "");
 
     auto supervise_process_id = 0;
+    std::string supervise_id;
 
     options
             .add_options()
                     ("corerun-supervise-pid",
                      "Supervision of target process. Wait for process pid to exit and then restart it.",
-                     cxxopts::value<int>(supervise_process_id));
+                     cxxopts::value<int>(supervise_process_id)
+                        )
+                    ("corerun-supervise-id",
+                        "A unique id that identifies current application.",
+                        cxxopts::value<std::string>(supervise_id)
+                        );
 
     try {
         options.parse(argc, argv);
@@ -73,7 +80,7 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
 
     if (supervise_process_id > 0) {
         return corerun_command_supervise(stub_executable_full_path, stub_executable_arguments,
-                supervise_process_id, cmd_show_windows);
+                supervise_process_id, supervise_id, cmd_show_windows);
     }
 
     return snap::stubexecutable::run(stub_executable_arguments, cmd_show_windows);
@@ -83,6 +90,7 @@ inline int corerun_command_supervise(
     const std::string& stub_executable_full_path,
     std::vector<std::string>& arguments,
     const int process_id,
+    const std::string& process_application_id,
     const int cmd_show_windows)
 {
     if(!pal_process_is_running(process_id))  
@@ -91,25 +99,16 @@ inline int corerun_command_supervise(
         return 1;
     }
 
-    const auto process_name = std::make_unique<char*>(nullptr);
-    if(!pal_process_get_name(process_name.get())) {
-        LOGE << "Unable to get current process name";
+    auto semaphore_name("corerun-" + process_application_id);
+
+    if (semaphore_name.size() > PAL_MAX_PATH) {
+        LOGW << "Semaphore name exceeds PAL_MAX_PATH length (" << std::to_string(PAL_MAX_PATH) << "). Name: " << semaphore_name;
         return 1;
     }
 
-    std::string semaphore_name(stub_executable_full_path);
-    if(semaphore_name.size() > PAL_MAX_PATH) {
-        semaphore_name = "corerun-" + std::string(*process_name);
-        LOGW << "Semaphore name exceeds PAL_MAX_PATH length. Using process name instead. " 
-             << "This may cause issues if there are multiple programs running. " 
-             << "Semaphore name: " << semaphore_name;
-    }
-    semaphore_name.replace(semaphore_name.begin(), semaphore_name.end(), PAL_DIRECTORY_SEPARATOR_C, '-');
-    std::transform(semaphore_name.begin(), semaphore_name.end(), semaphore_name.begin(), ::tolower);
-
     corerun_supervisor_semaphore = std::make_unique<pal_semaphore_machine_wide>(semaphore_name);
     if(!corerun_supervisor_semaphore->try_create()) {
-        LOGE << "Aborting supervision of target process with id " << std::to_string(process_id) << " because a supervisor is already running.";
+        LOGE << "Aborting supervision of target process with id " << std::to_string(process_id) << " because a supervisor is already running. Process application id: " << process_application_id;
         return 1;
     }
 

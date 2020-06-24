@@ -202,7 +202,9 @@ namespace Snap.Core
                 return false;
             }
 
-            var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id}";
+            var superVisorId = Current.SuperVisorId;
+
+            var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id} --corerun-supervise-id={superVisorId}";
 
             SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
                 .AddRange(restartArguments ?? new List<string>())
@@ -211,7 +213,7 @@ namespace Snap.Core
 
             SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
 
-            Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. " +
+            Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. Supervisor id: {superVisorId}. " +
                          $"Restart arguments({SupervisorProcessRestartArguments.Count}): {string.Join(",", SupervisorProcessRestartArguments)}. ");
 
             SuperVisorProcess.Refresh();

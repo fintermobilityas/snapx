@@ -683,6 +683,7 @@ namespace Snap.Tests.Core.Extensions
             var snapAppBefore = new SnapApp
             {
                 Id = "demoapp",
+                SuperVisorId = Guid.NewGuid().ToString(),
                 Version = new SemanticVersion(1, 0, 0),
                 Channels = new List<SnapChannel>
                 {
@@ -715,6 +716,7 @@ namespace Snap.Tests.Core.Extensions
 
             // Generic
             Assert.Equal(snapAppBefore.Id, snapAppAfter.Id);
+            Assert.Equal(snapAppBefore.SuperVisorId, snapAppAfter.SuperVisorId);
             Assert.True(snapAppBefore.Version < snapAppAfter.Version);
 
             // Target
@@ -849,6 +851,7 @@ namespace Snap.Tests.Core.Extensions
             var snapAppBefore = new SnapApp
             {
                 Id = "demoapp",
+                SuperVisorId = Guid.NewGuid().ToString(),
                 Version = new SemanticVersion(1, 0, 0),
                 Channels = new List<SnapChannel>
                 {

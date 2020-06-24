@@ -14,8 +14,6 @@
         <PackageProjectUrl>https://github.com/fintermobilityas/snapx</PackageProjectUrl>
         <RepositoryUrl>https://github.com/fintermobilityas/snapx.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <IsPackable>false</IsPackable>
-        <IsTestProject>false</IsTestProject>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)..\nupkgs</PackageOutputPath>
     </PropertyGroup>

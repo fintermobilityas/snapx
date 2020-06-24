@@ -3,6 +3,7 @@
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
+        <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp3.1;net472</TargetFrameworks>
         <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp3.1</TargetFrameworks>

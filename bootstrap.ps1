@@ -324,10 +324,11 @@ function Invoke-Dotnet-UnitTests
 
     Resolve-Shell-Dependency $CommandDotnet
 
-    $Projects = @()
-    $Projects += Join-Path $SrcDir Snap.Installer.Tests
-    $Projects += Join-Path $SrcDir Snap.Tests
-    $Projects += Join-Path $SrcDir Snapx.Tests
+    $Projects = @(
+        Join-Path $SrcDir Snap.Installer.Tests
+        Join-Path $SrcDir Snap.Tests
+        Join-Path $SrcDir Snapx.Tests
+    )
 
     $ProjectsCount = $Projects.Length
 
@@ -338,6 +339,16 @@ function Invoke-Dotnet-UnitTests
         $TestProjectName = Split-Path $Project -LeafBase
         $TestAdapterPath = Split-Path $Project
         $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "clean"
+            "$Project"
+        ) -IgnoreExitCode
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "build"
+            "$Project"
+        )
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"

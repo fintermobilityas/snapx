@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Native-UnitTests", "Publish-Docker-Image")]
+    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Dotnet-UnitTests", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
@@ -166,7 +166,7 @@ function Invoke-Native-UnitTests
     Invoke-Bootstrap-Ps1 Run-Native-UnitTests @("-Configuration $Configuration")
 }
 
-function Invoke-Dotnet-Unit-Tests
+function Invoke-Dotnet-UnitTests
 {
     Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration")
 }
@@ -302,6 +302,10 @@ switch ($Target) {
     }
     "Run-Native-UnitTests" {
         Invoke-Native-UnitTests
+        Invoke-Summary
+    }
+    "Run-Dotnet-UnitTests" {
+        Invoke-Dotnet-UnitTests
         Invoke-Summary
     }
     "Publish-Docker-Image" {

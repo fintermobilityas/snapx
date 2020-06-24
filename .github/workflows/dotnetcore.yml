@@ -66,9 +66,6 @@ jobs:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
-          SNAPX_MINGW_CORERUN_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun
-          SNAPX_MINGW_PAL_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
-          SNAPX_MINGW_TESTS_REL_DIR: build/native/Unix/x86_64-w64-mingw32-gcc/${{ matrix.configuration }}/Snap.CoreRun.Tests
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip
@@ -79,17 +76,6 @@ jobs:
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
 
-          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_CORERUN_REL_DIR }}/corerun.exe
-
-          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_PAL_REL_DIR }}/libpal.dll
-
-          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun.exe
-          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_demoapp.exe
-          cp ${{ github.workspace }}/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_MINGW_TESTS_REL_DIR }}/corerun_tests.exe
-          
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v2

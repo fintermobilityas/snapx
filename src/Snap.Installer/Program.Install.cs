@@ -394,7 +394,7 @@ namespace Snap.Installer
             {
                 try
                 {
-                    InstallInBackgroundAsync(new ConsoleMainViewModel()).Wait(cancellationToken);
+                    TplHelper.RunSync(() => InstallInBackgroundAsync(new ConsoleMainViewModel()));
                 }
                 catch (OperationCanceledException)
                 {
@@ -424,7 +424,7 @@ namespace Snap.Installer
             if (statusText == null) throw new ArgumentNullException(nameof(statusText));
             // Do not invoke logging inside this method because the logger is forwarded.
             // Circular invocation -> Stack overflow!
-            mainWindowViewModel.SetStatusTextAsync(statusText).GetAwaiter().GetResult();
+            TplHelper.RunSync(() => mainWindowViewModel.SetStatusTextAsync(statusText));
         }
     }
 }

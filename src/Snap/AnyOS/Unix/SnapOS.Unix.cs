@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.AnyOS.Windows;
 using Snap.Core;
+using Snap.Extensions;
 using Snap.Logging;
 
 namespace Snap.AnyOS.Unix
@@ -69,8 +70,8 @@ namespace Snap.AnyOS.Unix
             {
                 try
                 {
-                    var (lsbReleaseExitCode, lsbReleaseStdOutput) = OsProcessManager
-                        .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None).GetAwaiter().GetResult();
+                    var (lsbReleaseExitCode, lsbReleaseStdOutput) = TplHelper.RunSync(() => OsProcessManager
+                        .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None));
                     if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
                     {
                         var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);

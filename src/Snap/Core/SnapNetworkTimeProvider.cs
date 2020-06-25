@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Snap.Extensions;
 
 namespace Snap.Core
 {
@@ -43,12 +44,12 @@ namespace Snap.Core
 
         public DateTime? NowUtc(string server, int port = 123, TimeSpan timeout = default)
         {
-            return NowUtcAsync(server, port, timeout).Result;
+            return TplHelper.RunSync(() => NowUtcAsync(server, port, timeout));
         }
 
         public DateTime? NowUtc(TimeSpan timeout = default)
         {
-            return NowUtcAsync(timeout).Result;
+            return TplHelper.RunSync(() => NowUtcAsync(timeout));
         }
 
         static Task<DateTime?> NowImpl(string ntpServer, int port, TimeSpan timeout)

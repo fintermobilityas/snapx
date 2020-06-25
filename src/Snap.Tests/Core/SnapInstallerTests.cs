@@ -88,7 +88,7 @@ namespace Snap.Tests.Core
                 .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                 {
-                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                    var result = TplHelper.RunSync(() => _snapOsProcessManager.RunAsync(builder, cancellationToken));
                     if (result.exitCode != 0)
                     {
                         runAsyncReturnValues.Add(result);
@@ -202,7 +202,7 @@ namespace Snap.Tests.Core
                 .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                 {
-                    var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                    var result = TplHelper.RunSync(() => _snapOsProcessManager.RunAsync(builder, cancellationToken));
                     return result;
                 });
             snapOsProcessManager
@@ -302,7 +302,7 @@ namespace Snap.Tests.Core
                     .Setup(x => x.RunAsync(It.IsAny<ProcessStartInfoBuilder>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                     {
-                        var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
+                        var result = TplHelper.RunSync(() => _snapOsProcessManager.RunAsync(builder, cancellationToken));
                         runAsyncReturnValues.Add(result);
                         return result;
                     });

@@ -133,8 +133,8 @@ namespace snapx
             
             var snapCryptoProvider = new SnapCryptoProvider();
             var snapEmbeddedResources = new SnapEmbeddedResources();            
-            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider,
-                toolWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            TplHelper.RunSync(() => snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider,
+                toolWorkingDirectory, snapOs.OsPlatform));
             var snapXEmbeddedResources = new SnapxEmbeddedResources();
             
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
@@ -243,10 +243,10 @@ namespace snapx
                         {
                             return 1;
                         }
-                        return CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                        return TplHelper.RunSync(() => CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandDemote, distributedMutexClient, snapPackageManager, snapPack,
                             snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
-                            SnapDemoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                            SnapDemoteLogger, workingDirectory, cancellationToken));
                     },
                     (PromoteOptions opts) =>
                     {
@@ -255,11 +255,11 @@ namespace snapx
                         {
                             return 1;
                         }
-                        return CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                        return TplHelper.RunSync(() => CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
                             snapOs.SpecialFolders,
                             snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
-                            SnapPromoteLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                            SnapPromoteLogger, workingDirectory, cancellationToken));
                     },
                     (PackOptions opts) =>
                     {
@@ -268,11 +268,11 @@ namespace snapx
                         {
                             return 1;
                         }
-                        return CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                        return TplHelper.RunSync(() => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
                             snapExtractor, snapPackageManager, coreRunLib,
                             snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient,
-                            workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                            workingDirectory, cancellationToken));
                     },
                     (Sha256Options opts) => CommandSha256(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
                     (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
@@ -283,9 +283,9 @@ namespace snapx
                         {
                             return 1;
                         }
-                        return CommandListAsync(opts, snapFilesystem, snapAppReader,
+                        return TplHelper.RunSync(() => CommandListAsync(opts, snapFilesystem, snapAppReader,
                             nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger,
-                            workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                            workingDirectory, cancellationToken));
                     },
                     (RestoreOptions opts) =>
                     {
@@ -294,12 +294,13 @@ namespace snapx
                         {
                             return 1;
                         }
-                        return CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
+                        return TplHelper.RunSync(() => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPackageManager, snapOs,
                             snapXEmbeddedResources, coreRunLib, snapPack,
-                            SnapRestoreLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult();
+                            SnapRestoreLogger, workingDirectory, cancellationToken));
                     },
-                    (LockOptions opts) => CommandLock(opts, distributedMutexClient, snapFilesystem, snapAppReader, SnapLockLogger, workingDirectory, cancellationToken).GetAwaiter().GetResult(),
+                    (LockOptions opts) => TplHelper.RunSync(() => CommandLock(opts, distributedMutexClient, snapFilesystem, 
+                        snapAppReader, SnapLockLogger, workingDirectory, cancellationToken)),
                     errs =>
                     {
                         snapOs.EnsureConsole();

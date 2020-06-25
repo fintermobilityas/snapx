@@ -1,4 +1,5 @@
 ﻿using System;
+using Snap.Extensions;
 
 namespace Snap.Core.IO
 {
@@ -18,7 +19,7 @@ namespace Snap.Core.IO
         
         public void Dispose()
         {
-            _filesystem.DirectoryDeleteAsync(WorkingDirectory).GetAwaiter().GetResult();
+            TplHelper.RunSync(() => _filesystem.DirectoryDeleteAsync(WorkingDirectory));
         }
     }
 }

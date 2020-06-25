@@ -15,6 +15,7 @@ using NLog.Targets;
 using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Logging;
 using Snap.NuGet;
@@ -108,7 +109,7 @@ namespace Snap.Installer
 
             var thisExeWorkingDirectory = snapInstallerEnvironment.Io.ThisExeWorkingDirectory;
             var workingDirectory = snapInstallerEnvironment.Io.WorkingDirectory;
-            snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisExeWorkingDirectory, snapOs.OsPlatform).GetAwaiter().GetResult();
+            TplHelper.RunSync(() => snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisExeWorkingDirectory, snapOs.OsPlatform));
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisExeWorkingDirectory);
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();

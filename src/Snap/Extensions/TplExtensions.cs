@@ -5,6 +5,34 @@ using JetBrains.Annotations;
 
 namespace Snap.Extensions
 {
+    // https://stackoverflow.com/a/25097498
+    internal static class TplHelper
+    {
+        static readonly TaskFactory MyTaskFactory = new 
+            TaskFactory(CancellationToken.None, 
+                TaskCreationOptions.None, 
+                TaskContinuationOptions.None, 
+                TaskScheduler.Default);
+
+        public static TResult RunSync<TResult>(Func<Task<TResult>> func)
+        {
+            return MyTaskFactory
+                .StartNew(func)
+                .Unwrap()
+                .GetAwaiter()
+                .GetResult();
+        }
+
+        public static void RunSync(Func<Task> func)
+        {
+            MyTaskFactory
+                .StartNew(func)
+                .Unwrap()
+                .GetAwaiter()
+                .GetResult();
+        }
+    }
+
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class TplExtensions
     {

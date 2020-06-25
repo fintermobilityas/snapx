@@ -22,7 +22,7 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            var semanticVersionStr = ((SemanticVersion)value).ToFullString();
+            var semanticVersionStr = ((SemanticVersion)value).ToNormalizedString();
             emitter.Emit(new Scalar(semanticVersionStr));
         }
     }

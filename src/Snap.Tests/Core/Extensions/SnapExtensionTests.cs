@@ -202,7 +202,7 @@ namespace Snap.Tests.Core.Extensions
 
             var fullOrDelta = snapApp.IsFull ? "full" : "delta";
 
-            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_{fullOrDelta}_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -297,7 +297,7 @@ namespace Snap.Tests.Core.Extensions
 
             var fullOrDelta = snapRelease.IsDelta ? "delta" : "full";
 
-            var expectedPackageId = $"{snapRelease.Id}_{fullOrDelta}_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapRelease.Id}_{fullOrDelta}_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapRelease.BuildNugetFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -319,7 +319,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_full_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetFullFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -340,7 +340,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapApp.Id}_delta_{snapApp.Target.Rid}_snapx.{snapApp.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapApp.BuildNugetFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -361,7 +361,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapRelease.Id}_full_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapRelease.BuildNugetFullFilename();
             Assert.Equal(expectedPackageId, actualPackageId);
@@ -383,7 +383,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var expectedPackageId = $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToFullString()}.nupkg".ToLowerInvariant();
+            var expectedPackageId = $"{snapRelease.Id}_delta_{snapRelease.Target.Rid}_snapx.{snapRelease.Version.ToNormalizedString()}.nupkg".ToLowerInvariant();
             
             var actualPackageId = snapRelease.BuildNugetDeltaFilename();
             Assert.Equal(expectedPackageId, actualPackageId);

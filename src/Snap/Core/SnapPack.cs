@@ -306,7 +306,7 @@ namespace Snap.Core
 
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(snapNuspecDetails.NuspecProperties);
 
-            var version = new NuGetVersion(fullSnapApp.Version.ToFullString());
+            var version = new NuGetVersion(fullSnapApp.Version.ToNormalizedString());
             var description = fullSnapApp.Description ?? "snapx application";
             var authors = fullSnapApp.Authors ?? "snapx";
             var upstreamPackageId = fullSnapApp.BuildNugetUpstreamId();

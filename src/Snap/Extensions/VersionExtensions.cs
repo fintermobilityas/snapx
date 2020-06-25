@@ -16,7 +16,7 @@ namespace Snap.Extensions
         public static NuGetVersion ToNuGetVersion([NotNull] this SemanticVersion version)
         {
             if (version == null) throw new ArgumentNullException(nameof(version));
-            return NuGetVersion.Parse(version.ToFullString());
+            return NuGetVersion.Parse(version.ToNormalizedString());
         }
     }
 }

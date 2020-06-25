@@ -101,7 +101,7 @@ namespace Snap.Tests.Core
 
             snapAppsReleases.Bump();
 
-            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToFullString());
+            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToNormalizedString());
         }
 
         [InlineData(0, "0.0.0")]
@@ -117,7 +117,7 @@ namespace Snap.Tests.Core
 
             snapAppsReleases.Bump(version);
 
-            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToFullString());
+            Assert.Equal(expectedVersion, snapAppsReleases.Version.ToNormalizedString());
         }
 
         [Fact]

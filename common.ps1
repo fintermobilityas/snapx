@@ -89,7 +89,7 @@ function Invoke-Dotnet-Clear {
         $DirectoryName = Split-Path -Leaf $_
 
         if($DirectoriesToRemove.Contains($DirectoryName)) {
-            Remove-Item $_ -Force -Recurse | Out-Null
+            Remove-Item $_ -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
         }
     }
 }

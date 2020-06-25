@@ -351,7 +351,6 @@ namespace Snap.Core
                 using var cts = new CancellationTokenSource();
                 cts.CancelAfter(cancelInvokeProcessesAfterTs);
 
-                var firstRun = isInitialInstall;
                 try
                 {
                     logger?.Debug(x.ToString());
@@ -365,7 +364,6 @@ namespace Snap.Core
                 catch (Exception ex)
                 {
                     logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
-                    firstRun = false;
                 }
 
                 if (!isInitialInstall)
@@ -373,14 +371,7 @@ namespace Snap.Core
                     return;
                 }
 
-                if (!firstRun)
-                {
-                    logger?.Warn($"First run will not be triggered for executable: {x.Filename}. Reason: Timeout or returned an exit code that is not 0.");
-                }
-                else
-                {
-                    firstRunApplications.Add(x);
-                }
+                firstRunApplications.Add(x);
             }, 1 /* at a time */);
 
             await Task.WhenAll(invocationTasks);

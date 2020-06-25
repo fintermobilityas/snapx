@@ -331,7 +331,6 @@ function Invoke-Dotnet-UnitTests
     foreach($Project in $Projects)
     {
         $TestProjectName = Split-Path $Project -LeafBase
-        $TestAdapterPath = Split-Path $Project
         $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
 
         Invoke-Command-Colored $CommandDotnet @(
@@ -346,7 +345,6 @@ function Invoke-Dotnet-UnitTests
             "$Project"
             "--configuration=$Configuration"
             "--verbosity normal"
-			"--test-adapter-path:""$TestAdapterPath"""
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$TestResultsOutputDirectoryPath"""
         )

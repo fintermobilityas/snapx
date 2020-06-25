@@ -81,7 +81,7 @@ namespace Snap.Tests.Core
             progressSource.
                 Setup(x => x.Raise(It.IsAny<int>()));
 
-            var runAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+            var processStartInfos = new List<ProcessStartInfoBuilder>();
 
             var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
             snapOsProcessManager
@@ -89,10 +89,7 @@ namespace Snap.Tests.Core
                 .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                 {
                     var result = TplHelper.RunSync(() => _snapOsProcessManager.RunAsync(builder, cancellationToken));
-                    if (result.exitCode != 0)
-                    {
-                        runAsyncReturnValues.Add(result);
-                    }
+                    processStartInfos.Add(builder);
                     return result;
                 });
             snapOsProcessManager
@@ -132,7 +129,9 @@ namespace Snap.Tests.Core
             var snapAppUpdatedChannel = snapAppUpdated.GetCurrentChannelOrThrow();
             Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);
 
-            Assert.NotEmpty(runAsyncReturnValues);
+            Assert.Single(processStartInfos);
+            Assert.EndsWith(mainAssemblyDefinition.BuildRelativeFilename(), processStartInfos[0].Filename);
+            Assert.Equal("--snapx-installed 1.0.0", processStartInfos[0].Arguments);
 
             var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
                 _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genesisPackageContext.FullPackageSnapApp));
@@ -295,7 +294,7 @@ namespace Snap.Tests.Core
                 progressSource.
                     Setup(x => x.Raise(It.IsAny<int>()));
 
-                var runAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+                var processStartInfos = new List<ProcessStartInfoBuilder>();
 
                 var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
                 snapOsProcessManager
@@ -303,7 +302,7 @@ namespace Snap.Tests.Core
                     .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                     {
                         var result = TplHelper.RunSync(() => _snapOsProcessManager.RunAsync(builder, cancellationToken));
-                        runAsyncReturnValues.Add(result);
+                        processStartInfos.Add(builder);
                         return result;
                     });
                 snapOsProcessManager
@@ -351,7 +350,11 @@ namespace Snap.Tests.Core
                     loggerMock.Object,
                     updateCts.Token);
 
-                Assert.NotEmpty(runAsyncReturnValues);
+                Assert.Equal(2, processStartInfos.Count);
+                Assert.EndsWith(mainExecutable.BuildRelativeFilename(), processStartInfos[0].Filename);
+                Assert.Equal("--snapx-installed 1.0.0", processStartInfos[0].Arguments);
+                Assert.EndsWith(mainExecutable.BuildRelativeFilename(), processStartInfos[1].Filename);
+                Assert.Equal("--snapx-updated 3.0.0", processStartInfos[1].Arguments);
 
                 var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, update2SnapReleaseBuilder.CoreRunExe);
                 var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,

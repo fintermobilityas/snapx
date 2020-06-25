@@ -15,6 +15,19 @@
 
 Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
 
+<img src="https://media.githubusercontent.com/media/fintermobilityas/snapx/develop/docs/snapxinstaller.gif" width="1024" />
+
+### snapx dotnet global tool
+
+All available commands has usage examples if you append `snapx [command] --help` in your favourite shell. 
+
+#### List available releases for an application, e.g. snapx.demoapp
+
+![snapx list](https://media.githubusercontent.com/media/fintermobilityas/snapx.demoapp/develop/docs/snapxlist.png)
+
+#### List of available commands
+![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
+
 ### Local development requirements
 
 #### Build requirements
@@ -47,17 +60,6 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 - Windows x64 [7.1 SP 1, 10]
 - Ubuntu Desktop x64 [16.04, 20.04]
 - Ubuntu Server x64 [16.04, 20.04]
-
-## Using snapx
-
-All available commands has usage examples if you append `snapx [command] --help` in your favourite shell. 
-
-### List available releases for an application, e.g. snapx.demoapp
-
-![snapx list](https://media.githubusercontent.com/media/fintermobilityas/snapx.demoapp/develop/docs/snapxlist.png)
-
-### Usage
-![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
 
 ## Code of Conduct
 

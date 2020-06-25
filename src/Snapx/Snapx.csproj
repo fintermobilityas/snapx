@@ -47,8 +47,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Unix'">
-        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">

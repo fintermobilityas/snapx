@@ -81,7 +81,7 @@ namespace Snap.Tests.Core
             progressSource.
                 Setup(x => x.Raise(It.IsAny<int>()));
 
-            var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+            var runAsyncReturnValues = new List<(int exitCode, string stdOut)>();
 
             var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
             snapOsProcessManager
@@ -91,7 +91,7 @@ namespace Snap.Tests.Core
                     var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
                     if (result.exitCode != 0)
                     {
-                        failedRunAsyncReturnValues.Add(result);
+                        runAsyncReturnValues.Add(result);
                     }
                     return result;
                 });
@@ -130,12 +130,9 @@ namespace Snap.Tests.Core
             var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genesisPackageContext.FullPackageSnapApp.Version}");
             var snapAppUpdated = appDirectory.GetSnapAppFromDirectory(_snapFilesystem, _snapAppReader);
             var snapAppUpdatedChannel = snapAppUpdated.GetCurrentChannelOrThrow();
-            Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);                 
+            Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);
 
-#if !PLATFORM_WINDOWS || NETFULLFRAMEWORK
-                        // TODO: ENABLE ME! Unable to run a dotnet 2.2 (shared) executable on Windows.
-                        Assert.Empty(failedRunAsyncReturnValues);
-#endif
+            Assert.NotEmpty(runAsyncReturnValues);
 
             var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
                 _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genesisPackageContext.FullPackageSnapApp));
@@ -298,7 +295,7 @@ namespace Snap.Tests.Core
                 progressSource.
                     Setup(x => x.Raise(It.IsAny<int>()));
 
-                var failedRunAsyncReturnValues = new List<(int exitCode, string stdOut)>();
+                var runAsyncReturnValues = new List<(int exitCode, string stdOut)>();
 
                 var snapOsProcessManager = new Mock<ISnapOsProcessManager>();
                 snapOsProcessManager
@@ -306,10 +303,7 @@ namespace Snap.Tests.Core
                     .ReturnsAsync((ProcessStartInfoBuilder builder, CancellationToken cancellationToken) =>
                     {
                         var result = _snapOsProcessManager.RunAsync(builder, cancellationToken).GetAwaiter().GetResult();
-                        if (result.exitCode != 0)
-                        {
-                            failedRunAsyncReturnValues.Add(result);
-                        }
+                        runAsyncReturnValues.Add(result);
                         return result;
                     });
                 snapOsProcessManager
@@ -357,10 +351,7 @@ namespace Snap.Tests.Core
                     loggerMock.Object,
                     updateCts.Token);
 
-#if !PLATFORM_WINDOWS || NETFULLFRAMEWORK
-                        // TODO: ENABLE ME! Unable to run a dotnet 2.2 (shared) executable on Windows.
-                        Assert.Empty(failedRunAsyncReturnValues);
-#endif
+                Assert.NotEmpty(runAsyncReturnValues);
 
                 var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, update2SnapReleaseBuilder.CoreRunExe);
                 var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,

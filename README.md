@@ -15,6 +15,26 @@
 
 Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
 
+### Local development requirements
+
+#### Build requirements
+
+**Linux**
+
+- Docker >= 19.03.8
+- .NET Core SDK v3.1 
+- Powershell v7
+
+**Windows**:
+- Docker Desktop >= v2.3.0.3
+- Powershell v7
+- Visual Studio 2019 16.6 Community with C++ / .NET Core Sdk workload installed. 
+
+#### Bootstrap snapx 
+
+Before you can open `src\Snapx.sln` in Visual Studio you must bootstrap dependencies.
+Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
+
 ## .NET frameworks supported
 
 - .NET Core >= 3.1 (netcoreapp3.1)

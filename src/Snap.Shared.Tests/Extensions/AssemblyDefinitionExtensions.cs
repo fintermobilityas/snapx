@@ -40,15 +40,15 @@ namespace Snap.Shared.Tests.Extensions
         {
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
             const string runtimeConfig = @"{
-  ""runtimeOptions"": {
-            ""tfm"": ""netcoreapp3.1"",
-            ""framework"": {
-                ""name"": ""Microsoft.NETCore.App"",
-                ""version"": ""3.1.1""
+    ""runtimeOptions"": {
+        ""frameworks"": [
+            {
+            ""name"": ""Microsoft.AspNetCore.App"",
+            ""version"": ""3.1.1""
             }
-        }
+        ]
     }
-";
+}";
             return new MemoryStream(Encoding.UTF8.GetBytes(runtimeConfig));
         }
 

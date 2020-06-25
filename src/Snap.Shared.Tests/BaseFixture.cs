@@ -298,10 +298,7 @@ namespace Snap.Shared.Tests
 
             AddVersioningAttributes(assemblyDefinition, semanticVersion);
                         
-            if (assemblyReferencesDefinitions == null)
-            {
-                assemblyReferencesDefinitions = new List<AssemblyDefinition>();
-            }
+            assemblyReferencesDefinitions ??= new List<AssemblyDefinition>();
 
             foreach (var assemblyReferenceDefinition in assemblyReferencesDefinitions)
             {

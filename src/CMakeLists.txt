@@ -15,7 +15,7 @@ set(GNU_CXX_WARNING_FLAGS "-Wall -Weffc++ -Wextra -Wsign-conversion")
 set(MSVS_CXX_WARNING_FLAGS "/W4")
 
 option(BUILD_ENABLE_LTO "Build with LINK TIME OPTIMIZATION enabled" OFF)
-option(BUILD_ENABLE_TESTS "Build with tests enabled" ON)
+option(BUILD_ENABLE_TESTS "Build with tests enabled" OFF)
 option(BUILD_ENABLE_LOGGING "Build with logging enabled" ON)
 
 add_subdirectory(Snap.CoreRun.Pal)

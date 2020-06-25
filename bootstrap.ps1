@@ -104,6 +104,10 @@ function Invoke-Build-Native {
         $CmakeArguments += "-DBUILD_ENABLE_LTO=ON"
     }
 
+    if($CIBuild) {
+        $CmakeArguments += "-DBUILD_ENABLE_TESTS=ON"
+    }
+
     if ($Configuration -eq "Debug") {
         $CmakeArguments += "-DCMAKE_BUILD_TYPE=Debug"
     }

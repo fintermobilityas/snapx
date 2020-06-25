@@ -19,15 +19,17 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 
 #### Build requirements
 
+**All Platforms**
+- GitVersion `dotnet tool update gitversion.tool -g`
+- Powershell v7 `dotnet tool update powershell -g`
+
 **Linux**
 
 - Docker >= 19.03.8
 - .NET Core SDK v3.1 
-- Powershell v7
 
 **Windows**:
 - Docker Desktop >= v2.3.0.3
-- Powershell v7
 - Visual Studio 2019 16.6 Community with C++ / .NET Core Sdk workload installed. 
 
 #### Bootstrap snapx 

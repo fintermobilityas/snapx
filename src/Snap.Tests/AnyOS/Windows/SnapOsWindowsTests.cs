@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿#if PLATFORM_WINDOWS
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
@@ -27,24 +28,16 @@ namespace Snap.Tests.AnyOS.Windows
             Assert.Equal(SnapOsDistroType.Windows, _snapOs.DistroType);
         }
 
-        [Fact(Skip = "TODO ENABLE ME")]
+        [Fact]
         public void TestSpecialFolders()
         {
             Assert.NotEmpty(_snapOs.SpecialFolders.ApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.LocalApplicationData);
             Assert.NotEmpty(_snapOs.SpecialFolders.DesktopDirectory);
-            #if PLATFORM_UNIX 
-                Assert.Empty(_snapOs.SpecialFolders.StartupDirectory);
-                #if !PLATFORM_WINDOWS
-                Assert.Empty(_snapOs.SpecialFolders.StartMenu);
-                #else
-                Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);
-                #endif
-            #else
             Assert.NotEmpty(_snapOs.SpecialFolders.StartupDirectory);
             Assert.NotEmpty(_snapOs.SpecialFolders.StartMenu);
-            #endif
             Assert.NotEmpty(_snapOs.SpecialFolders.InstallerCacheDirectory);
         }
     }
 }
+#endif

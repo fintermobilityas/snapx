@@ -41,10 +41,10 @@ namespace Snap.Shared.Tests.Extensions
             if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
             const string runtimeConfig = @"{
   ""runtimeOptions"": {
-            ""tfm"": ""netcoreapp2.2"",
+            ""tfm"": ""netcoreapp3.1"",
             ""framework"": {
                 ""name"": ""Microsoft.NETCore.App"",
-                ""version"": ""2.2.0""
+                ""version"": ""3.1.1""
             }
         }
     }

@@ -375,7 +375,7 @@ namespace Snap.Core
 
                 if (!firstRun)
                 {
-                    logger.Warn($"First run will not be triggered for executable: {x.Filename}. Reason: Timeout or returned an exit code that is not 0.");
+                    logger?.Warn($"First run will not be triggered for executable: {x.Filename}. Reason: Timeout or returned an exit code that is not 0.");
                 }
                 else
                 {

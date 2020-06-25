@@ -167,7 +167,7 @@ namespace snapx
             if (!logger.Prompt("y|yes",
                 $"You are about to promote {snapApp.Id} ({snapApp.Version}) to the following " +
                 $"channel{(promoteToChannels.Count > 1 ? "s" : string.Empty)}: {promoteToChannelsStr}. " +
-                "Do you want to continue? [y|n]")
+                "Do you want to continue? [y|n]", infoOnly: options.YesToAllPrompts)
             )
             {
                 return 1;
@@ -242,7 +242,7 @@ namespace snapx
 
                         if (!installerOfflineSuccess)
                         {
-                            if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                            if (!canContinueIfError || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: options.YesToAllPrompts))
                             {
                                 logger.Info('-'.Repeat(TerminalBufferWidth));
                                 logger.Error("Unknown error building offline installer.");
@@ -268,7 +268,7 @@ namespace snapx
                         if (!installerWebSuccess)
                         {
                             if (!canContinueIfError
-                                || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)"))
+                                || !logger.Prompt("y|yes", "Installer was not built. Do you still want to continue? (y|n)", infoOnly: options.YesToAllPrompts))
                             {
                                 logger.Info('-'.Repeat(TerminalBufferWidth));
                                 logger.Error("Unknown error building web installer.");

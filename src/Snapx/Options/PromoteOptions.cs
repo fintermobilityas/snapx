@@ -36,6 +36,10 @@ namespace snapx.Options
             HelpText = "Override lock token.")]
         public string LockToken { get; set; }
 
+        [Option('y', "yes",
+            HelpText = "Yes (y) to all prompts")]
+        public bool YesToAllPrompts { get; [UsedImplicitly] set; }
+
         [Option("skip-installers",
             HelpText = "Skip building installers.")]
         public bool SkipInstallers { get; set; }

@@ -36,6 +36,10 @@ namespace snapx.Options
             HelpText = "Override lock token.")]
         public string LockToken { get; set; }
 
+        [Option("skip-installers",
+            HelpText = "Skip building installers.")]
+        public bool SkipInstallers { get; set; }
+
         [Value(0, HelpText = "Application id", Required = true)]
         public string Id { get; [UsedImplicitly] set; }
 

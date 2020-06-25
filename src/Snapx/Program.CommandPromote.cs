@@ -222,7 +222,7 @@ namespace snapx
             var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
             await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);
 
-            if (snapApp.Target.Installers.Any())
+            if (!options.SkipInstallers && snapApp.Target.Installers.Any())
             {
                 foreach (var channel in promoteToChannels)
                 {

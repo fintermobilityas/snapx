@@ -344,7 +344,7 @@ namespace Snap.Core
                 $"Invoking {allSnapAwareApps.Count} processes. " +
                          $"Timeout in {cancelInvokeProcessesAfterTs.TotalSeconds:F0} seconds.");
 
-            var firstRunApplications = new List<ProcessStartInfoBuilder>();
+            var firstRunApplicationFilenames = new List<string>();
 
             var invocationTasks = allSnapAwareApps.ForEachAsync(async x =>
             {
@@ -363,7 +363,7 @@ namespace Snap.Core
                 }
                 catch (Exception ex)
                 {
-                    logger?.ErrorException($"Exception thrown while executing snap hook for executable: {x.Filename}.", ex);
+                    logger?.ErrorException($"Exception thrown while running application: {x.Filename}. Arguments: {x.Arguments}", ex);
                 }
 
                 if (!isInitialInstall)
@@ -371,7 +371,7 @@ namespace Snap.Core
                     return;
                 }
 
-                firstRunApplications.Add(x);
+                firstRunApplicationFilenames.Add(x.Filename);
             }, 1 /* at a time */);
 
             await Task.WhenAll(invocationTasks);
@@ -381,9 +381,20 @@ namespace Snap.Core
                 return;
             }
 
-            firstRunApplications.ForEach(x => _snapOs.ProcessManager
-                .StartNonBlocking(new ProcessStartInfoBuilder(x.Filename)
-                    .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}")));
+            firstRunApplicationFilenames.ForEach(filename =>
+            {
+                var builder = new ProcessStartInfoBuilder(filename)
+                    .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}");
+                try
+                {
+                    _snapOs.ProcessManager
+                        .StartNonBlocking(builder);
+                }
+                catch (Exception ex)
+                {
+                    logger?.ErrorException($"Exception thrown while running 'first-run' application: {builder.Filename}. Arguments: {builder.Arguments}", ex);
+                }
+            });
         }
 
         public string GetApplicationDirectory(string baseDirectory, SemanticVersion version)

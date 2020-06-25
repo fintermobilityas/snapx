@@ -333,18 +333,20 @@ function Invoke-Dotnet-UnitTests
         $TestProjectName = Split-Path $Project -LeafBase
         $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
 
+        Invoke-Dotnet-Clear $Project
+
         Invoke-Command-Colored $CommandDotnet @(
             "build"
             "--configuration $Configuration"
-            "--framework $NetCoreAppVersion"
             "$Project"
         )
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
             "$Project"
-            "--configuration=$Configuration"
+            "--configuration $Configuration"
             "--verbosity normal"
+            "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$TestResultsOutputDirectoryPath"""
         )

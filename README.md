@@ -52,6 +52,11 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 All available commands has usage examples if you append `snapx [command] --help` in your favourite shell. 
 
+### List available releases for an application, e.g. snapx.demoapp
+
+![snapx list](https://media.githubusercontent.com/media/fintermobilityas/snapx.demoapp/develop/docs/snapxlist.png)
+
+### Usage
 ![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
 
 ## Code of Conduct

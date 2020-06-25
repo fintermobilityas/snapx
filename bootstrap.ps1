@@ -335,11 +335,6 @@ function Invoke-Dotnet-UnitTests
         $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
 
         Invoke-Command-Colored $CommandDotnet @(
-            "clean"
-            "$Project"
-        ) -IgnoreExitCode
-
-        Invoke-Command-Colored $CommandDotnet @(
             "build"
             "--configuration=$Configuration"
             "$Project"

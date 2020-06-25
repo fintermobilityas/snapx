@@ -336,7 +336,8 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "build"
-            "--configuration=$Configuration"
+            "--configuration $Configuration"
+            "--framework $NetCoreAppVersion"
             "$Project"
         )
 

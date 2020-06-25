@@ -76,6 +76,24 @@ function Invoke-Exit
 
 	exit 1
 }
+
+function Invoke-Dotnet-Clear {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $SrcDirectory
+    )
+
+    $DirectoriesToRemove = @(".vs", "bin", "obj", "packages")
+
+    Get-ChildItem -Directory $SrcDirectory -Recurse | ForEach-Object {
+        $DirectoryName = Split-Path -Leaf $_
+
+        if($DirectoriesToRemove.Contains($DirectoryName)) {
+            Remove-Item $_ -Force -Recurse | Out-Null
+        }
+    }
+}
+
 function Invoke-Command-Colored {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -162,7 +180,7 @@ function Invoke-Command-Colored {
 			Invoke-Exit "Command returned a non-zero exit code"
 		}
     }
-    
+
 }
 
 function Invoke-Configure-Msvs-Toolchain
@@ -188,7 +206,7 @@ function Invoke-Configure-Msvs-Toolchain
         cmd /s /c """$Path"" $args && set" | Where-Object { $_ -match '(\w+)=(.*)' } | ForEach-Object {
             $null = New-item -Force -Path "env:\$($Matches[1])" -Value $Matches[2]
         }
-        
+
     } else {
         Invoke-Exit "Unable to find visual studio: $VisualStudioVersion"
     }

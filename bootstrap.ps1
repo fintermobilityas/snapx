@@ -139,8 +139,6 @@ function Invoke-Build-Snap {
 
     Resolve-Shell-Dependency $CommandDotnet
 
-    Invoke-Command-Clean-Dotnet-Directory $SnapDotnetSrcDir
-
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapDotnetSrcDir Snap.csproj))
         "/p:Version=$Version",
@@ -162,8 +160,6 @@ function Invoke-Build-Snapx {
     Write-Output-Header "Building Snapx"
 
     Resolve-Shell-Dependency $CommandDotnet
-
-    Invoke-Command-Clean-Dotnet-Directory $SnapxDotnetSrcDir
 
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapxDotnetSrcDir Snapx.csproj))
@@ -222,8 +218,6 @@ function Invoke-Build-Snap-Installer {
     Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
-    Invoke-Command-Colored $CommandDotnet @("clean $SnapInstallerDotnetSrcDir") -IgnoreExitCode
-    
     if(Test-Path $SnapInstallerDotnetBuildPublishDir) {
         Get-Item $SnapInstallerDotnetBuildPublishDir | Remove-Item -Recurse -Force
     }
@@ -242,7 +236,7 @@ function Invoke-Build-Snap-Installer {
 
     if ($Rid -eq "win-x64") {
         Invoke-Command-Colored $CommandDotnet @(
-            "build $SnapxCsProj" 
+            "build $SnapxCsProj"
             "-p:SnapBootstrap=True"
             "--configuration $Configuration"
             "--framework $TargetArchDotNet"
@@ -303,7 +297,7 @@ function Invoke-Native-UnitTests
             if($env:SNAPX_CI_UNIX_DISABLE_GCC_TESTS -ne 1) {
                 $Projects += $GccProject
             }
-            
+
             $TestRunnerCount = $Projects.Length
             Write-Output "Running native unix unit tests. Test runner count: $TestRunnerCount"
 
@@ -381,7 +375,7 @@ if($OSPlatform -eq "Windows")
 switch ($OSPlatform) {
     "Windows" {
         Resolve-Windows $OSPlatform
-        Invoke-Configure-Msvs-Toolchain $VisualStudioVersion $CommandVsWhere        
+        Invoke-Configure-Msvs-Toolchain $VisualStudioVersion $CommandVsWhere
     }
     "Unix" {
         Resolve-Unix $OSPlatform

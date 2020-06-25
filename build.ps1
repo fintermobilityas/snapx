@@ -30,9 +30,10 @@ param(
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 . $WorkingDir\common.ps1
 
+$SrcDirectory = Join-Path $WorkingDir src
 $NupkgsDir = Join-Path $WorkingDir nupkgs
-$SnapSrcDir = Join-Path $WorkingDir src/Snap
-$SnapxSrcDir = Join-Path $WorkingDir src/Snapx
+$SnapSrcDir = Join-Path $SrcDirectory Snap
+$SnapxSrcDir = Join-Path $SrcDirectory Snapx
 
 $SnapCsProjPath = Join-Path $SnapSrcDir Snap.csproj
 $SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
@@ -99,7 +100,7 @@ function Invoke-Bootstrap-Ps1 {
     )
 }
 
-function Invoke-Install-Snapx 
+function Invoke-Install-Snapx
 {
     Invoke-Command-Colored dotnet @(
         "tool",
@@ -160,7 +161,7 @@ function Invoke-Build-Native {
     }
 }
 
-function Invoke-Build-Snap-Installer 
+function Invoke-Build-Snap-Installer
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -282,37 +283,49 @@ function Invoke-Git-Restore {
     Invoke-Command-Colored $CommandGit ("submodule update --init --recursive")
 }
 
+function Invoke-Clean-Build {
+    Invoke-Dotnet-Clear $SrcDirectory
+}
+
 switch ($Target) {
     "Bootstrap-Unix"
     {
+        Invoke-Clean-Build
         Invoke-Bootstrap-Unix
         Invoke-Summary
     }
     "Bootstrap-Windows"
     {
+        Invoke-Clean-Build
         Invoke-Bootstrap-Windows
         Invoke-Summary
     }
     "Bootstrap" {
+        Invoke-Clean-Build
         Invoke-Bootstrap-Unix
         Invoke-Bootstrap-Windows
         Invoke-Summary
     }
     "Snap" {
+        Invoke-Clean-Build
         Invoke-Build-Snap
         Invoke-Summary
     }
     "Snap-Installer" {
+        Invoke-Clean-Build
         Invoke-Build-Snap-Installer -DotnetRid $DotnetRid
         Invoke-Summary
     }
     "Snapx" {
+        Invoke-Clean-Build
         Invoke-Install-Snapx
         Invoke-Summary
     }
     "Run-Native-UnitTests" {
         switch($OSPlatform) {
             "Windows" {
+                Invoke-Clean-Build
+
                 if($CIBuild) {
                     Invoke-Native-UnitTests
                     Invoke-Summary
@@ -333,15 +346,20 @@ switch ($Target) {
                     Invoke-Docker -Entrypoint "Run-Native-UnitTests"
                     return
                 }
-    
+
                 Invoke-Native-UnitTests
                 Invoke-Summary
+            }
+            Default {
+                Invoke-Exit "Unsupported os: $OSPlatform"
             }
         }
     }
     "Run-Dotnet-UnitTests" {
         switch($OSPlatform) {
             "Windows" {
+                Invoke-Clean-Build
+
                 if($CIBuild) {
                     Invoke-Dotnet-UnitTests
                     Invoke-Summary
@@ -358,11 +376,13 @@ switch ($Target) {
                 Invoke-Dotnet-UnitTests
             }
             "Unix" {
+                Invoke-Clean-Build
+
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
                     return
                 }
-    
+
                 Invoke-Dotnet-UnitTests
                 Invoke-Summary
             }

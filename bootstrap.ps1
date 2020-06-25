@@ -344,7 +344,6 @@ function Invoke-Dotnet-UnitTests
             "test"
             "$Project"
             "--configuration=$Configuration"
-            "--verbosity normal"
 			"--test-adapter-path:""$TestAdapterPath"""
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$TestResultsOutputDirectoryPath"""

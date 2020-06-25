@@ -49,14 +49,12 @@ Codename:	cosmic";
             Assert.Equal("cosmic", codeName);
         }
         
-#if PLATFORM_UNIX
         [Fact]
         public void TestGetProcesses()
         {
             var processes = _snapOs.GetProcesses();
             Assert.NotEmpty(processes);
         }
-#endif
 
         [Fact]
         public void TestSpecialFolders()

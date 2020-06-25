@@ -1,4 +1,6 @@
-﻿using Snap.Logging;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using Snap.Logging;
 using Xunit;
 
 namespace Snap.Installer.Tests
@@ -6,10 +8,11 @@ namespace Snap.Installer.Tests
     public class ProgramTests
     {
         [Fact]
-        public void TestMain()
+        public async Task TestMainImplAsync()
         {            
-            var exitCode = Program.MainImpl(new[] {"--unit-test"}, LogLevel.Info);
-            Assert.Equal(Program.UnitTestExitCode, exitCode);
+            using var cts = new CancellationTokenSource();
+            var exitCode = await Program.MainImplAsync(new[] {"--headless"}, LogLevel.Info, cts);
+            Assert.Equal(1, exitCode);
         }        
     }
 }

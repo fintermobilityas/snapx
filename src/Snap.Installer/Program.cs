@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using JetBrains.Annotations;
 using LightInject;
@@ -27,12 +28,21 @@ namespace Snap.Installer
     internal static partial class Program
     {
         const string ApplicationName = "Snapx.Installer";
-        internal const int UnitTestExitCode = 272151230; // Random value 
         static Mutex _mutexSingleInstanceWorkingDirectory;
         static bool _mutexIsTaken;
         
-        public static int Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
+            using var environmentCts = new CancellationTokenSource();
+            return await MainImplAsync(args, LogLevel.Trace, environmentCts);
+        }
+
+        public static async Task<int> MainImplAsync([NotNull] string[] args, LogLevel logLevel,
+            [NotNull] CancellationTokenSource environmentCts)
+        {
+            if (args == null) throw new ArgumentNullException(nameof(args));
+            if (environmentCts == null) throw new ArgumentNullException(nameof(environmentCts));
+
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
                 var process = Process.GetCurrentProcess();
@@ -46,15 +56,6 @@ namespace Snap.Installer
                 Console.WriteLine("Debugger attached.");
             }
 
-            return MainImpl(args, LogLevel.Trace);
-        }
-
-        public static int MainImpl([NotNull] string[] args, LogLevel logLevel)
-        {
-            if (args == null) throw new ArgumentNullException(nameof(args));
-                    
-            var environmentCts = new CancellationTokenSource();
-            
             int exitCode;
            
             try
@@ -70,11 +71,11 @@ namespace Snap.Installer
                 var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
                 
                 var environment = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
-                exitCode = MainImpl(environment, snapInstallerLogger, headless, unitTest);
+                exitCode = await MainImplAsync(environment, snapInstallerLogger, headless, unitTest);
             }
             catch (Exception e)
             {
-                Console.Error.WriteLine($"Exception thrown during installation: {e.Message}");
+                await Console.Error.WriteLineAsync($"Exception thrown during installation: {e.Message}");
                 exitCode = 1;
             }
 
@@ -93,16 +94,12 @@ namespace Snap.Installer
             return exitCode;
         }
 
-        static int MainImpl([NotNull] SnapInstallerEnvironment snapInstallerEnvironment, [NotNull] ILog snapInstallerLogger, bool headless, bool unitTest)
+        static async Task<int> MainImplAsync([NotNull] SnapInstallerEnvironment snapInstallerEnvironment,
+            [NotNull] ILog snapInstallerLogger, bool headless, bool unitTest)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
-        
-            if (unitTest)
-            {
-                return UnitTestExitCode;
-            }
-
+            
             var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();            
             var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
             var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
@@ -122,9 +119,9 @@ namespace Snap.Installer
             var snapExtractor = snapInstallerEnvironment.Container.GetInstance<ISnapExtractor>();
             var nugetServiceCommandInstall = new NugetService(snapOs.Filesystem, new NugetLogger(snapInstallerLogger));
 
-            int RunInstaller()
+            Task<int> RunInstallerAsync()
             {
-                return Install(snapInstallerEnvironment, snapInstallerEmbeddedResources,
+                return InstallAsync(snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
                     snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger,
                     headless);
@@ -148,7 +145,7 @@ namespace Snap.Installer
                 return -1;
             }
 
-            return RunInstaller();
+            return await RunInstallerAsync();
         }
 
         static SnapInstallerEnvironment BuildEnvironment(ISnapOs snapOs, CancellationTokenSource globalCts, LogLevel logLevel, ILog logger)

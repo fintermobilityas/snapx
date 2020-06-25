@@ -22,7 +22,7 @@ namespace Snap.Installer
 {
     internal partial class Program
     {
-        static int Install([NotNull] ISnapInstallerEnvironment environment,
+        static async Task<int> InstallAsync([NotNull] ISnapInstallerEnvironment environment,
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
             [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
@@ -49,7 +49,7 @@ namespace Snap.Installer
 
             var cancellationToken = environment.CancellationToken;
             var installerProgressSource = new SnapProgressSource();
-            var onFirstAnimationRenderedEvent = new ManualResetEventSlim(false);
+            var onFirstAnimationRenderedEvent = new SemaphoreSlim(0, 1);
             var exitCode = 1;
 
             // ReSharper disable once ImplicitlyCapturedClosure
@@ -66,7 +66,7 @@ namespace Snap.Installer
                 else
                 {
                     diskLogger.Info("Waiting for main window to become visible.");
-                    onFirstAnimationRenderedEvent.Wait(cancellationToken);
+                    await onFirstAnimationRenderedEvent.WaitAsync(cancellationToken);
                     onFirstAnimationRenderedEvent.Dispose();
                     diskLogger.Info("Main window should now be visible.");
                 }
@@ -177,8 +177,11 @@ namespace Snap.Installer
 
                             mainWindowLogger.Info($"Current version: {snapApp.Version}. Channel: {snapAppChannelReleases.Channel.Name}.");
 
-                            // ReSharper disable once MethodSupportsCancellation
-                            await Task.Delay(TimeSpan.FromSeconds(3));
+                            if (!headless)
+                            {
+                                // ReSharper disable once MethodSupportsCancellation
+                                await Task.Delay(TimeSpan.FromSeconds(3));
+                            }
 
                             mainWindowLogger.Info("Downloading required assets");
 
@@ -394,7 +397,7 @@ namespace Snap.Installer
             {
                 try
                 {
-                    TplHelper.RunSync(() => InstallInBackgroundAsync(new ConsoleMainViewModel()));
+                    await InstallInBackgroundAsync(new ConsoleMainViewModel());
                 }
                 catch (OperationCanceledException)
                 {
@@ -408,7 +411,8 @@ namespace Snap.Installer
                 {
                     MainWindow.Environment = environment;
                     MainWindow.ViewModel = new AvaloniaMainWindowViewModel(snapInstallerEmbeddedResources,
-                        installerProgressSource, () => onFirstAnimationRenderedEvent.Set(), cancellationToken);
+                        installerProgressSource, () => 
+                            onFirstAnimationRenderedEvent.Release(), cancellationToken);
 
                     Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
                 });

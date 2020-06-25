@@ -1,6 +1,8 @@
-# Snapx 
+# 📖 About Snapx 
 
-![dependabot](https://api.dependabot.com/badges/status?host=github&repo=fintermobilityas/snapx)
+![dependabot](https://api.dependabot.com/badges/status?host=github&repo=fintermobilityas/snapx) [![Gitter](https://badges.gitter.im/fintermobilityas-snapx/community.svg)](https://gitter.im/fintermobilityas-snapx/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) ![License](https://img.shields.io/github/license/fintermobilityas/snapx.svg)
+<br>
+[![NuGet](https://img.shields.io/nuget/v/snapx.svg)](https://www.nuget.org/packages/snapx) [![downloads](https://img.shields.io/nuget/dt/snapx)](https://www.nuget.org/packages/snapx) ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/snapx) ![Size](https://img.shields.io/github/repo-size/snapx/snapx.svg) 
 
 | Build server | Platforms | Build status |
 |--------------|----------|--------------|
@@ -9,7 +11,7 @@
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. 
 
-## Getting Started Guide
+## 🚀 Getting Started Guide
 
 Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
 

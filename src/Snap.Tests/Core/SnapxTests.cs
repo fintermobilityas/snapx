@@ -1,4 +1,3 @@
-#if PLATFORM_WINDOWS
 using System;
 using Moq;
 using NuGet.Versioning;
@@ -9,12 +8,12 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    public class SnapxWindowsTests : IClassFixture<BaseFixture>
+    public class SnapxTests : IClassFixture<BaseFixture>
     {
         // ReSharper disable once NotAccessedField.Local
         readonly BaseFixture _baseFixture;
 
-        public SnapxWindowsTests(BaseFixture baseFixture)
+        public SnapxTests(BaseFixture baseFixture)
         {
             _baseFixture = baseFixture;
 
@@ -257,4 +256,3 @@ namespace Snap.Tests.Core
         }
     }
 }
-#endif

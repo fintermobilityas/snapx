@@ -25,7 +25,10 @@ namespace Snap.Extensions
         {
             try
             {
-                return packageSource != null && packageSource.SourceUri != null && packageSource.SourceUri.IsUnc;
+                return packageSource != null 
+                       && packageSource.SourceUri != null
+                       && packageSource.SourceUri.IsUnc
+                       && packageSource.SourceUri.IsAbsoluteUri;
             }
             catch
             {
@@ -37,7 +40,10 @@ namespace Snap.Extensions
         {
             try
             {
-                return packageSource != null && packageSource.SourceUri != null && packageSource.IsLocal;
+                return packageSource != null 
+                       && packageSource.SourceUri != null
+                       && packageSource.SourceUri.IsAbsoluteUri
+                       && packageSource.IsLocal;
             }
             catch
             {

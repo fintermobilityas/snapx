@@ -60,7 +60,7 @@ namespace Snap.Tests.NuGet
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]
-        public async Task TestDirectDownloadWithProgressAsync_Local_Directory_Package_Source(NuGetProtocolVersion protocolVersion)
+        public async Task TestDirectDownloadWithProgressAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
             using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
@@ -158,6 +158,7 @@ namespace Snap.Tests.NuGet
             
             using var packageArchiveRead = new PackageArchiveReader(dstFilename);
             Assert.Equal(packageArchiveRead.GetIdentity(), packageIdentity);
+            Assert.Equal(new Uri(publishDirectory), packageSource.SourceUri);
         }
 
         [Theory]
@@ -188,6 +189,7 @@ namespace Snap.Tests.NuGet
             await _nugetService.DeleteAsync(packageIdentity, packageSources, packageSource);
 
             Assert.False(_snapFilesystem.FileExists(packageFilenameAbsolute));
+            Assert.Equal(new Uri(deletePackageSrcDirectory),packageSource.SourceUri);
         }
 
         async Task WriteNugetConfigToWorkingDirectoryAsync()

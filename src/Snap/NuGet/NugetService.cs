@@ -159,7 +159,7 @@ namespace Snap.NuGet
 
             if (packageSource.IsLocalOrUncPath())
             {
-                var destinationDirectory = packageSource.Source;
+                var destinationDirectory = packageSource.SourceUri.AbsolutePath;
                 _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
 
                 var destinationFilename = _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(packagePath));
@@ -185,8 +185,11 @@ namespace Snap.NuGet
 
             if (packageSource.IsLocalOrUncPath())
             {
-                var nupkg = _snapFilesystem.PathCombine(packageSource.Source, $"{packageIdentity.Id}.{packageIdentity.Version}.nupkg");
-                var snupkg = _snapFilesystem.PathCombine(packageSource.Source, $"{packageIdentity.Id}.{packageIdentity.Version}.snupkg");
+                var sourceDirectory = packageSource.SourceUri.AbsolutePath;
+                _snapFilesystem.DirectoryExistsThrowIfNotExists(sourceDirectory);
+
+                var nupkg = _snapFilesystem.PathCombine(sourceDirectory, $"{packageIdentity.Id}.{packageIdentity.Version}.nupkg");
+                var snupkg = _snapFilesystem.PathCombine(sourceDirectory, $"{packageIdentity.Id}.{packageIdentity.Version}.snupkg");
                 _snapFilesystem.FileDelete(nupkg);
                 _snapFilesystem.FileDeleteIfExists(snupkg);
                 return;

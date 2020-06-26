@@ -297,8 +297,10 @@ namespace snapx
                 await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
                     channel, releasesPackageAbsolutePath, cancellationToken, logger);
 
+                var skipInitialBlock = packageSource.IsLocalOrUncPath();
+
                 await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager,
-                    snapAppsReleases, snapApp, channel, TimeSpan.FromSeconds(15), cancellationToken);
+                    snapAppsReleases, snapApp, channel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock);
 
                 logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
                 logger.Info('-'.Repeat(TerminalBufferWidth));

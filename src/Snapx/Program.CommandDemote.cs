@@ -265,8 +265,10 @@ namespace snapx
             await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
                 anySnapTargetDefaultChannel, releasesNupkgAbsolutePath, cancellationToken, logger);
 
+            var skipInitialBlock = packageSource.IsLocalOrUncPath();
+
             await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, anyRidSnapApp, 
-                anySnapTargetDefaultChannel, TimeSpan.FromSeconds(15), cancellationToken);
+                anySnapTargetDefaultChannel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
 

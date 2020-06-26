@@ -555,7 +555,7 @@ namespace snapx
 
         static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
-            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken, bool initialBlock = true)
+            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken, bool skipInitialBlock = true)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
@@ -568,20 +568,24 @@ namespace snapx
             
             logger.Info('-'.Repeat(TerminalBufferWidth));
 
-            logger.Info(
-                $"Waiting until uploaded release nupkg is available in feed: {snapChannel.PushFeed.Name}. " +
-                $"Retry every {retryInterval.TotalSeconds:0.0}s.");
-
             var logDashes = false;
-            var isInitialBlock = initialBlock;
+            var printWaitInfo = true;
             while (!cancellationToken.IsCancellationRequested)
             {
                 sleep:
-                if (isInitialBlock)
+                if (skipInitialBlock)
                 {
-                    isInitialBlock = false;
+                    skipInitialBlock = false;
                     goto getSnapsReleasesAsync;
-                } 
+                }
+
+                if (printWaitInfo)
+                {
+                    printWaitInfo = false;
+                    logger.Info(
+                        $"Waiting until uploaded release nupkg is available in feed: {snapChannel.PushFeed.Name}. " +
+                        $"Retry every {retryInterval.TotalSeconds:0.0}s.");
+                }
 
                 await Task.Delay(retryInterval, cancellationToken);
 

@@ -290,7 +290,7 @@ namespace snapx
                             return 1;
                         }
                         return TplHelper.RunSync(() => CommandListAsync(opts, snapFilesystem, snapAppReader,
-                            nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, SnapListLogger,
+                            nuGetPackageSources, nugetServiceNoopLogger, snapExtractor, snapPackageManager, SnapListLogger,
                             workingDirectory, cancellationToken));
                     },
                     (RestoreOptions opts) =>

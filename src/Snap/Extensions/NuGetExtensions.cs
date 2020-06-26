@@ -21,6 +21,12 @@ namespace Snap.Extensions
 {
     internal static class NuGetExtensions
     {
+        public static bool IsLocalOrUncPath(this PackageSource packageSource)
+        {
+            return packageSource != null && packageSource.SourceUri != null &&
+                   (packageSource.IsLocal || packageSource.SourceUri.IsUnc);
+        }
+
         public static XElement SingleOrDefault([NotNull] this XDocument xDocument, [NotNull] XName name, bool ignoreCase = true)
         {
             if (xDocument == null) throw new ArgumentNullException(nameof(xDocument));

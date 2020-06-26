@@ -23,7 +23,7 @@ namespace snapx
     {   
         static async Task<int> CommandListAsync([NotNull] ListOptions options, [NotNull] ISnapFilesystem filesystem,
             [NotNull] ISnapAppReader appReader, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] INugetService nugetService,
-            [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog logger,
+            [NotNull] ISnapExtractor snapExtractor, ISnapPackageManager packageManager, [NotNull] ILog logger,
             [NotNull] string workingDirectory, CancellationToken cancellationToken)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -54,8 +54,7 @@ namespace snapx
             var stopwatch = new Stopwatch();
             stopwatch.Restart();
             
-            var snapAppses1DGraph = new List<(SnapApp snapApp,
-                string channelName, string fullOrDeltaPackageId, PackageSource packageSource)>();
+            var snapAppsesPackageSources = new List<(SnapApp snapApp, string fullOrDeltaPackageId, PackageSource packageSource)>();
 
             var tables = new List<(SnapApp snapApp, ConsoleTable table)>();
 
@@ -66,18 +65,9 @@ namespace snapx
                 {
                     continue;
                 }
-                
-                foreach (var channel in snapApp.Channels)
-                {
-                    var snapAppTmp = new SnapApp(snapApp);
-                    snapAppTmp.SetCurrentChannel(channel.Name);
 
-                    var packageSource = nuGetPackageSources.Items.Single(x => x.Name == channel.PushFeed.Name
-                                                                              && x.SourceUri == channel.PushFeed.Source);
-
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
-                    snapAppses1DGraph.Add((snapApp, channel.Name, snapAppTmp.BuildNugetUpstreamId(), packageSource));
-                }
+                var packageSource = await packageManager.GetPackageSourceAsync(snapApp, logger);
+                snapAppsesPackageSources.Add((snapApp, snapApp.BuildNugetUpstreamId(), packageSource));
 
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);
                 if (table != default) continue;
@@ -99,7 +89,7 @@ namespace snapx
 
             var downloadResults = new List<(bool downloadSuccess, DownloadResourceResult downloadResourceResult, string id)>();
 
-            await snapAppses1DGraph.DistinctBy(x => x.snapApp.Id).ForEachAsync(async x =>
+            await snapAppsesPackageSources.DistinctBy(x => x.snapApp.Id).ForEachAsync(async x =>
             {
                 try
                 {

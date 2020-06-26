@@ -307,7 +307,7 @@ namespace snapx
             logger.Info($"Promote completed in {stopWatch.Elapsed.TotalSeconds:0.0}s.");
 
             await CommandListAsync(new ListOptions {Id = snapApp.Id}, filesystem, snapAppReader,
-                nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
+                nuGetPackageSources, nugetService, snapExtractor, snapPackageManager, logger, workingDirectory, cancellationToken);
 
             return 0;
         }

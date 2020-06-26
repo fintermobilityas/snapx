@@ -560,6 +560,34 @@ namespace Snap.Tests.Core.Extensions
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]
+        public void TestBuildNugetSources_Source_Uri_Is_Null(NuGetProtocolVersion protocolVersion)
+        {
+            var snapNugetFeed = new SnapNugetFeed
+            {
+                Name = "nuget.org",
+                ProtocolVersion = protocolVersion,
+                Source = null
+            };
+
+            var snapChannel = new SnapChannel
+            {
+                Name = "test",
+                PushFeed = snapNugetFeed,
+                UpdateFeed = snapNugetFeed
+            };
+
+            var snapApp = new SnapApp
+            {
+                Channels = new List<SnapChannel> { snapChannel }
+            };
+
+            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            Assert.Empty(nugetPackageSources);
+        }
+
+        [Theory]
+        [InlineData(NuGetProtocolVersion.V2)]
+        [InlineData(NuGetProtocolVersion.V3)]
         public void TestBuildSnapFeedsFromNugetPackageSources(NuGetProtocolVersion protocolVersion)
         {
             string feedUrl;

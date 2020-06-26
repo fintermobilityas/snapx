@@ -581,7 +581,7 @@ namespace Snap.Extensions
 
             var nugetFeeds = snapApp.Channels
                 .SelectMany(x => new List<SnapNugetFeed> { x.PushFeed, x.UpdateFeed as SnapNugetFeed })
-                .Where(x => x != null)
+                .Where(x => x?.Name != null && x.Source != null)
                 .DistinctBy(x => x.Name)
                 .Select(x => x.BuildPackageSource(inMemorySettings))
                 .ToList();

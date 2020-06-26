@@ -110,8 +110,8 @@ namespace Snap.NuGet
 
     internal class NuGetInMemoryPackageSources : NuGetPackageSources
     {
-        public NuGetInMemoryPackageSources(string tempDirectory, IEnumerable<PackageSource> packageSources) : base(new NugetInMemorySettings(tempDirectory),
-            packageSources)
+        public NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources) : base(
+            new NugetInMemorySettings(tempDirectory), packageSources)
         {
         }
     }
@@ -137,25 +137,15 @@ namespace Snap.NuGet
 
         [UsedImplicitly]
         public NuGetPackageSources([NotNull] ISettings settings) : this(settings,
-            settings.GetConfigFilePaths().Select(x => new PackageSource(x)))
+            settings.GetConfigFilePaths().Select(x => new PackageSource(x)).ToList())
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
         }
 
-        public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IEnumerable<PackageSource> sources)
+        public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
         {
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (sources == null) throw new ArgumentNullException(nameof(sources));
-
-            var items = sources.ToList();
-
-            if (!items.Any())
-            {
-                throw new ArgumentException(nameof(items));
-            }
-
-            Items = items;
-            Settings = settings;
+            Items = sources ?? throw new ArgumentNullException(nameof(sources));
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         public IEnumerator<PackageSource> GetEnumerator()

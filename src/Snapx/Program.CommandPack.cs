@@ -119,8 +119,7 @@ namespace snapx
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
 
-            var pushFeed = nuGetPackageSources.Items.Single(x => x.Name == snapAppChannel.PushFeed.Name
-                                                                 && x.SourceUri == snapAppChannel.PushFeed.Source);
+            var updateFeedPackageSource = await snapPackageManager.GetPackageSourceAsync(snapApp);
 
             logger.Info("Downloading releases nupkg.");
 
@@ -158,7 +157,7 @@ namespace snapx
                 var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
 
                 var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
-                    pushFeed, SnapPackageManagerRestoreType.Pack, logger: logger, cancellationToken: cancellationToken);
+                    updateFeedPackageSource, SnapPackageManagerRestoreType.Pack, logger: logger, cancellationToken: cancellationToken);
                 if (!restoreSummary.Success)
                 {
                     return 1;
@@ -166,7 +165,7 @@ namespace snapx
 
                 if (snapAppChannelReleases.Any(x => x.Version >= snapApp.Version))
                 {
-                    logger.Error($"Version {snapApp.Version} is already published to feed: {pushFeed.Name}.");
+                    logger.Error($"Version {snapApp.Version} is already published to feed: {updateFeedPackageSource.Name}.");
                     return 1;
                 }
 
@@ -344,10 +343,10 @@ namespace snapx
                     snapPackageManager, distributedMutex, snapAppsReleases, fullOrDeltaSnapApp, snapAppChannel, pushPackages, cancellationToken);
             }
 
-            logger.Info($"Fetching releases overview from feed {pushFeed.Name}.");
+            logger.Info($"Fetching releases overview from feed {updateFeedPackageSource.Name}.");
 
             await CommandListAsync(new ListOptions {Id = fullOrDeltaSnapApp.Id}, filesystem, snapAppReader,
-                nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
+                nuGetPackageSources, nugetService, snapExtractor, snapPackageManager, logger, workingDirectory, cancellationToken);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Pack completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");
@@ -377,7 +376,12 @@ namespace snapx
             var pushDegreeOfParallelism = Math.Min(Environment.ProcessorCount, packages.Count);
 
             var nugetSources = snapApp.BuildNugetSources(filesystem.PathGetTempPath());
-            var packageSource = nugetSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
+            var pushFeedPackageSource = nugetSources.Items.Single(x => x.Name == snapChannel.PushFeed.Name);
+
+            if (pushFeedPackageSource.IsLocalOrUncPath())
+            {
+                filesystem.DirectoryCreateIfNotExists(pushFeedPackageSource.SourceUri.AbsolutePath);
+            }
 
             if (snapChannel.UpdateFeed.HasCredentials())
             {
@@ -409,7 +413,7 @@ namespace snapx
 
             await packages.ForEachAsync(async packageAbsolutePath =>
                 await PushPackageAsync(nugetService, filesystem, distributedMutex,
-                    nugetSources, packageSource, snapChannel, packageAbsolutePath, cancellationToken, logger), pushDegreeOfParallelism);
+                    nugetSources, pushFeedPackageSource, snapChannel, packageAbsolutePath, cancellationToken, logger), pushDegreeOfParallelism);
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 

@@ -284,7 +284,7 @@ namespace snapx
             logger.Info($"Fetching releases overview from feed: {anySnapTargetDefaultChannel.PushFeed.Name}");
 
             await CommandListAsync(new ListOptions {Id = anyRidSnapApp.Id }, filesystem, snapAppReader,
-                nuGetPackageSources, nugetService, snapExtractor, logger, workingDirectory, cancellationToken);
+                nuGetPackageSources, nugetService, snapExtractor, snapPackageManager, logger, workingDirectory, cancellationToken);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
             logger.Info($"Demote completed in {stopwatch.Elapsed.TotalSeconds:F1}s.");

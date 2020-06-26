@@ -33,11 +33,16 @@
     <PropertyGroup>
         <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
         <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
-        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion> 
+        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion>
+        <SnapInstallerAllowElevatedContext Condition="$(SnapInstallerAllowElevatedContext) == ''">false</SnapInstallerAllowElevatedContext>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(SnapBootstrap)">
         <DefineConstants>$(DefineConstants);SNAP_BOOTSTRAP;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(SnapInstallerAllowElevatedContext)">
+        <DefineConstants>$(DefineConstants);SNAP_INSTALLER_ALLOW_ELEVATED_CONTEXT;</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(OsPlatform) == 'Windows'">

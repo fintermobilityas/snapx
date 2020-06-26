@@ -83,12 +83,14 @@ namespace Snap.Installer
                     SetStatusText(mainWindowViewModel, message);
                 });
 
+                #if !SNAP_INSTALLER_ALLOW_ELEVATED_CONTEXT
                 if (coreRunLib.IsElevated())
                 {
                     var rootUserText = snapOs.OsPlatform == OSPlatform.Windows ? "Administrator" : "root";
                     mainWindowLogger.Error($"Error! Installer cannot run in an elevated user context: {rootUserText}");
                     goto done;
                 }
+                #endif
                 
                 diskLogger.Debug($"{nameof(environment.Io.WorkingDirectory)}: {environment.Io.WorkingDirectory}");
                 diskLogger.Debug($"{nameof(environment.Io.ThisExeWorkingDirectory)}: {environment.Io.ThisExeWorkingDirectory}");

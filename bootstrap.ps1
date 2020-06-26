@@ -341,6 +341,7 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "build"
+            "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "--configuration $Configuration"
             "$Project"
         )

@@ -78,7 +78,7 @@ namespace Snap.NuGet
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
 
-        Task DeleteAsync([NotNull] string packageId, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+        Task DeleteAsync([NotNull] PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource,
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
@@ -157,6 +157,18 @@ namespace Snap.NuGet
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
 
+            if (packageSource.IsLocalOrUncPath())
+            {
+                var destinationDirectory = packageSource.Source;
+                _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectory);
+
+                var destinationFilename = _snapFilesystem.PathCombine(destinationDirectory, _snapFilesystem.PathGetFileName(packagePath));
+
+                await _snapFilesystem.FileCopyAsync(packagePath, destinationFilename, cancellationToken, false);
+
+                return;
+            }
+
             var sourceRepository = _packageSources.Get(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
@@ -164,17 +176,26 @@ namespace Snap.NuGet
                 false, false, null, nugetLogger ?? NullLogger.Instance);
         }
 
-        public async Task DeleteAsync([NotNull] string packageId, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource, string packageVersion,
+        public async Task DeleteAsync([NotNull] PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource, 
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
         {
-            if (packageId == null) throw new ArgumentNullException(nameof(packageId));
+            if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+
+            if (packageSource.IsLocalOrUncPath())
+            {
+                var nupkg = _snapFilesystem.PathCombine(packageSource.Source, $"{packageIdentity.Id}.{packageIdentity.Version}.nupkg");
+                var snupkg = _snapFilesystem.PathCombine(packageSource.Source, $"{packageIdentity.Id}.{packageIdentity.Version}.snupkg");
+                _snapFilesystem.FileDelete(nupkg);
+                _snapFilesystem.FileDeleteIfExists(snupkg);
+                return;
+            }
 
             var sourceRepository = _packageSources.Get(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-            await packageUpdateResource.Delete(packageId, packageVersion, 
+            await packageUpdateResource.Delete(packageIdentity.Id, packageIdentity.Version.ToNormalizedString(), 
                 _ => BuildApiKey(packageSources, packageSource), _ => true, false, nugetLogger ?? NullLogger.Instance);
         }
 

@@ -74,22 +74,13 @@ namespace Snap.Tests.NuGet
             var packageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageDirectory,
                 $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            var packageBuilder = new PackageBuilder();
-            
-            packageBuilder.Id = packageIdentity.Id;
-            packageBuilder.Version = packageIdentity.Version;
-            packageBuilder.Authors.Add("test");
-            packageBuilder.Description = "description";
-
-            using var testFileStream = new MemoryStream(Encoding.UTF8.GetBytes("test"));
-            packageBuilder.Files.Add(new InMemoryPackageFile(testFileStream, NuGetFramework.AnyFramework, "test", "test.txt"));
-
             int packageFileSize;
             using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
             {
-                packageBuilder.Save(packageOutputStream);
+                using var nupkgStream = BuildNupkg(packageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
 
-                packageFileSize = (int) packageOutputStream.Length;
+                packageFileSize = (int)nupkgStream.Length;
             }
 
             var percentages = new List<int>();
@@ -133,7 +124,72 @@ namespace Snap.Tests.NuGet
                 
             Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
         }
-        
+
+        [Theory]
+        [InlineData(NuGetProtocolVersion.V2)]
+        [InlineData(NuGetProtocolVersion.V3)]
+        public async Task TestPushPackage_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
+        {
+            using var testPackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            var packageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
+
+            var packageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageSrcDirectory,
+                $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(packageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+
+            using var publishDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            var packageSource = new PackageSource(publishDirectory, "test", true)
+            {
+                ProtocolVersion = (int)protocolVersion
+            };
+
+            var nuGetPackageSources = new NuGetInMemoryPackageSources(publishDirectory, packageSource);
+
+            await _nugetService.PushAsync(packageFilenameAbsolute, nuGetPackageSources, packageSource);
+
+            var dstFilename = _snapFilesystem.PathCombine(publishDirectory, _snapFilesystem.PathGetFileName(packageFilenameAbsolute));
+            
+            using var packageArchiveRead = new PackageArchiveReader(dstFilename);
+            Assert.Equal(packageArchiveRead.GetIdentity(), packageIdentity);
+        }
+
+        [Theory]
+        [InlineData(NuGetProtocolVersion.V2)]
+        [InlineData(NuGetProtocolVersion.V3)]
+        public async Task TestDeletePackage_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
+        {
+            using var deletePackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            var packageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
+
+            var packageFilenameAbsolute = _snapFilesystem.PathCombine(deletePackageSrcDirectory,
+                $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(packageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+
+            var packageSource = new PackageSource(deletePackageSrcDirectory, "test", true)
+            {
+                ProtocolVersion = (int)protocolVersion
+            };
+
+            var packageSources = new NuGetInMemoryPackageSources(deletePackageSrcDirectory, packageSource);
+
+            await _nugetService.DeleteAsync(packageIdentity, packageSources, packageSource);
+
+            Assert.False(_snapFilesystem.FileExists(packageFilenameAbsolute));
+        }
+
         async Task WriteNugetConfigToWorkingDirectoryAsync()
         {
             const string nugetConfigXml =
@@ -141,6 +197,26 @@ namespace Snap.Tests.NuGet
 
             var dstFilename = _snapFilesystem.PathCombine(_baseFixture.WorkingDirectory, "nuget.config");
             await _snapFilesystem.FileWriteUtf8StringAsync(nugetConfigXml, dstFilename, CancellationToken.None);
+        }
+
+        static MemoryStream BuildNupkg(PackageIdentity packageIdentity)
+        {
+            var packageBuilder = new PackageBuilder();
+
+            packageBuilder.Id = packageIdentity.Id;
+            packageBuilder.Version = packageIdentity.Version;
+            packageBuilder.Authors.Add("test");
+            packageBuilder.Description = "description";
+
+            using var testFileStream = new MemoryStream(Encoding.UTF8.GetBytes("test"));
+            packageBuilder.Files.Add(new InMemoryPackageFile(testFileStream, NuGetFramework.AnyFramework, "test", "test.txt"));
+
+            var outputStream = new MemoryStream();
+            packageBuilder.Save(outputStream);
+
+            outputStream.Seek(0, SeekOrigin.Begin);
+
+            return outputStream;
         }
     }
 }

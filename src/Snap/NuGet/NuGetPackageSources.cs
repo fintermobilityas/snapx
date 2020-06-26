@@ -113,6 +113,12 @@ namespace Snap.NuGet
         public NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources) : base(
             new NugetInMemorySettings(tempDirectory), packageSources)
         {
+
+        }
+
+        public NuGetInMemoryPackageSources(string tempDirectory, PackageSource packageSource) : this(tempDirectory, new List<PackageSource> { packageSource })
+        {
+            
         }
     }
 

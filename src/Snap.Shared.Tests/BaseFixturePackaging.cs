@@ -479,6 +479,42 @@ namespace Snap.Shared.Tests
             FullPackageMemoryStream?.Dispose();
             DeltaPackageMemoryStream?.Dispose();
         }
+
+        public async Task<(string fullNupkgFilename, string deltaNupkgFilename)> WriteToAsync([NotNull] string directory,
+            [NotNull] ISnapFilesystem snapFilesystem, CancellationToken cancellationToken, bool writeFullNupkg = true, bool writeDeltaNupkg = true)
+        {
+            if (directory == null) throw new ArgumentNullException(nameof(directory));
+            if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
+
+            snapFilesystem.DirectoryExistsThrowIfNotExists(directory);
+
+            var fullNupkgFilename =
+                snapFilesystem.PathCombine(directory, snapFilesystem.PathGetFileName(FullPackageAbsolutePath));
+
+            if (writeFullNupkg)
+            {
+                await snapFilesystem.FileWriteAsync(FullPackageMemoryStream, fullNupkgFilename, cancellationToken);
+                FullPackageMemoryStream.Seek(0, SeekOrigin.Begin);
+            }
+
+            if (writeDeltaNupkg && !FullPackageSnapRelease.IsGenesis)
+            {
+                if (DeltaPackageMemoryStream == null)
+                {
+                    throw new ArgumentNullException(nameof(DeltaPackageMemoryStream), $"Unable to write delta package to {directory}");
+                }
+
+                var deltaNupkgFilename =
+                    snapFilesystem.PathCombine(directory, snapFilesystem.PathGetFileName(DeltaPackageAbsolutePath));
+
+                await snapFilesystem.FileWriteAsync(DeltaPackageMemoryStream, deltaNupkgFilename, cancellationToken);
+                DeltaPackageMemoryStream.Seek(0, SeekOrigin.Begin);
+
+                return (fullNupkgFilename, deltaNupkgFilename);
+            }
+
+            return (fullNupkgFilename, null);
+        }
     }
 
     public class BaseFixturePackaging : BaseFixture
@@ -536,15 +572,17 @@ namespace Snap.Shared.Tests
                 .BuildPackageAsync(snapPackDetails, releaseBuilder.CoreRunLib, cancellationToken);
 
             var fullPackageAbsolutePath = await releaseBuilder.WritePackageAsync(fullPackageMemoryStream, fullPackageSnapRelease, cancellationToken);
+            fullPackageMemoryStream.Seek(0, SeekOrigin.Begin);
 
             string deltaPackageAbsolutePath = null;
             if (deltaSnapApp != null 
                 && deltaPackageMemoryStream != null 
                 && deltaSnapRelease != null)
             {
-                deltaPackageAbsolutePath = await releaseBuilder.WritePackageAsync(deltaPackageMemoryStream, deltaSnapRelease, cancellationToken);                
+                deltaPackageAbsolutePath = await releaseBuilder.WritePackageAsync(deltaPackageMemoryStream, deltaSnapRelease, cancellationToken);
+                deltaPackageMemoryStream.Seek(0, SeekOrigin.Begin);
             }
-
+            
             return new BuildPackageContext
             {
                 FullPackageMemoryStream = fullPackageMemoryStream,

@@ -365,20 +365,25 @@ namespace Snap.NuGet
             }
         }
 
-        async Task<IEnumerable<NuGetPackageSearchMedatadata>> GetMetadatasAsync(string packageId, PackageSource source,
+        async Task<IEnumerable<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId,
+            [NotNull] PackageSource packageSource,
             CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
         {
+            if (string.IsNullOrWhiteSpace(packageId))
+                throw new ArgumentException("Value cannot be null or whitespace.", nameof(packageId));
+            if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
+            
             LocalPackageMetadataResource localPackageMetadataResource = null;
 
-            if (source.IsLocalOrUncPath())
+            if (packageSource.IsLocalOrUncPath())
             {
-                var sourceDirectory = source.SourceUri.AbsolutePath;
+                var sourceDirectory = packageSource.SourceUri.AbsolutePath;
                 if (!_snapFilesystem.DirectoryExists(sourceDirectory))
                 {
                     return Enumerable.Empty<NuGetPackageSearchMedatadata>();
                 }
 
-                localPackageMetadataResource = new LocalPackageMetadataResource(await BuildFindLocalPackagesResourceAsync(source, cancellationToken));
+                localPackageMetadataResource = new LocalPackageMetadataResource(await BuildFindLocalPackagesResourceAsync(packageSource, cancellationToken));
             }
 
             using var cacheContext = new SourceCacheContext();
@@ -389,12 +394,12 @@ namespace Snap.NuGet
                 cacheContext.WithRefreshCacheTrue();
             }
 
-            var sourceRepository = _packageSources.Get(source);
+            var sourceRepository = _packageSources.Get(packageSource);
             var metadataResource = localPackageMetadataResource ?? await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
             var metadatas = await metadataResource.GetMetadataAsync(packageId, includePrerelease, 
                 false, cacheContext, _nugetLogger, cancellationToken);
 
-            return metadatas.Select(metadata => BuildNuGetPackageSearchMedatadata(source, metadata));
+            return metadatas.Select(metadata => BuildNuGetPackageSearchMedatadata(packageSource, metadata));
         }
 
         async Task<FindLocalPackagesResource> BuildFindLocalPackagesResourceAsync([NotNull] PackageSource packageSource, CancellationToken cancellationToken)

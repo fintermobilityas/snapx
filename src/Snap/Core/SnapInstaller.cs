@@ -27,6 +27,7 @@ namespace Snap.Core
     [Flags]
     public enum SnapInstallerType
     {
+        None,
         Web = 1,
         Offline = 1 << 1
     }

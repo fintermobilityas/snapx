@@ -22,7 +22,7 @@ namespace Snap.Installer
 {
     internal partial class Program
     {
-        static async Task<int> InstallAsync([NotNull] ISnapInstallerEnvironment environment,
+        static async Task<(int exitCode, SnapInstallerType installerType)> InstallAsync([NotNull] ISnapInstallerEnvironment environment,
             [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
             [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
             [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
@@ -51,6 +51,7 @@ namespace Snap.Installer
             var installerProgressSource = new SnapProgressSource();
             var onFirstAnimationRenderedEvent = new SemaphoreSlim(1, 1);
             var exitCode = 1;
+            var installerType = SnapInstallerType.None;
 
             // ReSharper disable once ImplicitlyCapturedClosure
 
@@ -114,9 +115,8 @@ namespace Snap.Installer
                     goto done;
                 }
 
-                var nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, "Setup.nupkg");
+                var nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SetupNupkgFilename);
                 var nupkgReleasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
-                var offlineInstaller = false;
 
                 using (var webInstallerDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
                 {
@@ -143,7 +143,7 @@ namespace Snap.Installer
                             goto done;
                         }
 
-                        offlineInstaller = true;
+                        installerType = SnapInstallerType.Offline;
                     }
                     // Web installer
                     else if (snapFilesystem.FileExists(snapAppDllAbsolutePath))
@@ -295,6 +295,8 @@ namespace Snap.Installer
                             mainWindowLogger.Info("Successfully copied payload");
 
                             installerProgressSource.Reset();
+
+                            installerType = SnapInstallerType.Web;
                         }
                         catch (Exception e)
                         {
@@ -308,7 +310,7 @@ namespace Snap.Installer
                         goto done;
                     }
 
-                    diskLogger.Trace($"Offline installer: {offlineInstaller}");
+                    diskLogger.Trace($"Installer type: {installerType}");
                     diskLogger.Trace($"{nameof(nupkgAbsolutePath)}: {nupkgAbsolutePath}");
                     diskLogger.Trace($"{nameof(nupkgReleasesAbsolutePath)}: {nupkgReleasesAbsolutePath}");
 
@@ -332,15 +334,16 @@ namespace Snap.Installer
 
                     try
                     {
+                        var copyNupkgToPackagesDirectory = installerType == SnapInstallerType.Offline;
                         var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken, offlineInstaller);
+                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken, copyNupkgToPackagesDirectory);
 
                         if (snapAppInstalled == null)
                         {
                             goto done;
                         }
 
-                        if (!offlineInstaller
+                        if (installerType == SnapInstallerType.Web
                             && snapAppChannelReleases.HasDeltaReleases())
                         {
                             var snapReleasesToCopy = new List<SnapRelease>
@@ -406,7 +409,7 @@ namespace Snap.Installer
                 {
                     // ignore
                 }
-                return exitCode;
+                return (exitCode, installerType);
             }
 
             var avaloniaApp = BuildAvaloniaApp<App>()
@@ -422,7 +425,7 @@ namespace Snap.Installer
 
             avaloniaApp.StartWithClassicDesktopLifetime(null);
 
-            return exitCode;
+            return (exitCode, installerType);
         }
 
         static void SetStatusText([NotNull] IMainWindowViewModel mainWindowViewModel, [NotNull] string statusText)

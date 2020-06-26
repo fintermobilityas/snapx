@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 [assembly: InternalsVisibleTo("Snap.NetCoreApp.Tests")]
 [assembly: InternalsVisibleTo("Snap.Shared.Tests")]
 [assembly: InternalsVisibleTo("Snap.Tests")]
+[assembly: InternalsVisibleTo("Snap.Installer.Tests")]
 [assembly: InternalsVisibleTo("Snapx.Tests")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // Moq
 

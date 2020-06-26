@@ -44,12 +44,12 @@ namespace Snap.Shared.Tests
             return new SnapApp(snapApp) { Version = snapApp.Version.BumpMajor() };
         }
 
-        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenesis = false, string rid = null, OSPlatform osPlatform = default)
+        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenesis = false, string rid = null, OSPlatform osPlatform = default, string localPackageSourceDirectory = null)
         {
             var pushFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                Source = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(localPackageSourceDirectory ?? NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 ApiKey = "myapikey"
             };
@@ -57,7 +57,7 @@ namespace Snap.Shared.Tests
             var updateFeedNuget = new SnapNugetFeed
             {
                 Name = "nuget.org",
-                Source = new Uri(NuGetConstants.V3FeedUrl),
+                Source = new Uri(localPackageSourceDirectory ?? NuGetConstants.V3FeedUrl),
                 ProtocolVersion = NuGetProtocolVersion.V3,
                 Username = "myusername",
                 Password = "mypassword"

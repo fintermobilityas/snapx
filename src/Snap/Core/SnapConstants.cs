@@ -10,6 +10,7 @@ namespace Snap.Core
         public static readonly string SnapAppLibraryName = "Snap.App";
         public static readonly string SnapDllFilename = "Snap.dll";
         public static string SnapAppDllFilename => $"{SnapAppLibraryName}.dll";
+        public static string SetupNupkgFilename = "Setup.nupkg";
         public const string Sha256EmptyFileChecksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
         
         public static readonly string SnapUniqueTargetPathFolderName = BuildSnapNuspecUniqueFolderName();

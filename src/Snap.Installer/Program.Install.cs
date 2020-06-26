@@ -49,7 +49,7 @@ namespace Snap.Installer
 
             var cancellationToken = environment.CancellationToken;
             var installerProgressSource = new SnapProgressSource();
-            var onFirstAnimationRenderedEvent = new SemaphoreSlim(0, 1);
+            var onFirstAnimationRenderedEvent = new SemaphoreSlim(1, 1);
             var exitCode = 1;
 
             // ReSharper disable once ImplicitlyCapturedClosure

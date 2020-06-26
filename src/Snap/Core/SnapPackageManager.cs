@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Configuration;
 using NuGet.Packaging;
+using NuGet.Protocol.Core.Types;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Extensions;
@@ -242,7 +243,10 @@ namespace Snap.Core
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
-                    logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {packageSource.Source}.");
+                    var sourceLocation = packageSource.IsLocalOrUncPath()
+                        ? $"path: {_filesystem.PathGetFullPath(packageSource.SourceUri.AbsolutePath)}. Does the location exist?"
+                        : packageSource.Name;
+                    logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {sourceLocation}");
                     return (null, null, null);
                 }
 

@@ -9,6 +9,8 @@ namespace Snap.Core.IO
 
         public string WorkingDirectory { get; }
         
+        public static implicit operator string(DisposableDirectory directory) => directory.WorkingDirectory;
+
         public DisposableDirectory(string workingDirectory, ISnapFilesystem filesystem, bool createRandomSubdirectory = true)
         {
             _filesystem = filesystem;

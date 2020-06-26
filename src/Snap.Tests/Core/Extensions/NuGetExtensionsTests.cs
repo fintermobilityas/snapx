@@ -15,13 +15,17 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Theory]
-        [InlineData("file://c://nupkgs")]
-        [InlineData("file://nupkgs")]
-        [InlineData("file://server//path")]
-        public void TestIsLocalOrUncPath_Local_Directory(string directory)
+        [InlineData(@"\\?\C:\my_dir", false)]
+        [InlineData("c://nupkgs", true)]
+        [InlineData("c:\\nupkgs", true)]
+        [InlineData(@"\\localhost\c$\my_dir", true)]
+        [InlineData("file://c://nupkgs", true)]
+        [InlineData("file://nupkgs", true)]
+        [InlineData("file://server//path", true)]
+        public void TestIsLocalOrUncPath_Local_Directory(string directory, bool isLocalOrUncPath)
         {
             var packageSource = new PackageSource(directory, "test");
-            Assert.True(packageSource.IsLocalOrUncPath());
+            Assert.Equal(isLocalOrUncPath, packageSource.IsLocalOrUncPath());
         }
 
         [Theory]

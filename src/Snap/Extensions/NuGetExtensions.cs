@@ -21,10 +21,33 @@ namespace Snap.Extensions
 {
     internal static class NuGetExtensions
     {
+        public static bool IsUncPathSafe(this PackageSource packageSource)
+        {
+            try
+            {
+                return packageSource != null && packageSource.SourceUri != null && packageSource.SourceUri.IsUnc;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsLocalPathSafe(this PackageSource packageSource)
+        {
+            try
+            {
+                return packageSource != null && packageSource.SourceUri != null && packageSource.IsLocal;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static bool IsLocalOrUncPath(this PackageSource packageSource)
         {
-            return packageSource != null && packageSource.SourceUri != null &&
-                   (packageSource.IsLocal || packageSource.SourceUri.IsUnc);
+            return packageSource.IsLocalPathSafe() || packageSource.IsUncPathSafe();
         }
 
         public static XElement SingleOrDefault([NotNull] this XDocument xDocument, [NotNull] XName name, bool ignoreCase = true)

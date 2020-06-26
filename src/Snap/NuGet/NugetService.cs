@@ -225,6 +225,8 @@ namespace Snap.NuGet
             cacheContext.WithRefreshCacheTrue();
             cacheContext.GeneratedTempFolder = redirectedPackagesDirectory;
 
+            var totalBytesToDownload = downloadContext.PackageFileSize;
+
             using (new DisposableAction(() =>
             {
                 try
@@ -244,6 +246,19 @@ namespace Snap.NuGet
                 HttpSource httpSource;
                 switch (downloadResource)
                 {
+                    case LocalDownloadResource localDownloadResource:
+                        progressSource?.Raise(0, 0, 0, totalBytesToDownload);
+
+                        var localDownloadResult = await localDownloadResource.GetDownloadResourceResultAsync(downloadContext.PackageIdentity,
+                            new PackageDownloadContext(cacheContext, redirectedPackagesDirectory, true), redirectedPackagesDirectory, 
+                            _nugetLogger, cancellationToken);
+
+                        localDownloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
+
+                        progressSource?.Raise(100, localDownloadResult.PackageStream.Length, 
+                            localDownloadResult.PackageStream.Length, downloadContext.PackageFileSize);
+
+                        return localDownloadResult;
                     case DownloadResourceV3 downloadResourceV3:
                         httpSource = downloadResourceV3.BuildHttpSource();
                         downloadUrl = await downloadResourceV3.BuildDownloadUrlV3Async(downloadContext.PackageIdentity, _nugetLogger, cancellationToken);
@@ -286,7 +301,6 @@ namespace Snap.NuGet
                     var outputStream = new MemoryStream();
                     var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
                         
-                    var totalBytesToDownload = downloadContext.PackageFileSize;
                     progressSource?.Raise(0, 0, 0, totalBytesToDownload);
 
                     var totalBytesDownloadedSoFar = 0L;

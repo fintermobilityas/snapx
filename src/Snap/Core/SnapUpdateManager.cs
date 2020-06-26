@@ -228,6 +228,7 @@ namespace Snap.Core
             var packageSource = await _snapPackageManager.GetPackageSourceAsync(_snapApp, _logger, ApplicationId);
             if (packageSource == null)
             {
+                _logger.Error("Unknown error resolving update feed.");
                 return null;
             }
 

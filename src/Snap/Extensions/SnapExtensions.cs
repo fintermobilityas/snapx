@@ -525,11 +525,7 @@ namespace Snap.Extensions
             {
                 var snapsChannel = snapAppAvailableChannels[i];
                 var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed.Name);
-                if (requirePushFeed && pushFeed == null)
-                {
-                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed.Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
-                }
-
+                
                 SnapFeed updateFeed = null;
 
                 switch (snapsChannel.UpdateFeed)
@@ -542,14 +538,20 @@ namespace Snap.Extensions
                         break;
                 }
 
-                if (requireUpdateFeed && updateFeed == null)
+                if (requirePushFeed && pushFeed == null)
                 {
-                    throw new Exception($"Unable to resolve update feed type: {snapsChannel.UpdateFeed?.GetType().Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
+                    throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed.Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 if (!requirePushFeed && pushFeed == null)
                 {
                     pushFeed = new SnapNugetFeed();
+                }
+
+                // Todo: Use actual feed name instead of type when throwing exception.
+                if (requireUpdateFeed && updateFeed == null)
+                {
+                    throw new Exception($"Unable to resolve update feed type: {snapsChannel.UpdateFeed?.GetType().Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
 
                 if (!requireUpdateFeed && updateFeed == null)

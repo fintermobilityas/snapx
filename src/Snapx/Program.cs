@@ -555,7 +555,7 @@ namespace snapx
 
         static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
-            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken)
+            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken, bool initialBlock = true)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
@@ -573,11 +573,19 @@ namespace snapx
                 $"Retry every {retryInterval.TotalSeconds:0.0}s.");
 
             var logDashes = false;
+            var isInitialBlock = initialBlock;
             while (!cancellationToken.IsCancellationRequested)
             {
                 sleep:
+                if (isInitialBlock)
+                {
+                    isInitialBlock = false;
+                    goto getSnapsReleasesAsync;
+                } 
+
                 await Task.Delay(retryInterval, cancellationToken);
 
+                getSnapsReleasesAsync:
                 if (logDashes)
                 {
                     logger.Info('-'.Repeat(TerminalBufferWidth));

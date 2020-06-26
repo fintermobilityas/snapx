@@ -417,7 +417,10 @@ namespace snapx
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 
-            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, snapApp, snapChannel, TimeSpan.FromSeconds(15), cancellationToken);
+            var initialBlock = !pushFeedPackageSource.IsLocalOrUncPath();
+
+            await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases,
+                snapApp, snapChannel, TimeSpan.FromSeconds(15), cancellationToken, initialBlock);
         }
     }
 }

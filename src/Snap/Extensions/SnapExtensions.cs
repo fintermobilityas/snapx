@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
@@ -209,7 +210,13 @@ namespace Snap.Extensions
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{snapApp.Id.ToLowerInvariant()}_snapx";
         }
-        
+
+        internal static PackageIdentity BuildNugetReleasesUpstreamPackageIdentityId([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+            return new PackageIdentity(snapApp.BuildNugetReleasesUpstreamId(), snapApp.Version.ToNuGetVersion());
+        }
+
         internal static string BuildNugetReleasesUpstreamId([NotNull] this SnapRelease snapRelease)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));

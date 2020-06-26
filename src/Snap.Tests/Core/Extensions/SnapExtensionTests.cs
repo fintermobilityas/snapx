@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
 using NuGet.Configuration;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.Models;
@@ -402,7 +403,22 @@ namespace Snap.Tests.Core.Extensions
             var actualPackageId = snapApp.BuildNugetReleasesUpstreamId();
             Assert.Equal(expectedPackageId, actualPackageId);
         }
-        
+
+        [Fact]
+        public void TestBuildNugetReleasesUpstreamPackageIdentityId_SnapApp()
+        {
+            var snapApp = new SnapApp
+            {
+                Id = "demoApp",
+                Version = SemanticVersion.Parse("1.0.0")
+            };
+
+            var expectedPackageIdentity = new PackageIdentity($"{snapApp.Id.ToLowerInvariant()}_snapx", snapApp.Version.ToNuGetVersion());
+
+            var packageIdentity = snapApp.BuildNugetReleasesUpstreamPackageIdentityId();
+            Assert.Equal(expectedPackageIdentity, packageIdentity);
+        }
+
         [Fact]
         public void TestBuildNugetReleasesUpstreamId_SnapRelease()
         {

@@ -94,20 +94,6 @@ namespace Snap.Tests.NuGet
         }
 
         [Fact]
-        public async Task TestSearchAsync()
-        {
-            var packageSources = new NugetOrgOfficialV3PackageSources();
-
-            var packages = (await _nugetService
-                .SearchAsync("Nuget.Packaging", new SearchFilter(false), 0, 30, packageSources, CancellationToken.None)).ToList();
-
-            Assert.NotEmpty(packages);
-
-            var v450Release = packages.FirstOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
-            Assert.Null(v450Release);
-        }
-
-        [Fact]
         public async Task TestDownloadAsync()
         {
             var packageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
@@ -120,22 +106,6 @@ namespace Snap.Tests.NuGet
             Assert.Equal(63411, downloadResourceResult.PackageStream.Length);
 
             Assert.Null(downloadResourceResult.PackageReader);
-        }
-
-        [Fact]
-        public async Task TestGetMetadataByPackageIdentity()
-        {
-            var stablePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.5"));
-            var preReleasePackageIdentity = new PackageIdentity("LibLog", NuGetVersion.Parse("5.0.7-build.575"));
-            var packageSource = new NugetOrgOfficialV3PackageSources().Items.Single();
-
-            var stableMetadata = await _nugetService.GetMetadataByPackageIdentity(stablePackageIdentity, packageSource, null, default, true);
-            Assert.NotNull(stableMetadata);
-            Assert.False(stablePackageIdentity.Version.IsPrerelease);
-            
-            var preReleaseMetadata = await _nugetService.GetMetadataByPackageIdentity(preReleasePackageIdentity, packageSource, null, default, true);
-            Assert.NotNull(preReleaseMetadata);
-            Assert.True(preReleasePackageIdentity.Version.IsPrerelease);
         }
 
         [Fact]

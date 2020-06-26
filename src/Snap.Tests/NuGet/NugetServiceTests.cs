@@ -14,6 +14,7 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
+using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;
@@ -55,6 +56,59 @@ namespace Snap.Tests.NuGet
 
             var feeds = new NuGetMachineWidePackageSources(_snapFilesystem, _baseFixture.WorkingDirectory);
             Assert.NotNull(feeds.Items.SingleOrDefault(x => x.Name.StartsWith("nuget.org")));
+        }
+
+        [Theory]
+        [InlineData(NuGetProtocolVersion.V2)]
+        [InlineData(NuGetProtocolVersion.V3)]
+        public async Task TestGetMetadatasAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
+        {
+            using var packagesDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            var packageSource = new PackageSource(packagesDirectory, "test", true)
+            {
+                ProtocolVersion = (int)protocolVersion
+            };
+
+            var initialPackageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
+
+            var initialPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
+                $"{initialPackageIdentity.Id}.{initialPackageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(initialPackageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+
+            var secondPackageIdentity = new PackageIdentity("test", NuGetVersion.Parse("2.0.0"));
+
+            var secondPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
+                $"{secondPackageIdentity.Id}.{secondPackageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(secondPackageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+
+            var differentPackageIdentity = new PackageIdentity("test2", NuGetVersion.Parse("2.0.0"));
+
+            var differentPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
+                $"{differentPackageIdentity.Id}.{differentPackageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(differentPackageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(differentPackageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+
+            var packageSources = new NuGetInMemoryPackageSources(packagesDirectory, packageSource);
+
+            var packages = await _nugetService
+                .GetMetadatasAsync("test", packageSources, CancellationToken.None, false);
+
+            Assert.Equal(2, packages.Count);
         }
 
         [Theory]
@@ -123,6 +177,58 @@ namespace Snap.Tests.NuGet
                 It.Is<long>(v => v == downloadContext.PackageFileSize)), Times.Once);
                 
             Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
+        }
+
+        [Theory]
+        [InlineData(NuGetProtocolVersion.V2)]
+        [InlineData(NuGetProtocolVersion.V3)]
+        public async Task TestDownloadLatestAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
+        {
+            using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+
+            var packageSource = new PackageSource(testPackageDirectory, "test", true)
+            {
+                ProtocolVersion = (int)protocolVersion
+            };
+
+            var initialPackageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
+
+            var initialPackageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageDirectory,
+                $"{initialPackageIdentity.Id}.{initialPackageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(initialPackageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+            }
+            
+            var secondPackageIdentity = new PackageIdentity("test", NuGetVersion.Parse("2.0.0"));
+
+            var secondPackageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageDirectory,
+                $"{secondPackageIdentity.Id}.{secondPackageIdentity.Version.ToNormalizedString()}.nupkg");
+
+            int packageFileSize;
+            using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
+            {
+                using var nupkgStream = BuildNupkg(secondPackageIdentity);
+                await nupkgStream.CopyToAsync(packageOutputStream);
+
+                packageFileSize = (int)nupkgStream.Length;
+            }
+
+            var downloadContext = new DownloadContext
+            {
+                PackageIdentity = secondPackageIdentity,
+                PackageFileSize = packageFileSize
+            };
+
+            using var downloadResourceResult = await _nugetService.DownloadLatestAsync(secondPackageIdentity.Id, packageSource, default, true, true);
+            Assert.NotNull(downloadResourceResult);
+            Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
+            Assert.Equal(0, downloadResourceResult.PackageStream.Position);
+
+            using var package = new PackageArchiveReader(downloadResourceResult.PackageStream);
+            Assert.Equal(package.GetIdentity(), secondPackageIdentity);
         }
 
         [Theory]

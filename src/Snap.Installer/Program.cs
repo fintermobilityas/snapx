@@ -61,7 +61,6 @@ namespace Snap.Installer
             try
             {
                 var headless = args.Any(x => string.Equals("--headless", x, StringComparison.Ordinal));
-                var unitTest = args.Any(x => string.Equals("--unit-test", x, StringComparison.Ordinal));
 
                 var snapOs = SnapOs.AnyOs;
                 
@@ -71,7 +70,7 @@ namespace Snap.Installer
                 var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
                 
                 var environment = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
-                exitCode = await MainImplAsync(environment, snapInstallerLogger, headless, unitTest);
+                exitCode = await MainImplAsync(environment, snapInstallerLogger, headless);
             }
             catch (Exception e)
             {
@@ -95,7 +94,7 @@ namespace Snap.Installer
         }
 
         static async Task<int> MainImplAsync([NotNull] SnapInstallerEnvironment snapInstallerEnvironment,
-            [NotNull] ILog snapInstallerLogger, bool headless, bool unitTest)
+            [NotNull] ILog snapInstallerLogger, bool headless)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));

@@ -279,7 +279,8 @@ namespace Snap.NuGet
                             return new DownloadResourceResult(DownloadResourceResultStatus.NotFound);
                         }
 
-                        var downloadResourceResult = new DownloadResourceResult(_snapFilesystem.FileRead(localPackageInfo.Path), packageSource.Name);
+                        var memoryStream = await _snapFilesystem.FileReadAsync(localPackageInfo.Path, cancellationToken);
+                        var downloadResourceResult = new DownloadResourceResult(memoryStream, packageSource.Name);
 
                         progressSource?.Raise(100, downloadResourceResult.PackageStream.Length,
                             downloadResourceResult.PackageStream.Length, downloadContext.PackageFileSize);

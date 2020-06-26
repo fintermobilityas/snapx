@@ -160,6 +160,7 @@ namespace Snap.Tests.NuGet
             Assert.NotNull(downloadResourceResult);
             Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
             Assert.Equal(0, downloadResourceResult.PackageStream.Position);
+            Assert.IsType<MemoryStream>(downloadResourceResult.PackageStream);
 
             using var package = new PackageArchiveReader(downloadResourceResult.PackageStream);
             Assert.Equal(package.GetIdentity(), packageIdentity);

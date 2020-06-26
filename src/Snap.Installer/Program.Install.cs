@@ -154,7 +154,10 @@ namespace Snap.Installer
                         {
                             var (snapAppsReleases, packageSource, releasesMemoryStream) =
                                 await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
-                            releasesMemoryStream?.Dispose();
+                            if (releasesMemoryStream != null)
+                            {
+                                await releasesMemoryStream.DisposeAsync();
+                            }
                             if (snapAppsReleases == null)
                             {
                                 mainWindowLogger.Error("Failed to download releases nupkg. Try rerunning the installer.");

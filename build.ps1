@@ -313,7 +313,21 @@ switch ($Target) {
     }
     "Snap-Installer" {
         Invoke-Clean-Build
-        Invoke-Build-Snap-Installer -DotnetRid $DotnetRid
+        $Rid = $DotnetRid
+        if($Rid -eq "any") {
+            switch($OSPlatform) {
+                "Windows" {
+                    $Rid = "win-x64"
+                }
+                "Unix" {
+                    $Rid = "linux-x64"
+                }
+                Default {
+                    Invoke-Exit "Unsupported os: $OSPlatform"
+                }
+            }
+        }
+        Invoke-Build-Snap-Installer -DotnetRid $Rid
         Invoke-Summary
     }
     "Snapx" {

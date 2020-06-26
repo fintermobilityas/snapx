@@ -176,7 +176,7 @@ namespace Snap.AnyOS.Windows
                 return Filesystem.PathCombine(targetDirectory, title + ".lnk");
             }
 
-            logger?.Info("About to create shortcuts for {0}, base directory {1}", exeName, baseDirectory);
+            logger?.Info($"About to create shortcuts for {exeName}, base directory {baseDirectory}");
 
             var fileVerInfo = FileVersionInfo.GetVersionInfo(shortcutDescription.ExeAbsolutePath);
 
@@ -196,11 +196,11 @@ namespace Snap.AnyOS.Windows
                 // annoy them by recreating it.
                 if (!fileExists && shortcutDescription.UpdateOnly)
                 {
-                    logger?.Warn("Wanted to update shortcut {0} but it appears user deleted it", file);
+                    logger?.Warn($"Wanted to update shortcut {file} but it appears user deleted it");
                     continue;
                 }
 
-                logger?.Info("Creating shortcut for {0} => {1}", exeName, file);
+                logger?.Info($"Creating shortcut for {exeName} => {file}");
 
                 ShellLink shellLink;
                 logger?.ErrorIfThrows(() => SnapUtility.Retry(() =>
@@ -250,7 +250,7 @@ namespace Snap.AnyOS.Windows
         {
             if (Environment.OSVersion.Version < new Version(6, 1))
             {
-                logger?.Warn("fixPinnedExecutables: Found OS Version '{0}', exiting", Environment.OSVersion.VersionString);
+                logger?.Warn($"fixPinnedExecutables: Found OS Version '{Environment.OSVersion.VersionString}', exiting");
                 return;
             }
 
@@ -315,25 +315,25 @@ namespace Snap.AnyOS.Windows
             if (shortcut == null) throw new ArgumentNullException(nameof(shortcut));
             if (newAppPath == null) throw new ArgumentNullException(nameof(newAppPath));
             
-            logger?.Info("Processing shortcut '{0}'", shortcut.ShortCutFile);
+            logger?.Info($"Processing shortcut '{shortcut.ShortCutFile}'");
 
             var target = Environment.ExpandEnvironmentVariables(shortcut.Target);
             var targetIsUpdateDotExe = target.EndsWith("update.exe", StringComparison.OrdinalIgnoreCase);
 
-            logger?.Info("Old shortcut target: '{0}'", target);
+            logger?.Info($"Old shortcut target: '{target}'");
 
             target = Filesystem.PathCombine(baseDirectory, Filesystem.PathGetFileName(targetIsUpdateDotExe ? shortcut.Target : shortcut.IconPath));
 
-            logger?.Info("New shortcut target: '{0}'", target);
+            logger?.Info($"New shortcut target: '{target}'");
 
             shortcut.WorkingDirectory = newAppPath;
             shortcut.Target = target;
 
-            logger?.Info("Old iconPath is: '{0}'", shortcut.IconPath);
+            logger?.Info($"Old iconPath is: '{shortcut.IconPath}'");
             shortcut.IconPath = target;
             shortcut.IconIndex = 0;
 
-            logger?.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save), "Couldn't write shortcut " + shortcut.ShortCutFile);
+            logger?.ErrorIfThrows(() => SnapUtility.Retry(shortcut.Save), $"Couldn't write shortcut {shortcut.ShortCutFile}");
             logger?.Info("Finished shortcut successfully");
         }
         

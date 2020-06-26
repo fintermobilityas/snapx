@@ -445,7 +445,7 @@ namespace snapx
 
         static (SnapApps snapApps, List<SnapApp> snapAppTargets, bool error, string snapsAbsoluteFilename) BuildSnapAppsesFromDirectory(
             [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader reader, [NotNull] INuGetPackageSources nuGetPackageSources,
-            [NotNull] string workingDirectory)
+            [NotNull] string workingDirectory, bool requireUpdateFeed = true, bool requirePushFeed = true)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (reader == null) throw new ArgumentNullException(nameof(reader));
@@ -470,7 +470,8 @@ namespace snapx
 
                 snapApps.Generic ??= new SnapAppsGeneric();
 
-                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem).ToList(), false, snapsFilename);
+                return (snapApps, snapApps.BuildSnapApps(nuGetPackageSources, filesystem, 
+                    requireUpdateFeed, requirePushFeed).ToList(), false, snapsFilename);
             }
             catch (YamlException yamlException)
             {

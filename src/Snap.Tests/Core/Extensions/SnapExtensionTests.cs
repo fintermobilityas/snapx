@@ -912,6 +912,50 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
+        public void TestBuildSnapApp_Ignore_Non_Existant_Feeds()
+        {
+            var testChannel = new SnapChannel
+            {
+                Name = "test",
+                PushFeed = new SnapNugetFeed { Name = Guid.NewGuid().ToString("N") },
+                UpdateFeed = new SnapNugetFeed { Name = Guid.NewGuid().ToString("N") },
+                Current = true
+            };
+
+            var snapAppBefore = new SnapApp
+            {
+                Id = "demoapp",
+                SuperVisorId = Guid.NewGuid().ToString(),
+                Version = new SemanticVersion(1, 0, 0),
+                Channels = new List<SnapChannel>
+                {
+                    testChannel
+                },
+                Target = new SnapTarget
+                {
+                    Os = OSPlatform.Windows,
+                    Framework = "netcoreapp2.1",
+                    Rid = "win-x64",
+                    PersistentAssets = new List<string>
+                    {
+                        "subdirectory",
+                        "myjsonfile.json"
+                    }
+                }
+            };
+
+            var snapApps = new SnapApps(snapAppBefore);
+
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, 
+                snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem,
+                false, false);
+
+            Assert.NotNull(snapAppAfter);
+            Assert.Single(snapAppAfter.Channels.Select(x => x.UpdateFeed is {}));
+            Assert.Single(snapAppAfter.Channels.Select(x => x.PushFeed is {}));
+        }
+
+        [Fact]
         public void TestBuildNugetSources_SnapApp()
         {
             var nugetOrgFeed = new SnapNugetFeed

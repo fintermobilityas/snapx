@@ -408,19 +408,22 @@ namespace Snap.Extensions
             return snapFeed;
         }
 
-        internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps, [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem)
+        internal static IEnumerable<SnapApp> BuildSnapApps([NotNull] this SnapApps snapApps,
+            [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem,
+            bool requireUpdateFeed = true, bool requirePushFeed = true)
         {
             foreach (var snapsApp in snapApps.Apps)
             {
                 foreach (var snapsTarget in snapsApp.Targets)
                 {
-                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources, snapFilesystem);
+                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources, snapFilesystem, requireUpdateFeed, requirePushFeed);
                 }
             }
         }
 
         internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid,
-            [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem)
+            [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem,
+            bool requireUpdateFeed = true, bool requirePushFeed = true)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             if (rid == null) throw new ArgumentNullException(nameof(rid));
@@ -522,7 +525,7 @@ namespace Snap.Extensions
             {
                 var snapsChannel = snapAppAvailableChannels[i];
                 var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed.Name);
-                if (pushFeed == null)
+                if (requirePushFeed && pushFeed == null)
                 {
                     throw new Exception($"Unable to resolve push feed: {snapsChannel.PushFeed.Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
                 }
@@ -539,9 +542,19 @@ namespace Snap.Extensions
                         break;
                 }
 
-                if (updateFeed == null)
+                if (requireUpdateFeed && updateFeed == null)
                 {
                     throw new Exception($"Unable to resolve update feed type: {snapsChannel.UpdateFeed?.GetType().Name}. Channel: {snapsChannel.Name}. Application id: {snapApp.Id}");
+                }
+
+                if (!requirePushFeed && pushFeed == null)
+                {
+                    pushFeed = new SnapNugetFeed();
+                }
+
+                if (!requireUpdateFeed && updateFeed == null)
+                {
+                    updateFeed = new SnapNugetFeed();
                 }
 
                 var currentChannel = i == 0; // Default snap channel is always the first one defined. 

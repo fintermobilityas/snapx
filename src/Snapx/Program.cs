@@ -80,7 +80,13 @@ namespace snapx
             
             try
             {
-                LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(LogLevel.Info));
+                var logLevelStr = Environment.GetEnvironmentVariable("SNAPX_LOGLEVEL");
+                var defaultLogLevel = LogLevel.Info;
+                if (!string.IsNullOrWhiteSpace(logLevelStr) && Enum.TryParse<LogLevel>(logLevelStr, out var logLevel))
+                {
+                    defaultLogLevel = logLevel;
+                }
+                LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(defaultLogLevel));
                 return MainImplAsync(args);
             }
             catch (YamlException yamlException)

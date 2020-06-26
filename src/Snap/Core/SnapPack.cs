@@ -161,7 +161,7 @@ namespace Snap.Core
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
             
             var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-            _snapDllVersion = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
+            _snapDllVersion = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
         }
 
         public async Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
@@ -306,7 +306,7 @@ namespace Snap.Core
 
             var (_, nuspecPropertiesResolver) = BuildNuspecProperties(snapNuspecDetails.NuspecProperties);
 
-            var version = new NuGetVersion(fullSnapApp.Version.ToNormalizedString());
+            var version = fullSnapApp.Version;
             var description = fullSnapApp.Description ?? "snapx application";
             var authors = fullSnapApp.Authors ?? "snapx";
             var upstreamPackageId = fullSnapApp.BuildNugetUpstreamId();
@@ -411,7 +411,7 @@ namespace Snap.Core
 
                     var snapAssemblyInformationVersionValue = snapAssemblyInformationalVersionAttribute.Values.First().Value;
                         
-                    if (!NuGetVersion.TryParse(snapAssemblyInformationVersionValue, out var snapAssemblyVersion))
+                    if (!SemanticVersion.TryParse(snapAssemblyInformationVersionValue, out var snapAssemblyVersion))
                     {
                         throw new Exception($"Failed to parse assembly version: {snapAssemblyInformationVersionValue}. Target path: {targetPath}");
                     }

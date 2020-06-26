@@ -1180,7 +1180,7 @@ namespace Snap.Tests.Core
             
             var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);
             Assert.Equal(snapApp.BuildNugetReleasesUpstreamId(), manifest.Metadata.Id);
-            Assert.Equal(NuGetVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version.ToNuGetVersion());
+            Assert.Equal(SemanticVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version);
             Assert.NotEmpty(manifest.Metadata.Description);
             Assert.Equal("Snapx", manifest.Metadata.Authors.SingleOrDefault());
 
@@ -1205,7 +1205,7 @@ namespace Snap.Tests.Core
             
             var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);
             Assert.Equal(snapApp.BuildNugetReleasesUpstreamId(), manifest.Metadata.Id);
-            Assert.Equal(NuGetVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version.ToNuGetVersion());
+            Assert.Equal(SemanticVersion.Parse("2.0.0"), snapAppsReleasesBefore.Version);
             Assert.NotEmpty(manifest.Metadata.Description);
             Assert.Equal("Snapx", manifest.Metadata.Authors.SingleOrDefault());
 

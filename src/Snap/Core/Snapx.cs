@@ -41,7 +41,7 @@ namespace Snap.Core
                 {     
                     Logger = LogProvider.GetLogger(nameof(Snapx));
                     var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
-                    Version = !NuGetVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
+                    Version = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
 
                     SnapOs = AnyOS.SnapOs.AnyOs;
                     WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(Snapx).Assembly.Location);

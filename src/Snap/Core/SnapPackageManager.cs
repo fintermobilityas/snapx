@@ -641,7 +641,7 @@ namespace Snap.Core
                 var filename = _filesystem.PathGetFileName(nupkgAbsoluteFilename);
                 if (!_filesystem.FileExists(nupkgAbsoluteFilename))
                 {
-                    logger?.Error($"Checksum error - File does not exist: {filename}. This is not fatal! Package will be either downloaded from NuGet server or reassembled.");
+                    logger?.Warn($"Checksum error - File does not exist: {filename}. This is not fatal! Package will be either downloaded from NuGet server or reassembled.");
                     return false;
                 }
 

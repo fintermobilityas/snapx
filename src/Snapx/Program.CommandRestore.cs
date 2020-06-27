@@ -129,27 +129,27 @@ namespace snapx
 
                 logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                var snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapApp.GetDefaultChannelOrThrow());
-                if (!snapAppReleases.Any())
-                {
-                    logger.Info("No packages has been published.");
-                    continue;
-                }
-
-                var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource,
-                    restoreOptions.RestoreStrategyType,
-                    logger: logger, cancellationToken: cancellationToken, 
-                    checksumConcurrency: restoreOptions.RestoreConcurrency,
-                    downloadConcurrency: restoreOptions.DownloadConcurrency);
-
-                if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
-                {
-                    continue;
-                }
 
                 foreach (var snapChannel in snapAppsReleases.GetChannels(snapApp))
                 {
-                    snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                    var snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
+                    if (!snapAppReleases.Any())
+                    {
+                        logger.Info($"Skipping restore for channel {snapChannel.Name} because there are no releases for application ${snapApp.Id}.");
+                        continue;
+                    }
+
+                    var restoreSummary = await snapPackageManager.RestoreAsync(packagesDirectory, snapAppReleases, packageSource,
+                        restoreOptions.RestoreStrategyType,
+                        logger: logger, cancellationToken: cancellationToken,
+                        checksumConcurrency: restoreOptions.RestoreConcurrency,
+                        downloadConcurrency: restoreOptions.DownloadConcurrency);
+
+                    if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
+                    {
+                        continue;
+                    }
+
                     if (!snapAppReleases.Any())
                     {
                         continue;

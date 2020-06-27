@@ -80,13 +80,22 @@ namespace snapx
             
             try
             {
-                var logLevelStr = Environment.GetEnvironmentVariable("SNAPX_LOGLEVEL");
+                const string logLevelEnvironmentVariableName = "SNAPX_LOGLEVEL";
+                var logLevelStr = Environment.GetEnvironmentVariable(logLevelEnvironmentVariableName);
                 var defaultLogLevel = LogLevel.Info;
+                var logLevelOverriden = false;
                 if (!string.IsNullOrWhiteSpace(logLevelStr) && Enum.TryParse<LogLevel>(logLevelStr, out var logLevel))
                 {
                     defaultLogLevel = logLevel;
+                    logLevelOverriden = true;
                 }
+
                 LogProvider.SetCurrentLogProvider(new ColoredConsoleLogProvider(defaultLogLevel));
+                if (logLevelOverriden)
+                {
+                    SnapLogger.Warn($"Log level changed to {defaultLogLevel} because environment variable {logLevelEnvironmentVariableName} is set.");
+                }
+
                 return MainImplAsync(args);
             }
             catch (YamlException yamlException)

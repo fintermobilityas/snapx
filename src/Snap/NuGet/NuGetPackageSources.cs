@@ -80,27 +80,15 @@ namespace Snap.NuGet
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
-            
-            var nugetConfigAbsolutePath = filesystem.DirectoryGetAllFiles(workingDirectory)
-                .FirstOrDefault(x => x.EndsWith("nuget.config", StringComparison.OrdinalIgnoreCase));
-
             var packageSources = new List<PackageSource>();
 
-            if (nugetConfigAbsolutePath != null)
+            var nugetConfigReader = new NuGetConfigFileReader();
+            foreach (var packageSource in nugetConfigReader.ReadNugetSources(workingDirectory).Where(x => x.IsEnabled))
             {
-                var nugetConfigReader = new NuGetConfigFileReader();
-                foreach (var packageSource in nugetConfigReader.ReadNugetSources(workingDirectory).Where(x => x.IsEnabled))
+                if (!packageSources.Contains(packageSource))
                 {
-                    if (!packageSources.Contains(packageSource))
-                    {
-                        packageSources.Add(packageSource);
-                    }
+                    packageSources.Add(packageSource);
                 }
-            }
-            else
-            {
-                var packageSourceProvider = new PackageSourceProvider(nugetMachineWideSettings.Settings);
-                packageSources = packageSourceProvider.LoadPackageSources().Where(x => x.IsEnabled).ToList();
             }
 
             Items = packageSources;

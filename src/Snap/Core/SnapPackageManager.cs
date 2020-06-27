@@ -363,9 +363,12 @@ namespace Snap.Core
                         
                         progressSource?.RaiseChecksumProgress(totalProgressPercentage, checksumOkCount, 
                             snapReleasesChecksummed, totalSnapReleasesToChecksum);
-                        
-                        logger?.Info($"Checksum progress: {totalProgressPercentage}% - Completed {snapReleasesChecksummed} of {totalSnapReleasesToChecksum}.");
-                        
+
+                        if (totalProgressPercentage % 5 == 0)
+                        {
+                            logger?.Info($"Checksum progress: {totalProgressPercentage}% - Completed {snapReleasesChecksummed} of {totalSnapReleasesToChecksum}.");
+                        }
+
                     }, cancellationToken);
                 }, checksumConcurrency);
 
@@ -438,9 +441,12 @@ namespace Snap.Core
 
                             previousProgressReportDateTime = DateTime.UtcNow;
 
-                            logger?.Info($"Download progress: {totalBytesDownloadedPercentage}% - Transferred " +
-                                         $"{totalBytesDownloadedSoFarVolatile.BytesAsHumanReadable()} of " +
-                                         $"{totalBytesToDownload.BytesAsHumanReadable()}.");
+                            if (totalBytesDownloadedPercentage % 5 == 0)
+                            {
+                                logger?.Info($"Download progress: {totalBytesDownloadedPercentage}% - Transferred " +
+                                             $"{totalBytesDownloadedSoFarVolatile.BytesAsHumanReadable()} of " +
+                                             $"{totalBytesToDownload.BytesAsHumanReadable()}.");
+                            }
                         }
                     };
 
@@ -577,7 +583,7 @@ namespace Snap.Core
 
             logger?.Debug($"Downloading nupkg: {snapRelease.Filename}. " +
                           $"File size: {nupkgFileSize.BytesAsHumanReadable()}. " +
-                          $"Nuget feed name: {packageSource.Name}.");
+                          $"Package source: {packageSource.Name}.");
 
             try
             {
@@ -590,7 +596,7 @@ namespace Snap.Core
                 {
                     if (!downloadResult.SuccessSafe())
                     {
-                        logger?.Error($"Failed to download nupkg: {snapRelease.Filename}.");
+                        logger?.Error($"Unknown error downloading nupkg: {snapRelease.Filename}.");
                         return false;
                     }
                                         
@@ -613,14 +619,14 @@ namespace Snap.Core
                         }                        
                     }
                     
-                    logger?.Debug($"Verified checksum for downloaded nupkg: {snapRelease.Filename}.");
+                    logger?.Debug($"Successfully verified checksum for downloaded nupkg: {snapRelease.Filename}.");
 
                     return true;
                 }
             }
             catch (Exception e)
             {
-                logger?.ErrorException($"Unknown error downloading: {snapRelease.Filename}", e);
+                logger?.ErrorException($"Unknown error downloading nupkg: {snapRelease.Filename}", e);
                 return false;
             }
         }
@@ -635,14 +641,14 @@ namespace Snap.Core
                 var filename = _filesystem.PathGetFileName(nupkgAbsoluteFilename);
                 if (!_filesystem.FileExists(nupkgAbsoluteFilename))
                 {
-                    logger?.Error($"Checksum failed: File does not exist: {filename}");
+                    logger?.Error($"Checksum error - File does not exist: {filename}. This is not fatal! Package will be either downloaded from NuGet server or reassembled.");
                     return false;
                 }
 
                 using var packageArchiveReader = new PackageArchiveReader(nupkgAbsoluteFilename);
                 if (!silent)
                 {
-                    logger?.Debug($"Checksumm in progress: {filename}.");
+                    logger?.Debug($"Starting to checksum: {filename}.");
                 }
 
                 var sha256Checksum = _snapCryptoProvider.Sha256(snapRelease, packageArchiveReader, _snapPack);

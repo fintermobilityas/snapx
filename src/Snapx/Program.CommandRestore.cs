@@ -78,7 +78,7 @@ namespace snapx
 
             logger.Info($"Applications that will be restored: {string.Join(", ", applicationNames)}. Runtime identifiers (RID): {string.Join(", ", rids)}.");
 
-            var releaseNupkgs = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
+            var releasePackages = new Dictionary<string, (SnapAppsReleases snapReleases, PackageSource packageSource)>();
 
             foreach (var snapApp in snapAppTargets)
             {
@@ -98,21 +98,21 @@ namespace snapx
 
                 SnapAppsReleases snapAppsReleases;
                 PackageSource packageSource;
-                if (releaseNupkgs.TryGetValue(snapApp.Id, out var cached))
+                if (releasePackages.TryGetValue(snapApp.Id, out var cached))
                 {
                     snapAppsReleases = cached.snapReleases;
                     packageSource = cached.packageSource;
                 }
                 else
                 {
-                    logger.Info("Downloading releases nupkg.");
+                    logger.Info($"Downloading releases nupkg for application {snapApp.Id}");
 
                     // ReSharper disable once UseDeconstruction
                     var uncached = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
                     if (uncached.snapAppsReleases == null)
                     {
-                        logger.Error("Failed to download releases nupkg.");
-                        return 1;
+                        logger.Error($"Failed to download releases nupkg for application {snapApp.Id}");
+                        continue;
                     }
 
                     await using (uncached.releasesMemoryStream)
@@ -122,20 +122,20 @@ namespace snapx
 
                     snapAppsReleases = uncached.snapAppsReleases;
                     packageSource = uncached.packageSource;
-                    releaseNupkgs.Add(snapApp.Id, (uncached.snapAppsReleases, uncached.packageSource));
+                    releasePackages.Add(snapApp.Id, (uncached.snapAppsReleases, uncached.packageSource));
 
                     logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
                 }
 
-                logger.Info('-'.Repeat(TerminalBufferWidth));
-
-
                 foreach (var snapChannel in snapAppsReleases.GetChannels(snapApp))
                 {
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
+                    logger.Info($"Restoring channel {snapChannel.Name}.");
+
                     var snapAppReleases = snapAppsReleases.GetReleases(snapApp, snapChannel);
                     if (!snapAppReleases.Any())
                     {
-                        logger.Info($"Skipping restore for channel {snapChannel.Name} because there are no releases for application ${snapApp.Id}.");
+                        logger.Info($"Skipping restore for channel {snapChannel.Name} because no releases was found.");
                         continue;
                     }
 
@@ -146,11 +146,6 @@ namespace snapx
                         downloadConcurrency: restoreOptions.DownloadConcurrency);
 
                     if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
-                    {
-                        continue;
-                    }
-
-                    if (!snapAppReleases.Any())
                     {
                         continue;
                     }
@@ -183,7 +178,10 @@ namespace snapx
                         await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                     }
-                }                                
+
+                    logger.Info($"Finished restoring channel {snapChannel.Name}.");
+                    logger.Info('-'.Repeat(TerminalBufferWidth));
+                }
             }
 
             logger.Info('-'.Repeat(TerminalBufferWidth));

@@ -312,19 +312,19 @@ namespace Snap.Core
 
             async Task ChecksumAsync()
             {
-                List<SnapRelease> snapReleasesToChecksum;
+                var snapReleasesToChecksum = new List<SnapRelease>();
 
                 switch (restoreType)
                 {
                     case SnapPackageManagerRestoreType.Default:
-                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
+                        snapReleasesToChecksum.AddRange(snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta));
                         if (snapAppChannelReleases.HasDeltaReleases())
                         {
                             snapReleasesToChecksum.Add(snapAppChannelReleases.Last().AsFullRelease(false));
                         }
                         break;
                     case SnapPackageManagerRestoreType.Pack:
-                        snapReleasesToChecksum = snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta).ToList();
+                        snapReleasesToChecksum.AddRange(snapAppChannelReleases.Where(x => x.IsGenesis || x.IsDelta));
                         break;
                     default:
                         throw new NotSupportedException(restoreType.ToString());

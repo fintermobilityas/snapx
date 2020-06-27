@@ -84,7 +84,9 @@ namespace snapx
                 var logLevelStr = Environment.GetEnvironmentVariable(logLevelEnvironmentVariableName);
                 var defaultLogLevel = LogLevel.Info;
                 var logLevelOverriden = false;
-                if (!string.IsNullOrWhiteSpace(logLevelStr) && Enum.TryParse<LogLevel>(logLevelStr, out var logLevel))
+                if (!string.IsNullOrWhiteSpace(logLevelStr) 
+                    && Enum.TryParse<LogLevel>(logLevelStr, out var logLevel) 
+                    && logLevel != defaultLogLevel)
                 {
                     defaultLogLevel = logLevel;
                     logLevelOverriden = true;

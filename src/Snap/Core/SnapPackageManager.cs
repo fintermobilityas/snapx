@@ -480,7 +480,8 @@ namespace Snap.Core
                         var snapReleases = new List<SnapRelease>();
 
                         var mostRecentDeltaSnapRelease = snapAppChannelReleases.GetDeltaReleases().LastOrDefault();                                
-                        if (mostRecentDeltaSnapRelease != null)
+                        if (restoreSummary.ChecksumSummary.Any(x => !x.Ok) 
+                            && mostRecentDeltaSnapRelease != null)
                         {
                             var mostRecentFullSnapRelease = restoreSummary.ChecksumSummary.SingleOrDefault(x =>
                                 x.Ok 

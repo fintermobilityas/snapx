@@ -10,12 +10,12 @@
         <Copyright>Copyright © Finter Mobility As</Copyright>
         <NeutralLanguage>en-US</NeutralLanguage>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-        <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
         <PackageProjectUrl>https://github.com/fintermobilityas/snapx</PackageProjectUrl>
         <RepositoryUrl>https://github.com/fintermobilityas/snapx.git</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <NoPackageAnalysis>true</NoPackageAnalysis>
         <PackageOutputPath Condition="$(PackageOutputPath) == ''">$(MSBuildThisFileDirectory)..\nupkgs</PackageOutputPath>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
    <PropertyGroup>

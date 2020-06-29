@@ -182,9 +182,7 @@ namespace Snap.Core
                             { "X-Snapx-Channel", channel.Name },
                             { "X-Snapx-Application-Id", applicationId }
                         };
-                        #if !NETFULLFRAMEWORK
-                        await 
-                        #endif 
+   
                         using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
                         stream.Seek(0, SeekOrigin.Begin);
 

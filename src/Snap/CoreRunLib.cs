@@ -111,7 +111,7 @@ namespace Snap
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
-            #if !NETFULLFRAMEWORK
+            #if NETCOREAPP
             return pal_fs_chmod.Invoke(filename, mode) == 1;
             #endif
             var filenameUtf8 = Utf16ToUtf8(filename);
@@ -137,7 +137,7 @@ namespace Snap
             {
                 throw new FileNotFoundException(iconAbsolutePath);
             }
-            #if !NETFULLFRAMEWORK
+            #if NETCOREAPP
             return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
             #endif
             var exeAbsolutePathUtf8 = Utf16ToUtf8(exeAbsolutePath);

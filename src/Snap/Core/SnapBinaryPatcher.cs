@@ -1,9 +1,11 @@
 // Resharper disable all
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Threading;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.BZip2;
+using CompressionMode = SharpCompress.Compressors.CompressionMode;
 
 // Adapted from https://github.com/LogosBible/bsdiff.net/blob/master/src/bsdiff/BinaryPatchUtility.cs
 // Adapter from https://raw.githubusercontent.com/Squirrel/Squirrel.Windows/afe47c9c064bf9860404c61d6ef36d8ecb250b04/src/Squirrel/BinaryPatchUtility.cs

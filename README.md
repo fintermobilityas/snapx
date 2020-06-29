@@ -53,7 +53,7 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 ## .NET frameworks supported
 
 - .NET Core >= 3.1 (netcoreapp3.1)
-- .NET Full Framework >= 4.7.2 (net472)
+- .NET Full Framework >= 4.6.1 (net461)
 
 ## Platforms supported
 

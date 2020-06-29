@@ -364,7 +364,8 @@ namespace Snap.Core
                         progressSource?.RaiseChecksumProgress(totalProgressPercentage, checksumOkCount, 
                             snapReleasesChecksummed, totalSnapReleasesToChecksum);
 
-                        if (totalProgressPercentage % 5 == 0)
+                        if (totalProgressPercentage % 5 == 0 
+                            || totalSnapReleasesToChecksum <= 5)
                         {
                             logger?.Info($"Checksum progress: {totalProgressPercentage}% - Completed {snapReleasesChecksummed} of {totalSnapReleasesToChecksum}.");
                         }
@@ -441,7 +442,8 @@ namespace Snap.Core
 
                             previousProgressReportDateTime = DateTime.UtcNow;
 
-                            if (totalBytesDownloadedPercentage % 5 == 0)
+                            if (totalBytesDownloadedPercentage % 5 == 0
+                                || totalReleasesToDownload <= 5)
                             {
                                 logger?.Info($"Download progress: {totalBytesDownloadedPercentage}% - Transferred " +
                                              $"{totalBytesDownloadedSoFarVolatile.BytesAsHumanReadable()} of " +

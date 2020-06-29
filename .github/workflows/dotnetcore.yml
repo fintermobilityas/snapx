@@ -33,7 +33,7 @@ jobs:
             
   linux:
     runs-on: ubuntu-latest
-    name: Boostrap Linux (${{ matrix.configuration }})
+    name: Bootstrap Linux (${{ matrix.configuration }})
     needs: [setup]
     strategy:
       matrix:

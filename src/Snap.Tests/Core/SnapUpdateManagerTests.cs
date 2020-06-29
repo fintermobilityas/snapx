@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Moq;
+using Newtonsoft.Json;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.AnyOS;
@@ -80,8 +81,9 @@ namespace Snap.Tests.Core
 
             _snapHttpClientMock.Setup(x => x.GetStreamAsync(It.IsAny<Uri>(), It.IsAny<Dictionary<string, string>>())).ReturnsAsync(() =>
             {
-                var jsonUtf8Bytes = JsonSerializer.SerializeToUtf8Bytes(snapPackageManagerHttpFeed);
-                return new MemoryStream(jsonUtf8Bytes);
+                var jsonStr = JsonConvert.SerializeObject(snapPackageManagerHttpFeed);
+                var jsonBytes = Encoding.UTF8.GetBytes(jsonStr);
+                return new MemoryStream(jsonBytes);
             }).Callback((Uri uri, IDictionary<string, string> headers) =>
             {
                 Assert.Equal(uri, snapPackageManagerHttpFeed.Source);

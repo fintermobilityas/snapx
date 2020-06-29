@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
+    <PropertyGroup>
+        <AvaloniaVersion>0.9.11</AvaloniaVersion>
+    </PropertyGroup>
+
     <Import Project="..\Snap\Snap.Deps.targets" />
     <Import Project="Snap.Installer.Deps.targets" />
 

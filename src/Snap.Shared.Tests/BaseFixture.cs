@@ -32,6 +32,24 @@ namespace Snap.Shared.Tests
         public string WorkingDirectory => Directory.GetCurrentDirectory();
         public string NugetTempDirectory => Path.Combine(WorkingDirectory, "nuget");
 
+        public OSPlatform OsPlatform
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return OSPlatform.Windows;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    return OSPlatform.Linux;
+                }
+
+                throw new PlatformNotSupportedException();
+            }
+        }
+
         internal DisposableDirectory WithDisposableTempDirectory([NotNull] ISnapFilesystem filesystem)
         {
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));

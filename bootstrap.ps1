@@ -342,12 +342,14 @@ function Invoke-Dotnet-UnitTests
         Invoke-Command-Colored $CommandDotnet @(
             "build"
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
+            "/p:Platform=x64" # TODO: FIXME IF TARGETING ARM
             "--configuration $Configuration"
             "$Project"
         )
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
+            "/p:Platform=x64" # TODO: FIXME IF TARGETING ARM
             "$Project"
             "--configuration $Configuration"
             "--verbosity normal"

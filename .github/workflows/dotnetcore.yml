@@ -33,7 +33,7 @@ jobs:
             
   linux:
     runs-on: ubuntu-latest
-    name: Boostrap Linux (${{ matrix.configuration }})
+    name: Bootstrap Linux (${{ matrix.configuration }})
     needs: [setup]
     strategy:
       matrix:
@@ -184,8 +184,12 @@ jobs:
         run: |
           $nupkgs = Get-ChildItem ".\${{ env.GITHUB_WORKSPACE }}\nupkgs" -Filter *.nupkg | Select-Object -ExpandProperty FullName
           
-          $nupkgs | ForEach-Object -Parallel {
+          $nupkgs | ForEach-Object {
             dotnet nuget push $_ --source nuget.org --api-key ${{ secrets.PETERSUNDE_NUGET_ORG_API_KEY }}       
+            if($LASTEXITCODE -ne 0) 
+            {
+              Write-Error "Error uploading nupkg: $_"
+            }
           }
 
       - name: Create github release tag

@@ -32,16 +32,35 @@ namespace Snap
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_set_icon_delegate(
+            #if NETCOREAPP
             [MarshalAs(UnmanagedType.LPUTF8Str)] string exeFilename, 
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string iconFilename);
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string iconFilename
+            #else
+            [MarshalAs(UnmanagedType.LPStr)] string exeFilename, 
+            [MarshalAs(UnmanagedType.LPStr)] string iconFilename
+            #endif
+        );
         readonly Delegate<pal_set_icon_delegate> pal_set_icon;
             
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_fs_chmod_delegate([MarshalAs(UnmanagedType.LPUTF8Str)] string filename, int mode);
+        delegate int pal_fs_chmod_delegate(
+            #if NETCOREAPP
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string filename, 
+            #else
+            [MarshalAs(UnmanagedType.LPStr)] string filename,
+            #endif
+            int mode);
         readonly Delegate<pal_fs_chmod_delegate> pal_fs_chmod;
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
-        delegate int pal_fs_file_exists_delegate([MarshalAs(UnmanagedType.LPUTF8Str)] string filename);
+        delegate int pal_fs_file_exists_delegate(
+            #if NETCOREAPP
+            [MarshalAs(UnmanagedType.LPUTF8Str)] string filename
+            #else
+            [MarshalAs(UnmanagedType.LPStr)] string filename
+            #endif
+        );
         readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
         public CoreRunLib([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [JetBrains.Annotations.NotNull] string workingDirectory)
@@ -92,7 +111,11 @@ namespace Snap
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
+            #if !NETFULLFRAMEWORK
             return pal_fs_chmod.Invoke(filename, mode) == 1;
+            #endif
+            var filenameUtf8 = Utf16ToUtf8(filename);
+            return pal_fs_chmod.Invoke(filenameUtf8, mode) == 1;
         }
 
         public bool IsElevated()
@@ -114,14 +137,23 @@ namespace Snap
             {
                 throw new FileNotFoundException(iconAbsolutePath);
             }
+            #if !NETFULLFRAMEWORK
             return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
+            #endif
+            var exeAbsolutePathUtf8 = Utf16ToUtf8(exeAbsolutePath);
+            var iconAbsolutePathUtf8 = Utf16ToUtf8(iconAbsolutePath);
+            return pal_set_icon.Invoke(exeAbsolutePathUtf8, iconAbsolutePathUtf8) == 1;
         }
 
         public bool FileExists([JetBrains.Annotations.NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_file_exists.ThrowIfDangling();
+            #if !NETFULLFRAMEWORK
             return pal_fs_file_exists.Invoke(filename) == 1;
+            #endif
+            var filenameUtf8 = Utf16ToUtf8(filename);
+            return pal_fs_file_exists.Invoke(filenameUtf8) == 1;
         }
 
         public void Dispose()
@@ -159,6 +191,22 @@ namespace Snap
             }
 
             throw new PlatformNotSupportedException();
+        }
+
+        // https://stackoverflow.com/a/14761024/2470592
+        static string Utf16ToUtf8([JetBrains.Annotations.NotNull] string utf16String)
+        {
+            if (utf16String == null) throw new ArgumentNullException(nameof(utf16String));
+
+            #if NETCOREAPP
+            throw new NotSupportedException("Use UnmanagedType.LPUTF8Str");
+            #endif
+
+            var utf16Bytes = Encoding.Unicode.GetBytes(utf16String);
+            var utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, utf16Bytes);
+
+            // Return UTF8 bytes as ANSI string
+            return Encoding.Default.GetString(utf8Bytes);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]

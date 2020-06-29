@@ -7,9 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using System.Xml.Linq;
-using DotNet.Globbing;
 using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Frameworks;
@@ -989,34 +987,11 @@ namespace Snap.Core
                 }
 
                 nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs))?.Remove();
-
-                var files = nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs));
-                var excludeAttribute = files?.Attribute("exclude");
-
-                var defaultExcludePattern = new List<Glob>
-                {
-                    Glob.Parse("**/*.nuspec"),
-                    Glob.Parse("**/*.dll.xml"),
-                    Glob.Parse("**/*.log")
-                };
-
-                const char excludePatternDelimeter = ';';
-
-                var excludePatterns = string.IsNullOrWhiteSpace(excludeAttribute?.Value) ? defaultExcludePattern :
-                    excludeAttribute.Value.Contains(excludePatternDelimeter) ? excludeAttribute.Value.Split(excludePatternDelimeter)
-                        .Where(x => !string.IsNullOrWhiteSpace(x)).Select(Glob.Parse).ToList() :
-                    new List<Glob> {Glob.Parse(excludeAttribute.Value)};
-
+                
                 var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(baseDirectory).ToList();
                 foreach (var fileAbsolutePath in allFiles)
                 {
                     var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty).Substring(1);
-                    var excludeFile = excludePatterns.Any(x => x.IsMatch(relativePath));
-                    if (excludeFile)
-                    {
-                        continue;
-                    }
-
                     packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath).ForwardSlashesSafe()));
                 }
 

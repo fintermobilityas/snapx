@@ -32,18 +32,16 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 
 #### Build requirements
 
-**All Platforms**
-- GitVersion `dotnet tool update gitversion.tool -g`
-- Powershell v7 `dotnet tool update powershell -g`
-- .NET Core SDK v2.1 
-- .NET Core SDK v3.1 
-
 **Linux**
 
 - Docker >= 19.03.8
 
 **Windows**:
 - Docker Desktop >= v2.3.0.3
+- GitVersion `dotnet tool update gitversion.tool -g`
+- Powershell v7 `dotnet tool update powershell -g`
+- .NET Core SDK v2.1 
+- .NET Core SDK v3.1 
 - Visual Studio 2019 16.6 Community with C++ workload installed
 
 #### Bootstrap snapx 

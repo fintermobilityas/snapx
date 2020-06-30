@@ -2,8 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
-using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Extensions;
 
@@ -113,9 +111,10 @@ namespace Snap
             pal_fs_chmod.ThrowIfDangling();
             #if NETCOREAPP
             return pal_fs_chmod.Invoke(filename, mode) == 1;
-            #endif
+            #else
             var filenameUtf8 = Utf16ToUtf8(filename);
             return pal_fs_chmod.Invoke(filenameUtf8, mode) == 1;
+            #endif
         }
 
         public bool IsElevated()
@@ -139,21 +138,23 @@ namespace Snap
             }
             #if NETCOREAPP
             return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
-            #endif
+            #else
             var exeAbsolutePathUtf8 = Utf16ToUtf8(exeAbsolutePath);
             var iconAbsolutePathUtf8 = Utf16ToUtf8(iconAbsolutePath);
             return pal_set_icon.Invoke(exeAbsolutePathUtf8, iconAbsolutePathUtf8) == 1;
+            #endif
         }
 
         public bool FileExists([JetBrains.Annotations.NotNull] string filename)
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_file_exists.ThrowIfDangling();
-            #if !NETFULLFRAMEWORK
+            #if NETCOREAPP
             return pal_fs_file_exists.Invoke(filename) == 1;
-            #endif
+            #else
             var filenameUtf8 = Utf16ToUtf8(filename);
             return pal_fs_file_exists.Invoke(filenameUtf8) == 1;
+            #endif
         }
 
         public void Dispose()
@@ -194,19 +195,19 @@ namespace Snap
         }
 
         // https://stackoverflow.com/a/14761024/2470592
+        [SuppressMessage("ReSharper", "UnusedMember.Local")]
         static string Utf16ToUtf8([JetBrains.Annotations.NotNull] string utf16String)
         {
             if (utf16String == null) throw new ArgumentNullException(nameof(utf16String));
-
             #if NETCOREAPP
             throw new NotSupportedException("Use UnmanagedType.LPUTF8Str");
+            #else
+            var utf16Bytes = System.Text.Encoding.Unicode.GetBytes(utf16String);
+            var utf8Bytes = System.Text.Encoding.Convert(
+                System.Text.Encoding.Unicode, 
+                System.Text.Encoding.UTF8, utf16Bytes);
+            return System.Text.Encoding.Default.GetString(utf8Bytes);
             #endif
-
-            var utf16Bytes = Encoding.Unicode.GetBytes(utf16String);
-            var utf8Bytes = Encoding.Convert(Encoding.Unicode, Encoding.UTF8, utf16Bytes);
-
-            // Return UTF8 bytes as ANSI string
-            return Encoding.Default.GetString(utf8Bytes);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]
@@ -230,7 +231,7 @@ namespace Snap
             public const int libdl_RTLD_NOW = 2; 
 
             // https://github.com/tmds/Tmds.LibC/blob/f336956facd8f6a0f8dcfa1c652828237dc032fb/src/Sources/linux.common/types.cs#L162
-            public struct pid_t : IEquatable<pid_t>
+            public readonly struct pid_t : IEquatable<pid_t>
             {
                 [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
                 internal int Value { get; }

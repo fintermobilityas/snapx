@@ -15,7 +15,7 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public object ReadYaml(IParser parser, Type type)
         {
-            var osPlatform = ((Scalar)parser.Current).Value;
+            var osPlatform = ((Scalar)parser.Current)?.Value;
             parser.MoveNext();
             return TryCreateOsPlatform(osPlatform);
         }

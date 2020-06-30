@@ -63,9 +63,25 @@ namespace Snap.Core
 
             foreach (var channel in snapApp.Channels)
             {
+                if (channel.PushFeed == null)
+                {
+                    throw new Exception($"{nameof(channel.PushFeed)} cannot be null. Channel: {channel.Name}. Application id: {snapApp.Id}");
+                }
+
+                if (channel.UpdateFeed == null)
+                {
+                    throw new Exception($"{nameof(channel.UpdateFeed)} cannot be null. Channel: {channel.Name}. Application id: {snapApp.Id}");
+                }
+
                 channel.PushFeed.ApiKey = null;
                 channel.PushFeed.Username = null;
                 channel.PushFeed.Password = null;
+
+                if (channel.UpdateFeed.Source == null)
+                {
+                    throw new Exception(
+                        $"Update feed {nameof(channel.UpdateFeed.Source)} cannot be null. Channel: {channel.Name}. Application id: {snapApp.Id}");
+                }
 
                 // Prevent publishing nuget.org credentials.
                 if (channel.UpdateFeed is SnapNugetFeed updateFeed

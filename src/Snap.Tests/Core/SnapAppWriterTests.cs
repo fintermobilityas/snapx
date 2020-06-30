@@ -48,6 +48,20 @@ namespace Snap.Tests.Core
             Assert.NotNull(snapAppsYamlStr);
         }
 
+        [Fact]
+        public void TestBuildSnapAppAssembly_Throws_If_Channel_UpdateFeed_Source_Is_Null()
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            snapAppBefore.Channels.ForEach(x =>
+            {
+                x.UpdateFeed.Source = null;
+            });
+            Assert.True(snapAppBefore.Channels.Count > 0);
+
+            var ex = Assert.Throws<Exception>(() => _snapAppWriter.BuildSnapAppAssembly(snapAppBefore));
+            Assert.StartsWith("Update feed Source cannot be null", ex.Message);
+        }
+
         [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly()
         {

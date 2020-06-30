@@ -14,7 +14,7 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public object ReadYaml(IParser parser, Type type)
         {
-            var uriStr = ((Scalar)parser.Current).Value;
+            var uriStr = ((Scalar)parser.Current)?.Value;
             parser.MoveNext();
             Uri.TryCreate(uriStr, UriKind.Absolute, out var uri);
             return uri;
@@ -22,7 +22,7 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            var uriStr = ((Uri)value).ToString();
+            var uriStr = ((Uri)value)?.ToString() ?? string.Empty;
             emitter.Emit(new Scalar(uriStr));
         }
     }

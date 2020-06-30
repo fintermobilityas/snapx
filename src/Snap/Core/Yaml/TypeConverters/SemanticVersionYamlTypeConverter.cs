@@ -15,14 +15,15 @@ namespace Snap.Core.Yaml.TypeConverters
 
         public object ReadYaml(IParser parser, Type type)
         {
-            var semanticVersionStr = ((Scalar)parser.Current).Value;
+            var semanticVersionStr = ((Scalar)parser.Current)?.Value;
             parser.MoveNext();
-            return SemanticVersion.Parse(semanticVersionStr);
+            SemanticVersion.TryParse(semanticVersionStr, out var semanticVersion);
+            return semanticVersion;
         }
 
         public void WriteYaml(IEmitter emitter, object value, Type type)
         {
-            var semanticVersionStr = ((SemanticVersion)value).ToNormalizedString();
+            var semanticVersionStr = ((SemanticVersion)value)?.ToNormalizedString() ?? string.Empty;
             emitter.Emit(new Scalar(semanticVersionStr));
         }
     }

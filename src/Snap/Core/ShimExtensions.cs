@@ -1,11 +1,11 @@
-﻿#if NETFULLFRAMEWORK
+﻿#if NETFULLFRAMEWORK || NETSTANDARD
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
 // ReSharper disable once CheckNamespace
 namespace System.Linq
 {
-    internal static class NetFullFrameworkShimExtensions
+    internal static class ShimExtensions
     {
         public static IEnumerable<TSource> SkipLast<TSource>([NotNull] this IEnumerable<TSource> source)
         {

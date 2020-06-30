@@ -32,18 +32,17 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 
 #### Build requirements
 
-**All Platforms**
-- GitVersion `dotnet tool update gitversion.tool -g`
-- Powershell v7 `dotnet tool update powershell -g`
-
 **Linux**
 
 - Docker >= 19.03.8
-- .NET Core SDK v3.1 
 
 **Windows**:
 - Docker Desktop >= v2.3.0.3
-- Visual Studio 2019 16.6 Community with C++ / .NET Core Sdk workload installed. 
+- GitVersion `dotnet tool update gitversion.tool -g`
+- Powershell v7 `dotnet tool update powershell -g`
+- .NET Core SDK v2.1 
+- .NET Core SDK v3.1 
+- Visual Studio 2019 16.6 Community with C++ workload installed
 
 #### Bootstrap snapx 
 
@@ -52,12 +51,12 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 ## .NET frameworks supported
 
-- .NET Core >= 3.1 (netcoreapp3.1)
-- .NET Full Framework >= 4.6.1 (net461)
+- .NET Core >= 2.1 
+- .NET Full Framework >= 4.6.1 
 
 ## Platforms supported
 
-- Windows x64 [7.1 SP 1, 10]
+- Windows x64 [7.1 SP1, 10]
 - Ubuntu Desktop x64 [16.04, 20.04]
 - Ubuntu Server x64 [16.04, 20.04]
 

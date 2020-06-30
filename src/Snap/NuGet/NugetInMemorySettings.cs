@@ -45,6 +45,8 @@ namespace Snap.NuGet
             return _settings.GetConfigRoots();
         }
 
+        #pragma warning disable CS0067
         public event EventHandler SettingsChanged;
+        #pragma warning restore CS0067
     }
 }

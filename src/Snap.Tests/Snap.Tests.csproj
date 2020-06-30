@@ -5,8 +5,8 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp3.1;net461</TargetFrameworks>
-        <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp3.1</TargetFrameworks>
+        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.1;net461</TargetFrameworks>
+        <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.1</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -31,7 +31,7 @@
         </PackageReference>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(IsNetFullFramework)' == 'true'">
+    <ItemGroup Condition="$(IsNetFullFramework) == 'true'">
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

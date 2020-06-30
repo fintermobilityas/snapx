@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NuGet.Configuration;
 using NuGet.Packaging;
-using NuGet.Protocol.Core.Types;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Extensions;
@@ -182,17 +182,21 @@ namespace Snap.Core
                             { "X-Snapx-Channel", channel.Name },
                             { "X-Snapx-Application-Id", applicationId }
                         };
-                        #if !NETFULLFRAMEWORK
-                        await 
-                        #endif 
+   
                         using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
                         stream.Seek(0, SeekOrigin.Begin);
 
-                        var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream, new JsonSerializerOptions
+                        var jsonStream = await stream.ReadToEndAsync();
+
+                        var utf8String = Encoding.UTF8.GetString(jsonStream.ToArray());
+
+                        var packageManagerNugetHttp = JsonConvert.DeserializeObject<SnapPackageManagerNugetHttpFeed>(utf8String, new JsonSerializerSettings
                         {
-                            Converters = { new JsonStringEnumConverter() },
-                            IgnoreNullValues = true,
-                            PropertyNameCaseInsensitive = true
+                            Converters = new List<JsonConverter>
+                            {
+                                new StringEnumConverter()
+                            },
+                            NullValueHandling = NullValueHandling.Ignore
                         });
 
                         if (packageManagerNugetHttp == null)

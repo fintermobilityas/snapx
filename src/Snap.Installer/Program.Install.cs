@@ -396,8 +396,11 @@ namespace Snap.Installer
                 }
 
                 done:
-                // Give user enough time to read final log message.
-                Thread.Sleep(exitCode == 0 ? 3000 : 10000);
+                if (!headless)
+                {
+                    // Give user enough time to read final log message.
+                    Thread.Sleep(exitCode == 0 ? 3000 : 10000);
+                }
                 environment.Shutdown();
             }
 

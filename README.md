@@ -21,10 +21,6 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 
 <img src="https://media.githubusercontent.com/media/fintermobilityas/snapx/develop/docs/snapxinstaller.gif" width="794" />
 
-#### How can I update my application?
-
-<img src="https://media.githubusercontent.com/media/fintermobilityas/snapx/develop/docs/demoappupdate.gif" width="794" />
-
 #### Available commands
 ![snapx usage](https://github.com/fintermobilityas/snapx/blob/develop/docs/shell.png)
 

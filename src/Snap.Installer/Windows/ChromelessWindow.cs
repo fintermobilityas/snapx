@@ -3,18 +3,12 @@ using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using JetBrains.Annotations;
 
-namespace Snap.Installer.Controls
+namespace Snap.Installer.Windows
 {
-    internal class ChromeLessWindow : Window
+    internal class ChromelessWindow : Window
     {
-        [UsedImplicitly]
-        public int FixedWidth { get; set; } = 800;
-        [UsedImplicitly]
-        public int FixedHeight { get; set; } = 600;
-
-        protected override void OnTemplateApplied(TemplateAppliedEventArgs e)
+        protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {
             var thisHandle = PlatformImpl.Handle.Handle;
 
@@ -22,6 +16,8 @@ namespace Snap.Installer.Controls
             {
                 NativeMethodsWindows.FocusThisWindow(thisHandle);
             }
+
+            base.OnApplyTemplate(e);
         }
 
         protected override void OnPointerPressed(PointerPressedEventArgs e)

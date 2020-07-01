@@ -1,17 +1,19 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Snap.Installer.Controls;
 using Snap.Installer.Core;
 using Snap.Installer.ViewModels;
+using Snap.Installer.Windows;
 using Snap.Logging;
 
 namespace Snap.Installer
 {
-    internal sealed class MainWindow : ChromeLessWindow
+    internal sealed class MainWindow : ChromelessWindow
     {
         public static ISnapInstallerEnvironment Environment { get; set; }
         public static AvaloniaMainWindowViewModel ViewModel { get; set; }
@@ -23,9 +25,6 @@ namespace Snap.Installer
             var logger = Environment.BuildLogger<MainWindow>();
 
             InitializeComponent();
-#if DEBUG
-            this.AttachDevTools();
-#endif
 
             DataContext = ViewModel;
 
@@ -45,7 +44,19 @@ namespace Snap.Installer
                 NativeMethodsWindows.FocusThisWindow(thisHandle);
             }
 
+            ViewModel.GifAnimation = this.FindControl<GifAnimationControl>("GifAnimation");
+            ViewModel.OnInitialized();
+
             base.OnOpened(eventArgs);
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if (!Environment.CancellationToken.IsCancellationRequested)
+            {
+                Environment.Shutdown();
+            }
+            base.OnClosing(e);
         }
 
         void InitializeComponent()

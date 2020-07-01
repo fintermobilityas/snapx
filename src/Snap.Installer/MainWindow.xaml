@@ -1,10 +1,18 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Snap.Installer.Controls"
+        xmlns:viewmodels="clr-namespace:Snap.Installer.ViewModels"
         x:Class="Snap.Installer.MainWindow"
-        Width="800"
-        Height="600"
+        Width="640"
+        Height="430"
         FontFamily="resm:Snap.Installer.Assets.Fonts?assembly=Snap.Installer#Roboto"
-        FontSize="14" WindowStartupLocation="CenterScreen">
+        FontSize="14" 
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="BorderOnly"
+        CanResize="False">
+    <Design.DataContext>
+        <viewmodels:AvaloniaMainWindowViewModel />
+    </Design.DataContext>
     <Window.Styles>
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="16"/>
@@ -12,8 +20,8 @@
         </Style>
     </Window.Styles>
     <StackPanel>
-        <Image Source="{Binding Bitmap, Mode=TwoWay}" Stretch="Fill" Cursor="Hand" Height="550" />
-        <TextBlock Text="{Binding StatusText, Mode=TwoWay}" Classes="h1" HorizontalAlignment="Center" />
-        <ProgressBar Value="{Binding Progress, Mode=TwoWay}" Foreground="#36f22c" Maximum="100" />
+        <controls:GifAnimationControl Name="GifAnimation" Cursor="Hand" Height="377" Width="640" />
+        <ProgressBar Value="{Binding Progress, Mode=TwoWay}" Maximum="100" Height="30" Foreground="#82ff59"/>
+        <TextBlock Text="{Binding StatusText, Mode=TwoWay}" Classes="h1" HorizontalAlignment="Center" Foreground="#fff" />
     </StackPanel>
 </Window>

@@ -24,7 +24,7 @@ namespace Snap.Installer.ViewModels
         string _statusText;
         double _progress;
 
-        public bool Headless => true;
+        public bool Headless => false;
 
         [UsedImplicitly]
         public double Progress

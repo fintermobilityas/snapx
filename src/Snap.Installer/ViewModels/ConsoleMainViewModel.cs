@@ -10,5 +10,10 @@ namespace Snap.Installer.ViewModels
         {
             return Task.CompletedTask;
         }
+
+        public Task SetErrorAsync()
+        {
+            return Task.CompletedTask;
+        }
     }
 }

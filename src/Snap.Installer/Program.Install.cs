@@ -396,6 +396,10 @@ namespace Snap.Installer
                 }
 
                 done:
+                if (exitCode != 0)
+                {
+                    await mainWindowViewModel.SetErrorAsync();
+                }
                 if (!headless)
                 {
                     // Give user enough time to read final log message.

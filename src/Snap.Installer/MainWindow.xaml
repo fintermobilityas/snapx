@@ -22,6 +22,6 @@
     <StackPanel>
         <controls:GifAnimationControl Name="GifAnimation" Cursor="Hand" Height="377" Width="640" />
         <ProgressBar Value="{Binding Progress, Mode=TwoWay}" Maximum="100" Height="30" Foreground="#82ff59"/>
-        <TextBlock Text="{Binding StatusText, Mode=TwoWay}" Classes="h1" HorizontalAlignment="Center" Foreground="#fff" />
+        <TextBlock Text="{Binding StatusText, Mode=TwoWay}" Classes="h1" HorizontalAlignment="Center" Foreground="{Binding StatusTextBrush, Mode=TwoWay}" />
     </StackPanel>
 </Window>

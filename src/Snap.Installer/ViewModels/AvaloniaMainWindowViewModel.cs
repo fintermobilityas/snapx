@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using JetBrains.Annotations;
@@ -19,6 +20,7 @@ namespace Snap.Installer.ViewModels
         GifAnimationControl _gifGifAnimationControl;
         string _statusText;
         double _progress;
+        Brush _statusTextBrush;
         
         public bool Headless => false;
 
@@ -34,7 +36,14 @@ namespace Snap.Installer.ViewModels
         {
             get => _statusText;
             set => this.RaiseAndSetIfChanged(ref _statusText, value);
-        }        
+        }
+
+        [UsedImplicitly]
+        public Brush StatusTextBrush
+        {
+            get => _statusTextBrush;
+            set => this.RaiseAndSetIfChanged(ref _statusTextBrush, value);
+        }
 
         [UsedImplicitly]
         public GifAnimationControl GifAnimation
@@ -63,6 +72,14 @@ namespace Snap.Installer.ViewModels
         public Task SetStatusTextAsync(string text)
         {
             return Dispatcher.UIThread.InvokeAsync(() => StatusText = text);
+        }
+
+        public Task SetErrorAsync()
+        {
+            return Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatusTextBrush = (Brush) Brush.Parse("#B80F0A");
+            });
         }
 
         public void OnInitialized()

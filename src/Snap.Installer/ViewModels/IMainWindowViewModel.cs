@@ -6,5 +6,6 @@ namespace Snap.Installer.ViewModels
     {
         bool Headless { get; }
         Task SetStatusTextAsync(string text);
+        Task SetErrorAsync();
     }
 }

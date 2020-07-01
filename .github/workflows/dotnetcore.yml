@@ -33,11 +33,12 @@ jobs:
             
   linux:
     runs-on: ubuntu-latest
-    name: Bootstrap Linux (${{ matrix.configuration }})
+    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
         configuration: [Debug, Release]
+        rid: [linux-x64]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
@@ -57,26 +58,26 @@ jobs:
 
       - name: Bootstrap
         shell: pwsh
-        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
+        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
     
       - name: GTest
         timeout-minutes: 10
         shell: pwsh
-        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: dotnet test
         timeout-minutes: 10
         shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid linux-x64
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: Collect artifacts 
         env:
-          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/linux-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
-          SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun
-          SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/x86_64-linux-gcc/${{ matrix.configuration }}/Snap.CoreRun.Pal
+          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
+          SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
+          SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-linux-x64.zip
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
@@ -88,16 +89,17 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ubuntu-latest-${{ matrix.configuration }}
+          name: ${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
   windows:
     runs-on: windows-latest
-    name: Bootstrap Windows (${{ matrix.configuration }})
+    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
         configuration: [Debug, Release]
+        rid: [win-x86, win-x64]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
@@ -112,26 +114,26 @@ jobs:
         uses: actions/setup-dotnet@v1.5.0
 
       - name: Build 
-        run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
+        run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
       - name: GTest
         timeout-minutes: 10
         shell: pwsh
-        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: dotnet test
         timeout-minutes: 10
         shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -DotnetRid win-x64
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: Collect artifacts 
         env:
-          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/win-x64/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
-          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
-          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/win-msvs-${{ env.MSVS_TOOLSET_VERSION }}-x64/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
+          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
+          SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
+          SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-win-x64.zip
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_CORERUN_REL_DIR }}/corerun.exe
@@ -143,7 +145,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: windows-latest-${{ matrix.configuration }}
+          name: ${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
   publish:
@@ -160,16 +162,22 @@ jobs:
         with: 
           lfs: true
 
-      - name: Download linux-latest-Release artifacts
+      - name: Download linux-x64-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: ubuntu-latest-Release
+          name: linux-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Download windows-latest-Release artifacts
+      - name: Download win-x86-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: windows-latest-Release
+          name: win-x86-Release
+          path: ${{ github.workspace }}
+
+      - name: Download win-x64-Release artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: win-x64-Release
           path: ${{ github.workspace }}
           
       - name: Setup dotnet using global.json

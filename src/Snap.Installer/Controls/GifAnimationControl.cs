@@ -35,7 +35,7 @@ namespace Snap.Installer.Controls
             }
         }
 
-        public void Start(TimeSpan delayTimeSpan, [NotNull] Action onFirstDrawAction)
+        public void Run(TimeSpan delayTimeSpan, [NotNull] Action onFirstDrawAction)
         {
             _delayTimespan = delayTimeSpan;
             _isFirstDraw = true;

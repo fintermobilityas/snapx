@@ -87,7 +87,7 @@ namespace Snap.Installer.ViewModels
             GifAnimation.AddImages(_snapInstallerEmbeddedResources
                 .GifAnimation.Select(x => new Bitmap(new MemoryStream(x))));
 
-            GifAnimation.Start(TimeSpan.FromMilliseconds(66), _onFirstFrameAnimatedCallback);
+            GifAnimation.Run(TimeSpan.FromMilliseconds(66), _onFirstFrameAnimatedCallback);
         }
     }
 }

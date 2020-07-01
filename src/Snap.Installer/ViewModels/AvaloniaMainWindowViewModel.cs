@@ -52,7 +52,7 @@ namespace Snap.Installer.ViewModels
             _onFirstFrameAnimatedCallback = onFirstFrameAnimatedCallback ?? throw new ArgumentNullException(nameof(onFirstFrameAnimatedCallback));
 
             StatusText = string.Empty;
-            Progress = 37;
+            Progress = 0;
 
             progressSource.Progress = installationProgressPercentage =>
             {

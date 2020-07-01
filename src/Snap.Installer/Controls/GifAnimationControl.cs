@@ -41,17 +41,8 @@ namespace Snap.Installer.Controls
             _isFirstDraw = true;
             _onFirstDrawAction = onFirstDrawAction ?? throw new ArgumentNullException(nameof(onFirstDrawAction));
 
-            _dispatcherTimer = new DispatcherTimer(DispatcherPriority.Render)
-            {
-                Interval = _delayTimespan, 
-                IsEnabled = true
-            };
-
-            _dispatcherTimer.Tick += (sender, args) =>
-            {
-                InvalidateVisual();
-            };
-
+            _dispatcherTimer = new DispatcherTimer(_delayTimespan, DispatcherPriority.Render,
+                (sender, args) => InvalidateVisual());
             _dispatcherTimer.Start();
         }
 

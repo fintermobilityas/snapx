@@ -224,6 +224,7 @@ function Invoke-Build-Snap-Installer {
         "publish $SnapInstallerCsProj"
         "/p:PublishTrimmed=" + ($Configuration -eq "Debug" ? "False" : "True")
         "/p:Version=$Version"
+        "/p:SnapRid=$Rid"
         "--runtime $Rid"
         "--framework $NetCoreAppVersion"
         "--self-contained true"
@@ -350,6 +351,7 @@ function Invoke-Dotnet-UnitTests
         Invoke-Command-Colored $CommandDotnet @(
             "build"
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
+            "/p:SnapRid=$Rid"
             "/p:Platform=$Platform" 
             "--configuration $Configuration"
             "$Project"

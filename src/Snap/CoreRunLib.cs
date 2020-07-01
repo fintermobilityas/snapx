@@ -81,7 +81,7 @@ namespace Snap
 
             if (osPlatform == OSPlatform.Windows)
             {
-                filename += !Environment.Is64BitProcess ? "win-x86" : "win-x64" + ".dll";
+                filename += IntPtr.Size == 4 ? "win-x86" : "win-x64" + ".dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)

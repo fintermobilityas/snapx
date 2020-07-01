@@ -65,6 +65,7 @@ namespace Snap.Installer.ViewModels
 
             StatusText = string.Empty;
             Progress = 0;
+            StatusTextBrush = (Brush) Brush.Parse("#fff");
 
             progressSource.Progress = installationProgressPercentage =>
             {

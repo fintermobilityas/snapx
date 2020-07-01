@@ -32,22 +32,26 @@
 
     <!-- Windows-->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Windows' AND $(SnapRid) == 'any'">
-        <EmbeddedResource Include="../../build/native/Windows/win-msvs-$(SnapMsvsToolsetVersion)-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun.exe" />
-        <EmbeddedResource Include="../../build/native/Windows/win-msvs-$(SnapMsvsToolsetVersion)-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun.dll" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x86.exe" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x86.dll" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x64.exe" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x64.dll" />
     </ItemGroup>
 
     <!-- Unix -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'any'">
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun" />
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun.so" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-x64" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-x64.so" />
     </ItemGroup>
 
     <!-- Nupkg -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">
-        <EmbeddedResource Include="../../build/native/Windows/win-msvs-$(SnapMsvsToolsetVersion)-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun.exe" />
-        <EmbeddedResource Include="../../build/native/Windows/win-msvs-$(SnapMsvsToolsetVersion)-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun.dll" />
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun" />
-        <EmbeddedResource Include="../../build/native/Unix/x86_64-linux-gcc/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun.so" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x86.exe" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x86.dll" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x64.exe" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x64.dll" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-x64" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-x64.so" />
     </ItemGroup>
 
 </Project>

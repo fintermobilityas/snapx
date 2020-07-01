@@ -66,7 +66,10 @@ namespace Snap.Extensions
 
         internal static bool IsRuntimeIdentifierValidSafe(this string runtimeIdentifier)
         {
-            return runtimeIdentifier != null && (runtimeIdentifier == "win-x64" || runtimeIdentifier == "linux-x64");
+            return runtimeIdentifier != null && (
+                runtimeIdentifier == "win-x86" 
+                || runtimeIdentifier == "win-x64" 
+                || runtimeIdentifier == "linux-x64");
         }
 
         internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)
@@ -466,6 +469,7 @@ namespace Snap.Extensions
             }
 
             snapAppTarget.Installers = snapAppTarget.Installers.Distinct().ToList();
+            snapAppTarget.Rid = snapAppTarget.Rid?.ToLowerInvariant();
 
             if (!snapAppTarget.Rid.IsRuntimeIdentifierValidSafe())
             {

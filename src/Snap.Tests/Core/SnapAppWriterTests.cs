@@ -205,10 +205,12 @@ namespace Snap.Tests.Core
             Assert.NotNull(optimizedEmbeddedResources);
 
             Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindows));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinux));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindows));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinux));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindowsX86));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindowsX86));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindowsX64));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindowsX64));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinuxX64));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinuxX64));
         }
 
     }

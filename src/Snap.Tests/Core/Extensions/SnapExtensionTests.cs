@@ -77,6 +77,7 @@ namespace Snap.Tests.Core.Extensions
         }
         
         [Theory]
+        [InlineData("win-x86", true)]
         [InlineData("win-x64", true)]
         [InlineData("linux-x64", true)]
         [InlineData("unknown-x64", false)]

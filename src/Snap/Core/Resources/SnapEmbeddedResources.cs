@@ -13,10 +13,12 @@ namespace Snap.Core.Resources
     {
         [UsedImplicitly]
         bool IsOptimized { get; }
-        MemoryStream CoreRunWindows { get; }
-        MemoryStream CoreRunLinux { get; }
-        MemoryStream CoreRunLibWindows { get; }
-        MemoryStream CoreRunLibLinux { get; }
+        MemoryStream CoreRunWindowsX86 { get; }
+        MemoryStream CoreRunWindowsX64 { get; }
+        MemoryStream CoreRunLinuxX64 { get; }
+        MemoryStream CoreRunLibWindowsX86 { get; }
+        MemoryStream CoreRunLibWindowsX64 { get; }
+        MemoryStream CoreRunLibLinuxX64 { get; }
         (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp, ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
@@ -25,69 +27,103 @@ namespace Snap.Core.Resources
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
     {
-        const string CoreRunWindowsFilename = "corerun.exe";
-        const string CoreRunLinuxFilename = "corerun";
-        const string CoreRunLibWindowsFilename = "libcorerun.dll";
-        const string CoreRunLibLinuxFilename = "libcorerun.so";
+        const string CoreRunWindowsX86Filename = "corerun-win-x86.exe";
+        const string CoreRunLibWindowsX86Filename = "libcorerun-win-x86.dll";
+        
+        const string CoreRunWindowsX64Filename = "corerun-win-x64.exe";
+        const string CoreRunLibWindowsX64Filename = "libcorerun-win-x64.dll";
 
-        readonly EmbeddedResource _coreRunWindows;
-        readonly EmbeddedResource _coreRunLinux;
-        readonly EmbeddedResource _coreRunLibWindows;
-        readonly EmbeddedResource _coreRunLibLinux;
+        const string CoreRunLinuxX64Filename = "corerun-linux-x64";
+        const string CoreRunLibLinuxX64Filename = "libcorerun-linux-x64.so";
+
+        readonly EmbeddedResource _coreRunWindowsX86;
+        readonly EmbeddedResource _coreRunLibWindowsX86;
+        
+        readonly EmbeddedResource _coreRunWindowsX64;
+        readonly EmbeddedResource _coreRunLibWindowsX64;
+        
+        readonly EmbeddedResource _coreRunLinuxX64;
+        readonly EmbeddedResource _coreRunLibLinuxX64;
 
         [UsedImplicitly]
         public bool IsOptimized { get; }
 
-        public MemoryStream CoreRunWindows
+        public MemoryStream CoreRunWindowsX86
         {
             get
             {
-                if (_coreRunWindows == null)
+                if (_coreRunWindowsX86 == null)
                 {
-                    throw new FileNotFoundException($"{CoreRunWindowsFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{CoreRunWindowsX86Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_coreRunWindows.Stream.ToArray());
+                return new MemoryStream(_coreRunWindowsX86.Stream.ToArray());
             }
         }
 
-        public MemoryStream CoreRunLinux
+        public MemoryStream CoreRunLibWindowsX86
         {
             get
             {
-
-                if (_coreRunLinux == null)
+                if (_coreRunLibWindowsX86 == null)
                 {
-                    throw new FileNotFoundException($"{CoreRunLinuxFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{CoreRunLibWindowsX86Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_coreRunLinux.Stream.ToArray());
+                return new MemoryStream(_coreRunLibWindowsX86.Stream.ToArray());
             }
         }
 
-        public MemoryStream CoreRunLibWindows
+        public MemoryStream CoreRunWindowsX64
         {
             get
             {
-                if (_coreRunLibWindows == null)
+                if (_coreRunWindowsX64 == null)
                 {
-                    throw new FileNotFoundException($"{CoreRunLibWindowsFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{CoreRunWindowsX64Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_coreRunLibWindows.Stream.ToArray());
+                return new MemoryStream(_coreRunWindowsX64.Stream.ToArray());
             }
         }
 
-        public MemoryStream CoreRunLibLinux
+        public MemoryStream CoreRunLibWindowsX64
         {
             get
             {
-                if (_coreRunLibLinux == null)
+                if (_coreRunLibWindowsX64 == null)
                 {
-                    throw new FileNotFoundException($"{CoreRunLibLinuxFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{CoreRunLibWindowsX64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunLibWindowsX64.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLinuxX64
+        {
+            get
+            {
+
+                if (_coreRunLinuxX64 == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLinuxX64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunLinuxX64.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLibLinuxX64
+        {
+            get
+            {
+                if (_coreRunLibLinuxX64 == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLibLinuxX64Filename} was not found in current assembly resources manifest");
                 }
                 
-                return new MemoryStream(_coreRunLibLinux.Stream.ToArray());
+                return new MemoryStream(_coreRunLibLinuxX64.Stream.ToArray());
             }
         }
 
@@ -95,10 +131,14 @@ namespace Snap.Core.Resources
         {
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
 
-            _coreRunWindows = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunWindowsFilename}");
-            _coreRunLinux = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLinuxFilename}");
-            _coreRunLibWindows = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibWindowsFilename}");
-            _coreRunLibLinux = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibLinuxFilename}");
+            _coreRunWindowsX86 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunWindowsX86Filename}");
+            _coreRunLibWindowsX86 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibWindowsX86Filename}");
+
+            _coreRunWindowsX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunWindowsX64Filename}");
+            _coreRunLibWindowsX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibWindowsX64Filename}");
+            
+            _coreRunLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLinuxX64Filename}");
+            _coreRunLibLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibLinuxX64Filename}");
         }
 
         public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp, 
@@ -113,11 +153,11 @@ namespace Snap.Core.Resources
             
             if (snapApp.Target.Os == OSPlatform.Windows)
             {
-                coreRunStream = CoreRunWindows;
+                coreRunStream = snapApp.Target.Rid == "win-x86" ? CoreRunWindowsX86 : CoreRunWindowsX64;
                 osPlatform = OSPlatform.Windows;
             } else if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                coreRunStream = CoreRunLinux;
+                coreRunStream = CoreRunLinuxX64;
                 osPlatform = OSPlatform.Linux;
             }
             else
@@ -173,16 +213,19 @@ namespace Snap.Core.Resources
             }
             
             if (osPlatform == OSPlatform.Windows)
-            {                
-                var filename = filesystem.PathCombine(workingDirectory, "libcorerun.dll");
+            {
+                var rid = !Environment.Is64BitOperatingSystem ? "win-x86" : "win-x64";
+                var coreRunLib = rid == "win-x86" ? CoreRunLibWindowsX86 : CoreRunLibWindowsX64;
+                var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.dll");
                 if (filesystem.FileExists(filename) 
-                    && !ShouldOverwrite(CoreRunWindows, filename))
+                    && !ShouldOverwrite(coreRunLib, filename))
                 {
+                    coreRunLib.Dispose();
                     return;
                 }
 
                 using var dstStream = filesystem.FileWrite(filename);
-                using var coreRunLibWindows = CoreRunLibWindows;
+                using var coreRunLibWindows = coreRunLib;
                 await coreRunLibWindows.CopyToAsync(dstStream);
 
                 return;
@@ -190,15 +233,17 @@ namespace Snap.Core.Resources
 
             if (osPlatform == OSPlatform.Linux)
             {
-                var filename = filesystem.PathCombine(workingDirectory, "libcorerun.so");
+                var filename = filesystem.PathCombine(workingDirectory, "libcorerun-linux-x64.so");
+                var coreRunLib = CoreRunLibLinuxX64;
                 if (filesystem.FileExists(filename) 
-                    && !ShouldOverwrite(CoreRunLibLinux, filename))
+                    && !ShouldOverwrite(coreRunLib, filename))
                 {
+                    coreRunLib.Dispose();
                     return;
                 }
 
                 using var dstStream = filesystem.FileWrite(filename);
-                using var coreRunLibLinux = CoreRunLibLinux;
+                using var coreRunLibLinux = coreRunLib;
                 await coreRunLibLinux.CopyToAsync(dstStream);
 
                 return;

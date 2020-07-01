@@ -16,13 +16,11 @@ param(
     [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
     [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
-    [string] $VisualStudioVersion = "16",
-    [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $NetCoreAppVersion = "netcoreapp3.1",
-    [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
-    [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true)]
-    [string] $DotnetRid = "any"
+    [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]
+    [string] $Rid = "any"
 )
 
 # Init
@@ -78,6 +76,35 @@ $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 $SummaryStopwatch = $Stopwatch::StartNew()
 $SummaryStopwatch.Restart()
 
+function Invoke-Build-Rids-Array {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    $Rids = @()
+
+    switch($OSPlatform) {
+        "Windows" {
+            if($Rid -eq "any") {
+                $Rids += "win-x86"
+                $Rids += "win-x64"
+            } else {
+                $Rids += $Rid
+            }
+        }
+        "Unix" {
+            if($Rid -eq "any") {
+                $Rids += "linux-x64"
+            } else {
+                $Rids += $Rid
+            }
+        }
+    }
+
+    return $Rids
+}
+
 function Invoke-Bootstrap-Ps1 {
     param(
         [string] $Target,
@@ -86,7 +113,6 @@ function Invoke-Bootstrap-Ps1 {
 
     $DefaultArguments = @(
         $Target,
-        "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
         "-CIBuild:$CIBuild"
@@ -140,20 +166,33 @@ function Invoke-Install-Snapx
 }
 
 function Invoke-Build-Native {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
     switch($OSPlatform) {
         "Windows" {
             $WindowsArguments = @("-Configuration $Configuration")
             if($Configuration -eq "Release") {
                 $WindowsArguments += "-Lto"
             }
-            Invoke-Bootstrap-Ps1 Native $WindowsArguments
+            Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+                $WindowsArgumentsTmp = $WindowsArguments
+                $WindowsArgumentsTmp += "-Rid $_"
+                Invoke-Bootstrap-Ps1 Native $WindowsArgumentsTmp
+            }
         }
         "Unix" {
             $UnixArguments = @("-Configuration $Configuration")
             if($Configuration -eq "Release") {
                 $UnixArguments += "-Lto"
             }
-            Invoke-Bootstrap-Ps1 Native $UnixArguments
+            Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+                $UnixArgumentsTmp = $UnixArguments
+                $UnixArgumentsTmp += "-Rid $_"
+                Invoke-Bootstrap-Ps1 Native $UnixArgumentsTmp
+            }
         }
         Default {
             Write-Error "Unsupported OS platform: $OSVersion"
@@ -165,40 +204,96 @@ function Invoke-Build-Snap-Installer
 {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [string] $DotnetRid
+        [string] $Rid
     )
-    Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -DotNetRid $DotnetRid")
+
+    Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+        $ActualRid = $_
+        Invoke-Bootstrap-Ps1 Snap-Installer @("-Configuration $Configuration -Rid $ActualRid")
+    }
 }
 
 function Invoke-Build-Snap {
-    Invoke-Bootstrap-Ps1 Snap @("-Configuration $Configuration")
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+        $ActualRid = $_
+        Invoke-Bootstrap-Ps1 Snap @("-Configuration $Configuration -Rid $ActualRid")
+    }
 }
 
 function Invoke-Native-UnitTests
 {
-    Invoke-Bootstrap-Ps1 Run-Native-UnitTests @("-Configuration $Configuration")
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+        $ActualRid = $_
+        Invoke-Bootstrap-Ps1 Run-Native-UnitTests @("-Configuration $Configuration -Rid $ActualRid")
+    }
 }
 
 function Invoke-Dotnet-UnitTests
 {
-    Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration")
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+        $ActualRid = $_    
+        Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration -Rid $ActualRid")
+    }
 }
 
 function Invoke-Bootstrap-Unix
 {
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
     if($env:BUILD_IS_DOCKER -ne 1)
     {
         Invoke-Docker -Entrypoint "Bootstrap-Unix"
         return
     }
 
-    Invoke-Build-Native
-    Invoke-Build-Snap-Installer -DotnetRid linux-x64
+    $Rids = Invoke-Build-Rids-Array -Rid $Rid
+
+    $Rids  | ForEach-Object {
+        $ActualRid = $_    
+        Invoke-Build-Native -Rid $ActualRid
+    }
+
+    $Rids  | ForEach-Object {
+        $ActualRid = $_    
+        Invoke-Build-Snap-Installer -Rid $ActualRid
+    }
 }
 
 function Invoke-Bootstrap-Windows {
-    Invoke-Build-Native
-    Invoke-Build-Snap-Installer -DotnetRid win-x64
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    $Rids = Invoke-Build-Rids-Array -Rid $Rid
+
+    $Rids | ForEach-Object {
+        $ActualRid = $_    
+        Invoke-Build-Native -Rid $ActualRid
+    }
+
+    $Rids | ForEach-Object {
+        $ActualRid = $_    
+        Invoke-Build-Snap-Installer -Rid $ActualRid
+    }
 }
 
 function Invoke-Summary {
@@ -225,10 +320,9 @@ function Invoke-Docker
 		"-DockerVersion ${DockerVersion}"
 		"-DockerLocal:" + ($DockerLocal ? "True" : "False")
         "-CIBuild:" + ($CIBuild ? "True" : "False")
-        "-VisualStudioVersion $VisualStudioVersion"
         "-NetCoreAppVersion $NetCoreAppVersion"
         "-Version $Version"
-        "-DotnetRid $DotnetRid"
+        "-Rid $Rid"
     )
 
     $EnvironmentVariables = @(
@@ -291,48 +385,46 @@ switch ($Target) {
     "Bootstrap-Unix"
     {
         Invoke-Clean-Build
-        Invoke-Bootstrap-Unix
+        Invoke-Bootstrap-Unix -Rid $Rid
         Invoke-Summary
     }
     "Bootstrap-Windows"
     {
         Invoke-Clean-Build
-        Invoke-Bootstrap-Windows
+        Invoke-Bootstrap-Windows -Rid $Rid
         Invoke-Summary
     }
     "Bootstrap" {
         Invoke-Clean-Build
-        Invoke-Bootstrap-Unix
-        Invoke-Bootstrap-Windows
+        Invoke-Bootstrap-Unix -Rid $Rid
+        Invoke-Bootstrap-Windows -Rid $Rid
         Invoke-Summary
     }
     "Snap" {
         Invoke-Clean-Build
-        Invoke-Build-Snap
+        Invoke-Build-Snap -Rid $Rid
         Invoke-Summary
     }
     "Snap-Installer" {
         Invoke-Clean-Build
-        $Rid = $DotnetRid
         if($Rid -eq "any") {
             switch($OSPlatform) {
                 "Windows" {
-                    $Rid = "win-x64"
+                    Invoke-Build-Snap-Installer -Rid $Rid
                 }
                 "Unix" {
-                    $Rid = "linux-x64"
+                    Invoke-Build-Snap-Installer -Rid -Rid $Rid
                 }
                 Default {
                     Invoke-Exit "Unsupported os: $OSPlatform"
                 }
             }
         }
-        Invoke-Build-Snap-Installer -DotnetRid $Rid
         Invoke-Summary
     }
     "Snapx" {
         Invoke-Clean-Build
-        Invoke-Install-Snapx
+        Invoke-Install-Snapx -Rid $Rid
         Invoke-Summary
     }
     "Run-Native-UnitTests" {
@@ -341,19 +433,19 @@ switch ($Target) {
                 Invoke-Clean-Build
 
                 if($CIBuild) {
-                    Invoke-Native-UnitTests
+                    Invoke-Native-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
                 }
 
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Native-UnitTests"
-                    Invoke-Native-UnitTests
+                    Invoke-Native-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
                 }
 
-                Invoke-Native-UnitTests
+                Invoke-Native-UnitTests -Rid $Rid
             }
             "Unix" {
                 if($env:BUILD_IS_DOCKER -ne 1) {
@@ -361,7 +453,7 @@ switch ($Target) {
                     return
                 }
 
-                Invoke-Native-UnitTests
+                Invoke-Native-UnitTests -Rid $Rid
                 Invoke-Summary
             }
             Default {
@@ -375,19 +467,19 @@ switch ($Target) {
                 Invoke-Clean-Build
 
                 if($CIBuild) {
-                    Invoke-Dotnet-UnitTests
+                    Invoke-Dotnet-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
                 }
 
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
-                    Invoke-Dotnet-UnitTests
+                    Invoke-Dotnet-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
                 }
 
-                Invoke-Dotnet-UnitTests
+                Invoke-Dotnet-UnitTests -Rid $Rid
             }
             "Unix" {
                 Invoke-Clean-Build
@@ -397,7 +489,7 @@ switch ($Target) {
                     return
                 }
 
-                Invoke-Dotnet-UnitTests
+                Invoke-Dotnet-UnitTests -Rid $Rid
                 Invoke-Summary
             }
         }

@@ -8,84 +8,127 @@ namespace snapx.Core
 {
     internal interface ISnapxEmbeddedResources : IEmbedResources
     {
-        MemoryStream SetupWindows { get; }
-        MemoryStream SetupLinux { get; }
-        MemoryStream WarpPackerWindows { get; }
-        MemoryStream WarpPackerLinux { get; }
+        MemoryStream SetupWindowsX86 { get; }
+        MemoryStream WarpPackerWindowsX86 { get; }
+
+        MemoryStream SetupWindowsX64 { get; }
+        MemoryStream WarpPackerWindowsX64 { get; }
+        
+        MemoryStream SetupLinuxX64 { get; }
+        MemoryStream WarpPackerLinuxX64 { get; }
     }
 
     internal sealed class SnapxEmbeddedResources : EmbeddedResources, ISnapxEmbeddedResources
     {
-        const string SetupWindowsFilename = "Setup-win-x64.zip";
-        const string SetupLinuxFilename = "Setup-linux-x64.zip";
-        const string SetupWarpPackerWindowsFilename = "warp-packer-win-x64.exe";
-        const string SetupWarpPackerLinuxFilename = "warp-packer-linux-x64.exe";
+        const string SetupWindowsX86Filename = "Setup-win-x86.zip";
+        const string SetupWarpPackerWindowsX86Filename = "warp-packer-win-x86.exe";
+ 
+        const string SetupWindowsX64Filename = "Setup-win-x64.zip";
+        const string SetupWarpPackerWindowsX64Filename = "warp-packer-win-x64.exe";
+        
+        const string SetupLinuxX64Filename = "Setup-linux-x64.zip";
+        const string SetupWarpPackerLinuxX64Filename = "warp-packer-linux-x64.exe";
 
-        readonly EmbeddedResource _setupWindows;
-        readonly EmbeddedResource _setupLinux;
-        readonly EmbeddedResource _warpPackerWindows;
-        readonly EmbeddedResource _warpPackerLinux;
+        readonly EmbeddedResource _setupWindowsX86;
+        readonly EmbeddedResource _warpPackerWindowsX86;
 
-        public MemoryStream SetupWindows
+        readonly EmbeddedResource _setupWindowsX64;
+        readonly EmbeddedResource _warpPackerWindowsX64;
+        
+        readonly EmbeddedResource _setupLinuxX64;
+        readonly EmbeddedResource _warpPackerLinuxX64;
+
+        public MemoryStream SetupWindowsX86
         {
             get
             {
-                if (_setupWindows == null)
+                if (_setupWindowsX86 == null)
                 {
-                    throw new FileNotFoundException($"{SetupWindowsFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{SetupWindowsX86Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_setupWindows.Stream.ToArray());
+                return new MemoryStream(_setupWindowsX86.Stream.ToArray());
             }
         }
 
-        public MemoryStream SetupLinux
+        public MemoryStream WarpPackerWindowsX86
         {
             get
             {
-                if (_setupLinux == null)
+                if (_warpPackerWindowsX86 == null)
                 {
-                    throw new FileNotFoundException($"{SetupLinuxFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{SetupWarpPackerWindowsX86Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_setupLinux.Stream.ToArray());
+                return new MemoryStream(_warpPackerWindowsX86.Stream.ToArray());
             }
         }
 
-        public MemoryStream WarpPackerWindows
+        public MemoryStream SetupWindowsX64
         {
             get
             {
-                if (_warpPackerWindows == null)
+                if (_setupWindowsX64 == null)
                 {
-                    throw new FileNotFoundException($"{SetupWarpPackerWindowsFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{SetupWindowsX64Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_warpPackerWindows.Stream.ToArray());
+                return new MemoryStream(_setupWindowsX64.Stream.ToArray());
             }
         }
 
-        public MemoryStream WarpPackerLinux
+        public MemoryStream WarpPackerWindowsX64
         {
             get
             {
-                if (_warpPackerLinux == null)
+                if (_warpPackerWindowsX64 == null)
                 {
-                    throw new FileNotFoundException($"{SetupWarpPackerLinuxFilename} was not found in current assembly resources manifest");
+                    throw new FileNotFoundException($"{SetupWarpPackerWindowsX64Filename} was not found in current assembly resources manifest");
                 }
 
-                return new MemoryStream(_warpPackerLinux.Stream.ToArray());
+                return new MemoryStream(_warpPackerWindowsX64.Stream.ToArray());
+            }
+        }
+
+
+        public MemoryStream SetupLinuxX64
+        {
+            get
+            {
+                if (_setupLinuxX64 == null)
+                {
+                    throw new FileNotFoundException($"{SetupLinuxX64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_setupLinuxX64.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream WarpPackerLinuxX64
+        {
+            get
+            {
+                if (_warpPackerLinuxX64 == null)
+                {
+                    throw new FileNotFoundException($"{SetupWarpPackerLinuxX64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_warpPackerLinuxX64.Stream.ToArray());
             }
         }
 
         public SnapxEmbeddedResources()
         {
             AddFromTypeRoot(typeof(ResourcesTypeRoot));
+
+            _setupWindowsX86 = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupWindowsX86Filename}");
+            _warpPackerWindowsX86 = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerWindowsX86Filename}");
+
+            _setupWindowsX64 = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupWindowsX64Filename}");
+            _warpPackerWindowsX64 = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerWindowsX64Filename}");
             
-            _setupWindows = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupWindowsFilename}");
-            _setupLinux = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupLinuxFilename}");
-            _warpPackerWindows = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerWindowsFilename}");
-            _warpPackerLinux = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerLinuxFilename}");
+            _setupLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupLinuxX64Filename}");
+            _warpPackerLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerLinuxX64Filename}");
         }
     }
 }

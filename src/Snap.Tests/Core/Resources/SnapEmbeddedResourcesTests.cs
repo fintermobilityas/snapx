@@ -31,15 +31,17 @@ namespace Snap.Tests.Core.Resources
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Assert.NotNull(_snapEmbeddedResources.CoreRunWindows);
-                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindows);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX86);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX64);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX86);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX64);
                 return;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.NotNull(_snapEmbeddedResources.CoreRunLinux);
-                Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinux);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLinuxX64);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinuxX64);
                 return;
             }
 
@@ -89,14 +91,27 @@ namespace Snap.Tests.Core.Resources
         
         [Theory]
         #if PLATFORM_WINDOWS
-        [InlineData("WINDOWS", "libcorerun.dll")]
+        [InlineData("WINDOWS")]
         #endif
         #if PLATFORM_UNIX
-        [InlineData("LINUX", "libcorerun.so")]
+        [InlineData("LINUX")]
         #endif
-        public async Task TestExtractCoreRunLibAsync(string osPlatformStr, string expectedDllFilename)
+        public async Task TestExtractCoreRunLibAsync(string osPlatformStr)
         {
             var osPlatform = OSPlatform.Create(osPlatformStr);
+
+            string expectedDllFilename;
+            if (osPlatform == OSPlatform.Windows)
+            {
+                expectedDllFilename = "libcorerun-" + (!Environment.Is64BitOperatingSystem ? "win-x86" : "win-x64") + ".dll";
+            } else if (osPlatform == OSPlatform.Linux)
+            {
+                expectedDllFilename = "libcorerun-linux-x64.so";
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
 
             using var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);

@@ -73,7 +73,7 @@ namespace Snap
 
             _osPlatform = osPlatform;
 
-            var filename = filesystem.PathCombine(workingDirectory, "libcorerun");
+            var filename = filesystem.PathCombine(workingDirectory, "libcorerun-");
 
             #if SNAP_BOOTSTRAP
             return;
@@ -81,19 +81,21 @@ namespace Snap
 
             if (osPlatform == OSPlatform.Windows)
             {
-                filename += ".dll";
+                filename += !Environment.Is64BitOperatingSystem ? "win-x86" : "win-x64" + ".dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)
             {
-                filename += ".so";
+                filename += "linux-x64.so";
                 _libPtr = NativeMethodsUnix.dlopen(filename, NativeMethodsUnix.libdl_RTLD_NOW | NativeMethodsUnix.libdl_RTLD_LOCAL);
             }
 
             if (_libPtr == IntPtr.Zero)
             {
                 throw new FileNotFoundException($"Failed to load corerun: {filename}. " +
-                                                $"OS: {osPlatform}. Last error: {Marshal.GetLastWin32Error()}.");
+                                                $"OS: {osPlatform}. " +
+                                                $"64-bit OS: {Environment.Is64BitOperatingSystem}." +
+                                                $"Last error: {Marshal.GetLastWin32Error()}.");
             }
 
             // generic

@@ -52,9 +52,24 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 ## Platforms supported
 
-- Windows x64 [7.1 SP1, 10]
-- Ubuntu Desktop x64 [16.04, 20.04]
-- Ubuntu Server x64 [16.04, 20.04]
+- Windows x86/x64 
+    - Windows 7 SP1
+    - Windows Vista SP 2
+    - Windows 8.1
+    - Windows Server 2008 R2
+    - Windows Server 2012 R2
+    - Windows Server 2016 R2
+    - Windows Server 2019 R2
+
+- Ubuntu Desktop x64 *
+    - 16.04
+    - 18.04
+    - 20.04
+
+- Ubuntu Server x64 *
+    - 16.04
+    - 18.04
+    - 20.04
 
 ## Code of Conduct
 

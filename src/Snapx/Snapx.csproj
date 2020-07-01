@@ -66,6 +66,11 @@
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>
+
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'linux-x64' AND $(OsPlatform) == 'Unix'">
+        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
+    </ItemGroup>
     <!-- /Unix -->
 
     <!-- Nupkg -->

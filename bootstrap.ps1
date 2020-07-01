@@ -348,18 +348,22 @@ function Invoke-Dotnet-UnitTests
             }
         }
  
-        Invoke-Command-Colored $CommandDotnet @(
-            "build"
+        $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform" 
+            "/p:Platform=$Platform"
+        )
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "build"
+            $BuildProperties
             "--configuration $Configuration"
             "$Project"
         )
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
-            "/p:Platform=$Platform"
+            $BuildProperties
             "$Project"
             "--configuration $Configuration"
             "--verbosity normal"

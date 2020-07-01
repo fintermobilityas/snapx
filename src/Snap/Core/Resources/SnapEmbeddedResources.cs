@@ -214,7 +214,7 @@ namespace Snap.Core.Resources
             
             if (osPlatform == OSPlatform.Windows)
             {
-                var rid = !Environment.Is64BitOperatingSystem ? "win-x86" : "win-x64";
+                var rid = !Environment.Is64BitProcess ? "win-x86" : "win-x64";
                 var coreRunLib = rid == "win-x86" ? CoreRunLibWindowsX86 : CoreRunLibWindowsX64;
                 var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.dll");
                 if (filesystem.FileExists(filename) 

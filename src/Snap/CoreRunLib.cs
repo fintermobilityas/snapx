@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -81,7 +82,7 @@ namespace Snap
 
             if (osPlatform == OSPlatform.Windows)
             {
-                filename += IntPtr.Size == 4 ? "win-x86" : "win-x64" + ".dll";
+                filename += !AnyOS.Windows.NativeMethodsWindows.Is64Bit(Process.GetCurrentProcess()) ? "win-x86" : "win-x64" + ".dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)

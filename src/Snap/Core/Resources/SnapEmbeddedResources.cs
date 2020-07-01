@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -214,7 +215,7 @@ namespace Snap.Core.Resources
             
             if (osPlatform == OSPlatform.Windows)
             {
-                var rid = IntPtr.Size == 4 ? "win-x86" : "win-x64";
+                var rid = !AnyOS.Windows.NativeMethodsWindows.Is64Bit(Process.GetCurrentProcess()) ? "win-x86" : "win-x64";
                 var coreRunLib = rid == "win-x86" ? CoreRunLibWindowsX86 : CoreRunLibWindowsX64;
                 var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.dll");
                 if (filesystem.FileExists(filename) 

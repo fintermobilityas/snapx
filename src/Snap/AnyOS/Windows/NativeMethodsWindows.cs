@@ -1,7 +1,10 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
+using JetBrains.Annotations;
 
 namespace Snap.AnyOS.Windows
 {
@@ -33,7 +36,33 @@ namespace Snap.AnyOS.Windows
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class NativeMethodsWindows
-    {        
+    {
+        // https://stackoverflow.com/a/33206186
+
+        public static bool Is64Bit([NotNull] Process process)
+        {
+            if (process == null) throw new ArgumentNullException(nameof(process));
+
+            if (!Environment.Is64BitOperatingSystem)
+            {
+                return false;
+            }
+
+            // 32-bit on 32-bit -> false
+            // 32-bit on 64-bit -> true
+            // 64-bit on 64-bit -> false
+            if (!IsWow64Process(process.Handle, out var isWow64))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+
+            return !isWow64;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool IsWow64Process([In] IntPtr process, [Out] out bool wow64Process);
+
         [DllImport("version.dll", SetLastError = true)]
         [return:MarshalAs(UnmanagedType.Bool)] internal static extern bool GetFileVersionInfo(
             string lpszFileName, 

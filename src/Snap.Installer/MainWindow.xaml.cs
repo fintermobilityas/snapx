@@ -46,13 +46,6 @@ namespace Snap.Installer
 
         protected override void OnOpened(EventArgs eventArgs)
         {
-            var thisHandle = PlatformImpl.Handle.Handle;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                NativeMethodsWindows.FocusThisWindow(thisHandle);
-            }
-
             ViewModel.GifAnimation = this.FindControl<GifAnimationControl>("GifAnimation");
             ViewModel.OnInitialized();
 

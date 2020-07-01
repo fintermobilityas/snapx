@@ -6,7 +6,7 @@ using Avalonia.Input;
 
 namespace Snap.Installer.Windows
 {
-    internal class ChromelessWindow : Window
+    internal class CustomChromeWindow : Window
     {
         protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
         {

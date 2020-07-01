@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Reactive;
 using System.Threading.Tasks;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -51,6 +52,8 @@ namespace Snap.Installer.ViewModels
             get => _gifGifAnimationControl;
             set => this.RaiseAndSetIfChanged(ref _gifGifAnimationControl, value);
         }
+
+        public ReactiveCommand<Unit, Unit> CancelCommand { get; set; }
 
         public AvaloniaMainWindowViewModel([NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, 
             [NotNull] ISnapProgressSource progressSource, [NotNull] Action onFirstFrameAnimatedCallback)

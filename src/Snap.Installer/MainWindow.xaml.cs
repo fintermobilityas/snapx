@@ -2,9 +2,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using ReactiveUI;
 using Snap.Installer.Controls;
 using Snap.Installer.Core;
 using Snap.Installer.ViewModels;
@@ -25,6 +27,13 @@ namespace Snap.Installer
             var logger = Environment.BuildLogger<MainWindow>();
 
             InitializeComponent();
+
+            ViewModel.CancelCommand = ReactiveCommand.CreateFromTask(async () =>
+            {
+                await ViewModel.SetStatusTextAsync("Cancelling installation because user pressed CTRL + C");
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                Close();
+            });
 
             DataContext = ViewModel;
 

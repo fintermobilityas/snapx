@@ -19,6 +19,9 @@
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
     </Window.Styles>
+    <Window.KeyBindings>
+        <KeyBinding Command="{Binding CancelCommand}" Gesture="CTRL+C" />
+    </Window.KeyBindings>
     <StackPanel>
         <controls:GifAnimationControl Name="GifAnimation" Cursor="Hand" Height="377" Width="640" />
         <ProgressBar Value="{Binding Progress, Mode=TwoWay}" Maximum="100" Height="30" Foreground="#82ff59"/>

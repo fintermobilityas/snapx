@@ -32,8 +32,8 @@
 
     <!-- Windows-->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Windows' AND $(SnapRid) == 'win-x86'">
-        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x64.exe" />
-        <EmbeddedResource Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x64.dll" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x86.exe" />
+        <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Link="Resources/corerun/libcorerun-win-x86.dll" />
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Windows' AND $(SnapRid) == 'win-x64'">

@@ -271,6 +271,10 @@ function Invoke-Bootstrap-Unix
         Invoke-Build-Native -Rid $ActualRid
     }
 
+    if($CIBuild) {
+        return
+    }
+
     $Rids  | ForEach-Object {
         $ActualRid = $_
         Invoke-Build-Snap-Installer -Rid $ActualRid
@@ -288,6 +292,10 @@ function Invoke-Bootstrap-Windows {
     $Rids | ForEach-Object {
         $ActualRid = $_
         Invoke-Build-Native -Rid $ActualRid
+    }
+
+    if($CIBuild) {
+        return
     }
 
     $Rids | ForEach-Object {

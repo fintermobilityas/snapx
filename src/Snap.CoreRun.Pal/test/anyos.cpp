@@ -30,7 +30,7 @@ namespace
 
     TEST(PAL_GENERIC, pal_process_get_name_ReturnsThisProcessExeName)
     {
-        auto exe_name = std::make_unique<char*>(new char);
+        const auto exe_name = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_process_get_name(exe_name.get()));
         EXPECT_TRUE(pal_str_startswith(*exe_name, "corerun_tests"));
     }
@@ -136,7 +136,7 @@ namespace
     {
         const auto random_variable = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), nullptr));
-        auto value = std::make_unique<char*>(new char);
+        const auto value = std::make_unique<char*>(new char);
         EXPECT_FALSE(pal_env_get(random_variable.c_str(), value.get()));
     }
 
@@ -145,7 +145,7 @@ namespace
         const auto random_variable = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST"));
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), "TEST2"));
-        auto value = std::make_unique<char*>(new char);
+        const auto value = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_env_get(random_variable.c_str(), value.get()));
         EXPECT_STREQ(*value, "TEST2");
     }
@@ -155,7 +155,7 @@ namespace
         const auto random_variable = testutils::build_random_str();
         const auto random_text = testutils::build_random_str();
         EXPECT_TRUE(pal_env_set(random_variable.c_str(), random_text.c_str()));
-        auto value = std::make_unique<char*>(new char);
+        const auto value = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_env_get(random_variable.c_str(), value.get()));
         EXPECT_STREQ(*value, random_text.c_str());
     }
@@ -192,7 +192,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
-        auto exe_abs_path = std::make_unique<char*>(new char);
+        const auto exe_abs_path = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_process_get_real_path(exe_abs_path.get()));
         EXPECT_TRUE(pal_fs_file_exists(*exe_abs_path));
     }
@@ -261,14 +261,14 @@ namespace
 
     TEST(PAL_FS, pal_process_get_real_path)
     {
-        auto this_process_real_path = std::make_unique<char*>(new char);
+        const auto this_process_real_path = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_process_get_real_path(this_process_real_path.get()));
         EXPECT_NE(*this_process_real_path, nullptr);
     }
 
     TEST(PAL_FS, pal_fs_directory_exists_ReturnsTrueThatThisWorkingDirectoryExists)
     {
-        auto working_dir = testutils::get_process_cwd();
+        const auto working_dir = testutils::get_process_cwd();
         EXPECT_TRUE(pal_fs_directory_exists(working_dir.c_str()));
     }
 
@@ -280,7 +280,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsFalseWhenFileDoesNotExist)
     {
-        auto filename = testutils::build_random_filename();
+        const auto filename = testutils::build_random_filename();
         size_t file_size = 0;
         EXPECT_FALSE(pal_fs_get_file_size(filename.c_str(), &file_size));
         EXPECT_EQ(file_size, 0u);
@@ -288,7 +288,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsFalseWhenDirectoryDoesNotExist)
     {
-        auto dir_name = testutils::build_random_dirname();
+        const auto dir_name = testutils::build_random_dirname();
         size_t file_size = 0;
         EXPECT_FALSE(pal_fs_get_file_size(dir_name.c_str(), &file_size));
         EXPECT_EQ(file_size, 0u);
@@ -296,7 +296,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_get_file_size_ReturnsAValueGreaterThanZero)
     {
-        auto exe_abs_path = testutils::get_process_real_path();
+        const auto exe_abs_path = testutils::get_process_real_path();
         size_t file_size = 0;
         EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path.c_str(), &file_size));
         EXPECT_GT(file_size, 0u);
@@ -304,7 +304,7 @@ namespace
 
     TEST(PAL_FS, pal_fs_read_file_ReadsCurrentProcessBinaryData)
     {
-        auto exe_abs_path = testutils::get_process_real_path();
+        const auto exe_abs_path = testutils::get_process_real_path();
 
         size_t expected_file_size = 0;
         EXPECT_TRUE(pal_fs_get_file_size(exe_abs_path.c_str(), &expected_file_size));
@@ -314,7 +314,7 @@ namespace
         size_t bytes_len = 0;
         EXPECT_TRUE(pal_fs_read_binary_file(exe_abs_path.c_str(), &bytes, &bytes_len));
         EXPECT_NE(bytes, nullptr);
-        EXPECT_GT(bytes_len, 0);
+        EXPECT_GT(bytes_len, 0u);
 
         for (auto i = 0u; i < bytes_len; i++)
         {
@@ -326,7 +326,7 @@ namespace
     {
         const auto random_filename = testutils::build_random_filename();
         const auto working_dir = testutils::get_process_cwd();
-        const auto dst_json_filename = testutils::mkfile_random(working_dir.c_str(), random_filename.c_str());
+        const auto dst_json_filename = testutils::mkfile_random(working_dir, random_filename.c_str());
 
         json doc = {
             {"pi", 3.141},
@@ -503,11 +503,11 @@ namespace
         const auto parent_dir = testutils::mkdir_random(working_dir);
         const auto parent_dir_filename = testutils::mkfile_random(parent_dir, testutils::build_random_filename().c_str());
 
-        const auto sub_dir_name = "subdirectory";
-        const auto sub_dir1 = testutils::mkdir(parent_dir, sub_dir_name);
+        auto sub_dir_name = std::string("subdirectory");
+        const auto sub_dir1 = testutils::mkdir(parent_dir, sub_dir_name.c_str());
         const auto sub_dir1_filename = testutils::mkfile_random(sub_dir1, testutils::build_random_filename().c_str());
 
-        const auto sub_dir2 = testutils::mkdir(sub_dir1, sub_dir_name);
+        const auto sub_dir2 = testutils::mkdir(sub_dir1, sub_dir_name.c_str());
         const auto sub_dir2_filename = testutils::mkfile_random(sub_dir2, testutils::build_random_filename().c_str());
 
         EXPECT_TRUE(pal_fs_directory_exists(parent_dir.c_str()));
@@ -533,7 +533,7 @@ namespace
     {
         const auto random_filename = testutils::build_random_filename();
         const auto working_dir = testutils::get_process_cwd();
-        const auto dst_filename = testutils::mkfile_random(working_dir.c_str(), random_filename.c_str());
+        const auto dst_filename = testutils::mkfile_random(working_dir, random_filename.c_str());
         EXPECT_TRUE(pal_fs_file_exists(dst_filename.c_str()));
         EXPECT_TRUE(pal_fs_rmfile(dst_filename.c_str()));
         EXPECT_FALSE(pal_fs_file_exists(dst_filename.c_str()));
@@ -550,7 +550,7 @@ namespace
     {
         const auto random_filename = testutils::build_random_filename(".txt");
         const auto working_dir = testutils::get_process_cwd();
-        const auto dst_filename = testutils::mkfile_random(working_dir.c_str(), random_filename.c_str());
+        const auto dst_filename = testutils::mkfile_random(working_dir, random_filename.c_str());
 
         pal_file_handle_t* file_handle = nullptr;
         EXPECT_TRUE(pal_fs_fopen(dst_filename.c_str(), "wb", &file_handle));

@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <random>
+#include <utility>
 
 using json = nlohmann::json;
 using testutils = corerun::support::util::test_utils;
@@ -16,13 +17,6 @@ const int demoapp_default_exit_code = 0;
 
 static std::random_device dev;
 static auto rng = std::mt19937_64 { dev() };
-
-static bool is_ci_test()
-{
-    const auto value = std::make_unique<char*>(new char);
-    pal_env_get("SNAPX_CI_BUILD", value.get());
-    return pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
-}
 
 namespace {
 
@@ -65,7 +59,7 @@ namespace {
 
         corerun_run_details() = delete;
 
-        explicit corerun_run_details(const std::string& install_dir) : install_dir(install_dir)
+        explicit corerun_run_details(std::string install_dir) : install_dir(std::move(install_dir))
         {
 
         }
@@ -164,7 +158,7 @@ namespace {
         std::unique_ptr<stubexecutable_run_details> run_stubexecutable_with_args(const std::vector<std::string>& arguments)
         {
             const auto argc = arguments.size();
-            const auto argv = new char*[argc] {};
+            auto* const argv = new char*[argc] {};
 
             for (auto i = 0u; i < argc; i++)
             {

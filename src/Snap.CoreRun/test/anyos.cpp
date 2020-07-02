@@ -329,13 +329,6 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidPrefix)
     {
-        if(is_ci_test())
-        {
-#if PAL_PLATFORM_WINDOWS
-            GTEST_SKIP();
-#endif
-        }
-
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -369,13 +362,6 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidSemver)
     {
-        if(is_ci_test())
-        {
-#if PAL_PLATFORM_WINDOWS
-            GTEST_SKIP();
-#endif
-        }
-
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -409,13 +395,6 @@ namespace {
 
     TEST(MAIN, corerun_StartsInitialVersion)
     {
-        if(is_ci_test())
-        {
-#if PAL_PLATFORM_WINDOWS
-            GTEST_SKIP();
-#endif
-        }
-
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -446,13 +425,6 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersion)
     {
-        if(is_ci_test())
-        {
-#if PAL_PLATFORM_WINDOWS
-            GTEST_SKIP();
-#endif
-        }
-
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -484,13 +456,6 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersionWhenThereAreLotsOfVersionsInRandomOrderInstalled)
     {
-        if(is_ci_test())
-        {
-#if PAL_PLATFORM_WINDOWS
-            GTEST_SKIP();
-#endif
-        }
-
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);

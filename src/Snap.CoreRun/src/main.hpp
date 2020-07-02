@@ -45,7 +45,16 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
          << "Startup arguments(" << std::to_string(argc) << "): "
          << this_exe::build_argv_str(argc, argv);
 
-    if (pal_is_elevated()) {
+    const auto snapx_corerun_allow_elevated_context = []
+    {
+        const auto value = std::make_unique<char*>(new char);
+        pal_env_get("SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT", value.get());
+        return pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
+    };
+
+    if (pal_is_elevated() 
+        && !snapx_corerun_allow_elevated_context()) 
+    {        
         LOGE << "Current user account is elevated to either root / Administrator, exiting..";
         return 1;
     }

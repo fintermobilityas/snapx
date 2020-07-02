@@ -1710,7 +1710,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const 
     CloseHandle(h_file);
 
     return success == TRUE && bytes_written == data_len_in ? TRUE : FALSE;
-
 #elif defined(PAL_PLATFORM_LINUX)
     const auto h_file = fopen(filename_in, "wb");
     if(h_file == nullptr)
@@ -1719,15 +1718,18 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const 
     }
 
     const auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, h_file);
+
+    fclose(h_file);
+
     if(bytes_written == data_len_in)
     {
         return TRUE;
     }
 
-    fclose(h_file);
-#endif
-
     return FALSE;
+#else
+    return FALSE;
+#endif
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, char ** path_normalized_out)

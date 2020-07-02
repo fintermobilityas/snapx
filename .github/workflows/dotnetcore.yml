@@ -101,7 +101,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         rid: [win-x86, win-x64]
-        os: [windows-2019, windows-2016]
+        os: [windows-2019]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1

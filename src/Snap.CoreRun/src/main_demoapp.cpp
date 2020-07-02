@@ -22,12 +22,14 @@ int corerun_demoapp_main_impl(int argc, char **argv)
     char* app_name = nullptr;
     if (!pal_process_get_name(&app_name))
     {
+        LOGE << "Failed to get process name.";
         return unit_test_error_exit_code;
     }
 
     char* this_working_dir = nullptr;
     if(!pal_process_get_cwd(&this_working_dir))
     {
+        LOGE << "Failed to get current working dir.";
         return unit_test_error_exit_code;
     }
 

@@ -94,13 +94,14 @@ jobs:
           path: ${{ github.workspace }}/artifacts/**/*
 
   windows:
-    runs-on: windows-latest
-    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    name: Bootstrap ${{ matrix.os }}-{{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
         configuration: [Debug, Release]
         rid: [win-x86, win-x64]
+        os: [windows-2019, windows-2016]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
@@ -112,6 +113,11 @@ jobs:
           lfs: true
           submodules: true   
 
+      - name: Setup dotnet 2.1 sdk
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: 2.1.807
+        
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
 
@@ -147,7 +153,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.rid }}-${{ matrix.configuration }}
+          name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
   publish:
@@ -170,16 +176,16 @@ jobs:
           name: linux-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Download win-x86-Release artifacts
+      - name: Download windows-2019-win-x86-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: win-x86-Release
+          name: windows-2019-win-x86-Release
           path: ${{ github.workspace }}
 
-      - name: Download win-x64-Release artifacts
+      - name: Download windows-2019-win-x64-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: win-x64-Release
+          name: windows-2019-win-x64-Release
           path: ${{ github.workspace }}
           
       - name: Setup dotnet using global.json

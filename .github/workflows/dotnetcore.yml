@@ -58,24 +58,24 @@ jobs:
           username: ${{ github.actor }} 
           password: ${{secrets.GITHUB_TOKEN }}     
 
-      - name: Bootstrap
+      - name: Build native
         shell: pwsh
         run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
     
-      - name: GTest
+      - name: Test native
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
-      - name: dotnet test
+      - name: Build .NET installer (self-contained)
+        shell: pwsh
+        run: ./build.ps1 Snap-Installer -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+    
+      - name: Test .NET
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
-      - name: Build installer
-        shell: pwsh
-        run: ./build.ps1 Snap-Installer -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
-    
       - name: Collect artifacts 
         env:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
@@ -118,10 +118,10 @@ jobs:
           lfs: true
           submodules: true   
 
-      - name: Build
+      - name: Build native
         run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
-      - name: GTest
+      - name: Test native
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
@@ -134,12 +134,12 @@ jobs:
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
         
-      - name: dotnet test
+      - name: Test .NET
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
-      - name: Build installer
+      - name: Build .NET installer (self-contained)
         run: ./build.ps1 Snap-Installer -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
       - name: Collect artifacts 

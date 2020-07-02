@@ -8,7 +8,9 @@ env:
   DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-
+  SNAPX_CI_BUILD: 1
+  SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
+  
 jobs:
 
   setup:    
@@ -42,8 +44,6 @@ jobs:
         os: [ubuntu-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-      SNAPX_CI_BUILD: 1
-      SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -105,8 +105,6 @@ jobs:
         os: [windows-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-      SNAPX_CI_BUILD: 1
-      SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0

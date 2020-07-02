@@ -1761,7 +1761,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
 
         using PathCchCanonicalizeFn = HRESULT(WINAPI*)(PWSTR pszPathOut,
             size_t cchPathOut,
-            PCWSTR pszPathIn);
+            PCWSTR pszPathIn,
+            ULONG dwFlags);
 
         const auto PathCchCanonicalizeExFnName = std::string("PathCchCanonicalizeEx");
 
@@ -1772,11 +1773,13 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
             return FALSE;
         }
 
+        const auto PATHCCH_ALLOW_LONG_PATHS = 0x00000001;
+
         std::vector<wchar_t> buffer(PAL_MAX_PATH_UNICODE);
 
         HRESULT const hr = path_cch_canonicalize_fn(buffer.data(),
             buffer.size(),
-            path_in_utf16_string.data());
+            path_in_utf16_string.data(), PATHCCH_ALLOW_LONG_PATHS);
 
         if (hr != S_OK)
         {

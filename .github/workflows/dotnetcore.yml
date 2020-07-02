@@ -128,19 +128,12 @@ jobs:
       - name: Setup dotnet using global.json
         uses: actions/setup-dotnet@v1.5.0
 
-      # https://github.com/actions/setup-dotnet/issues/25#issuecomment-646925506
+      # https://github.com/actions/setup-dotnet/issues/25#issuecomment-583367317
       - name: Setup side by side .NET SDKs
-        shell: pwsh
+        shell: cmd
         run: |
-          $version = Split-Path (Split-Path $ENV:DOTNET_ROOT -Parent) -Leaf;
-          $root = Split-Path (Split-Path $ENV:DOTNET_ROOT -Parent) -Parent;
-          $directories = Get-ChildItem $root | Where-Object { $_.Name -ne $version };
-          foreach ($dir in $directories) {
-            $from = $dir.FullName;
-            $to = "$root/$version";
-            Write-Host Copying from $from to $to;
-            Copy-Item "$from\*" $to -Recurse -Force;
-          }
+          SET DOTNET_21_ROOT=%DOTNET_ROOT:3.1.101=2.1.807%
+          xcopy /s /y /d %DOTNET_31_ROOT% %DOTNET_ROOT%
           
       - name: Test .NET
         timeout-minutes: 10

@@ -327,21 +327,21 @@ namespace
         {
             ASSERT_TRUE(pal_fs_write(test_filename.c_str(), json.c_str(), json.size()));
 
-            char* buffer = nullptr;
-            size_t len = 0;
-            ASSERT_TRUE(pal_fs_read_file(test_filename.c_str(), &buffer, &len));
+            char* data = nullptr;
+            size_t data_len = 0;
+            ASSERT_TRUE(pal_fs_read_file(test_filename.c_str(), &data, &data_len));
 
-            ASSERT_TRUE(buffer != nullptr);
-            ASSERT_TRUE(len > 0);
+            ASSERT_TRUE(data != nullptr);
+            ASSERT_TRUE(data_len > 0);
 
-            for (auto i = 0u; i < len; i++)
+            for (auto buffer_index = 0u; buffer_index < data_len; buffer_index++)
             {
-                ASSERT_NE(&buffer[i], nullptr);
+                ASSERT_NE(&data[buffer_index], nullptr);
             }
 
-            buffer[len] = '\0';
+            data[data_len] = '\0';
 
-            const auto json_after = json::parse(buffer);
+            const auto json_after = json::parse(data);
             ASSERT_STREQ(json.c_str(), json_after.dump().c_str());
 
             ASSERT_TRUE(pal_fs_rmfile(test_filename.c_str()));

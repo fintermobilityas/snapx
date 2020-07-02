@@ -57,12 +57,12 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
         return allow;
     };
 
-    if (pal_is_elevated() 
+ /*   if (pal_is_elevated() 
         && !snapx_corerun_allow_elevated_context()) 
     {        
         LOGE << "Current user account is elevated to either root / Administrator, exiting..";
         return 1;
-    }
+    }*/
 
     snapx_maybe_wait_for_debugger();
 

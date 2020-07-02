@@ -1701,10 +1701,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const 
     DWORD bytes_written;
 
     const auto success = WriteFile( 
-                    h_file,           // open file handle
-                    data_in,      // start of data to write
-                    data_len_in,  // number of bytes to write
-                    &bytes_written, // number of bytes that were written
+                    h_file,              // open file handle
+                    data_in,             // start of data to write
+                    data_len_in,         // number of bytes to write
+                    &bytes_written,      // number of bytes that were written
                     nullptr);            // no overlapped structure
 
     CloseHandle(h_file);

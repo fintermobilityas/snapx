@@ -1419,9 +1419,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char *filename_in, ch
         return FALSE;                    
     }
 
-    const auto bytes_to_read = bytes_to_read_li.QuadPart;
+    const auto bytes_to_read = static_cast<size_t>(bytes_to_read_li.QuadPart);
 
-    LONGLONG read_offset = 0;
+    size_t read_offset = 0;
     DWORD read_buffer_bytes_read = 0;
     const auto read_buffer_size = 8096;
     char read_buffer[read_buffer_size];

@@ -20,7 +20,8 @@
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
-#include <tlhelp32.h> // CreateToolhelp32Snapshot 
+#include <tlhelp32.h> // CreateToolhelp32Snapshot
+#include <system_error>
 #include "versionhelpers.h"
 #include "vendor/rcedit/rcedit.hpp"
 #elif defined(PAL_PLATFORM_LINUX)
@@ -1754,6 +1755,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
         pal_module pathcch_module("api-ms-win-core-path-l1-1-0.dll");
         if (!pathcch_module.is_loaded())
         {
+            LOGE << "Failed to load: " <<pathcch_module.get_filename();
             return FALSE;
         }
 
@@ -1761,9 +1763,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
             size_t cchPathOut,
             PCWSTR pszPathIn);
 
-        const auto path_cch_canonicalize_fn = pathcch_module.bind<PathCchCanonicalizeFn>("PathCchCanonicalizeEx");
+        const auto PathCchCanonicalizeExFnName = std::string("PathCchCanonicalizeEx");
+
+        const auto path_cch_canonicalize_fn = pathcch_module.bind<PathCchCanonicalizeFn>(PathCchCanonicalizeExFnName);
         if (path_cch_canonicalize_fn == nullptr)
         {
+            LOGE << "Failed to load function: " << PathCchCanonicalizeExFnName;
             return FALSE;
         }
 
@@ -1773,11 +1778,11 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
             buffer.size(),
             path_in_utf16_string.data());
 
-        if (!SUCCEEDED(hr))
+        if (hr != S_OK)
         {
-            LOGE << "PathCchCanonicalizeEx failed to normalize path. "
+            LOGE << PathCchCanonicalizeExFnName << " failed to normalize path. "
                 << "Path: " << path_in_utf16_string << ". "
-                << "Error code: " << GetLastError();
+                << "Error message: " << std::system_category().message(hr);
             return FALSE;
         }
 

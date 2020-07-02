@@ -7,6 +7,7 @@
 #elif defined(PAL_PLATFORM_WINDOWS) 
 #include <string>
 #include <iostream>
+#include <algorithm>
 
 // - String internal
 wchar_t* pal_str_widen(const char* utf8_str);
@@ -148,7 +149,6 @@ public:
         return m_value.c_str();
     }
 
-
 };
 
 class pal_utf8_string final : public pal_string<char, std::string>
@@ -181,6 +181,11 @@ public:
     char* dup() override
     {
         return _strdup(m_value.c_str());
+    }
+        
+    void to_backward_slashes()
+    {
+        std::replace(m_value.begin(), m_value.end(), '/', '\\');
     }
 
 };
@@ -220,6 +225,11 @@ public:
     wchar_t* dup() override
     {
         return _wcsdup(m_value.c_str());
+    }
+    
+    void to_backward_slashes()
+    {
+        std::replace(m_value.begin(), m_value.end(), '/', '\\');
     }
 };
 #endif

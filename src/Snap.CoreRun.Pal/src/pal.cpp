@@ -1774,6 +1774,9 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, cha
             return FALSE;
         }
 
+        // PathCchCombineEx does not convert forward slashes (/) into back slashes (\).
+        path_in_utf16_string.to_backward_slashes();
+
         const auto PATHCCH_ALLOW_LONG_PATHS = 0x00000001;
 
         std::vector<wchar_t> buffer(PAL_MAX_PATH_UNICODE);
@@ -1939,6 +1942,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_combine(const char * path1, const c
         using PathCchCombineExFn = HRESULT(WINAPI*)(PWSTR pszPathOut,
             size_t cchPathOut, PCWSTR pszPathIn, PCWSTR pszMore, unsigned long dwFlags);
 
+        const auto PATHCCH_ALLOW_LONG_PATHS = 0x00000001;
+
         const auto path_cch_combine_ex_fn = pathcch_module.bind<PathCchCombineExFn>("PathCchCombineEx");
         if (path_cch_combine_ex_fn == nullptr)
         {
@@ -1951,7 +1956,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_path_combine(const char * path1, const c
             buffer.size(),
             path1_utf16_string.data(),
             path2_utf16_string.data(),
-            0);
+            PATHCCH_ALLOW_LONG_PATHS);
 
         if (!SUCCEEDED(hr))
         {

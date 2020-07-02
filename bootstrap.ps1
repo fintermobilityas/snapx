@@ -84,7 +84,7 @@ function Invoke-Build-Native {
     {
         switch($Rid) {
             "win-x86" {
-                # Default is x86
+                $CmakeArchNewSyntaxPrefix = "-A Win32"
             }
             "win-x64" {
                 $CmakeArchNewSyntaxPrefix = "-A x64"
@@ -250,7 +250,7 @@ function Invoke-Build-Snap-Installer {
             "rcedit"
             "$SnapInstallerExeAbsolutePath"
             "--gui-app"
-        )        
+        )
     } else {
         Invoke-Command-Colored chmod @("+x $SnapInstallerExeAbsolutePath")
     }
@@ -327,12 +327,12 @@ function Invoke-Dotnet-UnitTests
     foreach($Project in $Projects)
     {
         $TestProjectName = Split-Path $Project -LeafBase
-        $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
+        $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$TestProjectName
 
         Invoke-Dotnet-Clear $Project
 
         $Platform = $null
-        
+
         switch($Rid) {
             "win-x86" {
                 $Platform = "x86"
@@ -347,7 +347,7 @@ function Invoke-Dotnet-UnitTests
                 Invoke-Exit "Rid not supported: $Rid"
             }
         }
- 
+
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
@@ -402,10 +402,10 @@ switch ($Target) {
     "Native" {
         switch ($OSPlatform) {
             "Windows" {
-                Invoke-Build-Native 
+                Invoke-Build-Native
             }
             "Unix" {
-                Invoke-Build-Native 
+                Invoke-Build-Native
             }
             default {
                 Write-Error "Unsupported os platform: $OSPlatform"

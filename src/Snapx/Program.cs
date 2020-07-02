@@ -695,7 +695,13 @@ namespace snapx
 
             logger.Info($"Preparing to build {installerPrefix} installer for channel: {snapChannel.Name}. Version: {snapApp.Version}.");
 
-            var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); } };
+            var progressSource = new SnapProgressSource
+            {
+                Progress = percentage =>
+                {
+                    logger.Info($"Progress: {percentage}%.");
+                }
+            };
 
             using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
             MemoryStream installerZipMemoryStream;
@@ -711,7 +717,8 @@ namespace snapx
 
             if (snapOs.OsPlatform == OSPlatform.Windows)
             {
-                warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindowsX64;
+                warpPackerMemoryStream = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? 
+                    snapxEmbeddedResources.WarpPackerWindowsX86 : snapxEmbeddedResources.WarpPackerWindowsX64;
                 installerIconSupported = true;
             }
             else if (snapOs.OsPlatform == OSPlatform.Linux)

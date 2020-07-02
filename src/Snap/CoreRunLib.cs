@@ -82,7 +82,8 @@ namespace Snap
 
             if (osPlatform == OSPlatform.Windows)
             {
-                filename += !AnyOS.Windows.NativeMethodsWindows.Is64Bit(Process.GetCurrentProcess()) ? "win-x86" : "win-x64" + ".dll";
+                var rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
+                filename += $"{rid}.dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)
@@ -95,7 +96,7 @@ namespace Snap
             {
                 throw new FileNotFoundException($"Failed to load corerun: {filename}. " +
                                                 $"OS: {osPlatform}. " +
-                                                $"64-bit OS: {Environment.Is64BitOperatingSystem}." +
+                                                $"64-bit OS: {Environment.Is64BitOperatingSystem}. " +
                                                 $"Last error: {Marshal.GetLastWin32Error()}.");
             }
 

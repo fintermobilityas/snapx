@@ -246,7 +246,7 @@ function Invoke-Dotnet-UnitTests
     )
 
     Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
-        $ActualRid = $_    
+        $ActualRid = $_
         Invoke-Bootstrap-Ps1 Run-Dotnet-UnitTests @("-Configuration $Configuration -Rid $ActualRid")
     }
 }
@@ -267,12 +267,12 @@ function Invoke-Bootstrap-Unix
     $Rids = Invoke-Build-Rids-Array -Rid $Rid
 
     $Rids  | ForEach-Object {
-        $ActualRid = $_    
+        $ActualRid = $_
         Invoke-Build-Native -Rid $ActualRid
     }
 
     $Rids  | ForEach-Object {
-        $ActualRid = $_    
+        $ActualRid = $_
         Invoke-Build-Snap-Installer -Rid $ActualRid
     }
 }
@@ -286,12 +286,12 @@ function Invoke-Bootstrap-Windows {
     $Rids = Invoke-Build-Rids-Array -Rid $Rid
 
     $Rids | ForEach-Object {
-        $ActualRid = $_    
+        $ActualRid = $_
         Invoke-Build-Native -Rid $ActualRid
     }
 
     $Rids | ForEach-Object {
-        $ActualRid = $_    
+        $ActualRid = $_
         Invoke-Build-Snap-Installer -Rid $ActualRid
     }
 }
@@ -407,19 +407,7 @@ switch ($Target) {
     }
     "Snap-Installer" {
         Invoke-Clean-Build
-        if($Rid -eq "any") {
-            switch($OSPlatform) {
-                "Windows" {
-                    Invoke-Build-Snap-Installer -Rid $Rid
-                }
-                "Unix" {
-                    Invoke-Build-Snap-Installer -Rid -Rid $Rid
-                }
-                Default {
-                    Invoke-Exit "Unsupported os: $OSPlatform"
-                }
-            }
-        }
+        Invoke-Build-Snap-Installer -Rid $Rid
         Invoke-Summary
     }
     "Snapx" {
@@ -432,7 +420,7 @@ switch ($Target) {
             "Windows" {
                 Invoke-Clean-Build
 
-                if($CIBuild) {
+                if($Rid.StartsWith("win")) {
                     Invoke-Native-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
@@ -440,7 +428,9 @@ switch ($Target) {
 
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Native-UnitTests"
-                    Invoke-Native-UnitTests -Rid $Rid
+                    if($OSPlatform -eq "Windows") {
+                        Invoke-Native-UnitTests -Rid $Rid
+                    }
                     Invoke-Summary
                     return
                 }
@@ -466,7 +456,7 @@ switch ($Target) {
             "Windows" {
                 Invoke-Clean-Build
 
-                if($CIBuild) {
+                if($Rid.StartsWith("win")) {
                     Invoke-Dotnet-UnitTests -Rid $Rid
                     Invoke-Summary
                     return
@@ -474,7 +464,9 @@ switch ($Target) {
 
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
-                    Invoke-Dotnet-UnitTests -Rid $Rid
+                    if($OSPlatform -eq "Windows") {
+                        Invoke-Dotnet-UnitTests -Rid $Rid
+                    }
                     Invoke-Summary
                     return
                 }

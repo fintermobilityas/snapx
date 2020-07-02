@@ -20,10 +20,12 @@ namespace Snap.Core.Resources
         MemoryStream CoreRunLibWindowsX86 { get; }
         MemoryStream CoreRunLibWindowsX64 { get; }
         MemoryStream CoreRunLibLinuxX64 { get; }
-        (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp, ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
+        (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp,
+            ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
         string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
-        Task ExtractCoreRunLibAsync(ISnapFilesystem filesystem, ISnapCryptoProvider snapCryptoProvider, string workingDirectory, OSPlatform osPlatform);
+        Task ExtractCoreRunLibAsync(ISnapFilesystem filesystem, ISnapCryptoProvider snapCryptoProvider,
+            string workingDirectory, OSPlatform osPlatform);
     }
 
     internal sealed class SnapEmbeddedResources : EmbeddedResources, ISnapEmbeddedResources
@@ -215,7 +217,7 @@ namespace Snap.Core.Resources
             
             if (osPlatform == OSPlatform.Windows)
             {
-                var rid = !AnyOS.Windows.NativeMethodsWindows.Is64Bit(Process.GetCurrentProcess()) ? "win-x86" : "win-x64";
+                var rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
                 var coreRunLib = rid == "win-x86" ? CoreRunLibWindowsX86 : CoreRunLibWindowsX64;
                 var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.dll");
                 if (filesystem.FileExists(filename) 

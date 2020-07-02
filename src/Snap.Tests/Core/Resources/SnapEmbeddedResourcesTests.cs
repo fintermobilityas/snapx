@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Moq;
@@ -31,11 +32,25 @@ namespace Snap.Tests.Core.Resources
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                #if PLATFORM_WINDOWS_X86
                 Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX86);
-                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX64);
                 Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX86);
+                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX64);
+                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX64);
+                return;
+                #elif PLATFORM_WINDOWS_X64
+                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX86);
+                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX86);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX64);
                 Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX64);
                 return;
+                #else
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX86);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX86);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX64);
+                Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX64);
+                return;
+                #endif
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -103,7 +118,7 @@ namespace Snap.Tests.Core.Resources
             string expectedDllFilename;
             if (osPlatform == OSPlatform.Windows)
             {
-                expectedDllFilename = "libcorerun-" + (!Environment.Is64BitOperatingSystem ? "win-x86" : "win-x64") + ".dll";
+                expectedDllFilename = "libcorerun-" + (RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64") + ".dll";
             } else if (osPlatform == OSPlatform.Linux)
             {
                 expectedDllFilename = "libcorerun-linux-x64.so";

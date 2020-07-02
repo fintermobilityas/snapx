@@ -302,7 +302,7 @@ namespace
         EXPECT_GT(file_size, 0u);
     }
 
-    TEST(PAL_FS, pal_fs_read_file_CanRepeatedlyReadAndWriteAndDelete)
+    TEST(PAL_FS, pal_fs_read_file_CanRepeatedlyReadAndWrite)
     {
         const json doc_before = {
             {"pi", 3.141},
@@ -325,8 +325,6 @@ namespace
 
         for(auto i = 0; i < 10; i++)
         {
-            LOGV << "Iteration: " << i;
-
             ASSERT_TRUE(pal_fs_write(test_filename.c_str(), json.c_str(), json.size()));
 
             char* data = nullptr;
@@ -345,8 +343,6 @@ namespace
 
             const auto json_after = json::parse(data);
             ASSERT_STREQ(json.c_str(), json_after.dump().c_str());
-
-            ASSERT_TRUE(pal_fs_rmfile(test_filename.c_str()));
         }
 
     }

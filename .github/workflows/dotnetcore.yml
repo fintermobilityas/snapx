@@ -32,13 +32,14 @@ jobs:
           echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
             
   linux:
-    runs-on: ubuntu-latest
-    name: Bootstrap ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    name: Bootstrap ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
         configuration: [Debug, Release]
         rid: [linux-x64]
+        os: [ubuntu-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
@@ -90,7 +91,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.rid }}-${{ matrix.configuration }}
+          name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
   windows:
@@ -101,7 +102,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         rid: [win-x86, win-x64]
-        os: [windows-2019]
+        os: [windows-latest]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
@@ -170,10 +171,10 @@ jobs:
         with: 
           lfs: true
 
-      - name: Download linux-x64-Release artifacts
+      - name: Download ubuntu-latest-linux-x64-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: linux-x64-Release
+          name: ubuntu-latest-linux-x64-Release
           path: ${{ github.workspace }}
           
       - name: Download windows-2019-win-x86-Release artifacts

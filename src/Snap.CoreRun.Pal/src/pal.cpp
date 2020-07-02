@@ -1400,7 +1400,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char *filename_in, ch
 
     auto* const h_file = CreateFile(path_in_utf16_string.data(),
                                     GENERIC_READ,
-                                    FILE_SHARE_READ | FILE_SHARE_DELETE, 
+                                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 
                                     nullptr,
                                     OPEN_EXISTING,
                                     FILE_ATTRIBUTE_NORMAL,

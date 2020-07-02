@@ -1688,10 +1688,10 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const 
     auto* const h_file  = CreateFile(filename_in_utf16_string.data(),   
                        GENERIC_WRITE,          // open for writing
                        0,                      // do not share
-                       nullptr,                   // default security
-                       CREATE_NEW,             // create new file only
+                       nullptr,                // default security
+                       CREATE_ALWAYS,          // open existing file or create a new file
                        FILE_ATTRIBUTE_NORMAL,  // normal file
-                       nullptr);                  // no attr. template
+                       nullptr);               // no attr. template
 
     if(h_file == INVALID_HANDLE_VALUE)
     {

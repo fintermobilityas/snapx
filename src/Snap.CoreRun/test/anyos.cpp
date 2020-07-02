@@ -18,6 +18,13 @@ const int demoapp_default_exit_code = 0;
 static std::random_device dev;
 static auto rng = std::mt19937_64 { dev() };
 
+static bool is_ci_test()
+{
+    const auto value = std::make_unique<char*>(new char);
+    pal_env_get("SNAPX_CI_BUILD", value.get());
+    return pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
+}
+
 namespace {
 
     class corerun_app_details
@@ -306,6 +313,13 @@ namespace {
     
     TEST(MAIN, corerun_StartsWhenThereAreZeroAppsInstalled)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -323,6 +337,13 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidPrefix)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -356,6 +377,13 @@ namespace {
 
     TEST(MAIN, corerun_ExcludesAppDirectoriesWithInvalidSemver)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -389,6 +417,13 @@ namespace {
 
     TEST(MAIN, corerun_StartsInitialVersion)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -419,6 +454,13 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersion)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -450,6 +492,13 @@ namespace {
 
     TEST(MAIN, corerun_StartsMostRecentVersionWhenThereAreLotsOfVersionsInRandomOrderInstalled)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);

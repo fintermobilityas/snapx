@@ -132,15 +132,12 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_file_exists(const char* file_path_in)
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_cwd(char** working_directory_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_directory_exists(const char* path_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in, size_t* file_size_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdir(const char* directory_in, pal_mode_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_mkdirp(const char *directory_in, pal_mode_t mode_in);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL recursive);
 PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const char* data_in, size_t data_len_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* mode_in, const char* data_in, size_t data_len_in);
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* data_in, size_t data_len_in);
 
 // - Path
 PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char* path_in, char** path_normalized_out);

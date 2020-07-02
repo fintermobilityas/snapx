@@ -288,7 +288,7 @@ namespace {
 
             const auto log_output = std::make_unique<char*>(new char);
             size_t log_output_len = 0;
-            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), log_output.get(), &log_output_len) || log_output_len <= 0)
+            if (!pal_fs_read_file(log_filename_absolute_path.c_str(), log_output.get(), &log_output_len) || log_output_len <= 0)
             {
                 LOGE << "Failed to read log file: " << log_filename_absolute_path << ". Size: " << log_output_len;
                 return std::string();

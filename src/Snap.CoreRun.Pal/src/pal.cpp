@@ -292,16 +292,16 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_set_icon(const char * filename_in, const
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
     pal_utf16_string icon_filename_in_utf16_string(icon_filename_in);
-    snap::rcedit::ResourceUpdater resourceUpdater;
-    if (!resourceUpdater.Load(filename_in_utf16_string.data()))
+    snap::rcedit::ResourceUpdater resource_updater;
+    if (!resource_updater.Load(filename_in_utf16_string.data()))
     {
         return FALSE;
     }
-    if (!resourceUpdater.SetIcon(icon_filename_in_utf16_string.data()))
+    if (!resource_updater.SetIcon(icon_filename_in_utf16_string.data()))
     {
         return FALSE;
     }
-    if (!resourceUpdater.Commit())
+    if (!resource_updater.Commit())
     {
         return FALSE;
     }
@@ -1388,7 +1388,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_get_file_size(const char* filename_in
 #endif
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_file(const char *filename_in, char **bytes_out, size_t *bytes_read_out)
 {
     if (filename_in == nullptr)
     {
@@ -1400,7 +1400,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
 
     auto* const h_file = CreateFile(path_in_utf16_string.data(),
                                     GENERIC_READ,
-                                    FILE_SHARE_READ,
+                                    FILE_SHARE_READ | FILE_SHARE_DELETE, 
                                     nullptr,
                                     OPEN_EXISTING,
                                     FILE_ATTRIBUTE_NORMAL,
@@ -1411,32 +1411,49 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_read_binary_file(const char *filename
         return FALSE;
     }
 
-    const auto total_bytes_to_read = GetFileSize(h_file, nullptr);
-
-    size_t read_offset = 0;
-    DWORD read_buffer_bytes_read = 0;
-    const auto read_buffer_size = 4096;
-    char read_buffer[read_buffer_size];
-    while (ReadFile(h_file, read_buffer, read_buffer_size, &read_buffer_bytes_read, nullptr)
-        && read_buffer_bytes_read > 0)
+    LARGE_INTEGER bytes_to_read_li;
+    if(0 == GetFileSizeEx(h_file, &bytes_to_read_li))
     {
-        if (read_offset == 0)
-        {
-            *bytes_out = new char[total_bytes_to_read];
-            if (total_bytes_to_read < read_buffer_size)
-            {
-                std::memcpy(*bytes_out, &read_buffer, read_buffer_bytes_read);
-                read_offset = read_buffer_bytes_read;
-                break;
-            }
-        }
-        std::memcpy(*bytes_out + read_offset, &read_buffer[0], read_buffer_bytes_read * sizeof read_buffer[0]);
-        read_offset += read_buffer_bytes_read;
+        LOGE << "Failed to get file size for filename: " << path_in_utf16_string << ". Error code: " << GetLastError();
+        assert(TRUE == CloseHandle(h_file));
+        return FALSE;                    
     }
 
-    assert(0 != CloseHandle(h_file));
+    const auto bytes_to_read = bytes_to_read_li.QuadPart;
 
-    if (read_offset != total_bytes_to_read)
+    LONGLONG read_offset = 0;
+    DWORD read_buffer_bytes_read = 0;
+    const auto read_buffer_size = 8096;
+    char read_buffer[read_buffer_size];
+
+    bool readfile_success;
+    do
+    {
+        // https://docs.microsoft.com/en-us/windows/win32/fileio/testing-for-the-end-of-a-file
+        readfile_success = TRUE == ReadFile(h_file, read_buffer, read_buffer_size, &read_buffer_bytes_read, nullptr);
+        if(read_buffer_bytes_read > 0)
+        {
+           assert(read_offset < bytes_to_read);
+
+           if (read_offset == 0)
+           {
+                *bytes_out = new char[bytes_to_read];
+                if (bytes_to_read < read_buffer_size)
+                {
+                    std::memcpy(*bytes_out, &read_buffer, read_buffer_bytes_read);
+                    read_offset = read_buffer_bytes_read;
+                    continue;
+                }
+           }
+
+           std::memcpy(*bytes_out + read_offset, &read_buffer[0], read_buffer_bytes_read * sizeof read_buffer[0]);
+           read_offset += read_buffer_bytes_read;          
+        }
+    } while(readfile_success && read_buffer_bytes_read > 0);
+
+    assert(TRUE == CloseHandle(h_file));
+
+    if (read_offset != bytes_to_read)
     {
         if (read_offset > 0)
         {
@@ -1567,7 +1584,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmfile(const char* filename_in)
     const auto status = DeleteFile(filename_in_utf16_string.data());
     if (status == 0)
     {
-        LOGE << "Error removing file: " << filename_in_utf16_string << ". Status: " << status << ". Error code: " << GetLastError();
+        LOGE << "Error removing file: " << filename_in_utf16_string << ". Error code: " << GetLastError();
         return FALSE;
     }
     return TRUE;
@@ -1658,87 +1675,59 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_rmdir(const char* directory_in, BOOL 
     return pal_fs_rmdir(directory_in, FALSE);
 }
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fopen(const char* filename_in, const char* mode_in, pal_file_handle_t** file_handle_out)
+PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename_in, const char* data_in, const size_t data_len_in)
 {
     if (filename_in == nullptr
-        || mode_in == nullptr)
+        || data_in == nullptr)
     {
         return FALSE;
     }
 
-    auto fopen_success = FALSE;
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string filename_in_utf16_string(filename_in);
-    pal_utf16_string mode_in_utf16_string(mode_in);
-    FILE* p_file = nullptr;
-    const auto result_errno = _wfopen_s(&p_file, filename_in_utf16_string.data(), mode_in_utf16_string.data());
-    if (result_errno == 0)
+    auto* const h_file  = CreateFile(filename_in_utf16_string.data(),   
+                       GENERIC_WRITE,          // open for writing
+                       0,                      // do not share
+                       nullptr,                   // default security
+                       CREATE_NEW,             // create new file only
+                       FILE_ATTRIBUTE_NORMAL,  // normal file
+                       nullptr);                  // no attr. template
+
+    if(h_file == INVALID_HANDLE_VALUE)
     {
-        *file_handle_out = p_file;
-        fopen_success = TRUE;
+        return FALSE;
     }
+
+    DWORD bytes_written;
+
+    const auto success = WriteFile( 
+                    h_file,           // open file handle
+                    data_in,      // start of data to write
+                    data_len_in,  // number of bytes to write
+                    &bytes_written, // number of bytes that were written
+                    nullptr);            // no overlapped structure
+
+    CloseHandle(h_file);
+
+    return success == TRUE && bytes_written == data_len_in ? TRUE : FALSE;
+
 #elif defined(PAL_PLATFORM_LINUX)
-    FILE* h_file = fopen(filename_in, mode_in);
-    if (h_file != nullptr)
+    const auto h_file = fopen(filename_in, "wb");
+    if(h_file == nullptr)
     {
-        *file_handle_out = h_file;
-        fopen_success = TRUE;
+        return FALSE;
     }
+
+    const auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, h_file);
+    if(bytes_written == data_len_in)
+    {
+        return TRUE;
+    }
+
+    fclose(h_file);
 #endif
-    return fopen_success;
-}
 
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_handle_in, const char* data_in, size_t data_len_in)
-{
-    if (pal_file_handle_in == nullptr
-        || data_in == nullptr
-        || data_len_in <= 0)
-    {
-        return FALSE;
-    }
-
-    auto fwrite_success = FALSE;
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_LINUX)
-    const auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, pal_file_handle_in);
-    if (bytes_written == data_len_in)
-    {
-        const auto flush_result = fflush(pal_file_handle_in);
-        fwrite_success = flush_result == 0 ? TRUE : FALSE;
-    }
-#endif
-    return fwrite_success;
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_write(const char* filename, const char* mode_in, const char* data_in, size_t data_len_in)
-{
-    pal_file_handle_t* file_handle = nullptr;
-    if (!pal_fs_fopen(filename, mode_in, &file_handle))
-    {
-        return FALSE;
-    }
-    if (!pal_fs_fwrite(file_handle, data_in, data_len_in))
-    {
-        pal_fs_fclose(file_handle);
-        return FALSE;
-    }
-    return pal_fs_fclose(file_handle);
-}
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fclose(pal_file_handle_t*& pal_file_handle_in)
-{
-    if (pal_file_handle_in == nullptr)
-    {
-        return FALSE;
-    }
-    BOOL fclose_success;
-#if defined(PAL_PLATFORM_WINDOWS) || defined(PAL_PLATFORM_LINUX)
-    fclose_success = fclose(pal_file_handle_in) == 0 ? TRUE : FALSE;
-    if (fclose_success)
-    {
-        pal_file_handle_in = nullptr;
-    }
-#endif
-    return fclose_success;
+    return FALSE;
 }
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_path_normalize(const char * path_in, char ** path_normalized_out)

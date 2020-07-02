@@ -72,7 +72,7 @@ int corerun_demoapp_main_impl(const int argc, char **argv)
 #endif
     data[data_len] = '\0';
 
-    pal_fs_write(log_filename_str.c_str(), "wb", data, data_len);
+    pal_fs_write(log_filename_str.c_str(), data, data_len);
 
     const auto exit_code = output["exit_code"].get<pal_exit_code_t>();
 

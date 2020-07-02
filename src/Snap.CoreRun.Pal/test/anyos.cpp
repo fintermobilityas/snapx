@@ -325,6 +325,8 @@ namespace
 
         for(auto i = 0; i < 10; i++)
         {
+            LOGV << "Iteration: " << i;
+
             ASSERT_TRUE(pal_fs_write(test_filename.c_str(), json.c_str(), json.size()));
 
             char* data = nullptr;

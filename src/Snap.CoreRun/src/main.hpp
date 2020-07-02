@@ -49,7 +49,12 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     {
         const auto value = std::make_unique<char*>(new char);
         pal_env_get("SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT", value.get());
-        return pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
+        const auto allow = pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
+        if(allow)
+        {
+            LOGW << "Allowing corerun to run in an elevated context.";
+        }
+        return allow;
     };
 
     if (pal_is_elevated() 

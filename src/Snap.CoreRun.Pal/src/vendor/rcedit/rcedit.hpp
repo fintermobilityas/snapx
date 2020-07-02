@@ -60,7 +60,7 @@ namespace snap::rcedit
         bool SetIcon(const WCHAR* path, const LANGID& langId, UINT iconBundle);
         bool SetIcon(const WCHAR* path, const LANGID& langId);
         bool SetIcon(const WCHAR* path);
-        bool HasIcon();
+        bool HasIcon() const;
         bool Commit();
 
         static BOOL CALLBACK OnEnumResourceName(HMODULE hModule, LPCWSTR lpszType, LPWSTR lpszName, LONG_PTR lParam);
@@ -80,7 +80,7 @@ namespace snap::rcedit
         bool Commit();
 
     private:
-        bool EndUpdate(bool doesCommit);
+        bool EndUpdate(bool doesCommit) const;
 
         HANDLE handle_;
         bool commited_ = false;

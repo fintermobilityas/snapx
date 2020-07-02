@@ -18,7 +18,7 @@ pal_semaphore_machine_wide::~pal_semaphore_machine_wide() {
 bool pal_semaphore_machine_wide::try_create() {
 #if defined(PAL_PLATFORM_WINDOWS)
     pal_utf16_string semaphore_name_utf16_string(m_semaphore_name);
-    auto mutex = ::OpenMutex(SYNCHRONIZE, TRUE, semaphore_name_utf16_string.data());
+    auto* mutex = ::OpenMutex(SYNCHRONIZE, TRUE, semaphore_name_utf16_string.data());
     if(mutex != nullptr) {
         CloseHandle(mutex);
         return false;

@@ -34,6 +34,11 @@
                     "name": "BUILD_ENABLE_TESTS",
                     "value": "ON",
                     "type": "STRING"
+                },
+                {
+                    "name": "BUILD_ENABLE_LTO",
+                    "value": "ON",
+                    "type": "STRING"
                 }
             ],
             "intelliSenseMode": "windows-msvc-x86"
@@ -53,6 +58,11 @@
                     "name": "BUILD_ENABLE_TESTS",
                     "value": "ON",
                     "type": "STRING"
+                },
+                {
+                    "name": "BUILD_ENABLE_LTO",
+                    "value": "OFF",
+                    "type": "STRING"
                 }
             ],
             "intelliSenseMode": "windows-msvc-x64"
@@ -69,12 +79,12 @@
             "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": [
                 {
-                    "name": "BUILD_ENABLE_LTO",
+                    "name": "BUILD_ENABLE_TESTS",
                     "value": "ON",
                     "type": "STRING"
                 },
                 {
-                    "name": "BUILD_ENABLE_TESTS",
+                    "name": "BUILD_ENABLE_LTO",
                     "value": "ON",
                     "type": "STRING"
                 }

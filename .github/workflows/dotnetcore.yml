@@ -114,14 +114,6 @@ jobs:
           lfs: true
           submodules: true   
 
-      - name: Setup dotnet 2.1 sdk
-        uses: actions/setup-dotnet@v1.5.0
-        with:
-          dotnet-version: 2.1.807
-        
-      - name: Setup dotnet using global.json
-        uses: actions/setup-dotnet@v1.5.0
-
       - name: Build 
         run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
@@ -130,6 +122,14 @@ jobs:
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
+      - name: Setup dotnet 2.1 sdk
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: 2.1.807
+        
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
+        
       - name: dotnet test
         timeout-minutes: 10
         shell: pwsh

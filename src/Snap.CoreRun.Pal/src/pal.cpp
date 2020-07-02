@@ -1702,7 +1702,8 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_fs_fwrite(pal_file_handle_t* pal_file_ha
     const auto bytes_written = fwrite(data_in, sizeof(char), data_len_in, pal_file_handle_in);
     if (bytes_written == data_len_in)
     {
-        fwrite_success = TRUE;
+        const auto flush_result = fflush(pal_file_handle_in);
+        fwrite_success = flush_result == 0 ? TRUE : FALSE;
     }
 #endif
     return fwrite_success;

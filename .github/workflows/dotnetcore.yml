@@ -42,6 +42,7 @@ jobs:
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
+      SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -103,6 +104,7 @@ jobs:
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       SNAPX_CI_BUILD: 1
+      SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0

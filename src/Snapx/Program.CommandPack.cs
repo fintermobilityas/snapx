@@ -283,8 +283,7 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources,
-                                snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
+                            var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                                 true, cancellationToken);
 
@@ -311,8 +310,7 @@ namespace snapx
                         {
                             logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack,
-                                snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib, 
+                            var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib, 
                                 installersDirectory, null, releasesNupkgAbsolutePath,
                                 false, cancellationToken);
 

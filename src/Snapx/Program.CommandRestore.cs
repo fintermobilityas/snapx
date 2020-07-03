@@ -164,7 +164,7 @@ namespace snapx
                     {
                         logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, null, releasesNupkgAbsolutePath, false, cancellationToken);
                     }
                     
@@ -175,7 +175,7 @@ namespace snapx
 
                         var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, mostRecentSnapRelease.BuildNugetFullFilename());
  
-                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapPack, snapAppReader, snapAppWriter, snapAppInstaller, coreRunLib,
+                        await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                     }
 

@@ -675,7 +675,7 @@ namespace snapx
         }
 
         static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
-            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapPack snapPack, [NotNull] ISnapAppReader snapAppReader,
+            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ICoreRunLib coreRunLib, 
             [NotNull] string installersWorkingDirectory, string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
             CancellationToken cancellationToken)
@@ -683,8 +683,6 @@ namespace snapx
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
-            if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
-            if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (installersWorkingDirectory == null) throw new ArgumentNullException(nameof(installersWorkingDirectory));

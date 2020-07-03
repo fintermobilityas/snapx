@@ -7,7 +7,13 @@ ENV SNAPX_DOCKER_WORKING_DIR /build/snapx
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    cmake make gcc-8 g++-8 uuid-dev lsb-core
+    cmake make gcc-8 g++-8 uuid-dev lsb-core curl && \ 
+    rm -rf /var/lib/apt/lists/*
+
+RUN \
+  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
+  apt-get install --no-install-recommends -y git-lfs && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN \ 
 	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
@@ -18,9 +24,13 @@ RUN \
 
 RUN \
   apt-get update && \
-  apt-get install -y apt-transport-https && \
+    apt-get install --no-install-recommends -y apt-transport-https && \
+    rm -rf /var/lib/apt/lists/*
+  
+RUN \
   apt-get update && \
-  apt-get install -y dotnet-sdk-2.1
+    apt-get install --no-install-recommends -y dotnet-sdk-2.1 && \
+    rm -rf /var/lib/apt/lists/*
 
 FROM env-build as env-run
 RUN mkdir /root/.dotnet/tools

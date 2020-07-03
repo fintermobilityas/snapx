@@ -120,21 +120,7 @@ jobs:
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
-      - name: Setup dotnet 2.1 sdk
-        uses: actions/setup-dotnet@v1.5.0
-        with:
-          dotnet-version: 2.1.807
-        
-      - name: Setup dotnet using global.json
-        uses: actions/setup-dotnet@v1.5.0
-
-      # https://github.com/actions/setup-dotnet/issues/25#issuecomment-583367317
-      - name: Setup side by side .NET SDKs
-        shell: cmd
-        run: |
-          SET DOTNET_21_ROOT=%DOTNET_ROOT:3.1.101=2.1.807%
-          xcopy /s /y /d %DOTNET_31_ROOT% %DOTNET_ROOT%
-          
+      # https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md#net-core-sdk
       - name: Test .NET
         timeout-minutes: 10
         shell: pwsh

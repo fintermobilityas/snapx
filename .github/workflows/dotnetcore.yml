@@ -8,6 +8,7 @@ env:
   DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: 1
   SNAPX_CI_BUILD: 1
   SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT: 1
   
@@ -106,6 +107,22 @@ jobs:
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
+      - name: Setup dotnet 2.1
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: 2.1.807
+          
+      - name: Setup dotnet using global.json
+        uses: actions/setup-dotnet@v1.5.0
+     
+      - name: Setup .NET Sdk Multi-Targeting
+        shell: pwsh
+        run: 
+          $env:DOTNET_ROOT = "C:\hostedtoolcache\windows\dncs"
+          dotnet --info
+          dotnet --list-sdks
+          exit 1
+          
       - name: Checkout
         uses: actions/checkout@v2.2.0
         with:
@@ -119,8 +136,7 @@ jobs:
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
-
-      # https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md#net-core-sdk
+          
       - name: Test .NET
         timeout-minutes: 10
         shell: pwsh

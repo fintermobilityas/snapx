@@ -30,6 +30,7 @@ $NupkgsDir = Join-Path $WorkingDir nupkgs
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $ProcessorCount = [Environment]::ProcessorCount
+$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 # TODO: REMOVE ME
 $VisualStudioVersion = 0
@@ -314,63 +315,94 @@ function Invoke-Dotnet-UnitTests
 
     Resolve-Shell-Dependency $CommandDotnet
 
+    $GlobalJson = get-content global.json
+    $DefaultDotnetVersion = $GlobalJson | ConvertFrom-Json | Select-Object -ExpandProperty sdk | Select-Object -ExpandProperty version
+
     $Projects = @(
-        Join-Path $SrcDir Snap.Installer.Tests
-        Join-Path $SrcDir Snap.Tests
-        Join-Path $SrcDir Snapx.Tests
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Tests
+            DotnetVersion = "2.1.807"
+        }
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
+            DotnetVersion = $DefaultDotnetVersion
+        }
+        @{            
+            SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
+            DotnetVersion = $DefaultDotnetVersion
+        }
     )
 
     $ProjectsCount = $Projects.Length
 
     Write-Output-Header "Running dotnet tests. Test project count: $ProjectsCount"
 
-    foreach($Project in $Projects)
+    foreach($ProjectKv in $Projects)
     {
-        $TestProjectName = Split-Path $Project -LeafBase
-        $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$TestProjectName
-
-        Invoke-Dotnet-Clear $Project
-
-        $Platform = $null
-
-        switch($Rid) {
-            "win-x86" {
-                $Platform = "x86"
+        try {
+            $Project = $ProjectKv.SrcDirectory
+            $ProjectName = Split-Path $Project -Leaf
+            $ProjectDotnetVersion = $ProjectKv.DotnetVersion
+    
+            Write-Output-Colored "Runing tests for project $ProjectName. Requested .NET sdk version: $ProjectDotnetVersion"
+    
+            if($ProjectDotnetVersion -ne $DefaultDotnetVersion) {
+                if(Test-Path global.json) {
+                    Remove-Item global.json
+                }
+                dotnet new global.json --sdk-version $ProjectDotnetVersion
+            } else {
+                $GlobalJson | Out-File global.json -Encoding $Utf8NoBomEncoding -Force
+            }    
+    
+            $TestProjectName = Split-Path $Project -LeafBase
+            $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$TestProjectName
+    
+            Invoke-Dotnet-Clear $Project
+    
+            $Platform = $null
+    
+            switch($Rid) {
+                "win-x86" {
+                    $Platform = "x86"
+                }
+                "win-x64" {
+                    $Platform = "x64"
+                }
+                "linux-x64" {
+                    $Platform = "x64"
+                }
+                Default {
+                    Invoke-Exit "Rid not supported: $Rid"
+                }
             }
-            "win-x64" {
-                $Platform = "x64"
-            }
-            "linux-x64" {
-                $Platform = "x64"
-            }
-            Default {
-                Invoke-Exit "Rid not supported: $Rid"
-            }
+    
+            $BuildProperties = @(
+                "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
+                "/p:SnapRid=$Rid"
+                "/p:Platform=$Platform"
+            )
+    
+            Invoke-Command-Colored $CommandDotnet @(
+                "build"
+                $BuildProperties
+                "--configuration $Configuration"
+                "$Project"
+            )
+    
+            Invoke-Command-Colored $CommandDotnet @(
+                "test"
+                $BuildProperties
+                "$Project"
+                "--configuration $Configuration"
+                "--verbosity normal"
+                "--no-build"
+                "--logger:""xunit;LogFileName=TestResults.xml"""
+                "--results-directory:""$TestResultsOutputDirectoryPath"""
+            )    
+        } finally {
+            Invoke-Command-Colored git @("checkout global.json")
         }
-
-        $BuildProperties = @(
-            "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
-            "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform"
-        )
-
-        Invoke-Command-Colored $CommandDotnet @(
-            "build"
-            $BuildProperties
-            "--configuration $Configuration"
-            "$Project"
-        )
-
-        Invoke-Command-Colored $CommandDotnet @(
-            "test"
-            $BuildProperties
-            "$Project"
-            "--configuration $Configuration"
-            "--verbosity normal"
-            "--no-build"
-            "--logger:""xunit;LogFileName=TestResults.xml"""
-            "--results-directory:""$TestResultsOutputDirectoryPath"""
-        )
     }
 
 }

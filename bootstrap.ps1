@@ -315,106 +315,87 @@ function Invoke-Dotnet-UnitTests
 
     Resolve-Shell-Dependency $CommandDotnet
 
-    $GlobalJsonFilename = Join-Path $WorkingDir global.json    
-    Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
-
-    $GlobalJson = Get-Content $GlobalJsonFilename
-    $DefaultDotnetVersion = $GlobalJson | ConvertFrom-Json | Select-Object -ExpandProperty sdk | Select-Object -ExpandProperty version
-
-    # NB! This only works for Github Actions. If you are having problems
-    # set ReplaceGlobalJson to $false.
-
     $Projects = @(
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
-            DotnetVersion = "2.1.807"
-            ReplaceGlobalJson = $OSPlatform -eq "Windows" -and $CIBuild
+            Framework = "netcoreapp2.1"
+            OSPlatform = "Any"
+        }
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Tests
+            Framework = "net461"
+            OSPlatform = "Windows"            
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
-            DotnetVersion = $DefaultDotnetVersion
-            ReplaceGlobalJson = $false
+            Framework = $NetCoreAppVersion
+            OSPlatform = "Any"
         }
         @{            
             SrcDirectory = Join-Path $SrcDir Snapx.Tests
-            DotnetVersion = $DefaultDotnetVersion
-            ReplaceGlobalJson = $false
+            Framework = $NetCoreAppVersion
+            OSPlatform = "Any"
         }
     )
 
     foreach($ProjectKv in $Projects)
     {
+        $ProjectSrcDirectory = $ProjectKv.SrcDirectory
+        $ProjectName = Split-Path $ProjectSrcDirectory -Leaf
+        $ProjectDotnetFramework = $ProjectKv.Framework
+        $ProjectOSPlatform = $ProjectKv.OSPlatform
+        $ProjectTestResultsDirectory = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$ProjectName
 
-        try {
-            $ProjectSrcDirectory = $ProjectKv.SrcDirectory
-            $ProjectName = Split-Path $ProjectSrcDirectory -Leaf
-            $ProjectDotnetVersion = $ProjectKv.DotnetVersion
-            $ProjectReplaceGlobalJson = $ProjectKv.ReplaceGlobalJson    
-            $ProjectTestResultsDirectory = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$ProjectName
+        if(($ProjectOSPlatform -ne "Any") -and ($OSPlatform -ne $ProjectOSPlatform)) {
+            continue
+        }
 
-            Invoke-Dotnet-Clear $ProjectSrcDirectory
+        Invoke-Dotnet-Clear $ProjectSrcDirectory
 
-            Write-Output-Colored "Running tests for project $ProjectName - .NET sdk version: $ProjectDotnetVersion"
+        Write-Output-Colored "Running tests for project $ProjectName - .NET sdk: $ProjectDotnetFramework"
 
-            # TODO: Remove me code when https://github.com/actions/setup-dotnet/issues/25 is resolved.
-            if($ProjectReplaceGlobalJson) {
-                if($ProjectDotnetVersion -ne $DefaultDotnetVersion) {
-                    if(Test-Path $GlobalJsonFilename) {
-                        Remove-Item $GlobalJsonFilename
-                    }
-                    dotnet new global.json --sdk-version $ProjectDotnetVersion
-                } else {
-                    $GlobalJson | Out-File $GlobalJsonFilename -Encoding $Utf8NoBomEncoding -Force
-                }        
-            } else {
-                Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+        $Platform = $null
+
+        switch($Rid) {
+            "win-x86" {
+                $Platform = "x86"
             }
-            
-            $Platform = $null
-    
-            switch($Rid) {
-                "win-x86" {
-                    $Platform = "x86"
-                }
-                "win-x64" {
-                    $Platform = "x64"
-                }
-                "linux-x64" {
-                    $Platform = "x64"
-                }
-                Default {
-                    Invoke-Exit "Rid not supported: $Rid"
-                }
+            "win-x64" {
+                $Platform = "x64"
             }
-    
-            $BuildProperties = @(
-                "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
-                "/p:SnapRid=$Rid"
-                "/p:Platform=$Platform"
-            )
-    
-            Invoke-Command-Colored $CommandDotnet @(
-                "build"
-                $BuildProperties
-                "--configuration $Configuration"
-                "$ProjectSrcDirectory"
-            )
-    
-            Invoke-Command-Colored $CommandDotnet @(
-                "test"
-                $BuildProperties
-                "$ProjectSrcDirectory"
-                "--configuration $Configuration"
-                "--verbosity normal"
-                "--no-build"
-                "--logger:""xunit;LogFileName=TestResults.xml"""
-                "--results-directory:""$ProjectTestResultsDirectory"""
-            )    
-        } finally {
-            if($ProjectReplaceGlobalJson) {
-                Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+            "linux-x64" {
+                $Platform = "x64"
+            }
+            Default {
+                Invoke-Exit "Rid not supported: $Rid"
             }
         }
+
+        $BuildProperties = @(
+            "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
+            "/p:SnapRid=$Rid"
+            "/p:Platform=$Platform"
+        )
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "build"
+            $BuildProperties
+            "--configuration $Configuration"
+            "--framework $ProjectDotnetFramework"
+            "$ProjectSrcDirectory"
+        )
+
+        Invoke-Command-Colored $CommandDotnet @(
+            "test"
+            $BuildProperties
+            "$ProjectSrcDirectory"
+            "--configuration $Configuration"
+            "--framework $ProjectDotnetFramework"
+            "--verbosity normal"
+            "--no-build"
+            "--logger:""xunit;LogFileName=TestResults.xml"""
+            "--results-directory:""$ProjectTestResultsDirectory"""
+        )    
     }
 
 }

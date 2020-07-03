@@ -46,8 +46,15 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $Stopwatch = [System.Diagnostics.Stopwatch]
-$DotnetVersion = Get-Content global.json | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version
+
 $DockerBuild = $env:BUILD_IS_DOCKER -eq 1
+
+# global.json may be updated when running unit tests if -CIBuild parameter is true. 
+# Therefore we need to ensure that this file is always restored.
+# TODO: Remove me code when https://github.com/actions/setup-dotnet/issues/25 is resolved.
+$GlobalJsonFilename = Join-Path $WorkingDir global.json    
+Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+$DotnetVersion = Get-Content $GlobalJsonFilename | ConvertFrom-Json | Select-Object -Expand sdk | Select-Object -Expand version
 
 $CommandDocker = $null
 $CommandGit = $null

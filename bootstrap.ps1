@@ -315,51 +315,61 @@ function Invoke-Dotnet-UnitTests
 
     Resolve-Shell-Dependency $CommandDotnet
 
-    $GlobalJson = get-content global.json
+    $GlobalJsonFilename = Join-Path $WorkingDir global.json    
+    Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+
+    $GlobalJson = Get-Content $GlobalJsonFilename
     $DefaultDotnetVersion = $GlobalJson | ConvertFrom-Json | Select-Object -ExpandProperty sdk | Select-Object -ExpandProperty version
+
+    # NB! This only works for Github Actions. If you are having problems
+    # set ReplaceGlobalJson to $false.
 
     $Projects = @(
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
             DotnetVersion = "2.1.807"
+            ReplaceGlobalJson = $OSPlatform -eq "Windows" -and $CIBuild
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
             DotnetVersion = $DefaultDotnetVersion
+            ReplaceGlobalJson = $false
         }
         @{            
-            SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
+            SrcDirectory = Join-Path $SrcDir Snapx.Tests
             DotnetVersion = $DefaultDotnetVersion
+            ReplaceGlobalJson = $false
         }
     )
 
-    $ProjectsCount = $Projects.Length
-
-    Write-Output-Header "Running dotnet tests. Test project count: $ProjectsCount"
-
     foreach($ProjectKv in $Projects)
     {
+
         try {
-            $Project = $ProjectKv.SrcDirectory
-            $ProjectName = Split-Path $Project -Leaf
+            $ProjectSrcDirectory = $ProjectKv.SrcDirectory
+            $ProjectName = Split-Path $ProjectSrcDirectory -Leaf
             $ProjectDotnetVersion = $ProjectKv.DotnetVersion
-    
-            Write-Output-Colored "Runing tests for project $ProjectName. Requested .NET sdk version: $ProjectDotnetVersion"
-    
-            if($ProjectDotnetVersion -ne $DefaultDotnetVersion) {
-                if(Test-Path global.json) {
-                    Remove-Item global.json
-                }
-                dotnet new global.json --sdk-version $ProjectDotnetVersion
+            $ProjectReplaceGlobalJson = $ProjectKv.ReplaceGlobalJson    
+            $ProjectTestResultsDirectory = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$ProjectName
+
+            Invoke-Dotnet-Clear $ProjectSrcDirectory
+
+            Write-Output-Colored "Running tests for project $ProjectName - .NET sdk version: $ProjectDotnetVersion"
+
+            # TODO: Remove me code when https://github.com/actions/setup-dotnet/issues/25 is resolved.
+            if($ProjectReplaceGlobalJson) {
+                if($ProjectDotnetVersion -ne $DefaultDotnetVersion) {
+                    if(Test-Path $GlobalJsonFilename) {
+                        Remove-Item $GlobalJsonFilename
+                    }
+                    dotnet new global.json --sdk-version $ProjectDotnetVersion
+                } else {
+                    $GlobalJson | Out-File $GlobalJsonFilename -Encoding $Utf8NoBomEncoding -Force
+                }        
             } else {
-                $GlobalJson | Out-File global.json -Encoding $Utf8NoBomEncoding -Force
-            }    
-    
-            $TestProjectName = Split-Path $Project -LeafBase
-            $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$TestProjectName
-    
-            Invoke-Dotnet-Clear $Project
-    
+                Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+            }
+            
             $Platform = $null
     
             switch($Rid) {
@@ -387,21 +397,23 @@ function Invoke-Dotnet-UnitTests
                 "build"
                 $BuildProperties
                 "--configuration $Configuration"
-                "$Project"
+                "$ProjectSrcDirectory"
             )
     
             Invoke-Command-Colored $CommandDotnet @(
                 "test"
                 $BuildProperties
-                "$Project"
+                "$ProjectSrcDirectory"
                 "--configuration $Configuration"
                 "--verbosity normal"
                 "--no-build"
                 "--logger:""xunit;LogFileName=TestResults.xml"""
-                "--results-directory:""$TestResultsOutputDirectoryPath"""
+                "--results-directory:""$ProjectTestResultsDirectory"""
             )    
         } finally {
-            Invoke-Command-Colored git @("checkout global.json")
+            if($ProjectReplaceGlobalJson) {
+                Invoke-Command-Colored git @("checkout $GlobalJsonFilename")
+            }
         }
     }
 

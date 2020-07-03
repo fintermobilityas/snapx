@@ -33,7 +33,6 @@
     <PropertyGroup>
         <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
         <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
-        <SnapMsvsToolsetVersion Condition="$(SnapMsvsToolsetVersion) == ''">$(VisualStudioVersion.Substring(0, 2))</SnapMsvsToolsetVersion>
         <SnapInstallerAllowElevatedContext Condition="$(SnapInstallerAllowElevatedContext) == ''">false</SnapInstallerAllowElevatedContext>
     </PropertyGroup>
 
@@ -49,8 +48,20 @@
         <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS;</DefineConstants>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(OsPlatform) == 'Windows' AND $(SnapRid) == 'win-x86'">
+        <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS_X86;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(OsPlatform) == 'Windows' AND $(SnapRid) == 'win-x64'">
+        <DefineConstants>$(DefineConstants);PLATFORM_WINDOWS_X64;</DefineConstants>
+    </PropertyGroup>
+
     <PropertyGroup Condition="$(OsPlatform) == 'Unix'">
         <DefineConstants>$(DefineConstants);PLATFORM_UNIX;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(OsPlatform) == 'Unix' AND $(SnapRid) == 'linux-x64'">
+        <DefineConstants>$(DefineConstants);PLATFORM_UNIX_X64;</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(OsPlatform) == 'MACOSX'">

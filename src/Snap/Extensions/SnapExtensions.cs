@@ -27,6 +27,27 @@ namespace Snap.Extensions
         static readonly Regex NetCoreAppRegex = new Regex("^netcoreapp\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+        internal static void SetRidUsingCurrentOsPlatformAndProcessArchitecture([NotNull] this SnapApp snapApp)
+        {
+            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                snapApp.Target.Rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
+                snapApp.Target.Os = OSPlatform.Windows;
+                return;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                snapApp.Target.Rid = "linux-x64";
+                snapApp.Target.Os = OSPlatform.Linux;
+                return;
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
         internal static string ExpandProperties([NotNull] this string value, [NotNull] Dictionary<string, string> properties)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -66,7 +87,10 @@ namespace Snap.Extensions
 
         internal static bool IsRuntimeIdentifierValidSafe(this string runtimeIdentifier)
         {
-            return runtimeIdentifier != null && (runtimeIdentifier == "win-x64" || runtimeIdentifier == "linux-x64");
+            return runtimeIdentifier != null && (
+                runtimeIdentifier == "win-x86" 
+                || runtimeIdentifier == "win-x64" 
+                || runtimeIdentifier == "linux-x64");
         }
 
         internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)
@@ -466,6 +490,7 @@ namespace Snap.Extensions
             }
 
             snapAppTarget.Installers = snapAppTarget.Installers.Distinct().ToList();
+            snapAppTarget.Rid = snapAppTarget.Rid?.ToLowerInvariant();
 
             if (!snapAppTarget.Rid.IsRuntimeIdentifierValidSafe())
             {

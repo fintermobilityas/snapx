@@ -33,7 +33,7 @@ namespace Snap.AnyOS.Windows
 
     [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class NativeMethodsWindows
-    {        
+    {
         [DllImport("version.dll", SetLastError = true)]
         [return:MarshalAs(UnmanagedType.Bool)] internal static extern bool GetFileVersionInfo(
             string lpszFileName, 

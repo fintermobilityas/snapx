@@ -7,16 +7,15 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
     [switch] $Lto,
     [Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-    [string] $DotNetRid = $null,
+    [ValidateSet("win-x86", "win-x64", "linux-x64")]
+    [string] $Rid = $null,
     [Parameter(Position = 4, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
-    [string] $VisualStudioVersion,
-    [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [string] $NetCoreAppVersion,
-    [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
+    [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [string] $Version,
-    [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
-    [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
+    [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerBuild
 )
 
@@ -31,7 +30,10 @@ $NupkgsDir = Join-Path $WorkingDir nupkgs
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $ProcessorCount = [Environment]::ProcessorCount
-$Arch = $null
+$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
+
+# TODO: REMOVE ME
+$VisualStudioVersion = 0
 
 $CmakeGenerator = $null
 $CommandCmake = $null
@@ -45,11 +47,11 @@ $CommandGTestsDefaultArguments = @(
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
-        $CmakeGenerator = "Visual Studio $VisualStudioVersion"
+        $VisualStudioVersion = 16
+        $CmakeGenerator = "Visual Studio $VisualStudioVersion 2019"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe
-        $Arch = "win-msvs-${VisualStudioVersion}-x64"
     }
     "^Unix" {
         $OSPlatform = "Unix"
@@ -57,15 +59,11 @@ switch -regex ($OSVersion) {
         $CommandCmake = "cmake"
         $CommandDotnet = "dotnet"
         $CommandMake = "make"
-        $Arch = "x86_64-linux-gcc"
     }
     default {
         Write-Error "Unsupported os: $OSVersion"
     }
 }
-
-$TargetArch = $Arch
-$TargetArchDotNet = $NetCoreAppVersion
 
 # Projects
 $SnapCoreRunSrcDir = Join-Path $WorkingDir src
@@ -78,19 +76,24 @@ function Invoke-Build-Native {
 
     Resolve-Shell-Dependency $CommandCmake
 
-    $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$TargetArch\$Configuration
+    $SnapCoreRunBuildOutputDir = Join-Path $WorkingDir build\native\$OSPlatform\$Rid\$Configuration
 
     $CmakeArchNewSyntaxPrefix = ""
     $CmakeGenerator = $CmakeGenerator
 
     if($OSPlatform -eq "Windows")
     {
-        if($VisualStudioVersion -ne 16) {
-           Write-Error "Only Visual Studio 2019 is supported"
+        switch($Rid) {
+            "win-x86" {
+                $CmakeArchNewSyntaxPrefix = "-A Win32"
+            }
+            "win-x64" {
+                $CmakeArchNewSyntaxPrefix = "-A x64"
+            }
+            Default {
+                Invoke-Exit "Rid not supported: $Rid"
+            }
         }
-
-        $CmakeGenerator += " 2019"
-        $CmakeArchNewSyntaxPrefix = "-A x64"
     }
 
     $CmakeArguments = @(
@@ -117,7 +120,7 @@ function Invoke-Build-Native {
 
     Write-Output "Build src directory: $SnapCoreRunSrcDir"
     Write-Output "Build output directory: $SnapCoreRunBuildOutputDir"
-    Write-Output "Arch: $TargetArch"
+    Write-Output "Rid: $Rid"
     Write-Output ""
 
     Invoke-Command-Colored $CommandCmake $CmakeArguments
@@ -146,7 +149,6 @@ function Invoke-Build-Snap {
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapDotnetSrcDir Snap.csproj))
         "/p:Version=$Version",
-        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
     )
 
@@ -168,7 +170,6 @@ function Invoke-Build-Snapx {
     Invoke-Command-Colored $CommandDotnet @(
         ("build {0}" -f (Join-Path $SnapxDotnetSrcDir Snapx.csproj))
         "/p:Version=$Version",
-        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
         "--configuration $Configuration"
     )
 
@@ -183,25 +184,20 @@ function Invoke-Build-Snapx {
 }
 
 function Invoke-Build-Snap-Installer {
-    param(
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
-        [ValidateSet("win-x64", "linux-x64")]
-        [string] $Rid
-    )
     Write-Output-Header "Building Snap.Installer"
 
     Resolve-Shell-Dependency $CommandDotnet
 
-    $PackerArch = $null
     $SnapInstallerExeName = $null
 
     switch ($Rid) {
+        "win-x86" {
+            $SnapInstallerExeName = "Snap.Installer.exe"
+        }
         "win-x64" {
-            $PackerArch = "windows-x64"
             $SnapInstallerExeName = "Snap.Installer.exe"
         }
         "linux-x64" {
-            $PackerArch = "linux-x64"
             $SnapInstallerExeName = "Snap.Installer"
         }
         default {
@@ -209,7 +205,7 @@ function Invoke-Build-Snap-Installer {
         }
     }
 
-    $SnapInstallerDotnetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$TargetArchDotNet\$Configuration\publish
+    $SnapInstallerDotnetBuildPublishDir = Join-Path $WorkingDir build\dotnet\$Rid\Snap.Installer\$NetCoreAppVersion\$Configuration\publish
     $SnapInstallerExeAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir $SnapInstallerExeName
     $SnapInstallerExeZipAbsolutePath = Join-Path $SnapInstallerDotnetBuildPublishDir "Setup-$Rid.zip"
     $SnapInstallerCsProj = Join-Path $SnapInstallerDotnetSrcDir Snap.Installer.csproj
@@ -217,9 +213,8 @@ function Invoke-Build-Snap-Installer {
 
     Write-Output "Build src directory: $SnapInstallerDotnetSrcDir"
     Write-Output "Build output directory: $SnapInstallerDotnetBuildPublishDir"
-    Write-Output "Arch: $TargetArchDotNet"
+    Write-Output "NetCoreAppVersion: $NetCoreAppVersion"
     Write-Output "Rid: $Rid"
-    Write-Output "PackerArch: $PackerArch"
     Write-Output ""
 
     if(Test-Path $SnapInstallerDotnetBuildPublishDir) {
@@ -228,38 +223,36 @@ function Invoke-Build-Snap-Installer {
 
     Invoke-Command-Colored $CommandDotnet @(
         "publish $SnapInstallerCsProj"
-        "/p:PublishTrimmed=true"
-        "/p:SnapMsvsToolsetVersion=$VisualStudioVersion"
+        "/p:PublishTrimmed=" + ($Configuration -eq "Debug" ? "False" : "True")
         "/p:Version=$Version"
+        "/p:SnapRid=$Rid"
         "--runtime $Rid"
-        "--framework $TargetArchDotNet"
+        "--framework $NetCoreAppVersion"
         "--self-contained true"
         "--output $SnapInstallerDotnetBuildPublishDir"
         "--configuration $Configuration"
     )
 
-    if ($Rid -eq "win-x64") {
+    if ($Rid.StartsWith("win-")) {
         Invoke-Command-Colored $CommandDotnet @(
             "build $SnapxCsProj"
             "-p:SnapBootstrap=True"
             "--configuration $Configuration"
-            "--framework $TargetArchDotNet"
+            "--framework $NetCoreAppVersion"
         )
 
         Invoke-Command-Colored $CommandDotnet @(
             "run"
             "--project $SnapxCsProj"
             "--configuration $Configuration"
-            "--framework $TargetArchDotNet"
+            "--framework $NetCoreAppVersion"
             "--no-build"
             "--"
             "rcedit"
             "$SnapInstallerExeAbsolutePath"
             "--gui-app"
         )
-    }
-
-    if ($OSPlatform -ne "Windows") {
+    } else {
         Invoke-Command-Colored chmod @("+x $SnapInstallerExeAbsolutePath")
     }
 
@@ -282,7 +275,7 @@ function Invoke-Native-UnitTests
 
             $Projects = @()
 
-            $MsvsProject = Join-Path $WorkingDir build\native\Windows\win-msvs-${VisualStudioVersion}-x64\${Configuration}\Snap.CoreRun.Tests\${Configuration}
+            $MsvsProject = Join-Path $WorkingDir build\native\Windows\$Rid\${Configuration}\Snap.CoreRun.Tests\${Configuration}
             if($env:SNAPX_CI_WINDOWS_DISABLE_MSVS_TESTS -ne 1) {
                 $Projects += $MsvsProject
             }
@@ -297,7 +290,7 @@ function Invoke-Native-UnitTests
         "Unix" {
             $Projects = @()
 
-            $GccProject = Join-Path $WorkingDir build\native\Unix\x86_64-linux-gcc\${Configuration}\Snap.CoreRun.Tests
+            $GccProject = Join-Path $WorkingDir build\native\Unix\$Rid\${Configuration}\Snap.CoreRun.Tests
             if($env:SNAPX_CI_UNIX_DISABLE_GCC_TESTS -ne 1) {
                 $Projects += $GccProject
             }
@@ -323,40 +316,87 @@ function Invoke-Dotnet-UnitTests
     Resolve-Shell-Dependency $CommandDotnet
 
     $Projects = @(
-        Join-Path $SrcDir Snap.Installer.Tests
-        Join-Path $SrcDir Snap.Tests
-        Join-Path $SrcDir Snapx.Tests
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Tests
+            Framework = $CIBuild -and $OSPlatform -eq "Windows" -and $Rid -eq "win-x86" ? "netcoreapp3.1" : "netcoreapp2.1"
+            OSPlatform = "Any"
+        }
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Tests
+            Framework = "net461"
+            OSPlatform = "Windows"            
+        }
+        @{
+            SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
+            Framework = $NetCoreAppVersion
+            OSPlatform = "Any"
+        }
+        @{            
+            SrcDirectory = Join-Path $SrcDir Snapx.Tests
+            Framework = $NetCoreAppVersion
+            OSPlatform = "Any"
+        }
     )
 
-    $ProjectsCount = $Projects.Length
-
-    Write-Output-Header "Running dotnet tests. Test project count: $ProjectsCount"
-
-    foreach($Project in $Projects)
+    foreach($ProjectKv in $Projects)
     {
-        $TestProjectName = Split-Path $Project -LeafBase
-        $TestResultsOutputDirectoryPath = Join-Path $WorkingDir build\dotnet\TestResults\$TestProjectName
+        $ProjectSrcDirectory = $ProjectKv.SrcDirectory
+        $ProjectName = Split-Path $ProjectSrcDirectory -Leaf
+        $ProjectDotnetFramework = $ProjectKv.Framework
+        $ProjectOSPlatform = $ProjectKv.OSPlatform
+        $ProjectTestResultsDirectory = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$ProjectName
 
-        Invoke-Dotnet-Clear $Project
+        if(($ProjectOSPlatform -ne "Any") -and ($OSPlatform -ne $ProjectOSPlatform)) {
+            continue
+        }
+
+        Invoke-Dotnet-Clear $ProjectSrcDirectory
+
+        Write-Output-Colored "Running tests for project $ProjectName - .NET sdk: $ProjectDotnetFramework"
+
+        $Platform = $null
+
+        switch($Rid) {
+            "win-x86" {
+                $Platform = "x86"
+            }
+            "win-x64" {
+                $Platform = "x64"
+            }
+            "linux-x64" {
+                $Platform = "x64"
+            }
+            Default {
+                Invoke-Exit "Rid not supported: $Rid"
+            }
+        }
+
+        $BuildProperties = @(
+            "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
+            "/p:SnapRid=$Rid"
+            "/p:Platform=$Platform" 
+            "/p:TargetFrameworks=$ProjectDotnetFramework"
+        )
 
         Invoke-Command-Colored $CommandDotnet @(
             "build"
-            "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
-            "/p:Platform=x64" # TODO: FIXME IF TARGETING ARM
+            $BuildProperties
             "--configuration $Configuration"
-            "$Project"
+            "--framework $ProjectDotnetFramework"
+            "$ProjectSrcDirectory"
         )
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
-            "/p:Platform=x64" # TODO: FIXME IF TARGETING ARM
-            "$Project"
+            $BuildProperties
+            "$ProjectSrcDirectory"
             "--configuration $Configuration"
+            "--framework $ProjectDotnetFramework"
             "--verbosity normal"
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
-            "--results-directory:""$TestResultsOutputDirectoryPath"""
-        )
+            "--results-directory:""$ProjectTestResultsDirectory"""
+        )    
     }
 
 }
@@ -367,13 +407,8 @@ Write-Output "OS Platform: $OSPlatform"
 Write-Output "Processor count: $ProcessorCount"
 Write-Output "Configuration: $Configuration"
 Write-Output "Docker: $DockerBuild"
-Write-Output "CI Build: $CIBuild"
-Write-Output "Native target arch: $Arch"
-
-if($OSPlatform -eq "Windows")
-{
-    Write-Output "Visual Studio Version: $VisualStudioVersion"
-}
+Write-Output "CIBuild: $CIBuild"
+Write-Output "Rid: $Rid"
 
 switch ($OSPlatform) {
     "Windows" {
@@ -410,7 +445,7 @@ switch ($Target) {
         Invoke-Build-Snapx
     }
     "Snap-Installer" {
-        Invoke-Build-Snap-Installer -Rid $DotNetRid
+        Invoke-Build-Snap-Installer
     }
     "Run-Native-UnitTests" {
         Invoke-Native-UnitTests

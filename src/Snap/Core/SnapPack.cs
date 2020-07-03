@@ -1205,25 +1205,26 @@ namespace Snap.Core
             return await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken);
         }
 
-        void ThrowIfUnspportedTargetOsPlatform(OSPlatform targetOs)
+        void ThrowIfUnspportedTarget(SnapTarget target)
         {
-            if (targetOs == OSPlatform.Windows)
+            if (target.Os == OSPlatform.Windows)
             {
-                using var coreRun = _snapEmbeddedResources.CoreRunWindows;
+                using var coreRun = target.Rid == "win-x86" ? 
+                    _snapEmbeddedResources.CoreRunWindowsX86 : _snapEmbeddedResources.CoreRunWindowsX64;
                 if (coreRun.Length <= 0)
                 {
-                    throw new FileNotFoundException($"corerun.exe is missing in Snap assembly. Target os: {OSPlatform.Windows}");
+                    throw new FileNotFoundException($"corerun.exe is missing in Snap assembly. Target os: {OSPlatform.Windows}. Rid: {target.Rid}.");
                 }
 
                 return;
             }
 
-            if (targetOs == OSPlatform.Linux)
+            if (target.Os == OSPlatform.Linux)
             {
-                using var coreRun = _snapEmbeddedResources.CoreRunLinux;
+                using var coreRun = _snapEmbeddedResources.CoreRunLinuxX64;
                 if (coreRun.Length <= 0)
                 {
-                    throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}");
+                    throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}. Rid: {target.Rid}.");
                 }
 
                 return;
@@ -1366,7 +1367,7 @@ namespace Snap.Core
             _snapFilesystem.DirectoryExistsThrowIfNotExists(packageDetails.NuspecBaseDirectory);
             _snapFilesystem.DirectoryExistsThrowIfNotExists(packageDetails.PackagesDirectory);
             
-            ThrowIfUnspportedTargetOsPlatform(packageDetails.SnapApp.Target.Os);
+            ThrowIfUnspportedTarget(packageDetails.SnapApp.Target);
         }
 
         (Dictionary<string, string> properties, Func<string, string> propertiesResolverFunc) BuildNuspecProperties([NotNull] IReadOnlyDictionary<string, string> mixinNuspecProperties)

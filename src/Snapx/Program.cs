@@ -695,14 +695,18 @@ namespace snapx
 
             logger.Info($"Preparing to build {installerPrefix} installer for channel: {snapChannel.Name}. Version: {snapApp.Version}.");
 
-            var progressSource = new SnapProgressSource { Progress = percentage => { logger.Info($"Progress: {percentage}%."); } };
+            var progressSource = new SnapProgressSource
+            {
+                Progress = percentage =>
+                {
+                    logger.Info($"Progress: {percentage}%.");
+                }
+            };
 
             using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
             MemoryStream installerZipMemoryStream;
             MemoryStream warpPackerMemoryStream;
 
-            string snapAppTargetRid;
-            string warpPackerRid;
             string warpPackerArch;
             string installerFilename;
             string setupExtension;
@@ -713,14 +717,13 @@ namespace snapx
 
             if (snapOs.OsPlatform == OSPlatform.Windows)
             {
-                warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerWindows;
-                warpPackerRid = "win-x64";
+                warpPackerMemoryStream = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? 
+                    snapxEmbeddedResources.WarpPackerWindowsX86 : snapxEmbeddedResources.WarpPackerWindowsX64;
                 installerIconSupported = true;
             }
             else if (snapOs.OsPlatform == OSPlatform.Linux)
             {
-                warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinux;
-                warpPackerRid = "linux-x64";
+                warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinuxX64;
                 chmod = true;
             }
             else
@@ -730,10 +733,11 @@ namespace snapx
 
             switch (snapApp.Target.Rid)
             {
+                case "win-x86":
                 case "win-x64":
-                    installerZipMemoryStream = snapxEmbeddedResources.SetupWindows;
-                    warpPackerArch = "windows-x64";
-                    snapAppTargetRid = "win-x64";
+                    installerZipMemoryStream = snapApp.Target.Rid == "win-x86" ? 
+                        snapxEmbeddedResources.SetupWindowsX86 : snapxEmbeddedResources.SetupWindowsX64;
+                    warpPackerArch = snapApp.Target.Rid == "win-x86" ? "windows-x86" : "windows-x64";
                     installerFilename = "Snap.Installer.exe";
                     changeSubSystemToWindowsGui = true;
                     setupExtension = ".exe";
@@ -743,9 +747,8 @@ namespace snapx
                     }
                     break;
                 case "linux-x64":
-                    installerZipMemoryStream = snapxEmbeddedResources.SetupLinux;
+                    installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxX64;
                     warpPackerArch = "linux-x64";
-                    snapAppTargetRid = "linux-x64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
                     break;
@@ -756,7 +759,7 @@ namespace snapx
             var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
             snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
 
-            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{warpPackerRid}.exe");
+            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{snapApp.Target.Rid}.exe");
             var installerRepackageAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
             async Task BuildOfflineInstallerAsync()
@@ -851,7 +854,7 @@ namespace snapx
             }
 
             var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory,
-                $"Setup-{snapAppTargetRid}-{snapApp.Id}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
+                $"Setup-{snapApp.Target.Rid}-{snapApp.Id}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
 
             if (offline)
             {

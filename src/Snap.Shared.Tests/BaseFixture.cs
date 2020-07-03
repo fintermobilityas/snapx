@@ -62,7 +62,8 @@ namespace Snap.Shared.Tests
             return new SnapApp(snapApp) { Version = snapApp.Version.BumpMajor() };
         }
 
-        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenesis = false, string rid = null, OSPlatform osPlatform = default, string localPackageSourceDirectory = null)
+        public SnapApp BuildSnapApp(string id = "demoapp", bool isGenesis = false,
+            string localPackageSourceDirectory = null)
         {
             var pushFeed = new SnapNugetFeed
             {
@@ -108,23 +109,6 @@ namespace Snap.Shared.Tests
                 UpdateFeed = updateFeedNuget
             };
 
-            if (osPlatform == default)
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    osPlatform = OSPlatform.Windows;
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    osPlatform = OSPlatform.Linux;
-                }
-            }
-
-            if (osPlatform != OSPlatform.Windows && osPlatform != OSPlatform.Linux)
-            {
-                throw new NotSupportedException($"Unsupported OS platform: {osPlatform}");
-            }
-
             var snapApp = new SnapApp
             {
                 Id = id,
@@ -140,9 +124,7 @@ namespace Snap.Shared.Tests
                 },
                 Target = new SnapTarget
                 {
-                    Os = osPlatform,
                     Framework = "netcoreapp2.1",
-                    Rid = rid ?? "win-x64",
                     Shortcuts = new List<SnapShortcutLocation>
                     {
                         SnapShortcutLocation.Desktop,
@@ -155,6 +137,8 @@ namespace Snap.Shared.Tests
                     }
                 }
             };
+
+            snapApp.SetRidUsingCurrentOsPlatformAndProcessArchitecture();
 
             return snapApp;
         }

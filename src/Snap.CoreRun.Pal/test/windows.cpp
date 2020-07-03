@@ -31,18 +31,20 @@ namespace
         path_combine_test_case("C:\\",  ".",     "C:\\"),
         path_combine_test_case("C:\\",  "..",    "C:\\"),
         path_combine_test_case("\\a",   "b",     "\\a\\b"),
+        path_combine_test_case("c:\\",   "test",     "c:\\test"),
+        path_combine_test_case("c:\\test",   "test.txt",     "c:\\test\\test.txt"),
 
         /* normal UNC paths */
-        path_combine_test_case("\\\\192.168.1.1\\test", "a",  "\\\\192.168.1.1\\test\\a"),
-        path_combine_test_case("\\\\192.168.1.1\\test", "..", "\\\\192.168.1.1"),
+        path_combine_test_case(R"(\\192.168.1.1\test)", "a", R"(\\192.168.1.1\test\a)"),
+        path_combine_test_case(R"(\\192.168.1.1\test)", "..", "\\\\192.168.1.1"),
 
         /* NT paths */
-        path_combine_test_case("\\\\?\\C:\\", "a",  "C:\\a"),
-        path_combine_test_case("\\\\?\\C:\\", "..", "C:\\"),
+        path_combine_test_case(R"(\\?\C:\)", "a",  "C:\\a"),
+        path_combine_test_case(R"(\\?\C:\)", "..", "C:\\"),
 
         /* NT UNC path */
-        path_combine_test_case("\\\\?\\UNC\\192.168.1.1\\test", "a",  "\\\\192.168.1.1\\test\\a"),
-        path_combine_test_case("\\\\?\\UNC\\192.168.1.1\\test", "..", "\\\\192.168.1.1")
+        path_combine_test_case(R"(\\?\UNC\192.168.1.1\test)", "a", R"(\\192.168.1.1\test\a)"),
+        path_combine_test_case(R"(\\?\UNC\192.168.1.1\test)", "..", "\\\\192.168.1.1")
     };
 
     TEST(PAL_GENERIC_WINDOWS, pal_set_icon)
@@ -71,7 +73,7 @@ namespace
 
     TEST(PAL_GENERIC_WINDOWS, pal_process_exec)
     {
-        auto working_dir = std::make_unique<char*>(new char);
+        const auto working_dir = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_process_get_cwd(working_dir.get()));
 
         pal_exit_code_t exit_code = 1;
@@ -81,14 +83,14 @@ namespace
 
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsFalseIfDirectory)
     {
-        auto working_dir = std::make_unique<char*>(new char);
+        const auto working_dir = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_fs_get_cwd(working_dir.get()));
         ASSERT_FALSE(pal_fs_file_exists(*working_dir));
     }
 
     TEST(PAL_FS_WINDOWS, pal_fs_file_exists_ReturnsTrueWhenAbsolutePath)
     {
-        auto exe_abs_path = std::make_unique<char*>(new char);
+        const auto exe_abs_path = std::make_unique<char*>(new char);
         EXPECT_TRUE(pal_process_get_real_path(exe_abs_path.get()));
         EXPECT_TRUE(pal_fs_file_exists(*exe_abs_path));
     }
@@ -123,10 +125,11 @@ namespace
 
     TEST(PAL_PATH_WINDOWS, pal_path_normalize)
     {        
-        const auto expected_str = std::string("C:/test/123");
+        const auto input_str = std::string("C:/test/123");
+        const auto expected_str = std::string("C:\\test\\123");
 
         char* path_normalized = nullptr;
-        ASSERT_TRUE(pal_path_normalize(expected_str.c_str(), &path_normalized));
+        ASSERT_TRUE(pal_path_normalize(input_str.c_str(), &path_normalized));
         ASSERT_STREQ(path_normalized, expected_str.c_str());
     }
 

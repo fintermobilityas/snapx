@@ -41,22 +41,50 @@
         <ProjectReference Include="..\Snap\Snap.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Windows'">
+    <!-- Windows -->
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'win-x86' AND $(OsPlatform) == 'Windows'">
+        <EmbeddedResource Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x86.zip" Link="Resources/Setup/Setup-win-x86.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x86.exe" Link="Resources/Tools/warp-packer-win-x86.exe" />
+    </ItemGroup>
+
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'win-x64' AND $(OsPlatform) == 'Windows'">
         <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
     </ItemGroup>
 
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Windows'">
+        <EmbeddedResource Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x86.zip" Link="Resources/Setup/Setup-win-x86.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x86.exe" Link="Resources/Tools/warp-packer-win-x86.exe" />
+
+        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
+    </ItemGroup>
+    <!-- /Windows -->
+
+    <!-- Unix -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Unix'">
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>
 
-    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">
-        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'linux-x64' AND $(OsPlatform) == 'Unix'">
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
-        <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
     </ItemGroup>
+    <!-- /Unix -->
+
+    <!-- Nupkg -->
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">
+        <EmbeddedResource Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x86.zip" Link="Resources/Setup/Setup-win-x86.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x86.exe" Link="Resources/Tools/warp-packer-win-x86.exe" />
+
+        <EmbeddedResource Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-win-x64.zip" Link="Resources/Setup/Setup-win-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-win-x64.exe" Link="Resources/Tools/warp-packer-win-x64.exe" />
+        
+        <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFramework)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
+    </ItemGroup>
+    <!-- /Nupkg -->
 
 </Project>
 

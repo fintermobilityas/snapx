@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm>
 #include <random>
+#include <utility>
 
 using json = nlohmann::json;
 using testutils = corerun::support::util::test_utils;
@@ -65,7 +66,7 @@ namespace {
 
         corerun_run_details() = delete;
 
-        explicit corerun_run_details(const std::string& install_dir) : install_dir(install_dir)
+        explicit corerun_run_details(std::string install_dir) : install_dir(std::move(install_dir))
         {
 
         }
@@ -164,7 +165,7 @@ namespace {
         std::unique_ptr<stubexecutable_run_details> run_stubexecutable_with_args(const std::vector<std::string>& arguments)
         {
             const auto argc = arguments.size();
-            const auto argv = new char*[argc] {};
+            auto* const argv = new char*[argc] {};
 
             for (auto i = 0u; i < argc; i++)
             {
@@ -294,7 +295,7 @@ namespace {
 
             const auto log_output = std::make_unique<char*>(new char);
             size_t log_output_len = 0;
-            if (!pal_fs_read_binary_file(log_filename_absolute_path.c_str(), log_output.get(), &log_output_len) || log_output_len <= 0)
+            if (!pal_fs_read_file(log_filename_absolute_path.c_str(), log_output.get(), &log_output_len) || log_output_len <= 0)
             {
                 LOGE << "Failed to read log file: " << log_filename_absolute_path << ". Size: " << log_output_len;
                 return std::string();
@@ -312,6 +313,13 @@ namespace {
     
     TEST(MAIN, corerun_StartsWhenThereAreZeroAppsInstalled)
     {
+        if(is_ci_test())
+        {
+#if defined(PAL_PLATFORM_WINDOWS)
+            GTEST_SKIP();
+#endif
+        }
+
         const auto working_dir = testutils::get_process_cwd();
 
         snapx snapx("demoapp", working_dir);
@@ -331,7 +339,7 @@ namespace {
     {
         if(is_ci_test())
         {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
             GTEST_SKIP();
 #endif
         }
@@ -371,7 +379,7 @@ namespace {
     {
         if(is_ci_test())
         {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
             GTEST_SKIP();
 #endif
         }
@@ -411,7 +419,7 @@ namespace {
     {
         if(is_ci_test())
         {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
             GTEST_SKIP();
 #endif
         }
@@ -448,7 +456,7 @@ namespace {
     {
         if(is_ci_test())
         {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
             GTEST_SKIP();
 #endif
         }
@@ -486,7 +494,7 @@ namespace {
     {
         if(is_ci_test())
         {
-#if PAL_PLATFORM_WINDOWS
+#if defined(PAL_PLATFORM_WINDOWS)
             GTEST_SKIP();
 #endif
         }

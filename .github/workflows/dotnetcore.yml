@@ -176,16 +176,16 @@ jobs:
           name: ubuntu-latest-linux-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Download windows-2019-win-x86-Release artifacts
+      - name: Download windows-latest-win-x86-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: windows-2019-win-x86-Release
+          name: windows-latest-win-x86-Release
           path: ${{ github.workspace }}
 
-      - name: Download windows-2019-win-x64-Release artifacts
+      - name: Download windows-latest-win-x64-Release artifacts
         uses: actions/download-artifact@v2
         with:
-          name: windows-2019-win-x64-Release
+          name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}
           
       - name: Setup dotnet using global.json

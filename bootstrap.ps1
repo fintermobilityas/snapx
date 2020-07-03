@@ -318,7 +318,7 @@ function Invoke-Dotnet-UnitTests
     $Projects = @(
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
-            Framework = "netcoreapp2.1"
+            Framework = $CIBuild -and $OSPlatform -eq "Windows" -and $Rid -eq "win-x86" ? "netcoreapp3.1" : "netcoreapp2.1"
             OSPlatform = "Any"
         }
         @{
@@ -374,7 +374,8 @@ function Invoke-Dotnet-UnitTests
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform"
+            "/p:Platform=$Platform" 
+            "/p:TargetFrameworks=$ProjectDotnetFramework"
         )
 
         Invoke-Command-Colored $CommandDotnet @(

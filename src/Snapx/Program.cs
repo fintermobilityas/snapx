@@ -891,11 +891,14 @@ namespace snapx
 
             if (changeSubSystemToWindowsGui)
             {
+                // NB! Unable to set icon on warped executable. Please refer to the following issue:
+                // https://github.com/electron/rcedit/issues/70
+
                 var rcEditOptions = new RcEditOptions
                 {
                     ConvertSubSystemToWindowsGui = true,
-                    Filename = installerFinalAbsolutePath, 
-                    IconFilename = setupIcon 
+                    Filename = installerFinalAbsolutePath,
+                    //IconFilename = setupIcon 
                 };
 
                 CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);

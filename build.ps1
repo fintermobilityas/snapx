@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "2.6.13",
+	[string] $DockerVersion = "2.7.0",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -16,7 +16,7 @@ param(
     [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
     [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
-    [string] $NetCoreAppVersion = "netcoreapp3.1",
+    [string] $NetCoreAppVersion = "net5.0",
     [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]
@@ -71,7 +71,8 @@ switch -regex ($OSVersion) {
 
 $DockerFilenamePath = Join-Path $WorkingDir docker\Dockerfile
 $DockerGithubRegistryUrl = "docker.pkg.github.com/fintermobilityas/snapx"
-$DockerContainerUrl = "mcr.microsoft.com/dotnet/core/sdk:${DotnetVersion}-focal"
+# TODO: Use ${DotnetVersion}
+$DockerContainerUrl = "mcr.microsoft.com/dotnet/sdk:5.0.100-preview.6-focal"
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 $SummaryStopwatch = $Stopwatch::StartNew()

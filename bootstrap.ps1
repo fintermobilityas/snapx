@@ -30,7 +30,6 @@ $NupkgsDir = Join-Path $WorkingDir nupkgs
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
 $ProcessorCount = [Environment]::ProcessorCount
-$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 # TODO: REMOVE ME
 $VisualStudioVersion = 0
@@ -324,14 +323,14 @@ function Invoke-Dotnet-UnitTests
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
             Framework = "net461"
-            OSPlatform = "Windows"            
+            OSPlatform = "Windows"
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"
         }
-        @{            
+        @{
             SrcDirectory = Join-Path $SrcDir Snapx.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"
@@ -374,7 +373,7 @@ function Invoke-Dotnet-UnitTests
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform" 
+            "/p:Platform=$Platform"
             "/p:TargetFrameworks=$ProjectDotnetFramework"
         )
 
@@ -396,7 +395,7 @@ function Invoke-Dotnet-UnitTests
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$ProjectTestResultsDirectory"""
-        )    
+        )
     }
 
 }

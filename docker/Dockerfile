@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1.301-focal as env-build
+FROM mcr.microsoft.com/dotnet/sdk:5.0.100-preview.6-focal as env-build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -8,11 +8,6 @@ RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
     cmake make gcc-8 g++-8 uuid-dev lsb-core curl && \ 
-    rm -rf /var/lib/apt/lists/*
-
-RUN \
-  curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
-  apt-get install --no-install-recommends -y git-lfs && \
     rm -rf /var/lib/apt/lists/*
 
 RUN \ 

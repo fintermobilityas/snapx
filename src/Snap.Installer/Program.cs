@@ -231,15 +231,6 @@ namespace Snap.Installer
         static AppBuilder BuildAvaloniaApp<TWindow>() where TWindow : Application, new()
         {
             var result = AppBuilder.Configure<TWindow>();
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                result
-                    .UseWin32()
-                    .UseDirect2D1();
-                return result;
-            }
-
             result.UsePlatformDetect();
             return result;
         }

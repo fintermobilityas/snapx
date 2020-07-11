@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <PropertyGroup>
-        <AvaloniaVersion>0.9.999-cibuild0008887-beta</AvaloniaVersion>
-        <!-- TODO: REMOVE ME. There is a bug in Avalonia beta package where this property is not defined in the compile task. -->
-        <AvaloniaXamlReportImportance Condition="'$(AvaloniaXamlReportImportance)' == ''">Normal</AvaloniaXamlReportImportance>
+        <AvaloniaVersion>0.10.0-preview1</AvaloniaVersion>
     </PropertyGroup>
 
     <Import Project="..\Snap\Snap.Deps.targets" />

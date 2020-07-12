@@ -138,8 +138,6 @@ jobs:
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}          
 
       - name: Test .NET
-        # https://github.com/actions/setup-dotnet/issues?q=is%3Aissue+is%3Aopen+sxs
-        if: matrix.rid != 'win-x86'
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}

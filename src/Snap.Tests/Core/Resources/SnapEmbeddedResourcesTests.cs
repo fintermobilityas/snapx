@@ -34,12 +34,12 @@ namespace Snap.Tests.Core.Resources
                 #if PLATFORM_WINDOWS_X86
                 Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX86);
                 Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX86);
-                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX64);
-                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX64);
+                Assert.Throws<System.IO.FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX64);
+                Assert.Throws<System.IO.FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX64);
                 return;
                 #elif PLATFORM_WINDOWS_X64
-                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX86);
-                Assert.Throws<FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX86);
+                Assert.Throws<System.IO.FileNotFoundException>(() => _snapEmbeddedResources.CoreRunWindowsX86);
+                Assert.Throws<System.IO.FileNotFoundException>(() => _snapEmbeddedResources.CoreRunLibWindowsX86);
                 Assert.NotNull(_snapEmbeddedResources.CoreRunWindowsX64);
                 Assert.NotNull(_snapEmbeddedResources.CoreRunLibWindowsX64);
                 return;

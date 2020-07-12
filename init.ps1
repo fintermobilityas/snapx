@@ -2,7 +2,9 @@ param(
     [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true)]
     [switch] $WithCIBuild,
     [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true)]
-    [switch] $WithRunDotNetTests
+    [switch] $WithRunDotNetTests,
+    [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
+    [switch] $WithDebugOnly
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -11,9 +13,14 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 $SrcDirectory = Join-Path $WorkingDir src
 $SnapxVersion = (dotnet gitversion /showVariable NugetVersionv2 | Out-String).Trim()
 
-Write-Output-Colored "Init: Debug, Release. This might take a while! :)"
+$Configurations = @("Debug")
 
-$Configurations = @("Debug", "Release")
+if($WithDebugOnly -eq $false) {
+    $Configurations += "Release"
+}
+
+$ConfigurationsStr = $Configurations -join ", "
+Write-Output-Colored "Init: $ConfigurationsStr. This might take a while! :)"
 
 $Configurations  | ForEach-Object {
     $Configuration = $_

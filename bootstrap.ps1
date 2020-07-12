@@ -317,7 +317,7 @@ function Invoke-Dotnet-UnitTests
     $Projects = @(
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
-            Framework = $CIBuild -and $OSPlatform -eq "Windows" -and $Rid -eq "win-x86" ? "netcoreapp3.1" : "netcoreapp2.1"
+            Framework = $NetCoreAppVersion
             OSPlatform = "Any"
         }
         @{

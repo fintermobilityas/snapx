@@ -8,8 +8,8 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
-        <TargetFrameworks Condition="$(OsPlatform) == 'Windows'">netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
-        <TargetFrameworks Condition="$(OsPlatform) != 'Windows'">netcoreapp2.1;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp2.1;netstandard2.0</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>

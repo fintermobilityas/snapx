@@ -24,7 +24,7 @@ namespace Snap.Extensions
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetFullFrameworkRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-        static readonly Regex NetCoreAppRegex = new Regex("^netcoreapp\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex NetCoreAppRegex = new Regex("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
         internal static void SetRidUsingCurrentOsPlatformAndProcessArchitecture([NotNull] this SnapApp snapApp)
@@ -70,7 +70,7 @@ namespace Snap.Extensions
             return value;
         }
 
-        internal static bool IsNetCoreAppSafe(this string framework)
+        internal static bool IsNetAppSafe(this string framework)
         {
             return framework != null && NetCoreAppRegex.IsMatch(framework);
         }
@@ -82,7 +82,7 @@ namespace Snap.Extensions
 
         internal static bool IsNetFrameworkValidSafe(this string framework)
         {
-            return framework.IsNetCoreAppSafe() || framework.IsNetFullFrameworkAppSafe();
+            return framework.IsNetAppSafe() || framework.IsNetFullFrameworkAppSafe();
         }
 
         internal static bool IsRuntimeIdentifierValidSafe(this string runtimeIdentifier)

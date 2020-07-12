@@ -45,20 +45,27 @@ namespace Snap.Tests.Core.Extensions
         [Theory]
         [InlineData("netCoreApp22", false)]
         [InlineData("netcoreapp22", false)]
+        [InlineData("net50", false)]
         [InlineData("netCoreApp2.1", true)]
         [InlineData("netcoreapp2.1", true)]
-        public void TestIsNetCoreAppSafe(string frameworkMoniker, bool isNetCoreApp)
+        [InlineData("net5.0", true)]
+        [InlineData("NET5.0", true)]
+        [InlineData("net6.0", true)]
+        [InlineData("NET6.0", true)]
+        public void TestIsNetAppSafe(string frameworkMoniker, bool isNetApp)
         {
-            Assert.Equal(frameworkMoniker.IsNetCoreAppSafe(), isNetCoreApp);
+            Assert.Equal(frameworkMoniker.IsNetAppSafe(), isNetApp);
         }
 
         [Theory]
         [InlineData("net47", true)]
         [InlineData("net461", true)]
         [InlineData("net4", false)]
-        public void TestIsNetFullFrameworkAppSafe(string frameworkMoniker, bool isNetCoreApp)
+        [InlineData("net5.0", false)]
+        [InlineData("net6.0", false)]
+        public void TestIsNetFullFrameworkAppSafe(string frameworkMoniker, bool isNetFullFrameworkApp)
         {
-            Assert.Equal(frameworkMoniker.IsNetFullFrameworkAppSafe(), isNetCoreApp);
+            Assert.Equal(frameworkMoniker.IsNetFullFrameworkAppSafe(), isNetFullFrameworkApp);
         }
 
         [Theory]

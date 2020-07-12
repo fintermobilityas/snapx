@@ -3,9 +3,10 @@ name: snapx
 on: push
 
 env:
-  GITVERSION_VERSION: 5.3.6
+  GITVERSION_VERSION: 5.3.7
   MSVS_TOOLSET_VERSION: 16
-  DOTNET_FRAMEWORK_VERSION: netcoreapp3.1
+  DOTNET_FRAMEWORK_VERSION: net5.0
+  DOTNET_SDK_VERSION: 5.0.100-preview.6
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: 1
@@ -112,7 +113,22 @@ jobs:
         with:
           lfs: true
           submodules: true   
-          
+                  
+      - name: Setup dotnet 2.1 sdk
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: 2.1.807  
+
+      - name: Setup dotnet 3.1 sdk
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: 3.1.301 
+
+      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
+        uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
       - name: Build native
         run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
@@ -120,14 +136,6 @@ jobs:
         timeout-minutes: 10
         shell: pwsh
         run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}          
-
-      - name: Setup dotnet 2.1 sdk
-        uses: actions/setup-dotnet@v1.5.0
-        with:
-          dotnet-version: 2.1.807  
-
-      - name: Setup dotnet using global.json
-        uses: actions/setup-dotnet@v1.5.0
 
       - name: Test .NET
         timeout-minutes: 10
@@ -188,8 +196,10 @@ jobs:
           name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Setup dotnet using global.json
+      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
         uses: actions/setup-dotnet@v1.5.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
     
       - name: Build nupkgs
         shell: pwsh

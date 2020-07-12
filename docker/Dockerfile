@@ -27,6 +27,11 @@ RUN \
     apt-get install --no-install-recommends -y dotnet-sdk-2.1 && \
     rm -rf /var/lib/apt/lists/*
 
+RUN \
+  apt-get update && \
+    apt-get install --no-install-recommends -y dotnet-sdk-3.1 && \
+    rm -rf /var/lib/apt/lists/*
+
 FROM env-build as env-run
 RUN mkdir /root/.dotnet/tools
 ENV PATH="/root/.dotnet/tools:${PATH}"

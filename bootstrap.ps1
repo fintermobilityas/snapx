@@ -314,26 +314,34 @@ function Invoke-Dotnet-UnitTests
 
     Resolve-Shell-Dependency $CommandDotnet
 
+    # Todo: Enable win-x86 tests when this issue has been resolved:
+    # https://github.com/actions/setup-dotnet/issues/25
+    $IsWinX86CIBuild = $CIBuild -and $Rid -eq "win-x86"
+
     $Projects = @(
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"
+            Skip = $IsWinX86CIBuild
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Tests
             Framework = "net461"
             OSPlatform = "Windows"
+            Skip = $false
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"
+            Skip = $IsWinX86CIBuild
         }
         @{
             SrcDirectory = Join-Path $SrcDir Snapx.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"
+            Skip = $IsWinX86CIBuild
         }
     )
 
@@ -342,10 +350,15 @@ function Invoke-Dotnet-UnitTests
         $ProjectSrcDirectory = $ProjectKv.SrcDirectory
         $ProjectName = Split-Path $ProjectSrcDirectory -Leaf
         $ProjectDotnetFramework = $ProjectKv.Framework
+        $ProjectSkip = $ProjectKv.Skip
         $ProjectOSPlatform = $ProjectKv.OSPlatform
         $ProjectTestResultsDirectory = Join-Path $WorkingDir build\dotnet\$Rid\TestResults\$ProjectName
 
         if(($ProjectOSPlatform -ne "Any") -and ($OSPlatform -ne $ProjectOSPlatform)) {
+            continue
+        }
+
+        if($ProjectSkip) {
             continue
         }
 

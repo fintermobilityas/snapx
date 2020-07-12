@@ -80,15 +80,15 @@ namespace Snap
             return;
             #endif
 
+            var rid = osPlatform.BuildRid();
             if (osPlatform == OSPlatform.Windows)
             {
-                var rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
                 filename += $"{rid}.dll";
                 _libPtr = NativeMethodsWindows.dlopen(filename);
             }
             else if (osPlatform == OSPlatform.Linux)
             {
-                filename += "linux-x64.so";
+                filename += $"{rid}.so";
                 _libPtr = NativeMethodsUnix.dlopen(filename, NativeMethodsUnix.libdl_RTLD_NOW | NativeMethodsUnix.libdl_RTLD_LOCAL);
             }
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Moq;
@@ -118,7 +117,8 @@ namespace Snap.Tests.Core.Resources
             string expectedDllFilename;
             if (osPlatform == OSPlatform.Windows)
             {
-                expectedDllFilename = "libcorerun-" + (RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64") + ".dll";
+                expectedDllFilename = "libcorerun-" + (
+                    RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64") + ".dll";
             } else if (osPlatform == OSPlatform.Linux)
             {
                 expectedDllFilename = "libcorerun-linux-x64.so";

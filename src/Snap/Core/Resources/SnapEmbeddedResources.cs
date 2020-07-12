@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Core.Models;
+using Snap.Extensions;
 using Snap.Resources;
 
 namespace Snap.Core.Resources
@@ -214,10 +215,11 @@ namespace Snap.Core.Resources
                 var rhsSha256 = snapCryptoProvider.Sha256(rhsStream);
                 return !string.Equals(lhsSha256, rhsSha256);
             }
-            
+
+            var rid = osPlatform.BuildRid();
+
             if (osPlatform == OSPlatform.Windows)
             {
-                var rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
                 var coreRunLib = rid == "win-x86" ? CoreRunLibWindowsX86 : CoreRunLibWindowsX64;
                 var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.dll");
                 if (filesystem.FileExists(filename) 
@@ -236,8 +238,9 @@ namespace Snap.Core.Resources
 
             if (osPlatform == OSPlatform.Linux)
             {
-                var filename = filesystem.PathCombine(workingDirectory, "libcorerun-linux-x64.so");
-                var coreRunLib = CoreRunLibLinuxX64;
+                var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.so");
+                var coreRunLib = rid == "linux-x64" ? CoreRunLibLinuxX64 : 
+                    throw new PlatformNotSupportedException();
                 if (filesystem.FileExists(filename) 
                     && !ShouldOverwrite(coreRunLib, filename))
                 {

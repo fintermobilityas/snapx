@@ -27,21 +27,55 @@ namespace Snap.Extensions
         static readonly Regex NetCoreAppRegex = new Regex("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+        internal static string BuildRid(this OSPlatform osPlatform)
+        {
+            #if SNAPX_ALLOW_RID_OVERRIDE
+            var supportedRids = new List<string>
+            {
+                "win-x86",
+                "win-x64",
+                "linux-x64"
+            };
+
+            var ridOverride = Environment.GetEnvironmentVariable("SNAPX_RID_OVERRIDE")?.ToLowerInvariant();
+            if (ridOverride != null)
+            {
+                if (!supportedRids.Contains(ridOverride))
+                {
+                    throw new PlatformNotSupportedException(ridOverride);
+                }
+                return ridOverride;
+            }
+            #endif
+
+            if (osPlatform == OSPlatform.Windows)
+            {
+                return RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
+            }
+
+            if (osPlatform == OSPlatform.Linux)
+            {
+                return "linux-x64";
+            }
+
+            throw new PlatformNotSupportedException();
+        }
+
         internal static void SetRidUsingCurrentOsPlatformAndProcessArchitecture([NotNull] this SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                snapApp.Target.Rid = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64";
                 snapApp.Target.Os = OSPlatform.Windows;
+                snapApp.Target.Rid = snapApp.Target.Os.BuildRid();
                 return;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                snapApp.Target.Rid = "linux-x64";
                 snapApp.Target.Os = OSPlatform.Linux;
+                snapApp.Target.Rid = snapApp.Target.Os.BuildRid();
                 return;
             }
 

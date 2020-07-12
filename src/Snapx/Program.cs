@@ -713,15 +713,18 @@ namespace snapx
             var changeSubSystemToWindowsGui = false;
             var installerIconSupported = false;
 
+            var rid = snapOs.OsPlatform.BuildRid();
+
             if (snapOs.OsPlatform == OSPlatform.Windows)
             {
-                warpPackerMemoryStream = RuntimeInformation.ProcessArchitecture == Architecture.X86 ? 
+                warpPackerMemoryStream = rid == "win-x86" ? 
                     snapxEmbeddedResources.WarpPackerWindowsX86 : snapxEmbeddedResources.WarpPackerWindowsX64;
                 installerIconSupported = true;
             }
             else if (snapOs.OsPlatform == OSPlatform.Linux)
             {
-                warpPackerMemoryStream = snapxEmbeddedResources.WarpPackerLinuxX64;
+                warpPackerMemoryStream = rid == "linux-x64" ? snapxEmbeddedResources.WarpPackerLinuxX64 
+                    : throw new PlatformNotSupportedException(rid);
                 chmod = true;
             }
             else

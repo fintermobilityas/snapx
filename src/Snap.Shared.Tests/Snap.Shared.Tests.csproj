@@ -17,7 +17,7 @@
         <PackageReference Include="XunitXml.TestLogger" Version="2.1.26" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(IsNetFullFramework) == 'true'">
+    <ItemGroup Condition="$(IsNetFullFrameworkApp)">
         <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

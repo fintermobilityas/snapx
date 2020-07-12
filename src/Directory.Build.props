@@ -22,12 +22,12 @@
         <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
         <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Linux'))">Unix</OsPlatform>
         <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Osx'))">MACOSX</OsPlatform>
-        <IsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</IsNetCoreApp>
-        <IsNetCoreApp Condition="$(IsNetCoreApp) == ''">false</IsNetCoreApp>
+        <IsNetApp Condition="$(TargetFramework.StartsWith('netcoreapp')) OR $(TargetFramework) == 'net5.0'">true</IsNetApp>
+        <IsNetApp Condition="$(IsNetApp) == ''">false</IsNetApp>
         <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
         <IsNetStandard Condition="$(IsNetStandard) == ''">false</IsNetStandard>
-        <IsNetFullFramework Condition="$(IsNetStandard) == 'false' AND '$(IsNetCoreApp)' == 'false'">true</IsNetFullFramework>
-        <IsNetFullFramework Condition="$(IsNetFullFramework) == ''">false</IsNetFullFramework>
+        <IsNetFullFrameworkApp Condition="$(IsNetStandard) == 'false' AND '$(IsNetApp)' == 'false'">true</IsNetFullFrameworkApp>
+        <IsNetFullFrameworkApp Condition="$(IsNetFullFrameworkApp) == ''">false</IsNetFullFrameworkApp>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -72,11 +72,11 @@
         <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(IsNetCoreApp)">
-        <DefineConstants>$(DefineConstants);NETCOREAPP;</DefineConstants>
+    <PropertyGroup Condition="$(IsNetApp)">
+        <DefineConstants>$(DefineConstants);NETAPP;</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup Condition="$(IsNetFullFramework)">
+    <PropertyGroup Condition="$(IsNetFullFrameworkApp)">
         <DefineConstants>$(DefineConstants);NETFULLFRAMEWORK;</DefineConstants>
     </PropertyGroup>
 

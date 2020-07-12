@@ -33,7 +33,7 @@
         <PackageReference Include="ServiceStack" Version="5.9.*" />
     </ItemGroup>
 
-    <ItemGroup Condition="!$(IsNetFullFramework)">
+    <ItemGroup Condition="!$(IsNetFullFrameworkApp)">
         <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" /> 
     </ItemGroup>
 

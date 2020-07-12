@@ -1,4 +1,4 @@
-﻿#if NETFULLFRAMEWORK || NETSTANDARD
+﻿#if NETFULLFRAMEWORKAPP || NETSTANDARD
 using System.Collections.Generic;
 using JetBrains.Annotations;
 

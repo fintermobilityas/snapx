@@ -31,7 +31,7 @@ namespace Snap
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_set_icon_delegate(
-            #if NETCOREAPP
+            #if NETAPP
             [MarshalAs(UnmanagedType.LPUTF8Str)] string exeFilename, 
             [MarshalAs(UnmanagedType.LPUTF8Str)] string iconFilename
             #else
@@ -44,7 +44,7 @@ namespace Snap
         // filesystem
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_fs_chmod_delegate(
-            #if NETCOREAPP
+            #if NETAPP
             [MarshalAs(UnmanagedType.LPUTF8Str)] string filename, 
             #else
             [MarshalAs(UnmanagedType.LPStr)] string filename,
@@ -54,7 +54,7 @@ namespace Snap
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
         delegate int pal_fs_file_exists_delegate(
-            #if NETCOREAPP
+            #if NETAPP
             [MarshalAs(UnmanagedType.LPUTF8Str)] string filename
             #else
             [MarshalAs(UnmanagedType.LPStr)] string filename
@@ -113,7 +113,7 @@ namespace Snap
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_chmod.ThrowIfDangling();
-            #if NETCOREAPP
+            #if NETAPP
             return pal_fs_chmod.Invoke(filename, mode) == 1;
             #else
             var filenameUtf8 = Utf16ToUtf8(filename);
@@ -140,7 +140,7 @@ namespace Snap
             {
                 throw new FileNotFoundException(iconAbsolutePath);
             }
-            #if NETCOREAPP
+            #if NETAPP
             return pal_set_icon.Invoke(exeAbsolutePath, iconAbsolutePath) == 1;
             #else
             var exeAbsolutePathUtf8 = Utf16ToUtf8(exeAbsolutePath);
@@ -153,7 +153,7 @@ namespace Snap
         {
             if (filename == null) throw new ArgumentNullException(nameof(filename));
             pal_fs_file_exists.ThrowIfDangling();
-            #if NETCOREAPP
+            #if NETAPP
             return pal_fs_file_exists.Invoke(filename) == 1;
             #else
             var filenameUtf8 = Utf16ToUtf8(filename);
@@ -203,7 +203,7 @@ namespace Snap
         static string Utf16ToUtf8([JetBrains.Annotations.NotNull] string utf16String)
         {
             if (utf16String == null) throw new ArgumentNullException(nameof(utf16String));
-            #if NETCOREAPP
+            #if NETAPP
             throw new NotSupportedException("Use UnmanagedType.LPUTF8Str");
             #else
             var utf16Bytes = System.Text.Encoding.Unicode.GetBytes(utf16String);

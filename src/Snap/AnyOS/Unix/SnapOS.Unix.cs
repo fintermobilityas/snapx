@@ -13,7 +13,7 @@ using Snap.Logging;
 
 namespace Snap.AnyOS.Unix
 {
-    #if !NETFULLFRAMEWORK
+    #if !NETFULLFRAMEWORKAPP
     using Mono.Unix;
 
     // https://stackoverflow.com/a/32716784/2470592
@@ -192,7 +192,7 @@ namespace Snap.AnyOS.Unix
 
         public ISnapOsExitSignal InstallExitSignalHandler()
         {
-            #if !NETFULLFRAMEWORK
+            #if !NETFULLFRAMEWORKAPP
             return new SnapOsUnixExitSignal();
             #else 
             throw new PlatformNotSupportedException();

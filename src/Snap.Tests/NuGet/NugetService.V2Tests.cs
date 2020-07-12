@@ -31,7 +31,7 @@ namespace Snap.Tests.NuGet
             _snapFilesystem = new SnapFilesystem();
             _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
             
-            #if NETFULLFRAMEWORK
+            #if NETFULLFRAMEWORKAPP
             System.Net.ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             #endif
         }

@@ -180,7 +180,8 @@ namespace Snap.Core
                         {
                             { "X-Snapx-App-Id", snapApp.Id},
                             { "X-Snapx-Channel", channel.Name },
-                            { "X-Snapx-Application-Id", applicationId }
+                            { "X-Snapx-Application-Id", applicationId },
+                            { "X-Snapx-Application-Version", snapApp.Version.ToNormalizedString() }
                         };
    
                         using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);

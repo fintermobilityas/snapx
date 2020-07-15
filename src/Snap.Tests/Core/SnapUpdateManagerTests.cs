@@ -88,10 +88,11 @@ namespace Snap.Tests.Core
             {
                 Assert.Equal(uri, snapPackageManagerHttpFeed.Source);
                 Assert.NotNull(headers);
-                Assert.Equal(3, headers.Count);
-                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Id", snapApp.Id));
+                Assert.Equal(4, headers.Count);
+                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
                 Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
                 Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Id", applicationId));
+                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
             });
 
             var snapUpdateManager = BuildUpdateManager(_baseFixturePackaging.WorkingDirectory, snapApp, _nugetServiceMock.Object,
@@ -103,7 +104,7 @@ namespace Snap.Tests.Core
             _snapHttpClientMock.Verify(x => 
                 x.GetStreamAsync(
                     It.Is<Uri>(v => v == snapChannel.UpdateFeed.Source), 
-                    It.Is<Dictionary<string, string>>(v => v.Count == 3)), Times.Once);
+                    It.Is<Dictionary<string, string>>(v => v.Count == 4)), Times.Once);
         }
 
         [InlineData("1.0.0")]

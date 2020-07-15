@@ -60,10 +60,16 @@ namespace Snap.Tests.Core
                 _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
 
-        [Fact]
-        public async Task TestGetSnapReleasesAsync_SnapHttpFeed()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TestGetSnapReleasesAsync_SnapHttpFeed(bool versionIsNull)
         {
             var snapApp = _baseFixturePackaging.BuildSnapApp();
+            if (versionIsNull)
+            {
+                snapApp.Version = null;
+            }
 
             var snapChannel = snapApp.Channels.First(x => x.UpdateFeed is SnapHttpFeed);
             snapApp.SetCurrentChannel(snapChannel.Name);
@@ -92,7 +98,14 @@ namespace Snap.Tests.Core
                 Assert.Collection(headers, pair => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
                 Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
                 Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Id", applicationId));
-                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
+                if (versionIsNull)
+                {
+                    Assert.Collection(headers, pair => Assert.Null("X-Snapx-Application-Version"));
+                }
+                else
+                {
+                    Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
+                }
             });
 
             var snapUpdateManager = BuildUpdateManager(_baseFixturePackaging.WorkingDirectory, snapApp, _nugetServiceMock.Object,

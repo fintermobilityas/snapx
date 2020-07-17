@@ -1,29 +1,15 @@
 #include "pal/pal.hpp"
 #include <cassert>
 
-#if _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4068)
-#endif
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma clang diagnostic ignored "-Wnonportable-include-path"
-#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
-
-#if _MSC_VER
-#pragma warning( pop )
-#endif
-
 #if defined(PAL_PLATFORM_WINDOWS)
-#include <shlwapi.h> // PathIsDirectory, PathFileExists
+#include <Shlwapi.h> // PathIsDirectory, PathFileExists
 #include <strsafe.h> // StringCchLengthA
 #include <cctype> // toupper
 #include <direct.h> // mkdir
-#include <tlhelp32.h> // CreateToolhelp32Snapshot
-#include <system_error>
-#include "versionhelpers.h"
+#include <TlHelp32.h> // CreateToolhelp32Snapshot
+#include <VersionHelpers.h>
 #include "vendor/rcedit/rcedit.hpp"
+#include <system_error>
 #elif defined(PAL_PLATFORM_LINUX)
 #include <sys/types.h> // O_RDONLY
 #include <sys/wait.h> // wait
@@ -2051,14 +2037,3 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_str_is_null_or_whitespace(const char* st
     return FALSE;
 #endif
 }
-
-#if _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4068)
-#endif
-
-#pragma clang diagnostic pop
-
-#if _MSC_VER
-#pragma warning( pop )
-#endif

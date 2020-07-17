@@ -13,7 +13,7 @@
 #include <map>
 #include <memory> // unique_ptr
 
-#include <windows.h>
+#include <Windows.h>
 
 namespace snap::rcedit
 {

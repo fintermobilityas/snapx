@@ -1,7 +1,7 @@
 #include "pal/pal_string.hpp"
 
 #if defined(PAL_PLATFORM_WINDOWS)
-#include <shlwapi.h> // MultiByteToWideChar
+#include <Shlwapi.h> // MultiByteToWideChar
 #include <strsafe.h> // StringCchLengthA
 #include <stdexcept>
 
@@ -45,7 +45,7 @@ wchar_t * pal_str_widen(const char * utf8_str)
         throw std::runtime_error("Unable to determine UTF-16 buffer size");
     }
 
-    const auto utf16_str = new wchar_t[cch_utf16];
+    auto* const utf16_str = new wchar_t[cch_utf16];
 
     // Do the conversion from UTF-8 to UTF-16
     const auto utf16_str_len = ::MultiByteToWideChar(
@@ -110,7 +110,7 @@ char * pal_str_narrow(const wchar_t * utf16_str)
     }
 
     // Allocate destination buffer for UTF-8 string
-    const auto utf8_buffer = new char[utf8_buffer_len];
+    auto* const utf8_buffer = new char[utf8_buffer_len];
 
     // Do the conversion from UTF-16 to UTF-8
     const auto utf8_str_len = ::WideCharToMultiByte(

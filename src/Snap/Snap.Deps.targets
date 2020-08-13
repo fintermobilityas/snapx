@@ -10,7 +10,7 @@
         <PackageReference Include="NuGet.Protocol" Version="5.6.0"/>
         <PackageReference Include="YamlDotNet" Version="8.1.2"/>
         <PackageReference Include="SharpCompress" Version="0.26.0"/>
-        <PackageReference Include="MessagePack" Version="2.1.152" />
+        <PackageReference Include="MessagePack" Version="2.1.165" />
         <PackageReference Include="System.Net.Http" Version="4.3.4" />
     </ItemGroup>
     <ItemGroup Condition="$(IsNetFullFrameworkApp)">

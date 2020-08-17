@@ -220,9 +220,13 @@ function Invoke-Build-Snap-Installer {
         Get-Item $SnapInstallerDotnetBuildPublishDir | Remove-Item -Recurse -Force
     }
 
+    # R2R is only available on Windows.
+    $PublishReadyToRun = ($Rid.StartsWith("win-")) -and ($Configuration -eq "Debug" ? "False" : "True")
+
     Invoke-Command-Colored $CommandDotnet @(
         "publish $SnapInstallerCsProj"
         "/p:PublishTrimmed=" + ($Configuration -eq "Debug" ? "False" : "True")
+        "/p:PublishReadyToRun=" + $PublishReadyToRun
         "/p:Version=$Version"
         "/p:SnapRid=$Rid"
         "--runtime $Rid"

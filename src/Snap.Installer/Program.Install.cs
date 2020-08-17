@@ -426,8 +426,10 @@ namespace Snap.Installer
                 {
                     MainWindow.Environment = environment;
                     MainWindow.ViewModel = new AvaloniaMainWindowViewModel(snapInstallerEmbeddedResources,
-                        installerProgressSource, () => 
-                            onFirstAnimationRenderedEvent.Release());
+                        installerProgressSource, () =>
+                        {
+                            onFirstAnimationRenderedEvent.Dispose();
+                        });
 
                     Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
                 });

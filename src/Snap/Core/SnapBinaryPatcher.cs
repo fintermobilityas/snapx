@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading;
+using System.Threading.Tasks;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.BZip2;
 using CompressionMode = SharpCompress.Compressors.CompressionMode;
@@ -44,22 +45,27 @@ namespace Snap.Core
     {
         /// <summary>
         /// Creates a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) that can be used
-        /// (by <see cref="Apply"/>) to transform <paramref name="oldData"/> into <paramref name="newData"/>.
+        /// (by <see cref="ApplyAsync"/>) to transform <paramref name="oldData"/> into <paramref name="newData"/>.
         /// </summary>
         /// <param name="oldData">The original binary data.</param>
         /// <param name="newData">The new binary data.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
-        public static void Create(byte[] oldData, byte[] newData, Stream output)
+        /// <param name="cancellationToken"></param>
+        public static async Task CreateAsync(byte[] oldData, byte[] newData, Stream output, CancellationToken cancellationToken)
         {
             // NB: If you diff a file big enough, we blow the stack. This doesn't 
             // solve it, just buys us more space. The solution is to rewrite Split
             // using iteration instead of recursion, but that's Hard(tm).
             var ex = default(Exception);
-            var t = new Thread(() =>
+
+            var tcs = new TaskCompletionSource<bool>();
+
+            var t = new Thread(async () =>
             {
                 try
                 {
-                    CreateInternal(oldData, newData, output);
+                    await CreateAsyncInternal(oldData, newData, output, cancellationToken);
+                    tcs.SetResult(true);
                 }
                 catch (Exception exc)
                 {
@@ -68,12 +74,13 @@ namespace Snap.Core
             }, 40 * 1048576);
 
             t.Start();
-            t.Join();
+
+            await tcs.Task;
 
             if (ex != null) throw ex;
         }
 
-        static void CreateInternal(byte[] oldData, byte[] newData, Stream output)
+        static async Task CreateAsyncInternal(byte[] oldData, byte[] newData, Stream output, CancellationToken cancellationToken)
         {
             // check arguments
             if (oldData == null)
@@ -104,7 +111,7 @@ namespace Snap.Core
             WriteInt64(newData.Length, header, 24);
 
             long startPosition = output.Position;
-            output.Write(header, 0, header.Length);
+            await output.WriteAsync(header, 0, header.Length, cancellationToken);
 
             int[] I = SuffixSort(oldData);
 
@@ -212,13 +219,13 @@ namespace Snap.Core
 
                         byte[] buf = new byte[8];
                         WriteInt64(lenf, buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
 
                         WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
 
                         WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
-                        bz2Stream.Write(buf, 0, 8);
+                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
 
                         lastscan = scan - lenb;
                         lastpos = pos - lenb;
@@ -235,7 +242,7 @@ namespace Snap.Core
             using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
             {
                 using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                bz2Stream.Write(db, 0, dblen);
+                await bz2Stream.WriteAsync(db, 0, dblen, cancellationToken);
             }
 
             // compute size of compressed diff data
@@ -247,13 +254,13 @@ namespace Snap.Core
             {
                 using WrappingStream wrappingStream = new WrappingStream(output, Ownership.None);
                 using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                bz2Stream.Write(eb, 0, eblen);
+                await bz2Stream.WriteAsync(eb, 0, eblen, cancellationToken);
             }
 
             // seek to the beginning, write the header, then seek back to end
             long endPosition = output.Position;
             output.Position = startPosition;
-            output.Write(header, 0, header.Length);
+            await output.WriteAsync(header, 0, header.Length, cancellationToken);
             output.Position = endPosition;
         }
 
@@ -266,7 +273,8 @@ namespace Snap.Core
         /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
         /// the patch to be opened concurrently.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
-        public static void Apply(Stream input, Func<Stream> openPatchStream, Stream output)
+        /// <param name="cancellationToken"></param>
+        public static async Task ApplyAsync(Stream input, Func<Task<Stream>> openPatchStream, Stream output, CancellationToken cancellationToken)
         {
             // check arguments
             if (input == null)
@@ -291,7 +299,7 @@ namespace Snap.Core
             */
             // read header
             long controlLength, diffLength, newSize;
-            using (Stream patchStream = openPatchStream())
+            using (Stream patchStream = await openPatchStream())
             {
                 // check patch stream capabilities
                 if (!patchStream.CanRead)
@@ -299,7 +307,7 @@ namespace Snap.Core
                 if (!patchStream.CanSeek)
                     throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
 
-                byte[] header = patchStream.ReadExactly(c_headerSize);
+                byte[] header = await patchStream.ReadExactlyAsync(c_headerSize, cancellationToken);
 
                 // check for appropriate magic
                 long signature = ReadInt64(header, 0);
@@ -320,9 +328,9 @@ namespace Snap.Core
             byte[] oldData = new byte[c_bufferSize];
 
             // prepare to read three parts of the patch in parallel
-            using Stream compressedControlStream = openPatchStream();
-            using Stream compressedDiffStream = openPatchStream();
-            using Stream compressedExtraStream = openPatchStream();
+            using Stream compressedControlStream = await openPatchStream();
+            using Stream compressedDiffStream = await openPatchStream();
+            using Stream compressedExtraStream = await openPatchStream();
             // seek to the start of each part
             compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
             compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
@@ -345,7 +353,7 @@ namespace Snap.Core
                 // read control data
                 for (int i = 0; i < 3; i++)
                 {
-                    controlStream.ReadExactly(buffer, 0, 8);
+                    await controlStream.ReadExactlyAsync(buffer, 0, 8, cancellationToken);
                     control[i] = ReadInt64(buffer, 0);
                 }
 
@@ -362,16 +370,16 @@ namespace Snap.Core
                     int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
 
                     // read diff string
-                    diffStream.ReadExactly(newData, 0, actualBytesToCopy);
+                    await diffStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
 
                     // add old data to diff string
                     int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                    input.ReadExactly(oldData, 0, availableInputBytes);
+                    await input.ReadExactlyAsync(oldData, 0, availableInputBytes, cancellationToken);
 
                     for (int index = 0; index < availableInputBytes; index++)
                         newData[index] += oldData[index];
 
-                    output.Write(newData, 0, actualBytesToCopy);
+                    await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
 
                     // adjust counters
                     newPosition += actualBytesToCopy;
@@ -389,8 +397,8 @@ namespace Snap.Core
                 {
                     int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
 
-                    extraStream.ReadExactly(newData, 0, actualBytesToCopy);
-                    output.Write(newData, 0, actualBytesToCopy);
+                    await extraStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                    await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
 
                     newPosition += actualBytesToCopy;
                     bytesToCopy -= actualBytesToCopy;
@@ -881,13 +889,14 @@ namespace Snap.Core
         /// </summary>
         /// <param name="stream">The stream to read from.</param>
         /// <param name="count">The count of bytes to read.</param>
+        /// <param name="cancellationToken"></param>
         /// <returns>A new byte array containing the data read from the stream.</returns>
-        public static byte[] ReadExactly(this Stream stream, int count)
+        public static async Task<byte[]> ReadExactlyAsync(this Stream stream, int count, CancellationToken cancellationToken)
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException("count");
             byte[] buffer = new byte[count];
-            ReadExactly(stream, buffer, 0, count);
+            await ReadExactlyAsync(stream, buffer, 0, count, cancellationToken);
             return buffer;
         }
 
@@ -899,7 +908,9 @@ namespace Snap.Core
         /// <param name="buffer">The buffer to read data into.</param>
         /// <param name="offset">The offset within the buffer at which data is first written.</param>
         /// <param name="count">The count of bytes to read.</param>
-        public static void ReadExactly(this Stream stream, byte[] buffer, int offset, int count)
+        /// <param name="cancellationToken"></param>
+        public static async Task ReadExactlyAsync(this Stream stream, byte[] buffer, int offset, int count,
+            CancellationToken cancellationToken)
         {
             // check arguments
             if (stream == null)
@@ -914,7 +925,7 @@ namespace Snap.Core
             while (count > 0)
             {
                 // read data
-                int bytesRead = stream.Read(buffer, offset, count);
+                int bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken);
 
                 // check for failure to read
                 if (bytesRead == 0)

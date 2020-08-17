@@ -538,7 +538,7 @@ namespace Snap.Core
                 if (newDataStream.Length > 0
                     && oldDataStream.Length > 0)
                 {
-                    SnapBinaryPatcher.Create(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream);
+                    await SnapBinaryPatcher.CreateAsync(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream, cancellationToken);
                 } else if (newDataStream.Length > 0)
                 {
                     await newDataStream.CopyToAsync(patchStream, cancellationToken);
@@ -820,18 +820,18 @@ namespace Snap.Core
                             }
                         }
 
-                        MemoryStream OpenPatchStream()
+                        async Task<MemoryStream> OpenPatchStream()
                         {
                             var intermediatePatchStream = new MemoryStream();
                             // ReSharper disable once AccessToDisposedClosure
                             patchStream.Seek(0, SeekOrigin.Begin);
                             // ReSharper disable once AccessToDisposedClosure
-                            patchStream.CopyTo(intermediatePatchStream);
+                            await patchStream.CopyToAsync(intermediatePatchStream, cancellationToken: cancellationToken);
                             intermediatePatchStream.Seek(0, SeekOrigin.Begin);
                             return intermediatePatchStream;
                         }
 
-                        SnapBinaryPatcher.Apply(packageFileStream, OpenPatchStream, outputStream);
+                        await SnapBinaryPatcher.ApplyAsync(packageFileStream, async () => await OpenPatchStream(), outputStream, cancellationToken);
 
                         if (!skipChecksum)
                         {

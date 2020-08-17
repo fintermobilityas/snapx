@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using Snap.Core;
 using Xunit;
 
@@ -7,7 +8,7 @@ namespace Snap.Tests.Core
     public class SnapBinaryPatcherTests
     {
         [Fact]
-        public void HandleBsDiffWithoutExtraData()
+        public async Task HandleBsDiffWithoutExtraData()
         {
             var baseFileData = new byte[] { 1, 1, 1, 1 };
             var newFileData = new byte[] { 2, 1, 1, 1 };
@@ -16,13 +17,13 @@ namespace Snap.Tests.Core
 
             using (var patchOut = new MemoryStream())
             {
-                SnapBinaryPatcher.Create(baseFileData, newFileData, patchOut);
+                await SnapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
                 patchData = patchOut.ToArray();
             }
 
             using var toPatch = new MemoryStream(baseFileData);
             using var patched = new MemoryStream();
-            SnapBinaryPatcher.Apply(toPatch, () => new MemoryStream(patchData), patched);
+            await SnapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
 
             Assert.Equal(newFileData, patched.ToArray());
         }

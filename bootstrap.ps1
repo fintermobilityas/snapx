@@ -223,7 +223,6 @@ function Invoke-Build-Snap-Installer {
     Invoke-Command-Colored $CommandDotnet @(
         "publish $SnapInstallerCsProj"
         "/p:PublishTrimmed=" + ($Configuration -eq "Debug" ? "False" : "True")
-        "/p:PublishReadyToRun=" + ($Configuration -eq "Debug" ? "False" : "True")
         "/p:Version=$Version"
         "/p:SnapRid=$Rid"
         "--runtime $Rid"

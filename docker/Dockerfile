@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:5.0.100-preview.7-focal as env-build
+FROM mcr.microsoft.com/dotnet/sdk:5.0.100-preview.8-focal as env-build
 
 ENV DEBIAN_FRONTEND=noninteractive
 

@@ -38,6 +38,7 @@ namespace Snap.Core.Models
     public sealed class SnapApp
     {
         public string Id { get; set; }
+        public string MainExe { get; set; }
         public string SuperVisorId { get; set; }
         public SemanticVersion Version { get; set; }
         public SnapTarget Target { get; set; }
@@ -63,6 +64,7 @@ namespace Snap.Core.Models
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
+            MainExe = app.MainExe;
             SuperVisorId = app.SuperVisorId;
             Version = app.Version;
             // TODO: Can this null check be removed?

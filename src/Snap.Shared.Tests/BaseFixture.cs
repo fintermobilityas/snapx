@@ -112,6 +112,7 @@ namespace Snap.Shared.Tests
             var snapApp = new SnapApp
             {
                 Id = id,
+                MainExe = id,
                 SuperVisorId = Guid.NewGuid().ToString(),
                 Version = new SemanticVersion(1, 0, 0),
                 IsGenesis = isGenesis,
@@ -313,7 +314,7 @@ namespace Snap.Shared.Tests
         public AssemblyDefinition BuildSnapExecutable([NotNull] SnapApp snapApp, bool randomVersion = true, List<AssemblyDefinition> references = null)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return BuildExecutable(snapApp.Id, randomVersion, references);
+            return BuildExecutable(snapApp.MainExe ?? snapApp.Id, randomVersion, references);
         }
 
         public AssemblyDefinition BuildLibrary(string libraryName, string className, IReadOnlyCollection<AssemblyDefinition> assemblyReferencesDefinitions = null)

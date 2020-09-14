@@ -24,7 +24,7 @@ namespace Snap.Core.Resources
         (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp,
             ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);
-        string GetCoreRunExeFilename(string appId, OSPlatform osPlatform);
+        string GetCoreRunExeFilename(string assemblyName, OSPlatform osPlatform);
         Task ExtractCoreRunLibAsync(ISnapFilesystem filesystem, ISnapCryptoProvider snapCryptoProvider,
             string workingDirectory, OSPlatform osPlatform);
     }
@@ -177,19 +177,19 @@ namespace Snap.Core.Resources
         public string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-            return GetCoreRunExeFilename(snapApp.Id, snapApp.Target.Os);
+            return GetCoreRunExeFilename(snapApp.MainExe ?? snapApp.Id, snapApp.Target.Os);
         }
 
-        public string GetCoreRunExeFilename(string appId, OSPlatform osPlatform)
+        public string GetCoreRunExeFilename(string assemblyName, OSPlatform osPlatform)
         {
             if (osPlatform == OSPlatform.Windows)
             {
-                return $"{appId}.exe";
+                return $"{assemblyName}.exe";
             }
 
             if (osPlatform == OSPlatform.Linux)
             {
-                return $"{appId}";
+                return $"{assemblyName}";
             }
 
             throw new PlatformNotSupportedException();

@@ -121,6 +121,26 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
+        public async Task TestBuildPackageAsync_UseMainExeName_Instead_Of_Id()
+        {
+            var snapAppsReleases = new SnapAppsReleases();
+            var genesisSnapApp = _baseFixture.BuildSnapApp(isGenesis: true);
+            genesisSnapApp.MainExe = "demoapp2";
+
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            using var genesisSnapReleaseBuilder = _baseFixture
+                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
+                .AddSnapDll();
+
+            using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
+            using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
+            var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(default);
+
+            Assert.Equal(genesisSnapApp.BuildNugetUpstreamId(), nuspecReader.GetId());
+        }
+
+        [Fact]
         public async Task TestBuildPackageAsync_Nuspec()
         {
             var snapAppsReleases = new SnapAppsReleases();

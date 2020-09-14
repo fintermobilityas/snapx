@@ -197,6 +197,7 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
+        public string MainExe { get; set; }
         [YamlMember(Alias = "supervisorid")]
         public string SuperVisorId { get; set; }
         public List<string> Channels { get; set; }
@@ -215,6 +216,7 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
+            MainExe = snapApp.MainExe;
             SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
             Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };

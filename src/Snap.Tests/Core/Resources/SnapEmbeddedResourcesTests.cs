@@ -80,6 +80,27 @@ namespace Snap.Tests.Core.Resources
             Assert.Equal(expectedExeFilename, coreRunFilename);         
             Assert.Equal(snapApp.Target.Os, coreRunOsPlatform);
         }
+
+        [Theory]
+#if PLATFORM_WINDOWS
+        [InlineData("WINDOWS", "demoapp", "demoapp.exe")]
+#endif
+#if PLATFORM_UNIX
+        [InlineData("LINUX", "demoapp", "demoapp")]
+#endif
+        public void TestGetCoreRunForSnapApp_MainExe(string osPlatform, string appId, string expectedExeFilename)
+        {
+            var snapApp = _baseFixture.BuildSnapApp("ignoreme");
+            snapApp.MainExe = appId;
+            snapApp.Target.Os = OSPlatform.Create(osPlatform);
+            
+            var (memoryStream, coreRunFilename, coreRunOsPlatform) = _snapEmbeddedResources.GetCoreRunForSnapApp(snapApp, _snapFilesystem, _coreRunLibMock.Object);
+            Assert.NotNull(memoryStream);
+            Assert.True(memoryStream.Length > 0);
+            Assert.Equal(expectedExeFilename, coreRunFilename);         
+            Assert.Equal(snapApp.Target.Os, coreRunOsPlatform);
+            Assert.Equal("ignoreme", snapApp.Id);
+        }
                 
         [Fact]
         public void TestGetCoreRunForSnapApp_Throws_PlatformNotSupportedException()

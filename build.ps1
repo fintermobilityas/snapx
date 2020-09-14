@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "2.8.5",
+	[string] $DockerVersion = "2.8.7",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -70,7 +70,7 @@ switch -regex ($OSVersion) {
 
 $DockerFilenamePath = Join-Path $WorkingDir docker\Dockerfile
 $DockerGithubRegistryUrl = "docker.pkg.github.com/fintermobilityas/snapx"
-$DockerContainerUrl = "mcr.microsoft.com/dotnet/sdk:5.0.100-preview.8-focal"
+$DockerContainerUrl = "mcr.microsoft.com/dotnet/sdk:5.0.100-rc.1-focal"
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 $SummaryStopwatch = $Stopwatch::StartNew()

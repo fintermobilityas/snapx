@@ -105,10 +105,9 @@ namespace snapx
                 }
             }, maxConcurrentMetadataTasks);
 
-            foreach (var thisSnapApps in snapApps.Apps)
+            foreach (var (thisSnapApps, table) in tables)
             {
-                var (_, table) = tables.Single(x => x.snapApp.Id == thisSnapApps.Id);
-                var (downloadSuccess, downloadResourceResult, _) = downloadResults.SingleOrDefault(x => x.id == thisSnapApps.Id);
+                var (downloadSuccess, downloadResourceResult, _) = downloadResults.Single(x => x.id == thisSnapApps.Id);
 
                 if (!downloadSuccess)
                 {
@@ -137,8 +136,8 @@ namespace snapx
                                 $"\nPublish date: {lastUpdatedDateStr}" +
                                 $"\nSnapx pack id: {snapAppsReleases.PackId:N}" +
                                 $"\nSnapx version: {snapAppsReleases.PackVersion}";
-                                
-                foreach (var target in thisSnapApps.Targets)
+                
+                foreach (var target in snapApps.Apps.Where(x => x.Id == thisSnapApps.Id).SelectMany(x => x.Targets))
                 {                    
                     var rowValues = new List<object>
                     {

@@ -643,6 +643,7 @@ namespace Snap.Extensions
             return new SnapApp
             {
                 Id = snapApp.Id,
+                MainExe = snapApp.MainExe,
                 SuperVisorId = superVisorId.ToString(),
                 Channels = snapAppChannels,
                 Target = new SnapTarget(snapAppTarget),

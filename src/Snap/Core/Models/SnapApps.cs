@@ -197,6 +197,7 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
+        [YamlMember(Alias = "main")]
         public string MainExe { get; set; }
         [YamlMember(Alias = "supervisorid")]
         public string SuperVisorId { get; set; }

@@ -511,6 +511,11 @@ namespace Snap.Extensions
                 throw new Exception("Supervisor id cannot be an empty guid.");
             }
 
+            if (snapApp.MainExe != null && string.IsNullOrWhiteSpace(snapApp.MainExe))
+            {
+                throw new Exception("MainExe property cannot be null or whitespace.");
+            }
+
             var snapAppUniqueRuntimeIdentifiers = snapApp.Targets.Select(x => x.Rid).ToList();
             if (snapAppUniqueRuntimeIdentifiers.Distinct().Count() != snapApp.Targets.Count)
             {
@@ -759,7 +764,7 @@ namespace Snap.Extensions
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
 
-            var exeName = snapApp.Id;
+            var exeName = snapApp.MainExe ?? snapApp.Id;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 exeName += ".exe";

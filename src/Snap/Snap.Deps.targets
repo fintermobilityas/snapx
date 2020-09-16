@@ -5,7 +5,7 @@
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Mono.Cecil" Version="0.11.2"/>
+        <PackageReference Include="Mono.Cecil" Version="0.11.3"/>
         <PackageReference Include="NuGet.Packaging" Version="5.6.0"/>
         <PackageReference Include="NuGet.Protocol" Version="5.6.0"/>
         <PackageReference Include="YamlDotNet" Version="8.1.2"/>

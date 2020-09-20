@@ -480,12 +480,6 @@ switch ($Target) {
                     return
                 }
 
-                if($Rid -eq "linux-arm64") {
-                    Invoke-Dotnet-UnitTests -Rid $Rid
-                    Invoke-Summary
-                    return
-                }
-
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"
                     if($OSPlatform -eq "Windows") {
@@ -499,6 +493,13 @@ switch ($Target) {
             }
             "Unix" {
                 Invoke-Clean-Build
+
+                # TODO: FIX ME WHEN GITHUB ACTIONS SUPPORTS arm64
+                if($Rid -eq "linux-arm64") {
+                    Invoke-Dotnet-UnitTests -Rid $Rid
+                    Invoke-Summary
+                    return
+                }
 
                 if($env:BUILD_IS_DOCKER -ne 1) {
                     Invoke-Docker -Entrypoint "Run-Dotnet-UnitTests"

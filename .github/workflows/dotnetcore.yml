@@ -167,10 +167,10 @@ jobs:
           lfs: true
 
       - name: Download ubuntu-latest-linux-arm64-Release artifacts
-          uses: actions/download-artifact@v2
-          with:
-            name: ubuntu-latest-linux-arm64-Release
-            path: ${{ github.workspace }}
+        uses: actions/download-artifact@v2
+        with:
+          name: ubuntu-latest-linux-arm64-Release
+          path: ${{ github.workspace }}
 
       - name: Download ubuntu-latest-linux-x64-Release artifacts
         uses: actions/download-artifact@v2

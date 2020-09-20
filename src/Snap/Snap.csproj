@@ -30,10 +30,6 @@
         <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
     </ItemGroup>
 
-    <ItemGroup Condition="$(IsNetFullFrameworkApp)">
-        <PackageReference Include="System.Memory" Version="4.5.4" />
-    </ItemGroup>
-
     <!-- Windows-->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Windows' AND $(SnapRid) == 'win-x86'">
         <EmbeddedResource Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Link="Resources/corerun/corerun-win-x86.exe" />

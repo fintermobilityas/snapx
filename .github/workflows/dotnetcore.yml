@@ -186,9 +186,11 @@ jobs:
         with:
           name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}
-
-      - name: Setup dotnet
+                
+      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
         uses: actions/setup-dotnet@v1.6.0
+        with:
+          dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
           
       - name: Test native
         run: |

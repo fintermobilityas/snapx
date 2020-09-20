@@ -1,10 +1,8 @@
-// Resharper disable all
 using System;
+using System.Buffers;
 using System.IO;
-using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
-using SharpCompress.Compressors;
 using SharpCompress.Compressors.BZip2;
 using CompressionMode = SharpCompress.Compressors.CompressionMode;
 
@@ -51,217 +49,215 @@ namespace Snap.Core
         /// <param name="newData">The new binary data.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
         /// <param name="cancellationToken"></param>
-        public static async Task CreateAsync(byte[] oldData, byte[] newData, Stream output, CancellationToken cancellationToken)
+        public static Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
         {
-            // NB: If you diff a file big enough, we blow the stack. This doesn't 
-            // solve it, just buys us more space. The solution is to rewrite Split
-            // using iteration instead of recursion, but that's Hard(tm).
-            var ex = default(Exception);
-
-            var tcs = new TaskCompletionSource<bool>();
-
-            var t = new Thread(async () =>
-            {
-                try
-                {
-                    await CreateAsyncInternal(oldData, newData, output, cancellationToken);
-                    tcs.SetResult(true);
-                }
-                catch (Exception exc)
-                {
-                    ex = exc;
-                }
-            }, 40 * 1048576);
-
-            t.Start();
-
-            await tcs.Task;
-
-            if (ex != null) throw ex;
+            return CreateAsyncImpl(oldData, newData, output, cancellationToken);
         }
 
-        static async Task CreateAsyncInternal(byte[] oldData, byte[] newData, Stream output, CancellationToken cancellationToken)
+        static async Task CreateAsyncImpl(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
         {
             // check arguments
-            if (oldData == null)
-                throw new ArgumentNullException("oldData");
-            if (newData == null)
-                throw new ArgumentNullException("newData");
+            if (oldData.IsEmpty)
+                throw new ArgumentNullException(nameof(oldData));
+            if (newData.IsEmpty)
+                throw new ArgumentNullException(nameof(newData));
             if (output == null)
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
             if (!output.CanSeek)
-                throw new ArgumentException("Output stream must be seekable.", "output");
+                throw new ArgumentException("Output stream must be seekable.", nameof(output));
             if (!output.CanWrite)
-                throw new ArgumentException("Output stream must be writable.", "output");
+                throw new ArgumentException("Output stream must be writable.", nameof(output));
 
-            /* Header is
-                0   8    "BSDIFF40"
-                8   8   length of bzip2ed ctrl block
-                16  8   length of bzip2ed diff block
-                24  8   length of new file */
-            /* File is
-                0   32  Header
-                32  ??  Bzip2ed ctrl block
-                ??  ??  Bzip2ed diff block
-                ??  ??  Bzip2ed extra block */
-            byte[] header = new byte[c_headerSize];
-            WriteInt64(c_fileSignature, header, 0); // "BSDIFF40"
-            WriteInt64(0, header, 8);
-            WriteInt64(0, header, 16);
-            WriteInt64(newData.Length, header, 24);
+            var header = ArrayPool<byte>.Shared.Rent(CHeaderSize);
+            var db = ArrayPool<byte>.Shared.Rent(newData.Length);
+            var eb = ArrayPool<byte>.Shared.Rent(newData.Length);
 
-            long startPosition = output.Position;
-            await output.WriteAsync(header, 0, header.Length, cancellationToken);
-
-            int[] I = SuffixSort(oldData);
-
-            byte[] db = new byte[newData.Length];
-            byte[] eb = new byte[newData.Length];
-
-            int dblen = 0;
-            int eblen = 0;
-
-            using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
+            try
             {
-                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                // compute the differences, writing ctrl as we go
-                int scan = 0;
-                int pos = 0;
-                int len = 0;
-                int lastscan = 0;
-                int lastpos = 0;
-                int lastoffset = 0;
-                while (scan < newData.Length)
+                await DiffAsync();
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(header);
+                ArrayPool<byte>.Shared.Return(db);
+                ArrayPool<byte>.Shared.Return(eb);
+            }
+
+            async Task DiffAsync()
+            {
+                /* Header is
+                    0   8    "BSDIFF40"
+                    8   8   length of bzip2ed ctrl block
+                    16  8   length of bzip2ed diff block
+                    24  8   length of new file */
+                /* File is
+                    0   32  Header
+                    32  ??  Bzip2ed ctrl block
+                    ??  ??  Bzip2ed diff block
+                    ??  ??  Bzip2ed extra block */
+                
+                WriteInt64(CFileSignature, header, 0); // "BSDIFF40"
+                WriteInt64(0, header, 8);
+                WriteInt64(0, header, 16);
+                WriteInt64(newData.Length, header, 24);
+
+                var startPosition = output.Position;
+                await output.WriteAsync(header, 0, header.Length, cancellationToken);
+
+                var I = SuffixSort(oldData);
+
+                var dblen = 0;
+                var eblen = 0;
+
+                using (var wrappingStream = new WrappingStream(output, Ownership.None))
                 {
-                    int oldscore = 0;
-
-                    for (int scsc = scan += len; scan < newData.Length; scan++)
+                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    // compute the differences, writing ctrl as we go
+                    var scan = 0;
+                    var pos = 0;
+                    var len = 0;
+                    var lastscan = 0;
+                    var lastpos = 0;
+                    var lastoffset = 0;
+                    while (scan < newData.Length)
                     {
-                        len = Search(I, oldData, newData, scan, 0, oldData.Length, out pos);
+                        var oldscore = 0;
 
-                        for (; scsc < scan + len; scsc++)
+                        for (var scsc = scan += len; scan < newData.Length; scan++)
                         {
-                            if ((scsc + lastoffset < oldData.Length) && (oldData[scsc + lastoffset] == newData[scsc]))
-                                oldscore++;
-                        }
+                            len = Search(I, oldData, newData, scan, 0, oldData.Length, out pos);
 
-                        if ((len == oldscore && len != 0) || (len > oldscore + 8))
-                            break;
-
-                        if ((scan + lastoffset < oldData.Length) && (oldData[scan + lastoffset] == newData[scan]))
-                            oldscore--;
-                    }
-
-                    if (len != oldscore || scan == newData.Length)
-                    {
-                        int s = 0;
-                        int sf = 0;
-                        int lenf = 0;
-                        for (int i = 0; (lastscan + i < scan) && (lastpos + i < oldData.Length); )
-                        {
-                            if (oldData[lastpos + i] == newData[lastscan + i])
-                                s++;
-                            i++;
-                            if (s * 2 - i > sf * 2 - lenf)
+                            for (; scsc < scan + len; scsc++)
                             {
-                                sf = s;
-                                lenf = i;
+                                if (scsc + lastoffset < oldData.Length && oldData.Span[scsc + lastoffset] == newData.Span[scsc])
+                                    oldscore++;
                             }
+
+                            if (len == oldscore && len != 0 || len > oldscore + 8)
+                                break;
+
+                            if (scan + lastoffset < oldData.Length && oldData.Span[scan + lastoffset] == newData.Span[scan])
+                                oldscore--;
                         }
 
-                        int lenb = 0;
-                        if (scan < newData.Length)
+                        if (len != oldscore || scan == newData.Length)
                         {
-                            s = 0;
-                            int sb = 0;
-                            for (int i = 1; (scan >= lastscan + i) && (pos >= i); i++)
+                            var s = 0;
+                            var sf = 0;
+                            var lenf = 0;
+                            for (var i = 0; lastscan + i < scan && lastpos + i < oldData.Length;)
                             {
-                                if (oldData[pos - i] == newData[scan - i])
+                                if (oldData.Span[lastpos + i] == newData.Span[lastscan + i])
                                     s++;
-                                if (s * 2 - i > sb * 2 - lenb)
+                                i++;
+                                if (s * 2 - i > sf * 2 - lenf)
                                 {
-                                    sb = s;
-                                    lenb = i;
-                                }
-                            }
-                        }
-
-                        if (lastscan + lenf > scan - lenb)
-                        {
-                            int overlap = (lastscan + lenf) - (scan - lenb);
-                            s = 0;
-                            int ss = 0;
-                            int lens = 0;
-                            for (int i = 0; i < overlap; i++)
-                            {
-                                if (newData[lastscan + lenf - overlap + i] == oldData[lastpos + lenf - overlap + i])
-                                    s++;
-                                if (newData[scan - lenb + i] == oldData[pos - lenb + i])
-                                    s--;
-                                if (s > ss)
-                                {
-                                    ss = s;
-                                    lens = i + 1;
+                                    sf = s;
+                                    lenf = i;
                                 }
                             }
 
-                            lenf += lens - overlap;
-                            lenb -= lens;
+                            var lenb = 0;
+                            if (scan < newData.Length)
+                            {
+                                s = 0;
+                                var sb = 0;
+                                for (var i = 1; scan >= lastscan + i && pos >= i; i++)
+                                {
+                                    if (oldData.Span[pos - i] == newData.Span[scan - i])
+                                        s++;
+                                    if (s * 2 - i > sb * 2 - lenb)
+                                    {
+                                        sb = s;
+                                        lenb = i;
+                                    }
+                                }
+                            }
+
+                            if (lastscan + lenf > scan - lenb)
+                            {
+                                var overlap = lastscan + lenf - (scan - lenb);
+                                s = 0;
+                                var ss = 0;
+                                var lens = 0;
+                                for (var i = 0; i < overlap; i++)
+                                {
+                                    if (newData.Span[lastscan + lenf - overlap + i] == oldData.Span[lastpos + lenf - overlap + i])
+                                        s++;
+                                    if (newData.Span[scan - lenb + i] == oldData.Span[pos - lenb + i])
+                                        s--;
+                                    if (s > ss)
+                                    {
+                                        ss = s;
+                                        lens = i + 1;
+                                    }
+                                }
+
+                                lenf += lens - overlap;
+                                lenb -= lens;
+                            }
+
+                            for (var i = 0; i < lenf; i++)
+                                db[dblen + i] = (byte)(newData.Span[lastscan + i] - oldData.Span[lastpos + i]);
+                            for (var i = 0; i < scan - lenb - (lastscan + lenf); i++)
+                                eb[eblen + i] = newData.Span[lastscan + lenf + i];
+
+                            dblen += lenf;
+                            eblen += scan - lenb - (lastscan + lenf);
+
+                            var buf = ArrayPool<byte>.Shared.Rent(8);
+                            try
+                            {
+                                WriteInt64(lenf, buf, 0);
+                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+
+                                WriteInt64(scan - lenb - (lastscan + lenf), buf, 0);
+                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+
+                                WriteInt64(pos - lenb - (lastpos + lenf), buf, 0);
+                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(buf);
+                            }
+
+                            lastscan = scan - lenb;
+                            lastpos = pos - lenb;
+                            lastoffset = pos - scan;
                         }
-
-                        for (int i = 0; i < lenf; i++)
-                            db[dblen + i] = (byte)(newData[lastscan + i] - oldData[lastpos + i]);
-                        for (int i = 0; i < (scan - lenb) - (lastscan + lenf); i++)
-                            eb[eblen + i] = newData[lastscan + lenf + i];
-
-                        dblen += lenf;
-                        eblen += (scan - lenb) - (lastscan + lenf);
-
-                        byte[] buf = new byte[8];
-                        WriteInt64(lenf, buf, 0);
-                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
-
-                        WriteInt64((scan - lenb) - (lastscan + lenf), buf, 0);
-                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
-
-                        WriteInt64((pos - lenb) - (lastpos + lenf), buf, 0);
-                        await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
-
-                        lastscan = scan - lenb;
-                        lastpos = pos - lenb;
-                        lastoffset = pos - scan;
                     }
                 }
+
+                // compute size of compressed ctrl data
+                var controlEndPosition = output.Position;
+                WriteInt64(controlEndPosition - startPosition - CHeaderSize, header, 8);
+
+                // write compressed diff data
+                using (var wrappingStream = new WrappingStream(output, Ownership.None))
+                {
+                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    await bz2Stream.WriteAsync(db, 0, dblen, cancellationToken);
+                }
+
+                // compute size of compressed diff data
+                var diffEndPosition = output.Position;
+                WriteInt64(diffEndPosition - controlEndPosition, header, 16);
+
+                // write compressed extra data, if any
+                if (eblen > 0)
+                {
+                    using var wrappingStream = new WrappingStream(output, Ownership.None);
+                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    await bz2Stream.WriteAsync(eb, 0, eblen, cancellationToken);
+                }
+
+                // seek to the beginning, write the header, then seek back to end
+                var endPosition = output.Position;
+                output.Position = startPosition;
+                await output.WriteAsync(header, 0, header.Length, cancellationToken);
+                output.Position = endPosition;
             }
-
-            // compute size of compressed ctrl data
-            long controlEndPosition = output.Position;
-            WriteInt64(controlEndPosition - startPosition - c_headerSize, header, 8);
-
-            // write compressed diff data
-            using (WrappingStream wrappingStream = new WrappingStream(output, Ownership.None))
-            {
-                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                await bz2Stream.WriteAsync(db, 0, dblen, cancellationToken);
-            }
-
-            // compute size of compressed diff data
-            long diffEndPosition = output.Position;
-            WriteInt64(diffEndPosition - controlEndPosition, header, 16);
-
-            // write compressed extra data, if any
-            if (eblen > 0)
-            {
-                using WrappingStream wrappingStream = new WrappingStream(output, Ownership.None);
-                using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                await bz2Stream.WriteAsync(eb, 0, eblen, cancellationToken);
-            }
-
-            // seek to the beginning, write the header, then seek back to end
-            long endPosition = output.Position;
-            output.Position = startPosition;
-            await output.WriteAsync(header, 0, header.Length, cancellationToken);
-            output.Position = endPosition;
         }
 
         /// <summary>
@@ -278,11 +274,11 @@ namespace Snap.Core
         {
             // check arguments
             if (input == null)
-                throw new ArgumentNullException("input");
+                throw new ArgumentNullException(nameof(input));
             if (openPatchStream == null)
-                throw new ArgumentNullException("openPatchStream");
+                throw new ArgumentNullException(nameof(openPatchStream));
             if (output == null)
-                throw new ArgumentNullException("output");
+                throw new ArgumentNullException(nameof(output));
 
             /*
             File format:
@@ -299,128 +295,145 @@ namespace Snap.Core
             */
             // read header
             long controlLength, diffLength, newSize;
-            using (Stream patchStream = await openPatchStream())
+            using (var patchStream = await openPatchStream())
             {
                 // check patch stream capabilities
                 if (!patchStream.CanRead)
-                    throw new ArgumentException("Patch stream must be readable.", "openPatchStream");
+                    throw new ArgumentException("Patch stream must be readable.", nameof(openPatchStream));
                 if (!patchStream.CanSeek)
-                    throw new ArgumentException("Patch stream must be seekable.", "openPatchStream");
+                    throw new ArgumentException("Patch stream must be seekable.", nameof(openPatchStream));
 
-                byte[] header = await patchStream.ReadExactlyAsync(c_headerSize, cancellationToken);
+                var header = await patchStream.ReadExactlyAsync(CHeaderSize, cancellationToken);
 
-                // check for appropriate magic
-                long signature = ReadInt64(header, 0);
-                if (signature != c_fileSignature)
-                    throw new InvalidOperationException("Corrupt patch.");
+                try
+                {
+                    // check for appropriate magic
+                    var signature = ReadInt64(header, 0);
+                    if (signature != CFileSignature)
+                        throw new InvalidOperationException("Corrupt patch.");
 
-                // read lengths from header
-                controlLength = ReadInt64(header, 8);
-                diffLength = ReadInt64(header, 16);
-                newSize = ReadInt64(header, 24);
-                if (controlLength < 0 || diffLength < 0 || newSize < 0)
-                    throw new InvalidOperationException("Corrupt patch.");
+                    // read lengths from header
+                    controlLength = ReadInt64(header, 8);
+                    diffLength = ReadInt64(header, 16);
+                    newSize = ReadInt64(header, 24);
+                    if (controlLength < 0 || diffLength < 0 || newSize < 0)
+                        throw new InvalidOperationException("Corrupt patch.");
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(header);
+                }
             }
 
             // preallocate buffers for reading and writing
-            const int c_bufferSize = 1048576;
-            byte[] newData = new byte[c_bufferSize];
-            byte[] oldData = new byte[c_bufferSize];
+            const int cBufferSize = 1048576;
+            var newData = ArrayPool<byte>.Shared.Rent(cBufferSize);
+            var oldData = ArrayPool<byte>.Shared.Rent(cBufferSize);
+            var control = ArrayPool<long>.Shared.Rent(3);
+            var buffer = ArrayPool<byte>.Shared.Rent(8);
 
-            // prepare to read three parts of the patch in parallel
-            using Stream compressedControlStream = await openPatchStream();
-            using Stream compressedDiffStream = await openPatchStream();
-            using Stream compressedExtraStream = await openPatchStream();
-            // seek to the start of each part
-            compressedControlStream.Seek(c_headerSize, SeekOrigin.Current);
-            compressedDiffStream.Seek(c_headerSize + controlLength, SeekOrigin.Current);
-            compressedExtraStream.Seek(c_headerSize + controlLength + diffLength, SeekOrigin.Current);
-
-            // the stream might end here if there is no extra data
-            var hasExtraData = compressedExtraStream.Position < compressedExtraStream.Length;
-
-            // decompress each part (to read it)
-            using var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true);
-            using var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true);
-            using var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null;
-            long[] control = new long[3];
-            byte[] buffer = new byte[8];
-
-            int oldPosition = 0;
-            int newPosition = 0;
-            while (newPosition < newSize)
+            try
             {
-                // read control data
-                for (int i = 0; i < 3; i++)
+                // prepare to read three parts of the patch in parallel
+                using var compressedControlStream = await openPatchStream();
+                using var compressedDiffStream = await openPatchStream();
+                using var compressedExtraStream = await openPatchStream();
+                // seek to the start of each part
+                compressedControlStream.Seek(CHeaderSize, SeekOrigin.Current);
+                compressedDiffStream.Seek(CHeaderSize + controlLength, SeekOrigin.Current);
+                compressedExtraStream.Seek(CHeaderSize + controlLength + diffLength, SeekOrigin.Current);
+
+                // the stream might end here if there is no extra data
+                var hasExtraData = compressedExtraStream.Position < compressedExtraStream.Length;
+
+                // decompress each part (to read it)
+                using var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true);
+                using var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true);
+                using var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null;
+
+                var oldPosition = 0;
+                var newPosition = 0;
+                while (newPosition < newSize)
                 {
-                    await controlStream.ReadExactlyAsync(buffer, 0, 8, cancellationToken);
-                    control[i] = ReadInt64(buffer, 0);
+                    // read control data
+                    for (var i = 0; i < 3; i++)
+                    {
+                        await controlStream.ReadExactlyAsync(buffer, 0, 8, cancellationToken);
+                        control[i] = ReadInt64(buffer, 0);
+                    }
+
+                    // sanity-check
+                    if (newPosition + control[0] > newSize)
+                        throw new InvalidOperationException("Corrupt patch.");
+
+                    // seek old file to the position that the new data is diffed against
+                    input.Position = oldPosition;
+
+                    var bytesToCopy = (int)control[0];
+                    while (bytesToCopy > 0)
+                    {
+                        var actualBytesToCopy = Math.Min(bytesToCopy, cBufferSize);
+
+                        // read diff string
+                        await diffStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
+
+                        // add old data to diff string
+                        var availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
+                        await input.ReadExactlyAsync(oldData, 0, availableInputBytes, cancellationToken);
+
+                        for (var index = 0; index < availableInputBytes; index++)
+                            newData[index] += oldData[index];
+
+                        await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
+
+                        // adjust counters
+                        newPosition += actualBytesToCopy;
+                        oldPosition += actualBytesToCopy;
+                        bytesToCopy -= actualBytesToCopy;
+                    }
+
+                    // sanity-check
+                    if (newPosition + control[1] > newSize)
+                        throw new InvalidOperationException("Corrupt patch.");
+
+                    // read extra string
+                    bytesToCopy = (int)control[1];
+                    while (bytesToCopy > 0)
+                    {
+                        var actualBytesToCopy = Math.Min(bytesToCopy, cBufferSize);
+
+                        await extraStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                        await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
+
+                        newPosition += actualBytesToCopy;
+                        bytesToCopy -= actualBytesToCopy;
+                    }
+
+                    // adjust position
+                    oldPosition = (int)(oldPosition + control[2]);
                 }
-
-                // sanity-check
-                if (newPosition + control[0] > newSize)
-                    throw new InvalidOperationException("Corrupt patch.");
-
-                // seek old file to the position that the new data is diffed against
-                input.Position = oldPosition;
-
-                int bytesToCopy = (int)control[0];
-                while (bytesToCopy > 0)
-                {
-                    int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                    // read diff string
-                    await diffStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
-
-                    // add old data to diff string
-                    int availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                    await input.ReadExactlyAsync(oldData, 0, availableInputBytes, cancellationToken);
-
-                    for (int index = 0; index < availableInputBytes; index++)
-                        newData[index] += oldData[index];
-
-                    await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
-
-                    // adjust counters
-                    newPosition += actualBytesToCopy;
-                    oldPosition += actualBytesToCopy;
-                    bytesToCopy -= actualBytesToCopy;
-                }
-
-                // sanity-check
-                if (newPosition + control[1] > newSize)
-                    throw new InvalidOperationException("Corrupt patch.");
-
-                // read extra string
-                bytesToCopy = (int)control[1];
-                while (bytesToCopy > 0)
-                {
-                    int actualBytesToCopy = Math.Min(bytesToCopy, c_bufferSize);
-
-                    await extraStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
-                    await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
-
-                    newPosition += actualBytesToCopy;
-                    bytesToCopy -= actualBytesToCopy;
-                }
-
-                // adjust position
-                oldPosition = (int)(oldPosition + control[2]);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(newData);
+                ArrayPool<byte>.Shared.Return(oldData);
+                ArrayPool<long>.Shared.Return(control);
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
 
-        private static int CompareBytes(byte[] left, int leftOffset, byte[] right, int rightOffset)
+        static int CompareBytes(ReadOnlySpan<byte> left, int leftOffset, ReadOnlySpan<byte> right, int rightOffset)
         {
-            for (int index = 0; index < left.Length - leftOffset && index < right.Length - rightOffset; index++)
+            for (var index = 0; index < left.Length - leftOffset && index < right.Length - rightOffset; index++)
             {
-                int diff = left[index + leftOffset] - right[index + rightOffset];
+                var diff = left[index + leftOffset] - right[index + rightOffset];
                 if (diff != 0)
                     return diff;
             }
             return 0;
         }
 
-        private static int MatchLength(byte[] oldData, int oldOffset, byte[] newData, int newOffset)
+        static int MatchLength(ReadOnlySpan<byte> oldData, int oldOffset, ReadOnlySpan<byte> newData, int newOffset)
         {
             int i;
             for (i = 0; i < oldData.Length - oldOffset && i < newData.Length - newOffset; i++)
@@ -431,154 +444,163 @@ namespace Snap.Core
             return i;
         }
 
-        private static int Search(int[] I, byte[] oldData, byte[] newData, int newOffset, int start, int end, out int pos)
+        static int Search(ReadOnlyMemory<int> I, ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, int newOffset, int start, int end, out int pos)
         {
-            if (end - start < 2)
+            while (true)
             {
-                int startLength = MatchLength(oldData, I[start], newData, newOffset);
-                int endLength = MatchLength(oldData, I[end], newData, newOffset);
-
-                if (startLength > endLength)
+                if (end - start < 2)
                 {
-                    pos = I[start];
-                    return startLength;
+                    var startLength = MatchLength(oldData.Span, I.Span[start], newData.Span, newOffset);
+                    var endLength = MatchLength(oldData.Span, I.Span[end], newData.Span, newOffset);
+
+                    if (startLength > endLength)
+                    {
+                        pos = I.Span[start];
+                        return startLength;
+                    }
+
+                    pos = I.Span[end];
+                    return endLength;
+                }
+
+                var midPoint = start + (end - start) / 2;
+                if (CompareBytes(oldData.Span, I.Span[midPoint], newData.Span, newOffset) < 0)
+                {
+                    start = midPoint;
+                    continue;
+                }
+
+                end = midPoint;
+            }
+        }
+
+        static void Split(Span<int> I, Span<int> v, int start, int len, int h)
+        {
+            while (true)
+            {
+                if (len < 16)
+                {
+                    int j;
+                    for (var k = start; k < start + len; k += j)
+                    {
+                        j = 1;
+                        var x = v[I[k] + h];
+                        for (var i = 1; k + i < start + len; i++)
+                        {
+                            if (v[I[k + i] + h] < x)
+                            {
+                                x = v[I[k + i] + h];
+                                j = 0;
+                            }
+
+                            if (v[I[k + i] + h] == x)
+                            {
+                                Swap(ref I[k + j], ref I[k + i]);
+                                j++;
+                            }
+                        }
+
+                        for (var i = 0; i < j; i++) v[I[k + i]] = k + j - 1;
+                        if (j == 1) I[k] = -1;
+                    }
                 }
                 else
                 {
-                    pos = I[end];
-                    return endLength;
-                }
-            }
-            else
-            {
-                int midPoint = start + (end - start) / 2;
-                return CompareBytes(oldData, I[midPoint], newData, newOffset) < 0 ?
-                    Search(I, oldData, newData, newOffset, midPoint, end, out pos) :
-                    Search(I, oldData, newData, newOffset, start, midPoint, out pos);
-            }
-        }
-
-        private static void Split(int[] I, int[] v, int start, int len, int h)
-        {
-            if (len < 16)
-            {
-                int j;
-                for (int k = start; k < start + len; k += j)
-                {
-                    j = 1;
-                    int x = v[I[k] + h];
-                    for (int i = 1; k + i < start + len; i++)
+                    var x = v[I[start + len / 2] + h];
+                    var jj = 0;
+                    var kk = 0;
+                    for (var i2 = start; i2 < start + len; i2++)
                     {
-                        if (v[I[k + i] + h] < x)
+                        if (v[I[i2] + h] < x) jj++;
+                        if (v[I[i2] + h] == x) kk++;
+                    }
+
+                    jj += start;
+                    kk += jj;
+
+                    var i = start;
+                    var j = 0;
+                    var k = 0;
+                    while (i < jj)
+                    {
+                        if (v[I[i] + h] < x)
                         {
-                            x = v[I[k + i] + h];
-                            j = 0;
+                            i++;
                         }
-                        if (v[I[k + i] + h] == x)
+                        else if (v[I[i] + h] == x)
                         {
-                            Swap(ref I[k + j], ref I[k + i]);
+                            Swap(ref I[i], ref I[jj + j]);
                             j++;
                         }
+                        else
+                        {
+                            Swap(ref I[i], ref I[kk + k]);
+                            k++;
+                        }
                     }
-                    for (int i = 0; i < j; i++)
-                        v[I[k + i]] = k + j - 1;
-                    if (j == 1)
-                        I[k] = -1;
-                }
-            }
-            else
-            {
-                int x = v[I[start + len / 2] + h];
-                int jj = 0;
-                int kk = 0;
-                for (int i2 = start; i2 < start + len; i2++)
-                {
-                    if (v[I[i2] + h] < x)
-                        jj++;
-                    if (v[I[i2] + h] == x)
-                        kk++;
-                }
-                jj += start;
-                kk += jj;
 
-                int i = start;
-                int j = 0;
-                int k = 0;
-                while (i < jj)
-                {
-                    if (v[I[i] + h] < x)
+                    while (jj + j < kk)
                     {
-                        i++;
+                        if (v[I[jj + j] + h] == x)
+                        {
+                            j++;
+                        }
+                        else
+                        {
+                            Swap(ref I[jj + j], ref I[kk + k]);
+                            k++;
+                        }
                     }
-                    else if (v[I[i] + h] == x)
+
+                    if (jj > start) Split(I, v, start, jj - start, h);
+
+                    for (i = 0; i < kk - jj; i++) v[I[jj + i]] = kk - 1;
+                    if (jj == kk - 1) I[jj] = -1;
+
+                    if (start + len > kk)
                     {
-                        Swap(ref I[i], ref I[jj + j]);
-                        j++;
-                    }
-                    else
-                    {
-                        Swap(ref I[i], ref I[kk + k]);
-                        k++;
+                        var start1 = start;
+                        start = kk;
+                        len = start1 + len - kk;
+                        continue;
                     }
                 }
 
-                while (jj + j < kk)
-                {
-                    if (v[I[jj + j] + h] == x)
-                    {
-                        j++;
-                    }
-                    else
-                    {
-                        Swap(ref I[jj + j], ref I[kk + k]);
-                        k++;
-                    }
-                }
-
-                if (jj > start)
-                    Split(I, v, start, jj - start, h);
-
-                for (i = 0; i < kk - jj; i++)
-                    v[I[jj + i]] = kk - 1;
-                if (jj == kk - 1)
-                    I[jj] = -1;
-
-                if (start + len > kk)
-                    Split(I, v, kk, start + len - kk, h);
+                break;
             }
         }
 
-        private static int[] SuffixSort(byte[] oldData)
+        static Memory<int> SuffixSort(ReadOnlyMemory<byte> oldData)
         {
-            int[] buckets = new int[256];
+            Span<int> buckets = stackalloc int[256];
+            Span<int> I = new int[oldData.Length + 1];
+            Span<int> v = new int[oldData.Length + 1];
 
-            foreach (byte oldByte in oldData)
+            foreach (var oldByte in oldData.Span)
                 buckets[oldByte]++;
-            for (int i = 1; i < 256; i++)
+            for (var i = 1; i < 256; i++)
                 buckets[i] += buckets[i - 1];
-            for (int i = 255; i > 0; i--)
+            for (var i = 255; i > 0; i--)
                 buckets[i] = buckets[i - 1];
             buckets[0] = 0;
 
-            int[] I = new int[oldData.Length + 1];
-            for (int i = 0; i < oldData.Length; i++)
-                I[++buckets[oldData[i]]] = i;
+            for (var i = 0; i < oldData.Length; i++)
+                I[++buckets[oldData.Span[i]]] = i;
 
-            int[] v = new int[oldData.Length + 1];
-            for (int i = 0; i < oldData.Length; i++)
-                v[i] = buckets[oldData[i]];
+            for (var i = 0; i < oldData.Length; i++)
+                v[i] = buckets[oldData.Span[i]];
 
-            for (int i = 1; i < 256; i++)
+            for (var i = 1; i < 256; i++)
             {
                 if (buckets[i] == buckets[i - 1] + 1)
                     I[buckets[i]] = -1;
             }
             I[0] = -1;
 
-            for (int h = 1; I[0] != -(oldData.Length + 1); h += h)
+            for (var h = 1; I[0] != -(oldData.Length + 1); h += h)
             {
-                int len = 0;
-                int i = 0;
+                var len = 0;
+                var i = 0;
                 while (i < oldData.Length + 1)
                 {
                     if (I[i] < 0)
@@ -601,24 +623,24 @@ namespace Snap.Core
                     I[i - len] = -len;
             }
 
-            for (int i = 0; i < oldData.Length + 1; i++)
+            for (var i = 0; i < oldData.Length + 1; i++)
                 I[v[i]] = i;
 
-            return I;
+            return new Memory<int>(I.ToArray());
         }
 
-        private static void Swap(ref int first, ref int second)
+        static void Swap(ref int first, ref int second)
         {
-            int temp = first;
+            var temp = first;
             first = second;
             second = temp;
         }
 
-        private static long ReadInt64(byte[] buf, int offset)
+        static long ReadInt64(ReadOnlySpan<byte> buf, int offset)
         {
             long value = buf[offset + 7] & 0x7F;
 
-            for (int index = 6; index >= 0; index--)
+            for (var index = 6; index >= 0; index--)
             {
                 value *= 256;
                 value += buf[offset + index];
@@ -630,11 +652,11 @@ namespace Snap.Core
             return value;
         }
 
-        private static void WriteInt64(long value, byte[] buf, int offset)
+        static void WriteInt64(long value, Span<byte> buf, int offset)
         {
-            long valueToWrite = value < 0 ? -value : value;
+            var valueToWrite = value < 0 ? -value : value;
 
-            for (int byteIndex = 0; byteIndex < 8; byteIndex++)
+            for (var byteIndex = 0; byteIndex < 8; byteIndex++)
             {
                 buf[offset + byteIndex] = (byte)(valueToWrite % 256);
                 valueToWrite -= buf[offset + byteIndex];
@@ -645,8 +667,8 @@ namespace Snap.Core
                 buf[offset + 7] |= 0x80;
         }
 
-        const long c_fileSignature = 0x3034464649445342L;
-        const int c_headerSize = 32;
+        const long CFileSignature = 0x3034464649445342L;
+        const int CHeaderSize = 32;
     }
 
     /// <summary>
@@ -664,11 +686,7 @@ namespace Snap.Core
         /// <param name="ownership">Use Owns if the wrapped stream should be disposed when this stream is disposed.</param>
         public WrappingStream(Stream streamBase, Ownership ownership)
         {
-            // check parameters
-            if (streamBase == null)
-                throw new ArgumentNullException("streamBase");
-
-            m_streamBase = streamBase;
+            m_streamBase = streamBase ?? throw new ArgumentNullException(nameof(streamBase));
             m_ownership = ownership;
         }
 
@@ -676,28 +694,19 @@ namespace Snap.Core
         /// Gets a value indicating whether the current stream supports reading.
         /// </summary>
         /// <returns><c>true</c> if the stream supports reading; otherwise, <c>false</c>.</returns>
-        public override bool CanRead
-        {
-            get { return m_streamBase == null ? false : m_streamBase.CanRead; }
-        }
+        public override bool CanRead => m_streamBase?.CanRead ?? false;
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports seeking.
         /// </summary>
         /// <returns><c>true</c> if the stream supports seeking; otherwise, <c>false</c>.</returns>
-        public override bool CanSeek
-        {
-            get { return m_streamBase == null ? false : m_streamBase.CanSeek; }
-        }
+        public override bool CanSeek => m_streamBase?.CanSeek ?? false;
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports writing.
         /// </summary>
         /// <returns><c>true</c> if the stream supports writing; otherwise, <c>false</c>.</returns>
-        public override bool CanWrite
-        {
-            get { return m_streamBase == null ? false : m_streamBase.CanWrite; }
-        }
+        public override bool CanWrite => m_streamBase?.CanWrite ?? false;
 
         /// <summary>
         /// Gets the length in bytes of the stream.
@@ -825,10 +834,7 @@ namespace Snap.Core
         /// Gets the wrapped stream.
         /// </summary>
         /// <value>The wrapped stream.</value>
-        protected Stream WrappedStream
-        {
-            get { return m_streamBase; }
-        }
+        protected Stream WrappedStream => m_streamBase;
 
         /// <summary>
         /// Releases the unmanaged resources used by the <see cref="WrappingStream"/> and optionally releases the managed resources.
@@ -852,7 +858,7 @@ namespace Snap.Core
             }
         }
 
-        private void ThrowIfDisposed()
+        void ThrowIfDisposed()
         {
             // throws an ObjectDisposedException if this object has been disposed
             if (m_streamBase == null)
@@ -894,8 +900,8 @@ namespace Snap.Core
         public static async Task<byte[]> ReadExactlyAsync(this Stream stream, int count, CancellationToken cancellationToken)
         {
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
-            byte[] buffer = new byte[count];
+                throw new ArgumentOutOfRangeException(nameof(count));
+            var buffer = ArrayPool<byte>.Shared.Rent(count);
             await ReadExactlyAsync(stream, buffer, 0, count, cancellationToken);
             return buffer;
         }
@@ -914,18 +920,18 @@ namespace Snap.Core
         {
             // check arguments
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || buffer.Length - offset < count)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             while (count > 0)
             {
                 // read data
-                int bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken);
+                var bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken);
 
                 // check for failure to read
                 if (bytesRead == 0)
@@ -938,4 +944,3 @@ namespace Snap.Core
         }
     }
 }
-// Resharper enable all

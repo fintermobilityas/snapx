@@ -160,6 +160,7 @@ jobs:
           path: ${{ github.workspace }}/artifacts/**/*
 
   test-linux-arm64:
+    name: Test ${{ matrix.rid }}-${{ matrix.configuration }}
     runs-on: [self-hosted, linux, ARM64]
     needs: [setup, linux]
     strategy:

@@ -18,9 +18,11 @@ namespace Snap.Core.Resources
         MemoryStream CoreRunWindowsX86 { get; }
         MemoryStream CoreRunWindowsX64 { get; }
         MemoryStream CoreRunLinuxX64 { get; }
+        MemoryStream CoreRunLinuxArm64 { get; }
         MemoryStream CoreRunLibWindowsX86 { get; }
         MemoryStream CoreRunLibWindowsX64 { get; }
         MemoryStream CoreRunLibLinuxX64 { get; }
+        MemoryStream CoreRunLibLinuxArm64 { get; }
         (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp(SnapApp snapApp,
             ISnapFilesystem snapFilesystem, ICoreRunLib coreRunLib);
         string GetCoreRunExeFilenameForSnapApp(SnapApp snapApp);

@@ -54,9 +54,19 @@ namespace Snap.Tests.Core.Resources
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.NotNull(_snapEmbeddedResources.CoreRunLinuxX64);
-                Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinuxX64);
-                return;
+                if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                {
+                    Assert.NotNull(_snapEmbeddedResources.CoreRunLinuxX64);
+                    Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinuxX64);
+                    return;
+                }
+
+                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                {
+                    Assert.NotNull(_snapEmbeddedResources.CoreRunLinuxArm64);
+                    Assert.NotNull(_snapEmbeddedResources.CoreRunLibLinuxArm64);
+                    return;
+                }
             }
 
             throw new PlatformNotSupportedException();
@@ -139,10 +149,13 @@ namespace Snap.Tests.Core.Resources
             if (osPlatform == OSPlatform.Windows)
             {
                 expectedDllFilename = "libcorerun-" + (
-                    RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64") + ".dll";
+                    RuntimeInformation.ProcessArchitecture == Architecture.X86 ?
+                        "win-x86" : "win-x64") + ".dll";
             } else if (osPlatform == OSPlatform.Linux)
             {
-                expectedDllFilename = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "libcorerun-linux-x64.so" : "libcorerun-linux-arm64";
+                expectedDllFilename = 
+                    RuntimeInformation.ProcessArchitecture == Architecture.X64 ?
+                        "libcorerun-linux-x64.so" : "libcorerun-linux-arm64.so";
             }
             else
             {

@@ -211,6 +211,8 @@ namespace Snap.Tests.Core
             Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindowsX64));
             Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinuxX64));
             Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinuxX64));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinuxArm64));
+            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinuxArm64));
         }
 
     }

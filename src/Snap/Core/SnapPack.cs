@@ -1233,7 +1233,8 @@ namespace Snap.Core
 
             if (target.Os == OSPlatform.Linux)
             {
-                using var coreRun = _snapEmbeddedResources.CoreRunLinuxX64;
+                using var coreRun = target.Rid == "linux-x64" ? 
+                    _snapEmbeddedResources.CoreRunLinuxX64 : _snapEmbeddedResources.CoreRunLibLinuxArm64;
                 if (coreRun.Length <= 0)
                 {
                     throw new FileNotFoundException($"corerun is missing in Snap assembly. Target os: {OSPlatform.Linux}. Rid: {target.Rid}.");

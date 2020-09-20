@@ -57,11 +57,19 @@ namespace Snapx.Tests.Resources
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Assert.NotNull(_snapxEmbeddedResources.SetupLinuxX64);
-                Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinuxX64);
-                Assert.NotNull(_snapxEmbeddedResources.SetupLinuxArm64);
-                Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinuxArm64);
-                return;
+                if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                {
+                    Assert.NotNull(_snapxEmbeddedResources.SetupLinuxX64);
+                    Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinuxX64);
+                    return;
+                }
+
+                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                {
+                    Assert.NotNull(_snapxEmbeddedResources.SetupLinuxArm64);
+                    Assert.NotNull(_snapxEmbeddedResources.WarpPackerLinuxArm64);
+                    return;
+                }
             }
 
             throw new PlatformNotSupportedException();

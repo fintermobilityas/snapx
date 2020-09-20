@@ -64,6 +64,10 @@
         <DefineConstants>$(DefineConstants);PLATFORM_UNIX_X64;</DefineConstants>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$(OsPlatform) == 'Unix' AND $(SnapRid) == 'linux-arm64'">
+        <DefineConstants>$(DefineConstants);PLATFORM_UNIX_ARM64;</DefineConstants>
+    </PropertyGroup>
+
     <PropertyGroup Condition="$(OsPlatform) == 'MACOSX'">
         <DefineConstants>$(DefineConstants);PLATFORM_MAXOSX;</DefineConstants>
     </PropertyGroup>

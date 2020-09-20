@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
-    [ValidateSet("Native", "Snap", "Snapx", "Snap-Installer", "Run-Native-UnitTests", "Run-Dotnet-UnitTests")]
+    [ValidateSet("Native", "Snap", "Snapx", "Snap-Installer", "Run-Native-UnitTests", "Build-Dotnet-UnitTests", "Run-Dotnet-UnitTests")]
     [string] $Target,
     [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [string] $Configuration,
@@ -328,6 +328,11 @@ function Invoke-Native-UnitTests
 
 function Invoke-Dotnet-UnitTests
 {
+    param(
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
+        [switch] $BuildOnly
+    )
+
     Push-Location $WorkingDir
 
     Resolve-Shell-Dependency $CommandDotnet
@@ -382,8 +387,6 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Dotnet-Clear $ProjectSrcDirectory
 
-        Write-Output-Colored "Running tests for project $ProjectName - .NET sdk: $ProjectDotnetFramework"
-
         $Platform = $null
 
         switch($Rid) {
@@ -404,6 +407,8 @@ function Invoke-Dotnet-UnitTests
             }
         }
 
+        Write-Output-Colored "Building tests for project $ProjectName - .NET sdk: $ProjectDotnetFramework"
+
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
@@ -418,6 +423,12 @@ function Invoke-Dotnet-UnitTests
             "--framework $ProjectDotnetFramework"
             "$ProjectSrcDirectory"
         )
+
+        if($BuildOnly) {
+            continue
+        }
+
+        Write-Output-Colored "Running tests for project $ProjectName - .NET sdk: $ProjectDotnetFramework"
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
@@ -482,6 +493,9 @@ switch ($Target) {
     }
     "Run-Native-UnitTests" {
         Invoke-Native-UnitTests
+    }
+    "Build-Dotnet-UnitTests" {
+        Invoke-Dotnet-UnitTests -BuildOnly
     }
     "Run-Dotnet-UnitTests" {
         Invoke-Dotnet-UnitTests

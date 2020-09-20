@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0, ValueFromPipeline = $true)]
-    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Run-Dotnet-UnitTests", "Run-Native-UnitTests", "Publish-Docker-Image")]
+    [ValidateSet("Bootstrap", "Bootstrap-Unix", "Bootstrap-Windows", "Snap", "Snap-Installer", "Snapx", "Build-Dotnet-UnitTests", "Run-Dotnet-UnitTests", "Run-Native-UnitTests", "Publish-Docker-Image")]
     [string] $Target = "Bootstrap",
     [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true)]
     [ValidateSet("Debug", "Release")]
@@ -252,6 +252,19 @@ function Invoke-Dotnet-UnitTests
     }
 }
 
+function Invoke-Build-Dotnet-UnitTests
+{
+    param(
+        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+        [string] $Rid
+    )
+
+    Invoke-Build-Rids-Array -Rid $Rid | ForEach-Object {
+        $ActualRid = $_
+        Invoke-Bootstrap-Ps1 Build-Dotnet-UnitTests @("-Configuration $Configuration -Rid $ActualRid")
+    }
+}
+
 function Invoke-Bootstrap-Unix
 {
     param(
@@ -451,6 +464,10 @@ switch ($Target) {
                 Invoke-Exit "Unsupported os: $OSPlatform"
             }
         }
+    }
+    "Build-Dotnet-UnitTests" {
+        Invoke-Clean-Build
+        Invoke-Build-Dotnet-UnitTests -Rid $Rid
     }
     "Run-Dotnet-UnitTests" {
         switch($OSPlatform) {

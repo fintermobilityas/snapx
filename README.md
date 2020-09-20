@@ -6,8 +6,8 @@
 
 | Build server | Platforms | Build status |
 |--------------|----------|--------------|
-| Github Actions | linux-latest, windows-latest | Branch: develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=develop) |
-| Github Actions | linux-latest, windows-latest | Branch: master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
+| Github Actions | linux-x64, linux-arm64, win-x86, win-x64 | Branch: develop ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=develop) |
+| Github Actions | linux-x64, linux-arm64, win-x86, win-x64 | Branch: master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master) |
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. Updates can delivered via NuGet or network share (UNC).
 
@@ -36,11 +36,9 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Docker Desktop >= v2.3.0.3
 - GitVersion `dotnet tool update gitversion.tool -g`
 - Powershell v7 `dotnet tool update powershell -g`
-- .NET SDK v2.1 
-- .NET SDK v3.1 
-- .NET SDK v5.0-preview.6 
+- .NET SDK v5.0-rc.1
 
-- Visual Studio 2019 16.7 Preview Community with C++ workload installed
+- Visual Studio 2019 16.8 Preview Community with C++ workload installed
 
 #### Bootstrap snapx 
 
@@ -50,7 +48,6 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 ## .NET frameworks supported
 
 - .NET >= 5.0
-- .NET Core >= 2.1 
 - .NET Full Framework >= 4.6.1 
 
 ## Platforms supported
@@ -73,7 +70,17 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
     - 16.04
     - 18.04
     - 20.04
-    
+
+- Ubuntu Desktop arm64 
+    - 18.04
+    - 20.04
+
+- Ubuntu Server arm64 
+    - 18.04
+    - 20.04
+  
+- Raspberry PI 4 arm64 
+
 ## Code of Conduct
 
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.

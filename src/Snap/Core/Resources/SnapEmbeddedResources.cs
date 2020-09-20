@@ -40,6 +40,9 @@ namespace Snap.Core.Resources
         const string CoreRunLinuxX64Filename = "corerun-linux-x64";
         const string CoreRunLibLinuxX64Filename = "libcorerun-linux-x64.so";
 
+        const string CoreRunLinuxArm64Filename = "corerun-linux-arm64";
+        const string CoreRunLibLinuxArm64Filename = "libcorerun-linux-arm64.so";
+
         readonly EmbeddedResource _coreRunWindowsX86;
         readonly EmbeddedResource _coreRunLibWindowsX86;
         
@@ -48,6 +51,9 @@ namespace Snap.Core.Resources
         
         readonly EmbeddedResource _coreRunLinuxX64;
         readonly EmbeddedResource _coreRunLibLinuxX64;
+
+        readonly EmbeddedResource _coreRunLinuxArm64;
+        readonly EmbeddedResource _coreRunLibLinuxArm64;
 
         [UsedImplicitly]
         public bool IsOptimized { get; }
@@ -131,6 +137,33 @@ namespace Snap.Core.Resources
             }
         }
 
+        public MemoryStream CoreRunLinuxArm64
+        {
+            get
+            {
+
+                if (_coreRunLinuxArm64 == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLinuxArm64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_coreRunLinuxArm64.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream CoreRunLibLinuxArm64
+        {
+            get
+            {
+                if (_coreRunLibLinuxArm64 == null)
+                {
+                    throw new FileNotFoundException($"{CoreRunLibLinuxArm64Filename} was not found in current assembly resources manifest");
+                }
+                
+                return new MemoryStream(_coreRunLibLinuxArm64.Stream.ToArray());
+            }
+        }
+
         internal SnapEmbeddedResources()
         {
             AddFromTypeRoot(typeof(SnapEmbeddedResourcesTypeRoot));
@@ -143,6 +176,9 @@ namespace Snap.Core.Resources
             
             _coreRunLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLinuxX64Filename}");
             _coreRunLibLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibLinuxX64Filename}");
+
+            _coreRunLinuxArm64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLinuxArm64Filename}");
+            _coreRunLibLinuxArm64 = Resources.SingleOrDefault(x => x.Filename == $"corerun.{CoreRunLibLinuxArm64Filename}");
         }
 
         public (MemoryStream memoryStream, string filename, OSPlatform osPlatform) GetCoreRunForSnapApp([NotNull] SnapApp snapApp, 
@@ -161,7 +197,7 @@ namespace Snap.Core.Resources
                 osPlatform = OSPlatform.Windows;
             } else if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                coreRunStream = CoreRunLinuxX64;
+                coreRunStream = snapApp.Target.Rid == "linux-x64" ? CoreRunLinuxX64 : CoreRunLibLinuxArm64;
                 osPlatform = OSPlatform.Linux;
             }
             else
@@ -239,8 +275,7 @@ namespace Snap.Core.Resources
             if (osPlatform == OSPlatform.Linux)
             {
                 var filename = filesystem.PathCombine(workingDirectory, $"libcorerun-{rid}.so");
-                var coreRunLib = rid == "linux-x64" ? CoreRunLibLinuxX64 : 
-                    throw new PlatformNotSupportedException();
+                var coreRunLib = rid == "linux-x64" ? CoreRunLibLinuxX64 : CoreRunLibLinuxArm64;
                 if (filesystem.FileExists(filename) 
                     && !ShouldOverwrite(coreRunLib, filename))
                 {

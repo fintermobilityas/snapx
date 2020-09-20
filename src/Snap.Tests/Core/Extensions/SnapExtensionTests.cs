@@ -491,6 +491,8 @@ namespace Snap.Tests.Core.Extensions
         }
       
         [Theory]
+        [InlineData("demoapp_full_linux-arm64_snapx.1.0.0.nupkg", "demoapp", "full", "linux-arm64", "1.0.0")]
+        [InlineData("demoapp_delta_linux-arm64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-arm64", "1.0.0")]
         [InlineData("demoapp_full_linux-x64_snapx.1.0.0.nupkg", "demoapp", "full", "linux-x64", "1.0.0")]
         [InlineData("demoapp_delta_linux-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-x64", "1.0.0")]
         [InlineData("demoapp_full_win-x64_snapx.1.0.0.nupkg", "demoapp", "full", "win-x64", "1.0.0")]

@@ -16,6 +16,9 @@ namespace snapx.Core
         
         MemoryStream SetupLinuxX64 { get; }
         MemoryStream WarpPackerLinuxX64 { get; }
+
+        MemoryStream SetupLinuxArm64 { get; }
+        MemoryStream WarpPackerLinuxArm64 { get; }
     }
 
     internal sealed class SnapxEmbeddedResources : EmbeddedResources, ISnapxEmbeddedResources
@@ -29,6 +32,9 @@ namespace snapx.Core
         const string SetupLinuxX64Filename = "Setup-linux-x64.zip";
         const string SetupWarpPackerLinuxX64Filename = "warp-packer-linux-x64.exe";
 
+        const string SetupLinuxArm64Filename = "Setup-linux-arm64.zip";
+        const string SetupWarpPackerLinuxArm64Filename = "warp-packer-linux-arm64.exe";
+
         readonly EmbeddedResource _setupWindowsX86;
         readonly EmbeddedResource _warpPackerWindowsX86;
 
@@ -37,6 +43,9 @@ namespace snapx.Core
         
         readonly EmbeddedResource _setupLinuxX64;
         readonly EmbeddedResource _warpPackerLinuxX64;
+
+        readonly EmbeddedResource _setupLinuxArm64;
+        readonly EmbeddedResource _warpPackerLinuxArm64;
 
         public MemoryStream SetupWindowsX86
         {
@@ -90,7 +99,6 @@ namespace snapx.Core
             }
         }
 
-
         public MemoryStream SetupLinuxX64
         {
             get
@@ -117,6 +125,32 @@ namespace snapx.Core
             }
         }
 
+        public MemoryStream SetupLinuxArm64
+        {
+            get
+            {
+                if (_setupLinuxArm64 == null)
+                {
+                    throw new FileNotFoundException($"{SetupLinuxArm64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_setupLinuxArm64.Stream.ToArray());
+            }
+        }
+
+        public MemoryStream WarpPackerLinuxArm64
+        {
+            get
+            {
+                if (_warpPackerLinuxArm64 == null)
+                {
+                    throw new FileNotFoundException($"{SetupWarpPackerLinuxArm64Filename} was not found in current assembly resources manifest");
+                }
+
+                return new MemoryStream(_warpPackerLinuxArm64.Stream.ToArray());
+            }
+        }
+
         public SnapxEmbeddedResources()
         {
             AddFromTypeRoot(typeof(ResourcesTypeRoot));
@@ -129,6 +163,10 @@ namespace snapx.Core
             
             _setupLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupLinuxX64Filename}");
             _warpPackerLinuxX64 = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerLinuxX64Filename}");
+
+            _setupLinuxArm64 = Resources.SingleOrDefault(x => x.Filename == $"Setup.{SetupLinuxArm64Filename}");
+            _warpPackerLinuxArm64 = Resources.SingleOrDefault(x => x.Filename == $"Tools.{SetupWarpPackerLinuxArm64Filename}");
         }
+
     }
 }

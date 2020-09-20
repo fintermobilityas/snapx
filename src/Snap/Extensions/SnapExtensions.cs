@@ -34,7 +34,8 @@ namespace Snap.Extensions
             {
                 "win-x86",
                 "win-x64",
-                "linux-x64"
+                "linux-x64",
+                "linux-arm64"
             };
 
             var ridOverride = Environment.GetEnvironmentVariable("SNAPX_RID_OVERRIDE")?.ToLowerInvariant();
@@ -55,7 +56,7 @@ namespace Snap.Extensions
 
             if (osPlatform == OSPlatform.Linux)
             {
-                return "linux-x64";
+                return RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "linux-x64" : "linux-arm64";
             }
 
             throw new PlatformNotSupportedException();
@@ -124,7 +125,8 @@ namespace Snap.Extensions
             return runtimeIdentifier != null && (
                 runtimeIdentifier == "win-x86" 
                 || runtimeIdentifier == "win-x64" 
-                || runtimeIdentifier == "linux-x64");
+                || runtimeIdentifier == "linux-x64"
+                || runtimeIdentifier == "linux-arm64");
         }
 
         internal static SnapChannel GetDefaultChannelOrThrow([NotNull] this SnapApp snapApp)

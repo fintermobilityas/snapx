@@ -142,7 +142,7 @@ namespace Snap.Tests.Core.Resources
                     RuntimeInformation.ProcessArchitecture == Architecture.X86 ? "win-x86" : "win-x64") + ".dll";
             } else if (osPlatform == OSPlatform.Linux)
             {
-                expectedDllFilename = "libcorerun-linux-x64.so";
+                expectedDllFilename = RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "libcorerun-linux-x64.so" : "libcorerun-linux-arm64";
             }
             else
             {

@@ -724,7 +724,7 @@ namespace snapx
             else if (snapOs.OsPlatform == OSPlatform.Linux)
             {
                 warpPackerMemoryStream = rid == "linux-x64" ? snapxEmbeddedResources.WarpPackerLinuxX64 
-                    : throw new PlatformNotSupportedException(rid);
+                    : snapxEmbeddedResources.WarpPackerLinuxArm64;
                 chmod = true;
             }
             else
@@ -750,6 +750,12 @@ namespace snapx
                 case "linux-x64":
                     installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxX64;
                     warpPackerArch = "linux-x64";
+                    installerFilename = "Snap.Installer";
+                    setupExtension = ".bin";
+                    break;
+                case "linux-arm64":
+                    installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxArm64;
+                    warpPackerArch = "linux-arm64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
                     break;

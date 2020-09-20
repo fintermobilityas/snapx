@@ -7,7 +7,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
     [switch] $Lto,
     [Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-    [ValidateSet("win-x86", "win-x64", "linux-x64")]
+    [ValidateSet("win-x86", "win-x64", "linux-x64", "linux-arm64")]
     [string] $Rid = $null,
     [Parameter(Position = 4, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [string] $NetCoreAppVersion,
@@ -26,6 +26,7 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 $ToolsDir = Join-Path $WorkingDir tools
 $SrcDir = Join-Path $WorkingDir src
 $NupkgsDir = Join-Path $WorkingDir nupkgs
+$CmakeFilesDir = Join-Path $WorkingDir cmake
 
 $OSPlatform = $null
 $OSVersion = [Environment]::OSVersion
@@ -80,7 +81,14 @@ function Invoke-Build-Native {
     $CmakeArchNewSyntaxPrefix = ""
     $CmakeGenerator = $CmakeGenerator
 
-    if($OSPlatform -eq "Windows")
+    $CmakeArguments = @()
+
+    if($OSPlatform -eq "Unix") {
+        if($Rid -eq "linux-arm64") {
+            $LinuxAarch64Toolchain = Join-Path $CmakeFilesDir aarch64-linux-gnu.toolchain.cmake
+            $CmakeArguments += "-DCMAKE_TOOLCHAIN_FILE=""$LinuxAarch64Toolchain"""
+        }
+    } elseif($OSPlatform -eq "Windows")
     {
         switch($Rid) {
             "win-x86" {
@@ -96,6 +104,7 @@ function Invoke-Build-Native {
     }
 
     $CmakeArguments = @(
+        $CmakeArguments,
         "-G""$CmakeGenerator"""
         "$CmakeArchNewSyntaxPrefix"
         "-H""$SnapCoreRunSrcDir"""
@@ -199,6 +208,9 @@ function Invoke-Build-Snap-Installer {
         "linux-x64" {
             $SnapInstallerExeName = "Snap.Installer"
         }
+        "linux-arm64" {
+            $SnapInstallerExeName = "Snap.Installer"
+        }
         default {
             Write-Error "Rid not supported: $Rid"
         }
@@ -223,13 +235,15 @@ function Invoke-Build-Snap-Installer {
     # R2R is only available on Windows.
     $PublishReadyToRun = ($Rid.StartsWith("win-")) -and ($Configuration -eq "Debug" ? "False" : "True")
 
+    $RuntimeIdentifier = $Rid
+
     Invoke-Command-Colored $CommandDotnet @(
         "publish $SnapInstallerCsProj"
         "/p:PublishTrimmed=" + ($Configuration -eq "Debug" ? "False" : "True")
         "/p:PublishReadyToRun=" + $PublishReadyToRun
         "/p:Version=$Version"
         "/p:SnapRid=$Rid"
-        "--runtime $Rid"
+        "--runtime $RuntimeIdentifier"
         "--framework $NetCoreAppVersion"
         "--self-contained true"
         "--output $SnapInstallerDotnetBuildPublishDir"
@@ -381,6 +395,9 @@ function Invoke-Dotnet-UnitTests
             }
             "linux-x64" {
                 $Platform = "x64"
+            }
+            "linux-arm64" {
+                $Platform = "arm64"
             }
             Default {
                 Invoke-Exit "Rid not supported: $Rid"

@@ -64,13 +64,20 @@
 
     <!-- Unix -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Unix'">
+        <EmbeddedResource Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Link="Resources/Setup/Setup-linux-arm64.zip" />
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-arm64.exe" Link="Resources/Tools/warp-packer-linux-arm64.exe" />
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'linux-x64' AND $(OsPlatform) == 'Unix'">
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
+    </ItemGroup>
+
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'linux-arm64' AND $(OsPlatform) == 'Unix'">
+        <EmbeddedResource Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Link="Resources/Setup/Setup-linux-arm64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-arm64.exe" Link="Resources/Tools/warp-packer-linux-arm64.exe" />
     </ItemGroup>
     <!-- /Unix -->
 
@@ -84,6 +91,9 @@
         
         <EmbeddedResource Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Link="Resources/Setup/Setup-linux-x64.zip" />
         <EmbeddedResource Include="../../tools/warp-packer-linux-x64.exe" Link="Resources/Tools/warp-packer-linux-x64.exe" />
+
+        <EmbeddedResource Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Link="Resources/Setup/Setup-linux-arm64.zip" />
+        <EmbeddedResource Include="../../tools/warp-packer-linux-arm64.exe" Link="Resources/Tools/warp-packer-linux-arm64.exe" />
     </ItemGroup>
     <!-- /Nupkg -->
 

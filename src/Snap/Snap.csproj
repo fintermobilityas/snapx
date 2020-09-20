@@ -8,8 +8,8 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">netcoreapp2.1;netstandard2.0;net461</TargetFrameworks>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">netcoreapp2.1;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">net5.0;netstandard2.1;net461</TargetFrameworks>
+        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">net5.0;netstandard2.1</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>
@@ -28,6 +28,10 @@
 
     <ItemGroup Condition="!$(IsNetFullFrameworkApp)">
         <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition="$(IsNetFullFrameworkApp)">
+        <PackageReference Include="System.Memory" Version="4.5.4" />
     </ItemGroup>
 
     <!-- Windows-->
@@ -66,6 +70,11 @@
         <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-x64" />
         <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-x64.so" />
     </ItemGroup>
+
+    <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'linux-arm64'">
+        <EmbeddedResource Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-arm64" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-arm64.so" />
+    </ItemGroup>
     <!-- /Unix -->
 
     <!-- Nupkg -->
@@ -85,6 +94,11 @@
         <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-x64" />
         <EmbeddedResource Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-x64.so" />
         <!-- /linux-x64 -->
+
+        <!-- linux-arm64 -->
+        <EmbeddedResource Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun" Link="Resources/corerun/corerun-linux-arm64" />
+        <EmbeddedResource Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Link="Resources/corerun/libcorerun-linux-arm64.so" />
+        <!-- /linux-arm64 -->
 
     </ItemGroup>
     <!-- /Nupkg -->

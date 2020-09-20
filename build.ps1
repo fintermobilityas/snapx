@@ -96,6 +96,7 @@ function Invoke-Build-Rids-Array {
         "Unix" {
             if($Rid -eq "any") {
                 $Rids += "linux-x64"
+                $Rids += "linux-arm64"
             } else {
                 $Rids += $Rid
             }

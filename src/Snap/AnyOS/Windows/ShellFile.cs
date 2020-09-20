@@ -496,7 +496,7 @@ namespace Snap.AnyOS.Windows
         /// </summary>
         public ShellLink()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 linkW = (IShellLinkW)new CShellLink();
             }
@@ -531,12 +531,18 @@ namespace Snap.AnyOS.Windows
         {
             if (linkW != null)
             {
-                Marshal.ReleaseComObject(linkW);
-                linkW = null;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Marshal.ReleaseComObject(linkW);
+                    linkW = null;
+                }
             }
             if (linkA != null)
             {
-                Marshal.ReleaseComObject(linkA);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Marshal.ReleaseComObject(linkA);
+                }
                 linkA = null;
             }
         }

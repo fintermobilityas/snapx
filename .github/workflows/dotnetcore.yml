@@ -113,17 +113,7 @@ jobs:
         with:
           lfs: true
           submodules: true   
-                  
-      - name: Setup dotnet 2.1 sdk
-        uses: actions/setup-dotnet@v1.6.0
-        with:
-          dotnet-version: 2.1.807  
-
-      - name: Setup dotnet 3.1 sdk
-        uses: actions/setup-dotnet@v1.6.0
-        with:
-          dotnet-version: 3.1.301 
-
+                
       - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
         uses: actions/setup-dotnet@v1.5.0
         with:

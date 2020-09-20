@@ -199,7 +199,7 @@ namespace Snap.Core.Resources
                 osPlatform = OSPlatform.Windows;
             } else if (snapApp.Target.Os == OSPlatform.Linux)
             {
-                coreRunStream = snapApp.Target.Rid == "linux-x64" ? CoreRunLinuxX64 : CoreRunLibLinuxArm64;
+                coreRunStream = snapApp.Target.Rid == "linux-x64" ? CoreRunLinuxX64 : CoreRunLinuxArm64;
                 osPlatform = OSPlatform.Linux;
             }
             else

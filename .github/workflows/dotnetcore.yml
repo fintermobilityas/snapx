@@ -172,6 +172,7 @@ jobs:
             configuration: Release
     env:
         SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
+        SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     outputs:
      TEST_SUCCESS: ${{ steps.set-test-status.outputs.BUILD_SUCCESS }}
     steps:
@@ -194,6 +195,10 @@ jobs:
           chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
           ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
 
+      - name: Test .NET
+        shell: pwsh
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+      
       - id: set-test-status
         if: success()
         name: Set test status

@@ -37,7 +37,7 @@ jobs:
             
   linux:
     runs-on: ${{ matrix.os }}
-    name: Bootstrap ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
+    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
@@ -78,6 +78,7 @@ jobs:
         env:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
+          SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
@@ -85,6 +86,12 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_demoapp ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_demoapp
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/test.ico ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/test.ico
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
@@ -98,7 +105,7 @@ jobs:
 
   windows:
     runs-on: ${{ matrix.os }}
-    name: Bootstrap ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
+    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
     needs: [setup]
     strategy:
       matrix:
@@ -152,12 +159,53 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
+  test-linux-arm64:
+    runs-on: [self-hosted, linux, ARM64]
+    needs: [setup, linux]
+    strategy:
+      matrix:
+        include: 
+          - rid: linux-arm64
+            configuration: Debug
+          - rid: linux-arm64
+            configuration: Release
+    env:
+        SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
+    outputs:
+     TEST_SUCCESS: ${{ steps.set-test-status.outputs.BUILD_SUCCESS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.2.0
+        with:
+          fetch-depth: 0
+
+      - name: Download ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }} artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
+          path: ${{ github.workspace }}
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v1.6.0
+          
+      - name: Test native
+        run: |
+          chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
+          ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
+
+      - id: set-test-status
+        if: success()
+        name: Set test status
+        run:  
+          echo "::set-output name=TEST_SUCCESS::1"
+
   publish:
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
+    if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') 
+      && needs.test-linux-arm64.TEST_SUCCESS == '1'
     # Must run on Windows in order to support .NET Full Framework.
     runs-on: windows-latest
     name: Publish
-    needs: [setup, windows, linux]
+    needs: [setup, windows, linux, test-linux-arm64]
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:

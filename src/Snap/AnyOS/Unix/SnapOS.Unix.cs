@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -68,24 +70,43 @@ namespace Snap.AnyOS.Unix
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                try
+                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
                 {
-                    var (lsbReleaseExitCode, lsbReleaseStdOutput) = TplHelper.RunSync(() => OsProcessManager
-                        .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None));
-                    if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
+                    try
                     {
-                        var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
-                        DistroType = distroId == "Ubuntu" ? SnapOsDistroType.Ubuntu : SnapOsDistroType.Unknown;
+                        const string filename = "/proc/device-tree/model";
+                        using var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        using var streamReader = new StreamReader(stream, Encoding.UTF8);
+                        var content = streamReader.ReadToEnd();
+
+                        DistroType = content.StartsWith("Raspberry Pi", StringComparison.InvariantCultureIgnoreCase) ? 
+                            SnapOsDistroType.RaspberryPi : SnapOsDistroType.Unknown;
+                        return;
                     }
-                    else
+                    catch (Exception e)
                     {
-                        DistroType = SnapOsDistroType.Unknown;                        
+                        _logger.Warn("Exception thrown while reading from 'lsb_release'", e);
+                    }
+                } else if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                {
+                    try
+                    {
+                        var (lsbReleaseExitCode, lsbReleaseStdOutput) = TplHelper.RunSync(() => OsProcessManager
+                            .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None));
+                        if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
+                        {
+                            var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
+                            DistroType = distroId == "Ubuntu" ? SnapOsDistroType.Ubuntu : SnapOsDistroType.Unknown;
+                            return;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Warn("Exception thrown while executing 'lsb_release'", e);
                     }
                 }
-                catch (Exception e)
-                {
-                    _logger.Warn("Exception thrown while executing 'lsb_release'", e);
-                }
+
+                DistroType = SnapOsDistroType.Unknown;
 
                 return;
             }
@@ -93,7 +114,8 @@ namespace Snap.AnyOS.Unix
             throw new PlatformNotSupportedException();
         }
 
-        public async Task CreateShortcutsForExecutableAsync(SnapOsShortcutDescription shortcutDescription, ILog logger = null, CancellationToken cancellationToken = default)
+        public async Task CreateShortcutsForExecutableAsync(SnapOsShortcutDescription shortcutDescription, ILog logger = null,
+            CancellationToken cancellationToken = default)
         {
             if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
             var exeName = Filesystem.PathGetFileName(shortcutDescription.ExeAbsolutePath);
@@ -117,8 +139,22 @@ namespace Snap.AnyOS.Unix
                 return;
             }
 
-            var applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
-            var autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
+            string applicationsDirectoryAbsolutePath;
+            string autoStartDirectoryAbsolutePath;
+            if (DistroType == SnapOsDistroType.Ubuntu)
+            {
+                applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
+                autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
+            } else if (DistroType == SnapOsDistroType.RaspberryPi)
+            {
+                applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", "Desktop");
+                autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
+            }
+            else
+            {
+                _logger.Error($"Unable to create shortcuts. Unsupported distro type: {DistroType}.");
+                return;
+            }
 
             var autoStartShortcutAbsolutePath = Filesystem.PathCombine(autoStartDirectoryAbsolutePath, $"{exeName}.desktop");
             var desktopShortcutAbsolutePath = Filesystem.PathCombine(applicationsDirectoryAbsolutePath, $"{exeName}.desktop");
@@ -211,7 +247,7 @@ namespace Snap.AnyOS.Unix
                 goto done;
             }
 
-            string Extract(string line, string identifier)
+            static string Extract(string line, string identifier)
             {
                 if (line == null) throw new ArgumentNullException(nameof(line));
                 if (identifier == null) throw new ArgumentNullException(nameof(identifier));
@@ -261,6 +297,7 @@ namespace Snap.AnyOS.Unix
             switch (DistroType)
             {
                 case SnapOsDistroType.Ubuntu:
+                case SnapOsDistroType.RaspberryPi:
                     return $@"[Desktop Entry]
 Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}

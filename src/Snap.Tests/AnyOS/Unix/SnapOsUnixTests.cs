@@ -1,7 +1,4 @@
 ﻿#if PLATFORM_UNIX
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Snap.AnyOS;
 using Snap.AnyOS.Unix;
 using Snap.Core;
@@ -24,14 +21,7 @@ namespace Snap.Tests.AnyOS.Unix
             _snapOsUnix = new SnapOsUnix(_snapFilesystem, new SnapOsProcessManager(), new SnapOsSpecialFoldersUnix());
             _snapOs = new SnapOs(_snapOsUnix);
         }
-       
-        [Fact]
-        public void TestDistroType()
-        {
-            // If this test case fails then please open a PR :)
-            Assert.Equal(SnapOsDistroType.Ubuntu, _snapOs.DistroType);
-        }
-
+ 
         [Fact]
         public void TestParseLsbRelease()
         {

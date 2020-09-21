@@ -22,7 +22,8 @@ namespace Snap.AnyOS
     {
         Unknown,
         Windows,
-        Ubuntu
+        Ubuntu,
+        RaspberryPi
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]

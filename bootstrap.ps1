@@ -349,12 +349,6 @@ function Invoke-Dotnet-UnitTests
             Skip = $IsWinX86CIBuild
         }
         @{
-            SrcDirectory = Join-Path $SrcDir Snap.Tests
-            Framework = "net461"
-            OSPlatform = "Windows"
-            Skip = $false
-        }
-        @{
             SrcDirectory = Join-Path $SrcDir Snap.Installer.Tests
             Framework = $NetCoreAppVersion
             OSPlatform = "Any"

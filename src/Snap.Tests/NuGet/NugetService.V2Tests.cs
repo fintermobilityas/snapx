@@ -1,13 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
-using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Logging;
@@ -30,10 +28,6 @@ namespace Snap.Tests.NuGet
             _baseFixture = baseFixture;
             _snapFilesystem = new SnapFilesystem();
             _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
-            
-            #if NETFULLFRAMEWORKAPP
-            System.Net.ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            #endif
         }
 
         [Fact]

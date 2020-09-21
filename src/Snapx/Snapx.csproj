@@ -32,10 +32,7 @@
     <ItemGroup>
         <PackageReference Include="CommandLineParser" Version="2.8.0" />
         <PackageReference Include="ServiceStack" Version="5.9.*" />
-    </ItemGroup>
-
-    <ItemGroup Condition="!$(IsNetFullFrameworkApp)">
-        <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" /> 
+        <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
     </ItemGroup>
 
     <ItemGroup>

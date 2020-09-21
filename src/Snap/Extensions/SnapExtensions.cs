@@ -23,7 +23,6 @@ namespace Snap.Extensions
     {
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-        static readonly Regex NetFullFrameworkAppRegex = new Regex("^net[0-9]{2,3}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetAppRegex = new Regex("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
@@ -110,14 +109,9 @@ namespace Snap.Extensions
             return framework != null && NetAppRegex.IsMatch(framework);
         }
 
-        internal static bool IsNetFullFrameworkAppSafe(this string framework)
-        {
-            return framework != null && NetFullFrameworkAppRegex.IsMatch(framework);
-        }
-
         internal static bool IsNetFrameworkValidSafe(this string framework)
         {
-            return framework.IsNetAppSafe() || framework.IsNetFullFrameworkAppSafe();
+            return framework.IsNetAppSafe();
         }
 
         internal static bool IsRuntimeIdentifierValidSafe(this string runtimeIdentifier)

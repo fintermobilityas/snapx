@@ -5,8 +5,7 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">net5.0;net461</TargetFrameworks>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">net5.0</TargetFrameworks>
+        <TargetFrameworks>net5.0</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,12 +27,6 @@
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="$(IsNetFullFrameworkApp)">
-        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0">
-            <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 

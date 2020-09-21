@@ -14,7 +14,6 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
-using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;

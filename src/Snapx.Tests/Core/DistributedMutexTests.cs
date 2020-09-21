@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using ServiceStack;
-using Snap.Core;
 using Snap.Logging;
 using snapx.Core;
 using Xunit;

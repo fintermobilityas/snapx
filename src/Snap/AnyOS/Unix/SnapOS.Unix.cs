@@ -15,7 +15,6 @@ using Snap.Logging;
 
 namespace Snap.AnyOS.Unix
 {
-    #if !NETFULLFRAMEWORKAPP
     using Mono.Unix;
 
     // https://stackoverflow.com/a/32716784/2470592
@@ -40,7 +39,6 @@ namespace Snap.AnyOS.Unix
             });
         }
     }
-    #endif
 
     internal sealed class SnapOsUnix : ISnapOsImpl
     {
@@ -228,11 +226,7 @@ namespace Snap.AnyOS.Unix
 
         public ISnapOsExitSignal InstallExitSignalHandler()
         {
-            #if !NETFULLFRAMEWORKAPP
             return new SnapOsUnixExitSignal();
-            #else 
-            throw new PlatformNotSupportedException();
-            #endif
         }
 
         public (string distributorId, string description, string release, string codeName) ParseLsbRelease(string text)

@@ -58,17 +58,6 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Theory]
-        [InlineData("net47", true)]
-        [InlineData("net461", true)]
-        [InlineData("net4", false)]
-        [InlineData("net5.0", false)]
-        [InlineData("net6.0", false)]
-        public void TestIsNetFullFrameworkAppSafe(string frameworkMoniker, bool isNetFullFrameworkApp)
-        {
-            Assert.Equal(frameworkMoniker.IsNetFullFrameworkAppSafe(), isNetFullFrameworkApp);
-        }
-
-        [Theory]
         [InlineData("demoapp.1", true)]
         [InlineData("demoapp_1", true)]
         [InlineData("DEMOApp.1", true)]

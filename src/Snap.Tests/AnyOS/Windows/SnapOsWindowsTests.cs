@@ -1,6 +1,5 @@
 ﻿#if PLATFORM_WINDOWS
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;

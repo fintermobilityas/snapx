@@ -8,8 +8,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <IAmSnapCore>true</IAmSnapCore>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) == 'Windows'">net5.0;netstandard2.1;net461</TargetFrameworks>
-        <TargetFrameworks Condition="$(TargetFrameworks) == '' AND $(OsPlatform) != 'Windows'">net5.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>net5.0</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>
@@ -24,9 +23,6 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="!$(IsNetFullFrameworkApp)">
         <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
     </ItemGroup>
 

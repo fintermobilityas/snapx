@@ -18,22 +18,17 @@
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
-   <PropertyGroup>
+    <PropertyGroup>
         <OsPlatform Condition="$([MSBuild]::IsOsPlatform('Windows'))">Windows</OsPlatform>
         <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Linux'))">Unix</OsPlatform>
         <OsPlatform Condition="$(OsPlatform) == '' AND $([MSBuild]::IsOsPlatform('Osx'))">MACOSX</OsPlatform>
-        <IsNetApp Condition="$(TargetFramework.StartsWith('netcoreapp')) OR $(TargetFramework) == 'net5.0'">true</IsNetApp>
-        <IsNetApp Condition="$(IsNetApp) == ''">false</IsNetApp>
-        <IsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</IsNetStandard>
-        <IsNetStandard Condition="$(IsNetStandard) == ''">false</IsNetStandard>
-        <IsNetFullFrameworkApp Condition="$(IsNetStandard) == 'false' AND '$(IsNetApp)' == 'false'">true</IsNetFullFrameworkApp>
-        <IsNetFullFrameworkApp Condition="$(IsNetFullFrameworkApp) == ''">false</IsNetFullFrameworkApp>
     </PropertyGroup>
 
     <PropertyGroup>
         <SnapRid Condition="$(SnapRid) == ''">any</SnapRid>
         <SnapBootstrap Condition="$(SnapBootstrap) == ''">false</SnapBootstrap>
         <SnapInstallerAllowElevatedContext Condition="$(SnapInstallerAllowElevatedContext) == ''">false</SnapInstallerAllowElevatedContext>
+        <DefineConstants>$(DefineConstants);NETAPP;</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="$(SnapBootstrap)">
@@ -70,18 +65,6 @@
 
     <PropertyGroup Condition="$(OsPlatform) == 'MACOSX'">
         <DefineConstants>$(DefineConstants);PLATFORM_MAXOSX;</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(IsNetStandard)">
-        <DefineConstants>$(DefineConstants);NETSTANDARD;</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(IsNetApp)">
-        <DefineConstants>$(DefineConstants);NETAPP;</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="$(IsNetFullFrameworkApp)">
-        <DefineConstants>$(DefineConstants);NETFULLFRAMEWORKAPP;</DefineConstants>
     </PropertyGroup>
 
 </Project>

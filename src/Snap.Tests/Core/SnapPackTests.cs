@@ -320,7 +320,7 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder.AssertSnapReleaseIsGenesis(genesisPackageContext.FullPackageSnapRelease);
             genesisSnapReleaseBuilder.AssertSnapReleaseFiles(genesisPackageContext.FullPackageSnapRelease, genesisFiles);
 
-            var update1Files = genesisFiles.Concat(new string[] { }).ToArray();
+            var update1Files = genesisFiles.Concat(Array.Empty<string>()).ToArray();
 
             update1SnapReleaseBuilder.AssertChannels(update1PackageContext.FullPackageSnapApp, "test", "staging", "production");
             update1SnapReleaseBuilder.AssertChannels(update1PackageContext.FullPackageSnapRelease, "test");
@@ -687,7 +687,7 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder.AssertSnapReleaseIsGenesis(genesisPackageContext.FullPackageSnapRelease);
             genesisSnapReleaseBuilder.AssertSnapReleaseFiles(genesisPackageContext.FullPackageSnapRelease, genesisFiles);
 
-            var update1Files = genesisFiles.Concat(new string[] { }).ToArray();
+            var update1Files = genesisFiles.Concat(Array.Empty<string>()).ToArray();
 
             update1SnapReleaseBuilder.AssertSnapAppIsFull(update1PackageContext.FullPackageSnapApp);
             update1SnapReleaseBuilder.AssertSnapAppIsDelta(update1PackageContext.DeltaPackageSnapApp);
@@ -1168,7 +1168,7 @@ namespace Snap.Tests.Core
                     update3PackageContext.DeltaPackageSnapApp.GetCurrentChannelOrThrow()),
                 update3PackageContext.DeltaPackageSnapRelease);
 
-            using (fullNupkgMemoryStream)
+            await using (fullNupkgMemoryStream)
             {
                 Assert.NotNull(fullNupkgMemoryStream);
                 Assert.Equal(update3PackageContext.FullPackageSnapApp.BuildNugetFilename(), fullSnapApp.BuildNugetFilename());
@@ -1195,7 +1195,7 @@ namespace Snap.Tests.Core
 
             using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
 
-            using var releasesMemoryStream = _snapPack.BuildReleasesPackage(snapApp, snapAppsReleasesBefore);
+            await using var releasesMemoryStream = _snapPack.BuildReleasesPackage(snapApp, snapAppsReleasesBefore);
             using var packageArchiveReader = new PackageArchiveReader(releasesMemoryStream, true);
             
             var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);
@@ -1220,7 +1220,7 @@ namespace Snap.Tests.Core
 
             var snapApp = _baseFixture.BuildSnapApp();
 
-            using var releasesMemoryStream = _snapPack.BuildEmptyReleasesPackage(snapApp, snapAppsReleasesBefore);
+            await using var releasesMemoryStream = _snapPack.BuildEmptyReleasesPackage(snapApp, snapAppsReleasesBefore);
             using var packageArchiveReader = new PackageArchiveReader(releasesMemoryStream, true);
             
             var manifest = Manifest.ReadFrom(await packageArchiveReader.GetNuspecAsync(default), true);

@@ -5,8 +5,6 @@ using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     [MessagePackObject]
     public sealed class SnapReleaseChecksum
     {
@@ -19,7 +17,7 @@ namespace Snap.Core.Models
             {
                 if (NuspecTargetPath == null) return null;
                 var lastIndexOfSlash = NuspecTargetPath.LastIndexOf("/", StringComparison.Ordinal);
-                return lastIndexOfSlash != -1 ? NuspecTargetPath.Substring(lastIndexOfSlash + 1) : null;
+                return lastIndexOfSlash != -1 ? NuspecTargetPath[(lastIndexOfSlash + 1)..] : null;
             }
         }
         [Key(1)]

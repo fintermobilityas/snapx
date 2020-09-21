@@ -12,7 +12,6 @@ using Snap.Extensions;
 
 namespace Snap.Shared.Tests
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public class BaseFixtureNuget
     {
         internal void SetupReleases([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] MemoryStream releasesMemoryStream,
@@ -49,9 +48,8 @@ namespace Snap.Shared.Tests
                     x.GetMetadatasAsync(
                         It.Is<string>(v => string.Equals(v, upstreamPackageId)),
                         It.IsAny<NuGetPackageSources>(),
-                        It.IsAny<CancellationToken>(),
                         It.IsAny<bool>(),
-                        It.IsAny<bool>()))
+                        It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(() =>
                 {
                     var packageSearchMedatadata = snapApp.BuildPackageSearchMetadata(nuGetPackageSources);
@@ -62,13 +60,10 @@ namespace Snap.Shared.Tests
                     x.GetLatestMetadataAsync(
                         It.Is<string>(v => string.Equals(v, upstreamPackageId)),
                         It.IsAny<PackageSource>(),
-                        It.IsAny<CancellationToken>(),
                         It.IsAny<bool>(),
-                                It.IsAny<bool>()))
-                .ReturnsAsync(() =>
-                {
-                    return snapApp.BuildPackageSearchMetadata(nuGetPackageSources);
-                });
+                                It.IsAny<bool>(),
+                        It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() => snapApp.BuildPackageSearchMetadata(nuGetPackageSources));
         }
         
         internal void SetupDownloadAsyncWithProgressAsync([NotNull] Mock<INugetService> nugetServiceMock, [NotNull] SnapApp snapApp, 
@@ -107,9 +102,9 @@ namespace Snap.Shared.Tests
                     .DownloadLatestAsync(
                         It.Is<string>(v => v.Equals(upstreamPackageId)),
                         It.IsAny<PackageSource>(), 
-                        It.IsAny<CancellationToken>(),
                         It.IsAny<bool>(),
-                        It.IsAny<bool>())
+                        It.IsAny<bool>(),
+                        It.IsAny<CancellationToken>())
                 )
                 .ReturnsAsync( () => downloadResourceResult);
         }

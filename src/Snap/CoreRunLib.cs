@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Snap.Core;
 using Snap.Extensions;
 
 namespace Snap
-{   
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+{
     internal interface ICoreRunLib : IDisposable
     {
         bool Chmod(string filename, int mode);
@@ -17,7 +14,6 @@ namespace Snap
         bool FileExists(string filename);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
     internal sealed class CoreRunLib : ICoreRunLib
     {
         IntPtr _libPtr;
@@ -159,7 +155,7 @@ namespace Snap
 
             if (_osPlatform == OSPlatform.Linux)
             {
-                NativeMethodsUnix.dlclose(_libPtr);
+                _ = NativeMethodsUnix.dlclose(_libPtr);
                 _libPtr = IntPtr.Zero;
                 DisposeDelegates();
                 return;
@@ -167,10 +163,7 @@ namespace Snap
 
             throw new PlatformNotSupportedException();
         }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
-        #pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
         static class NativeMethodsWindows
         {
             [DllImport("kernel32", SetLastError = true, EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi)]
@@ -181,8 +174,6 @@ namespace Snap
             public static extern bool dlclose(IntPtr hModule);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Local")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
         internal static class NativeMethodsUnix
         {
             public const int libdl_RTLD_LOCAL = 1; 
@@ -191,7 +182,6 @@ namespace Snap
             // https://github.com/tmds/Tmds.LibC/blob/f336956facd8f6a0f8dcfa1c652828237dc032fb/src/Sources/linux.common/types.cs#L162
             public readonly struct pid_t : IEquatable<pid_t>
             {
-                [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
                 internal int Value { get; }
 
                 pid_t(int value) => Value = value;
@@ -229,10 +219,7 @@ namespace Snap
             [DllImport("libc", SetLastError = true, EntryPoint = "kill")]
             public static extern int kill (pid_t pid, int sig);
         }
-        
-        #pragma warning restore IDE1006 // Naming Styles
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
         sealed class Delegate<T> where T: Delegate
         {
             public T Invoke { get; }

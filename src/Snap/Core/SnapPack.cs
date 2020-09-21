@@ -24,8 +24,6 @@ using Snap.Reflection;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseFileChecksumMismatchException : Exception
     {
         public SnapReleaseChecksum Checksum { get; }
@@ -39,8 +37,6 @@ namespace Snap.Core
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseFileChecksumDeltaMismatchException : Exception
     {
         public SnapReleaseChecksum Checksum { get; }
@@ -55,8 +51,6 @@ namespace Snap.Core
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class SnapReleaseChecksumMismatchException : Exception
     {
         public SnapRelease Release { get; }
@@ -108,9 +102,8 @@ namespace Snap.Core
         {
             Progress?.Invoke((progressPercentage, filesRestored, filesToRestore));
         }
-    } 
+    }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapPack
     {
         IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies { get; }
@@ -128,7 +121,6 @@ namespace Snap.Core
             CancellationToken cancellationToken = default);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
     internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;
@@ -158,7 +150,7 @@ namespace Snap.Core
             _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
             
-            var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             _snapDllVersion = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
         }
 
@@ -247,7 +239,7 @@ namespace Snap.Core
 
                 genesisSnapRelease.Channels = genesisSnapApp.Channels.Select(x => x.Name).ToList();
 
-                using (nuspecMemoryStream)
+                await using (nuspecMemoryStream)
                 {
                     return (genesisPackageBuilder, genesisSnapApp, genesisSnapRelease, null, null, null);                    
                 }
@@ -265,7 +257,7 @@ namespace Snap.Core
             var deltaSnapApp = currentFullSnapApp.AsDeltaSnapApp();
             var deltaSnapRelease = currentFullSnapRelease.AsDeltaRelease();
 
-            using (currentNuspecMemoryStream)
+            await using (currentNuspecMemoryStream)
             {
                 var deltaNupkgBuilder = await BuildDeltaPackageAsyncInternal(
                     packagesDirectory,
@@ -330,15 +322,15 @@ namespace Snap.Core
 
             var nuspecStreamCpy = new MemoryStream(nuspecStream.ToArray()); // PackageBuilder closes stream
 
-            using (nuspecStream)
-            using (nuspecIntermediateStream)
+            await using (nuspecStream)
+            await using (nuspecIntermediateStream)
             {
                 var packageBuilder = new PackageBuilder(nuspecStream, snapNuspecDetails.NuspecBaseDirectory, nuspecPropertiesResolver);
                 packageBuilder.Files.Clear(); // NB! We are _NOT_ loading files twice into memory.    
                 
                 foreach (var (filename, targetPath) in packageFiles)
                 {
-                    var srcStream = await _snapFilesystem.FileRead(filename).ReadToEndAsync(cancellationToken);
+                    var srcStream = await _snapFilesystem.FileRead(filename).ReadToEndAsync(cancellationToken: cancellationToken);
                     AddPackageFile(packageBuilder, srcStream, targetPath, string.Empty, fullSnapRelease);
                 }
 
@@ -355,9 +347,9 @@ namespace Snap.Core
                     && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     using var tmpDir = _snapFilesystem.WithDisposableTempDirectory();
-                    using var mainExecutableStream = await mainExecutablePackageFile.GetStream().ReadToEndAsync(cancellationToken);
+                    await using var mainExecutableStream = await mainExecutablePackageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
                     var mainExecutableTempFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, mainExecutableFileName);
-                    using (var mainExecutableTmpStream = _snapFilesystem.FileWrite(mainExecutableTempFilename))
+                    await using (var mainExecutableTmpStream = _snapFilesystem.FileWrite(mainExecutableTempFilename))
                     {
                         await mainExecutableStream.CopyToAsync(mainExecutableTmpStream, cancellationToken);                                        
                     }
@@ -470,7 +462,7 @@ namespace Snap.Core
                                         $"Nupkg: {currentFullSnapRelease.Filename}. ");
                 }
 
-                var srcStream = await packageFile.GetStream().ReadToEndAsync(cancellationToken);
+                var srcStream = await packageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
                 AddPackageFile(packageBuilder, srcStream, packageFile.EffectivePath, string.Empty);
             }
 
@@ -507,7 +499,7 @@ namespace Snap.Core
                 if (previousChecksum == null)
                 {
                     currentDeltaSnapRelease.New.Add(currentChecksum);
-                    var srcStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken);
+                    var srcStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
                     AddPackageFile(deltaNupkgPackageBuilder, srcStream, currentChecksum.NuspecTargetPath, string.Empty);
                     continue;
                 }
@@ -531,8 +523,8 @@ namespace Snap.Core
 
                 var previousPackageFile = previousFullNupkgPackageBuilder.GetPackageFile(currentChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase);
 
-                using var oldDataStream = await previousPackageFile.GetStream().ReadToEndAsync(cancellationToken);
-                using var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken);
+                await using var oldDataStream = await previousPackageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
+                await using var newDataStream = await currentPackageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
                 var patchStream = new MemoryStream();
 
                 if (newDataStream.Length > 0
@@ -731,7 +723,7 @@ namespace Snap.Core
 
                 foreach (var deltaChecksum in deltaRelease.New)
                 {
-                    var srcStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken);
+                    var srcStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken: cancellationToken);
                     if (!skipChecksum)
                     {
                         var sha256Checksum = _snapCryptoProvider.Sha256(srcStream);
@@ -775,7 +767,7 @@ namespace Snap.Core
                             string.Equals(x, deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
 
                     var outputStream = new MemoryStream((int) deltaChecksum.FullFilesize);
-                    using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken))
+                    await using (var patchStream = await packageArchiveReader.GetStream(deltaChecksum.NuspecTargetPath).ReadToEndAsync(cancellationToken: cancellationToken))
                     {
                         string sha256Checksum;
                         if (neverGenerateBsDiffThisAssembly != null)
@@ -875,7 +867,7 @@ namespace Snap.Core
             var nupkgAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, snapRelease.Filename);
             _snapFilesystem.FileExistsThrowIfNotExists(nupkgAbsolutePath);
 
-            using var inputStream = _snapFilesystem.FileRead(nupkgAbsolutePath);
+            await using var inputStream = _snapFilesystem.FileRead(nupkgAbsolutePath);
             using var packageArchiveReader = new PackageArchiveReader(inputStream);
             var snapApp = await GetSnapAppAsync(packageArchiveReader, cancellationToken);
             if (snapApp == null)
@@ -893,7 +885,7 @@ namespace Snap.Core
 
             foreach (var checksum in snapRelease.Files)
             {
-                var srcStream = await packageArchiveReader.GetStreamAsync(checksum.NuspecTargetPath, cancellationToken).ReadToEndAsync(cancellationToken);
+                var srcStream = await packageArchiveReader.GetStreamAsync(checksum.NuspecTargetPath, cancellationToken).ReadToEndAsync(cancellationToken: cancellationToken);
 
                 AddPackageFile(packageBuilder, srcStream, checksum.NuspecTargetPath, string.Empty);
 
@@ -1003,7 +995,7 @@ namespace Snap.Core
                 var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(baseDirectory).ToList();
                 foreach (var fileAbsolutePath in allFiles)
                 {
-                    var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty).Substring(1);
+                    var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty)[1..];
                     packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath).ForwardSlashesSafe()));
                 }
 
@@ -1200,7 +1192,7 @@ namespace Snap.Core
         public async Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using var assemblyStream = await GetSnapAssetAsync(asyncPackageCoreReader, SnapConstants.SnapAppDllFilename, cancellationToken);
+            await using var assemblyStream = await GetSnapAssetAsync(asyncPackageCoreReader, SnapConstants.SnapAppDllFilename, cancellationToken);
             using var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyStream, new ReaderParameters(ReadingMode.Immediate));
             var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader);
             return snapApp;
@@ -1214,7 +1206,7 @@ namespace Snap.Core
 
             var targetPath = _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, filename);
 
-            return await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken);
+            return await asyncPackageCoreReader.GetStreamAsync(targetPath, cancellationToken).ReadToEndAsync(cancellationToken: cancellationToken);
         }
 
         void ThrowIfUnspportedTarget(SnapTarget target)
@@ -1297,7 +1289,7 @@ namespace Snap.Core
                     throw new Exception($"Expected target path to contain filename: {nuspecTargetPath}");
                 }
 
-                filename = nuspecTargetPath.Substring(lastSlashIndex + 1);
+                filename = nuspecTargetPath[(lastSlashIndex + 1)..];
             }
             else
             {

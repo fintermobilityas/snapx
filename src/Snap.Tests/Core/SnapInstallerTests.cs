@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,8 +16,6 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
-    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapInstallerTests : IClassFixture<BaseFixturePackaging>
     {
         readonly BaseFixturePackaging _baseFixture;
@@ -118,7 +115,7 @@ namespace Snap.Tests.Core
                 snapCurrentChannel,
                 progressSource.Object,
                 loggerMock.Object,
-                installCts.Token);           
+                cancellationToken: installCts.Token);           
                             
             var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genesisPackageContext.FullPackageSnapApp.Version}");
             var snapAppUpdated = appDirectory.GetSnapAppFromDirectory(_snapFilesystem, _snapAppReader);
@@ -226,7 +223,7 @@ namespace Snap.Tests.Core
                 nextSnapChannel,
                 null,
                 loggerMock.Object,
-                installCts.Token);
+                cancellationToken: installCts.Token);
                             
             var appDirectory = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, $"app-{genesisPackageContext.FullPackageSnapApp.Version}");
             var snapAppUpdated = appDirectory.GetSnapAppFromDirectory(_snapFilesystem, _snapAppReader);

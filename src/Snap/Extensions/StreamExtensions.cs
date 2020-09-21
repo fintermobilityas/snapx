@@ -8,33 +8,21 @@ namespace Snap.Extensions
 {
     internal static class StreamExtensions
     {
-        public static Task CopyToAsync([NotNull] this Stream srcStream, [NotNull] Stream dstStream, CancellationToken cancellationToken)
-        {
-            if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
-            if (dstStream == null) throw new ArgumentNullException(nameof(dstStream));
-            #if NETCOREAPP
-            return srcStream.CopyToAsync(dstStream, cancellationToken);
-            #else
-            const int bufferSize = 8096;
-            return srcStream.CopyToAsync(dstStream, bufferSize, cancellationToken);
-            #endif
-        }
-
-        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Task<Stream> srcStreamTask, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = true)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Task<Stream> srcStreamTask, bool leaveSrcStreamOpen = true, CancellationToken cancellationToken = default)
         {
             var srcStream = await srcStreamTask;
-            return await srcStream.ReadToEndAsync(cancellationToken, leaveSrcStreamOpen);
+            return await srcStream.ReadToEndAsync(leaveSrcStreamOpen, cancellationToken);
         }
 
-        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, CancellationToken cancellationToken = default, bool leaveSrcStreamOpen = true)
+        public static async Task<MemoryStream> ReadToEndAsync([NotNull] this Stream srcStream, bool leaveSrcStreamOpen = true, CancellationToken cancellationToken = default)
         {
             if (srcStream == null) throw new ArgumentNullException(nameof(srcStream));
             var outputStream = new MemoryStream();
-            await CopyToAsync(srcStream, outputStream, cancellationToken);
+            await srcStream.CopyToAsync(outputStream, cancellationToken);
             outputStream.Seek(0, SeekOrigin.Begin);
             if (!leaveSrcStreamOpen)
             {
-                srcStream.Dispose();
+                await srcStream.DisposeAsync();
             }
             return outputStream;
         }

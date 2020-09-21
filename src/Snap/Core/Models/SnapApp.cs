@@ -108,7 +108,6 @@ namespace Snap.Core.Models
         internal abstract bool HasCredentials();
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapNugetFeed : SnapFeed
     {
         public string Name { get; set; }
@@ -241,7 +240,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapChannel
     {
         public string Name { get; set; }
@@ -262,17 +260,12 @@ namespace Snap.Core.Models
             PushFeed = new SnapNugetFeed(channel.PushFeed);
             Current = channel.Current;
 
-            switch (channel.UpdateFeed)
+            UpdateFeed = channel.UpdateFeed switch
             {
-                case SnapNugetFeed snapNugetFeed:
-                    UpdateFeed = new SnapNugetFeed(snapNugetFeed);
-                    break;
-                case SnapHttpFeed snapHttpFeed:
-                    UpdateFeed = new SnapHttpFeed(snapHttpFeed);
-                    break;
-                default:
-                    throw new NotSupportedException(channel.UpdateFeed?.GetType().ToString());
-            }
+                SnapNugetFeed snapNugetFeed => new SnapNugetFeed(snapNugetFeed),
+                SnapHttpFeed snapHttpFeed => new SnapHttpFeed(snapHttpFeed),
+                _ => throw new NotSupportedException(channel.UpdateFeed?.GetType().ToString())
+            };
         }
 
         internal SnapChannel([NotNull] string channelName, bool current, [NotNull] SnapNugetFeed pushFeed, [NotNull] SnapFeed updateFeed)

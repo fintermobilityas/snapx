@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class SnapCryptoProviderTests : IClassFixture<BaseFixturePackaging>
     {
         readonly BaseFixturePackaging _baseFixture;
@@ -50,7 +48,7 @@ namespace Snap.Tests.Core
         [Fact]
         public void TestSha256_Empty_Array()
         {
-            Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(new byte[]{ }));
+            Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(Array.Empty<byte>()));
         }
 
         [Fact]

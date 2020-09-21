@@ -4,7 +4,6 @@ using Mono.Cecil;
 
 namespace Snap.Reflection.Exceptions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")] 
     internal abstract class CecilReflectorException : Exception
     {
         public AssemblyDefinition AssemblyDefinition { [UsedImplicitly] get; }

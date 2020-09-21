@@ -91,7 +91,11 @@ namespace snapx.Core
                 .Select((t, i) => Rows.Select(x => x[i])
                     .Union(new[] { Columns[i] })
                     .Where(x => x != null)
-                    .Select(x => x.ToString().Length).Max())
+                    .Select(x =>
+                    {
+                        var s = x.ToString();
+                        return s?.Length ?? 0;
+                    }).Max())
                 .ToList();
             return columnLengths;
         }
@@ -109,7 +113,7 @@ namespace snapx.Core
                              .Aggregate((s, a) => s + a) + " |";
 
             // remove last pipe (|)
-            format = format.Substring(0, format.Length - 1);
+            format = format[0..^1];
 
             // find the longest formatted line
             var maxRowLength = Math.Max(0, Rows.Any() ? Rows.Max(row => string.Format(format, row).Length) : 0);

@@ -50,10 +50,6 @@ namespace Snap.NuGet
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal sealed class DownloadContext
     {
         public PackageIdentity PackageIdentity { get; set; }
@@ -72,9 +68,7 @@ namespace Snap.NuGet
             PackageFileSize = snapRelease.IsFull ? snapRelease.FullFilesize : snapRelease.DeltaFilesize;
         }
     }
-    
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+
     internal interface INugetServiceProgressSource
     {
         Action<(int progressPercentage, long bytesRead, long totalBytesDownloaded, long totalBytesToDownload)> Progress { get; set; }
@@ -90,16 +84,14 @@ namespace Snap.NuGet
             Progress?.Invoke((progressPercentage, bytesRead, totalBytesDownloaded, totalBytesToDownload));
         }
     }
-        
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
+
     internal interface INugetService
     {
         Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync(string packageId, INuGetPackageSources packageSources,
-            CancellationToken cancellationToken, bool includePrerelease, bool noCache = false);
+            bool includePrerelease, bool noCache = false, CancellationToken cancellationToken = default);
 
-        Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, CancellationToken cancellationToken,
-            bool includePreRelease, bool noCache = false);
+        Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, 
+            bool includePreRelease, bool noCache = false, CancellationToken cancellationToken = default);
 
         Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
             int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
@@ -108,7 +100,7 @@ namespace Snap.NuGet
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
         Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
-            [NotNull] PackageSource packageSource, CancellationToken cancellationToken, bool includePreRelease, bool noCache = false);
+            [NotNull] PackageSource packageSource, bool includePreRelease, bool noCache = false, CancellationToken cancellationToken = default);
 
         Task<DownloadResourceResult> DownloadAsync([NotNull] PackageSource packageSource, PackageIdentity packageIdentity, CancellationToken cancellationToken);
         
@@ -132,12 +124,12 @@ namespace Snap.NuGet
         }
 
         public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId, 
-            [NotNull] INuGetPackageSources packageSources, CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
+            [NotNull] INuGetPackageSources packageSources, bool includePrerelease, bool noCache = false, CancellationToken cancellationToken = default)
         {
             if (packageId == null) throw new ArgumentNullException(nameof(packageId));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));
 
-            var tasks = packageSources.Items.Select(x => GetMetadatasAsync(packageId, x, cancellationToken, includePrerelease, noCache));
+            var tasks = packageSources.Items.Select(x => GetMetadatasAsync(packageId, x, includePrerelease, noCache, cancellationToken));
 
             var results = await Task.WhenAll(tasks);
 
@@ -148,16 +140,16 @@ namespace Snap.NuGet
         }
 
         public async Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource,
-            CancellationToken cancellationToken, bool includePreRelease = true, bool noCache = false)
+            bool includePreRelease = true, bool noCache = false, CancellationToken cancellationToken = default) 
         {
-            var medatadatas = (await GetMetadatasAsync(packageId, packageSource, cancellationToken, includePreRelease, noCache)).ToList();
+            var medatadatas = (await GetMetadatasAsync(packageId, packageSource, includePreRelease, noCache, cancellationToken)).ToList();
             return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
         }
 
         public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource packageSource, 
-            CancellationToken cancellationToken, bool includePreRelease, bool noCache = false)
+             bool includePreRelease, bool noCache = false, CancellationToken cancellationToken = default)
         {
-            var metadata = await GetLatestMetadataAsync(packageId, packageSource, cancellationToken, includePreRelease, noCache);
+            var metadata = await GetLatestMetadataAsync(packageId, packageSource, includePreRelease, noCache, cancellationToken);
             if (metadata == null)
             {
                 return null;
@@ -269,7 +261,7 @@ namespace Snap.NuGet
                 HttpSource httpSource;
                 switch (downloadResource)
                 {
-                    case LocalDownloadResource _:
+                    case LocalDownloadResource:
                         progressSource?.Raise(0, 0, 0, totalBytesToDownload);
 
                         var localPackageMetadataResource = await BuildFindLocalPackagesResourceAsync(packageSource, cancellationToken);
@@ -334,7 +326,7 @@ namespace Snap.NuGet
                     var bytesRead = 0;
                     while (!cancellationToken.IsCancellationRequested)
                     {
-                        bytesRead = await packageStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                        bytesRead = await packageStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
                         totalBytesDownloadedSoFar += bytesRead;
                         if (bytesRead == 0)
                         {
@@ -346,7 +338,7 @@ namespace Snap.NuGet
                                                         
                         progressSource?.Raise(thisProgressPercentage, bytesRead, totalBytesDownloadedSoFar, totalBytesToDownload);
                             
-                        await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                        await outputStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                     }    
 
                     if (downloadContext.PackageFileSize <= 0)
@@ -366,8 +358,7 @@ namespace Snap.NuGet
         }
 
         async Task<IEnumerable<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId,
-            [NotNull] PackageSource packageSource,
-            CancellationToken cancellationToken, bool includePrerelease, bool noCache = false)
+            [NotNull] PackageSource packageSource, bool includePrerelease, bool noCache = false, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(packageId))
                 throw new ArgumentException("Value cannot be null or whitespace.", nameof(packageId));
@@ -405,8 +396,7 @@ namespace Snap.NuGet
         async Task<FindLocalPackagesResource> BuildFindLocalPackagesResourceAsync([NotNull] PackageSource packageSource, CancellationToken cancellationToken)
         {
             if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
-            if (_snapFilesystem == null) throw new ArgumentNullException(nameof(_snapFilesystem));
-
+            
             if (!packageSource.IsLocalOrUncPath())
             {
                 throw new Exception($"Package packageSource is not a local resource. Name: {packageSource.Name}. Source: {packageSource.Source}");
@@ -420,7 +410,7 @@ namespace Snap.NuGet
                 .Where(x => x.FullName.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
                 .Select(async fileInfo =>
                 {
-                    using var stream = _snapFilesystem.FileRead(fileInfo.FullName);
+                    await using var stream = _snapFilesystem.FileRead(fileInfo.FullName);
 
                     var packageArchiveReader = new PackageArchiveReader(stream);
                     var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(cancellationToken);

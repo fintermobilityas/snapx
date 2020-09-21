@@ -6,8 +6,6 @@ using Snap.Logging;
 
 namespace Snap.Extensions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class LoggerExtensions
     {
         public static bool Prompt([NotNull] this ILog logger, [NotNull] string verbsStr, [NotNull] string question, char delimeter = '|', bool warn = false, bool infoOnly = false)

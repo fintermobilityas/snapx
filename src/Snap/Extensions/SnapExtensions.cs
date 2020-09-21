@@ -18,7 +18,6 @@ using Snap.Reflection;
 
 namespace Snap.Extensions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class SnapExtensions
     {
         static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
@@ -352,7 +351,7 @@ namespace Snap.Extensions
             string fullOrDelta = default;
             SemanticVersion semanticVersion = default;
             string rid = default;
-            int nupkgExtensionPos = -1;
+            var nupkgExtensionPos = -1;
 
             if (string.IsNullOrWhiteSpace(filename))
             {
@@ -592,18 +591,13 @@ namespace Snap.Extensions
             {
                 var snapsChannel = snapAppAvailableChannels[i];
                 var pushFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsChannel.PushFeed.Name);
-                
-                SnapFeed updateFeed = null;
 
-                switch (snapsChannel.UpdateFeed)
+                SnapFeed updateFeed = snapsChannel.UpdateFeed switch
                 {
-                    case SnapsNugetFeed snapsNugetFeed:
-                        updateFeed = snapNugetFeeds.SingleOrDefault(x => x.Name == snapsNugetFeed.Name);
-                        break;
-                    case SnapsHttpFeed snapsHttpFeed:
-                        updateFeed = snapHttpFeeds.SingleOrDefault(x => x.Source == snapsHttpFeed.Source);
-                        break;
-                }
+                    SnapsNugetFeed snapsNugetFeed => snapNugetFeeds.SingleOrDefault(x => x.Name == snapsNugetFeed.Name),
+                    SnapsHttpFeed snapsHttpFeed => snapHttpFeeds.SingleOrDefault(x => x.Source == snapsHttpFeed.Source),
+                    _ => null
+                };
 
                 if (requirePushFeed && pushFeed == null)
                 {

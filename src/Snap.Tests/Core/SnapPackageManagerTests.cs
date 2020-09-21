@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +17,6 @@ using Snap.Extensions;
 
 namespace Snap.Tests.Core
 {
-    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class SnapPackageManagerTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
     {
         readonly Mock<INugetService> _nugetServiceMock;
@@ -91,7 +89,7 @@ namespace Snap.Tests.Core
             using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))
             {
                 using var update2PackageContext = await _baseFixturePackaging.BuildPackageAsync(update2ReleaseBuilder);
-                using var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
+                await using var releasesNupkgMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
                 var expectedVersion = SemanticVersion.Parse("1.0.0");
                     
                 var expectedPackageIdentity = new PackageIdentity(
@@ -108,7 +106,7 @@ namespace Snap.Tests.Core
                 _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genesisSnapApp);
 
                 var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
-                using (releasesMemoryStream)
+                await using (releasesMemoryStream)
                 {
                     Assert.NotNull(releasesMemoryStream);
                     Assert.Equal(0, releasesMemoryStream.Position);

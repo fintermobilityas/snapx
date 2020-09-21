@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,8 +18,6 @@ using Snap.NuGet;
 
 namespace Snap.Core
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapPackageManagerProgressSource
     {
         Action<(int progressPercentage, long releasesOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
@@ -84,8 +81,6 @@ namespace Snap.Core
             int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
     }
 
-    [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     internal class SnapPackageManagerNugetHttpFeed
     {
         public Uri Source { get; set; }
@@ -183,8 +178,8 @@ namespace Snap.Core
                             { "X-Snapx-Application-Id", applicationId },
                             { "X-Snapx-Application-Version", snapApp.Version?.ToNormalizedString() }
                         };
-   
-                        using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
+
+                        await using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
                         stream.Seek(0, SeekOrigin.Begin);
 
                         var jsonStream = await stream.ReadToEndAsync();
@@ -244,7 +239,7 @@ namespace Snap.Core
                 var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId);
 
                 var snapReleasesDownloadResult =
-                    await _nugetService.DownloadLatestAsync(packageId, packageSource, cancellationToken, false, true);
+                    await _nugetService.DownloadLatestAsync(packageId, packageSource, false, true, cancellationToken);
 
                 if (!snapReleasesDownloadResult.SuccessSafe())
                 {
@@ -549,7 +544,7 @@ namespace Snap.Core
                         var (fullNupkgMemoryStream, _, fullSnapRelease) =
                             await _snapPack.RebuildPackageAsync(packagesDirectory, snapAppChannelReleases, x, compoundProgressSource, cancellationToken);
 
-                        using (fullNupkgMemoryStream)
+                        await using (fullNupkgMemoryStream)
                         {
                             var fullNupkgAbsolutePath = _filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
                             await _filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, cancellationToken);

@@ -1,5 +1,4 @@
 ﻿#if PLATFORM_WINDOWS
-using System.Diagnostics.CodeAnalysis;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core;
@@ -8,7 +7,6 @@ using Xunit;
 
 namespace Snap.Tests.AnyOS.Windows
 {
-    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapOsWindowsTests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;

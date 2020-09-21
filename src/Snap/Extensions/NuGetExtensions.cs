@@ -63,13 +63,6 @@ namespace Snap.Extensions
             return xDocument.Descendants().SingleOrDefault(name, ignoreCase);
         }
 
-        public static XElement SingleOrDefault([NotNull] this XElement xElement, [NotNull] XName name, bool ignoreCase = true)
-        {
-            if (xElement == null) throw new ArgumentNullException(nameof(xElement));
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            return xElement.Descendants().SingleOrDefault(name, ignoreCase);
-        }
-
         public static XElement SingleOrDefault([NotNull] this IEnumerable<XElement> xElements, [NotNull] XName name, bool ignoreCase = true)
         {
             if (xElements == null) throw new ArgumentNullException(nameof(xElements));
@@ -102,9 +95,14 @@ namespace Snap.Extensions
             }
 
             var getDownloadUrlTask = (dynamic) getDownloadUrlMethod.Invoke(downloadResourceV3, new object[] {identity, logger, token});
-            var downloadUri = await getDownloadUrlTask;
+            if (getDownloadUrlTask != null)
+            {
+                var downloadUri = await getDownloadUrlTask;
 
-            return downloadUri as Uri;
+                return downloadUri as Uri;
+            }
+
+            return null;
         }
 
         internal static HttpSource BuildHttpSource([NotNull] this DownloadResourceV3 downloadResourceV3)
@@ -218,19 +216,11 @@ namespace Snap.Extensions
                 stringComparisonType));
         }
 
-        internal static async Task<NuspecReader> GetNuspecReaderAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,
-            CancellationToken cancellationToken)
-        {
-            if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken);
-            return new NuspecReader(nuspecStream);
-        }
-
         internal static async Task<ManifestMetadata> GetManifestMetadataAsync([NotNull] this IAsyncPackageCoreReader asyncPackageCoreReader,
             CancellationToken cancellationToken)
         {
             if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
-            using var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken);
+            await using var nuspecStream = await asyncPackageCoreReader.GetNuspecAsync(cancellationToken).ReadToEndAsync(cancellationToken: cancellationToken);
             return Manifest.ReadFrom(nuspecStream, false)?.Metadata;
         }
 

@@ -338,7 +338,7 @@ namespace Snap.Installer
                     {
                         var copyNupkgToPackagesDirectory = installerType == SnapInstallerType.Offline;
                         var snapAppInstalled = await snapInstaller.InstallAsync(nupkgAbsolutePath, baseDirectory,
-                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, cancellationToken, copyNupkgToPackagesDirectory);
+                            snapReleaseToInstall, snapChannel, installerProgressSource, mainWindowLogger, copyNupkgToPackagesDirectory, cancellationToken);
 
                         if (snapAppInstalled == null)
                         {

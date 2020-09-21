@@ -94,7 +94,7 @@ namespace Snap.Tests.Core
             await _snapFilesystem.FileWriteUtf8StringAsync("test", srcFilenameAbsolutePath, default);
             _snapFilesystem.TryFileMove(srcFilenameAbsolutePath, dstFilenameAbsolutePath);
             Assert.True(_snapFilesystem.FileExists(dstFilenameAbsolutePath));
-            Assert.Equal("test", _snapFilesystem.FileReadAllText(dstFilenameAbsolutePath));
+            Assert.Equal("test", await _snapFilesystem.FileReadAllTextAsync(dstFilenameAbsolutePath));
         }
         
     }

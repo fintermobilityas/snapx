@@ -11,8 +11,6 @@ using Snap.Extensions;
 
 namespace Snap.Core.Models
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [MessagePackObject]
     public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
     {

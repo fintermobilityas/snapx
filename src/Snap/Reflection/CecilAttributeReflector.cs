@@ -6,7 +6,6 @@ using Mono.Cecil;
 
 namespace Snap.Reflection
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IAttributeReflector
     {
         IDictionary<string, string> Values { get; }

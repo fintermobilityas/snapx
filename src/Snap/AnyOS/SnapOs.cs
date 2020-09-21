@@ -26,8 +26,6 @@ namespace Snap.AnyOS
         RaspberryPi
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapOs
     {
         ISnapOsTaskbar Taskbar { get; }
@@ -152,7 +150,7 @@ namespace Snap.AnyOS
             Environment.Exit(exitCode);
         }
 
-        public void InstallExitSignalHandler([NotNull] Action onExit)
+        public void InstallExitSignalHandler(Action onExit)
         {
             if (onExit == null) throw new ArgumentNullException(nameof(onExit));
             var exitSignalHandler = OsImpl.InstallExitSignalHandler();

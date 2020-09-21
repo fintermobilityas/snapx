@@ -8,7 +8,6 @@ using Snap.Core;
 
 namespace Snap.Shared.Tests.Extensions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class AssemblyDefinitionExtensions
     {
         public static string BuildRelativeFilename(this AssemblyDefinition assemblyDefinition, OSPlatform osPlatform = default)

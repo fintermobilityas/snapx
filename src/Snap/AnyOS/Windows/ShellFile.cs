@@ -74,7 +74,7 @@ namespace Snap.AnyOS.Windows
 
             public static PropVariant FromGuid(Guid guid)
             {
-                byte[] bytes = guid.ToByteArray();
+                var bytes = guid.ToByteArray();
                 var pv = new PropVariant() {
                     variantType = 72,  // VT_CLSID
                     pointerValue = Marshal.AllocCoTaskMem(bytes.Length),
@@ -99,15 +99,13 @@ namespace Snap.AnyOS.Windows
             public void Clear()
             {
                 // Can't pass "this" by ref, so make a copy to call PropVariantClear with
-                PropVariant tmp = this;
+                var tmp = this;
                 PropVariantClear(ref tmp);
 
                 // Since we couldn't pass "this" by ref, we need to clear the member fields manually
                 // NOTE: PropVariantClear already freed heap data for us, so we are just setting
                 //       our references to null.
-#pragma warning disable 618
                 variantType = (short)VarEnum.VT_EMPTY;
-#pragma warning restore 618
                 Reserved1 = Reserved2 = Reserved3 = 0;
                 pointerValue = IntPtr.Zero;
             }
@@ -400,7 +398,7 @@ namespace Snap.AnyOS.Windows
         {
             [DllImport("Shell32", CharSet = CharSet.Auto)]
             internal static extern int ExtractIconEx(
-                [MarshalAs(UnmanagedType.LPTStr)] string lpszFile,
+                [MarshalAs(UnmanagedType.LPWStr)] string lpszFile,
                 int nIconIndex,
                 IntPtr[] phIconLarge,
                 IntPtr[] phIconSmall,
@@ -560,8 +558,8 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder iconPath = new StringBuilder(260, 260);
-                int iconIndex = 0;
+                var iconPath = new StringBuilder(260, 260);
+                var iconIndex = 0;
                 if (linkA == null)
                 {
                     linkW.GetIconLocation(iconPath, iconPath.Capacity, out
@@ -576,8 +574,8 @@ namespace Snap.AnyOS.Windows
             }
             set
             {
-                StringBuilder iconPath = new StringBuilder(260, 260);
-                int iconIndex = 0;
+                var iconPath = new StringBuilder(260, 260);
+                var iconIndex = 0;
                 if (linkA == null)
                 {
                     linkW.GetIconLocation(iconPath, iconPath.Capacity, out
@@ -606,8 +604,8 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder iconPath = new StringBuilder(260, 260);
-                int iconIndex = 0;
+                var iconPath = new StringBuilder(260, 260);
+                var iconIndex = 0;
                 if (linkA == null)
                 {
                     linkW.GetIconLocation(iconPath, iconPath.Capacity, out
@@ -622,8 +620,8 @@ namespace Snap.AnyOS.Windows
             }
             set
             {
-                StringBuilder iconPath = new StringBuilder(260, 260);
-                int iconIndex = 0;
+                var iconPath = new StringBuilder(260, 260);
+                var iconIndex = 0;
                 if (linkA == null)
                 {
                     linkW.GetIconLocation(iconPath, iconPath.Capacity, out
@@ -652,16 +650,16 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder target = new StringBuilder(260, 260);
+                var target = new StringBuilder(260, 260);
                 if (linkA == null)
                 {
-                    _WIN32_FIND_DATAW fd = new _WIN32_FIND_DATAW();
+                    var fd = new _WIN32_FIND_DATAW();
                     linkW.GetPath(target, target.Capacity, ref fd,
                         (uint)EShellLinkGP.SLGP_UNCPRIORITY);
                 }
                 else
                 {
-                    _WIN32_FIND_DATAA fd = new _WIN32_FIND_DATAA();
+                    var fd = new _WIN32_FIND_DATAA();
                     linkA.GetPath(target, target.Capacity, ref fd,
                         (uint)EShellLinkGP.SLGP_UNCPRIORITY);
                 }
@@ -687,7 +685,7 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder path = new StringBuilder(260, 260);
+                var path = new StringBuilder(260, 260);
                 if (linkA == null)
                 {
                     linkW.GetWorkingDirectory(path, path.Capacity);
@@ -718,7 +716,7 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder description = new StringBuilder(1024, 1024);
+                var description = new StringBuilder(1024, 1024);
                 if (linkA == null)
                 {
                     linkW.GetDescription(description, description.Capacity);
@@ -749,7 +747,7 @@ namespace Snap.AnyOS.Windows
         {
             get
             {
-                StringBuilder arguments = new StringBuilder(260, 260);
+                var arguments = new StringBuilder(260, 260);
                 if (linkA == null)
                 {
                     linkW.GetArguments(arguments, arguments.Capacity);
@@ -867,7 +865,7 @@ namespace Snap.AnyOS.Windows
 
             var varGuid = PropVariant.FromGuid(clsid);
             try {
-                int errCode = propStore.SetValue(ref pkey, ref varGuid);
+                var errCode = propStore.SetValue(ref pkey, ref varGuid);
                 Marshal.ThrowExceptionForHR(errCode);
 
                 errCode = propStore.Commit();

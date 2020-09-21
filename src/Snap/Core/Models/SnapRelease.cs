@@ -9,9 +9,6 @@ using Snap.Core.MessagePack.Formatters;
 
 namespace Snap.Core.Models
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     [MessagePackObject]
     public class SnapRelease
     {

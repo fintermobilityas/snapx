@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,8 +14,6 @@ using Xunit;
 
 namespace Snap.Tests.NuGet
 {
-    [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class NugetServiceV2Tests : IClassFixture<BaseFixture>
     {
         readonly BaseFixture _baseFixture;
@@ -61,7 +58,7 @@ namespace Snap.Tests.NuGet
             var packageSources = new NugetOrgOfficialV2PackageSources();
 
             var packages = await _nugetService
-                .GetMetadatasAsync("Nuget.Packaging", packageSources, CancellationToken.None, false);
+                .GetMetadatasAsync("Nuget.Packaging", packageSources, false, cancellationToken: CancellationToken.None);
 
             Assert.NotEmpty(packages);
             
@@ -77,7 +74,7 @@ namespace Snap.Tests.NuGet
             var packageSources = new NugetOrgOfficialV2PackageSources();
 
             var packages = await _nugetService
-                .GetMetadatasAsync("Nuget.Packaging", packageSources, CancellationToken.None, true);
+                .GetMetadatasAsync("Nuget.Packaging", packageSources, true, cancellationToken: CancellationToken.None);
 
             Assert.NotEmpty(packages.Where(x => x.Identity.Version.IsPrerelease));
             Assert.NotEmpty(packages.Where(x => !x.Identity.Version.IsPrerelease));

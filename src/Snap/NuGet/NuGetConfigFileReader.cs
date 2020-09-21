@@ -7,7 +7,6 @@ using Snap.Logging;
 
 namespace Snap.NuGet
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface INugetConfigFileReader
     {
     }

@@ -262,12 +262,12 @@ namespace Snap.Core.Resources
                 if (filesystem.FileExists(filename) 
                     && !ShouldOverwrite(coreRunLib, filename))
                 {
-                    coreRunLib.Dispose();
+                    await coreRunLib.DisposeAsync();
                     return;
                 }
 
-                using var dstStream = filesystem.FileWrite(filename);
-                using var coreRunLibWindows = coreRunLib;
+                await using var dstStream = filesystem.FileWrite(filename);
+                await using var coreRunLibWindows = coreRunLib;
                 await coreRunLibWindows.CopyToAsync(dstStream);
 
                 return;
@@ -280,12 +280,12 @@ namespace Snap.Core.Resources
                 if (filesystem.FileExists(filename) 
                     && !ShouldOverwrite(coreRunLib, filename))
                 {
-                    coreRunLib.Dispose();
+                    await coreRunLib.DisposeAsync();
                     return;
                 }
 
-                using var dstStream = filesystem.FileWrite(filename);
-                using var coreRunLibLinux = coreRunLib;
+                await using var dstStream = filesystem.FileWrite(filename);
+                await using var coreRunLibLinux = coreRunLib;
                 await coreRunLibLinux.CopyToAsync(dstStream);
 
                 return;

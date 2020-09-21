@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -8,7 +7,6 @@ using Snap.Extensions;
 
 namespace Snap.Core
 {
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapNetworkTimeProvider
     {
         string Server { get; }

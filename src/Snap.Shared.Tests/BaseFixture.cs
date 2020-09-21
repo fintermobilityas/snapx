@@ -21,9 +21,6 @@ using TypeAttributes = Mono.Cecil.TypeAttributes;
 
 namespace Snap.Shared.Tests
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBeMadeStatic.Global")]
     [UsedImplicitly]
     public class BaseFixture
     {

@@ -40,7 +40,7 @@ namespace Snap.Tests.Core
             snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
             Snapx.SnapOs = snapOsMock.Object;
 
-            var shouldExit = Snapx.ProcessEvents(new string[]{});
+            var shouldExit = Snapx.ProcessEvents(Array.Empty<string>());
             Assert.False(shouldExit);
 
             snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);

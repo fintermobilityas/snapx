@@ -15,10 +15,6 @@ using Snap.Logging.LogProviders;
 
 namespace Snap.Core
 {
-    // This class is only intended for external consumers of Snapx.Core nuget package.
-    
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public static class Snapx
     {
         static readonly ILog Logger;
@@ -40,7 +36,7 @@ namespace Snap.Core
                 try
                 {     
                     Logger = LogProvider.GetLogger(nameof(Snapx));
-                    var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+                    var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
                     Version = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
 
                     SnapOs = AnyOS.SnapOs.AnyOs;

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Text;
+﻿using System.Text;
 using System.Threading.Tasks;
 using Snap.Core;
 using Snap.Core.IO;
@@ -49,7 +48,6 @@ namespace Snap.Tests
         }
 
         [Fact]
-        [SuppressMessage("ReSharper", "UnusedVariable")]
         public async Task TestIsElevated()
         {
             using var coreRunLib = await BuildCoreRunLibAsync();

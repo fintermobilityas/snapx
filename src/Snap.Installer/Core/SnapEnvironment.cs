@@ -8,8 +8,6 @@ using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Installer.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapInstallerIoEnvironment
     {
         ISnapOsSpecialFolders SpecialFolders { get; }

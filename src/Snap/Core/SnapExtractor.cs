@@ -14,7 +14,6 @@ using Snap.Extensions;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapExtractor
     {
         Task<List<string>> ExtractAsync(string nupkgAbsolutePath, string destinationDirectoryAbsolutePath, SnapRelease snapRelease, CancellationToken cancellationToken = default);
@@ -82,7 +81,7 @@ namespace Snap.Core
                 }
                 else
                 {
-                    var targetPath = checksum.NuspecTargetPath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
+                    var targetPath = checksum.NuspecTargetPath[(SnapConstants.NuspecRootTargetPath.Length + 1)..];
                     dstFilename = _snapFilesystem.PathCombine(destinationDirectoryAbsolutePath,  
                         _snapFilesystem.PathEnsureThisOsDirectoryPathSeperator(targetPath));
                 }
@@ -106,11 +105,11 @@ namespace Snap.Core
             if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
 
             var snapReleasesFilename = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.ReleasesFilename);
-            using var snapReleasesCompressedStream =
+            await using var snapReleasesCompressedStream =
                 await asyncPackageCoreReader
                     .GetStreamAsync(snapReleasesFilename, cancellationToken)
-                    .ReadToEndAsync(cancellationToken);
-            using var snapReleasesUncompressedStream = new MemoryStream();
+                    .ReadToEndAsync(cancellationToken: cancellationToken);
+            await using var snapReleasesUncompressedStream = new MemoryStream();
             using var reader = ReaderFactory.Open(snapReleasesCompressedStream);
             reader.MoveToNextEntry();
             reader.WriteEntryTo(snapReleasesUncompressedStream);

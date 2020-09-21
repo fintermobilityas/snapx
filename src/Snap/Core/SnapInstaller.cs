@@ -32,17 +32,16 @@ namespace Snap.Core
         Offline = 1 << 1
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapInstaller
     {
-        Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, [NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
-            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default, bool copyNupkgToPackagesDirectory = true);
+        Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, [NotNull] string baseDirectory,
+            [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
+            ISnapProgressSource snapProgressSource = null, ILog logger = null, bool copyNupkgToPackagesDirectory = true,
+            CancellationToken cancellationToken = default);
         Task<SnapApp> UpdateAsync([NotNull] string baseDirectory, [NotNull] SnapRelease snapRelease, [NotNull] SnapChannel snapChannel,
             ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default);
         string GetApplicationDirectory(string baseDirectory, SemanticVersion version);
         string GetApplicationDirectory(string baseDirectory, SnapRelease release);
-        string GetPackagesDirectory([NotNull] string baseDirectory);
     }
 
     internal sealed class SnapInstaller : ISnapInstaller
@@ -143,8 +142,10 @@ namespace Snap.Core
             return snapApp;
         }
 
-        public async Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, string baseDirectory, SnapRelease snapRelease, SnapChannel snapChannel,
-            ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default, bool copyNupkgToPackagesDirectory = true)
+        public async Task<SnapApp> InstallAsync(string nupkgAbsoluteFilename, string baseDirectory,
+            SnapRelease snapRelease, SnapChannel snapChannel,
+            ISnapProgressSource snapProgressSource = null, ILog logger = null, bool copyNupkgToPackagesDirectory = true,
+            CancellationToken cancellationToken = default)
         {
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
@@ -172,13 +173,13 @@ namespace Snap.Core
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Os != OSPlatform.Windows)
             {
                 logger?.Error(
-                    $"Unable to install snap because target OS {snapApp.Target.Os} does not match current OS: {OSPlatform.Windows.ToString()}. Snap id: {snapApp.Id}.");
+                    $"Unable to install snap because target OS {snapApp.Target.Os} does not match current OS: {OSPlatform.Windows}. Snap id: {snapApp.Id}.");
                 return null;
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && snapApp.Target.Os != OSPlatform.Linux)
             {
-                logger?.Error($"Unable to install snap because target OS {snapApp.Target.Os} does not match current OS: {OSPlatform.Linux.ToString()}. Snap id: {snapApp.Id}.");
+                logger?.Error($"Unable to install snap because target OS {snapApp.Target.Os} does not match current OS: {OSPlatform.Linux}. Snap id: {snapApp.Id}.");
                 return null;
             }
 
@@ -311,7 +312,7 @@ namespace Snap.Core
                 logger?.Info($"Updating {snapAppDllAbsolutePath}. Current channel is: {snapChannel.Name}.");
 
                 using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(snapApp);
-                using var snapAPpDllDestinationStream = _snapOs.Filesystem.FileWrite(snapAppDllAbsolutePath);
+                await using var snapAPpDllDestinationStream = _snapOs.Filesystem.FileWrite(snapAppDllAbsolutePath);
                 snapAppDllAssemblyDefinition.Write(snapAPpDllDestinationStream);
             }
             catch(Exception e)

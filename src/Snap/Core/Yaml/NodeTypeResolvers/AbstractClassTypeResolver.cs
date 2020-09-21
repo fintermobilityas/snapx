@@ -33,7 +33,7 @@ namespace Snap.Core.Yaml.NodeTypeResolvers
             if (typeName.EndsWith("[]")) // this handles tags for array types like "!MyDotnetClass[]"
             {
                 arrayType = true;
-                typeName = typeName.Substring(0, typeName.Length-2);
+                typeName = typeName[0..^2];
             }
 
             if (!_tagMappings.TryGetValue(typeName, out var predefinedType))

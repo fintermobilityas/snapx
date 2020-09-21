@@ -3,7 +3,6 @@ using JetBrains.Annotations;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapProgressSource
     {
         Action<int> Progress { get; set; }

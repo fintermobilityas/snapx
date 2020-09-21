@@ -22,8 +22,6 @@ using Xunit;
 
 namespace Snap.Tests.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "NotAccessedField.Local")]
     public class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
     {
         readonly BaseFixture _baseFixture;
@@ -150,7 +148,7 @@ namespace Snap.Tests.Core
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
-            using var snapAppsReleasesMemoryStream = _snapPack.BuildReleasesPackage(update1PackageContext.FullPackageSnapApp, snapAppsReleases);
+            await using var snapAppsReleasesMemoryStream = _snapPack.BuildReleasesPackage(update1PackageContext.FullPackageSnapApp, snapAppsReleases);
             _baseFixtureNuget.SetupReleases(_nugetServiceMock, snapAppsReleasesMemoryStream,
                 nugetPackageSources, update1PackageContext.FullPackageSnapApp);                     
                     
@@ -175,10 +173,9 @@ namespace Snap.Tests.Core
             _nugetServiceMock.Verify(x => x
                 .DownloadLatestAsync(
                     It.Is<string>(v => v == update1PackageContext.DeltaPackageSnapApp.BuildNugetReleasesUpstreamId()),
-                    It.IsAny<PackageSource>(),
-                    It.IsAny<CancellationToken>(), 
+                    It.IsAny<PackageSource>(), 
                     It.Is<bool>(includePreRelease => includePreRelease == false),
-                    It.Is<bool>(noCache => noCache)), Times.Once);
+                    It.Is<bool>(noCache => noCache), It.IsAny<CancellationToken>()), Times.Once);
 
             _nugetServiceMock.Verify(x => x
                 .DownloadAsyncWithProgressAsync(
@@ -190,9 +187,8 @@ namespace Snap.Tests.Core
             _nugetServiceMock.Verify(x => x.GetLatestMetadataAsync(
                 It.IsAny<string>(), 
                 It.IsAny<PackageSource>(), 
-                It.IsAny<CancellationToken>(),
                 It.Is<bool>(includePreRelease => includePreRelease),
-                It.Is<bool>(noCache => noCache)), Times.Exactly(2));
+                It.Is<bool>(noCache => noCache), It.IsAny<CancellationToken>()), Times.Exactly(2));
 
             progressSourceMock.Verify(x => x.RaiseChecksumProgress(
                 It.Is<int>(v => v == 0),

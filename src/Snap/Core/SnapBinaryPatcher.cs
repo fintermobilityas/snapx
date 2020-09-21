@@ -102,16 +102,16 @@ namespace Snap.Core
                 WriteInt64(newData.Length, header, 24);
 
                 var startPosition = output.Position;
-                await output.WriteAsync(header, 0, header.Length, cancellationToken);
+                await output.WriteAsync(header.AsMemory(0, header.Length), cancellationToken);
 
                 var I = SuffixSort(oldData);
 
                 var dblen = 0;
                 var eblen = 0;
 
-                using (var wrappingStream = new WrappingStream(output, Ownership.None))
+                await using (var wrappingStream = new WrappingStream(output, Ownership.None))
                 {
-                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    await using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
                     // compute the differences, writing ctrl as we go
                     var scan = 0;
                     var pos = 0;
@@ -209,13 +209,13 @@ namespace Snap.Core
                             try
                             {
                                 WriteInt64(lenf, buf, 0);
-                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+                                await bz2Stream.WriteAsync(buf.AsMemory(0, 8), cancellationToken);
 
                                 WriteInt64(scan - lenb - (lastscan + lenf), buf, 0);
-                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+                                await bz2Stream.WriteAsync(buf.AsMemory(0, 8), cancellationToken);
 
                                 WriteInt64(pos - lenb - (lastpos + lenf), buf, 0);
-                                await bz2Stream.WriteAsync(buf, 0, 8, cancellationToken);
+                                await bz2Stream.WriteAsync(buf.AsMemory(0, 8), cancellationToken);
                             }
                             finally
                             {
@@ -234,10 +234,10 @@ namespace Snap.Core
                 WriteInt64(controlEndPosition - startPosition - CHeaderSize, header, 8);
 
                 // write compressed diff data
-                using (var wrappingStream = new WrappingStream(output, Ownership.None))
+                await using (var wrappingStream = new WrappingStream(output, Ownership.None))
                 {
-                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                    await bz2Stream.WriteAsync(db, 0, dblen, cancellationToken);
+                    await using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    await bz2Stream.WriteAsync(db.AsMemory(0, dblen), cancellationToken);
                 }
 
                 // compute size of compressed diff data
@@ -247,15 +247,15 @@ namespace Snap.Core
                 // write compressed extra data, if any
                 if (eblen > 0)
                 {
-                    using var wrappingStream = new WrappingStream(output, Ownership.None);
-                    using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
-                    await bz2Stream.WriteAsync(eb, 0, eblen, cancellationToken);
+                    await using var wrappingStream = new WrappingStream(output, Ownership.None);
+                    await using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+                    await bz2Stream.WriteAsync(eb.AsMemory(0, eblen), cancellationToken);
                 }
 
                 // seek to the beginning, write the header, then seek back to end
                 var endPosition = output.Position;
                 output.Position = startPosition;
-                await output.WriteAsync(header, 0, header.Length, cancellationToken);
+                await output.WriteAsync(header.AsMemory(0, header.Length), cancellationToken);
                 output.Position = endPosition;
             }
         }
@@ -295,7 +295,7 @@ namespace Snap.Core
             */
             // read header
             long controlLength, diffLength, newSize;
-            using (var patchStream = await openPatchStream())
+            await using (var patchStream = await openPatchStream())
             {
                 // check patch stream capabilities
                 if (!patchStream.CanRead)
@@ -335,9 +335,9 @@ namespace Snap.Core
             try
             {
                 // prepare to read three parts of the patch in parallel
-                using var compressedControlStream = await openPatchStream();
-                using var compressedDiffStream = await openPatchStream();
-                using var compressedExtraStream = await openPatchStream();
+                await using var compressedControlStream = await openPatchStream();
+                await using var compressedDiffStream = await openPatchStream();
+                await using var compressedExtraStream = await openPatchStream();
                 // seek to the start of each part
                 compressedControlStream.Seek(CHeaderSize, SeekOrigin.Current);
                 compressedDiffStream.Seek(CHeaderSize + controlLength, SeekOrigin.Current);
@@ -347,9 +347,9 @@ namespace Snap.Core
                 var hasExtraData = compressedExtraStream.Position < compressedExtraStream.Length;
 
                 // decompress each part (to read it)
-                using var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true);
-                using var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true);
-                using var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null;
+                await using var controlStream = new BZip2Stream(compressedControlStream, CompressionMode.Decompress, true);
+                await using var diffStream = new BZip2Stream(compressedDiffStream, CompressionMode.Decompress, true);
+                await using var extraStream = hasExtraData ? new BZip2Stream(compressedExtraStream, CompressionMode.Decompress, true) : null;
 
                 var oldPosition = 0;
                 var newPosition = 0;
@@ -384,7 +384,7 @@ namespace Snap.Core
                         for (var index = 0; index < availableInputBytes; index++)
                             newData[index] += oldData[index];
 
-                        await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                        await output.WriteAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
 
                         // adjust counters
                         newPosition += actualBytesToCopy;
@@ -403,7 +403,7 @@ namespace Snap.Core
                         var actualBytesToCopy = Math.Min(bytesToCopy, cBufferSize);
 
                         await extraStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
-                        await output.WriteAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                        await output.WriteAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
 
                         newPosition += actualBytesToCopy;
                         bytesToCopy -= actualBytesToCopy;
@@ -931,7 +931,7 @@ namespace Snap.Core
             while (count > 0)
             {
                 // read data
-                var bytesRead = await stream.ReadAsync(buffer, offset, count, cancellationToken);
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
 
                 // check for failure to read
                 if (bytesRead == 0)

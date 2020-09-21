@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 using CommandLine.Text;
 using JetBrains.Annotations;
 
 namespace snapx.Options
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("demote", HelpText = "Demote one or multiple releases")]
     [UsedImplicitly]
     internal class DemoteOptions : BaseSubOptions
@@ -41,6 +39,7 @@ namespace snapx.Options
         public string Id { get; [UsedImplicitly] set; }
 
         [Usage(ApplicationAlias = "snapx")]
+        [UsedImplicitly]
         public static IEnumerable<Example> Examples
         {
             get

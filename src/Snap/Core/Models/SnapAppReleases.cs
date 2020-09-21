@@ -7,8 +7,6 @@ using NuGet.Versioning;
 
 namespace Snap.Core.Models
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public interface ISnapAppReleases : IEnumerable<SnapRelease>
     {
         SnapApp SnapApp { get; }

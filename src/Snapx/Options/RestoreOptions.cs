@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using CommandLine;
 using CommandLine.Text;
 using JetBrains.Annotations;
@@ -7,7 +6,6 @@ using Snap.Core;
 
 namespace snapx.Options
 {
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     [Verb("restore", HelpText = "Restore missing or corrupt packages")]
     [UsedImplicitly]
     internal class RestoreOptions : BaseSubOptions
@@ -40,6 +38,7 @@ namespace snapx.Options
         public SnapPackageManagerRestoreType RestoreStrategyType { get; set; } = SnapPackageManagerRestoreType.Default;
 
         [Usage(ApplicationAlias = "snapx")]
+        [UsedImplicitly]
         public static IEnumerable<Example> Examples
         {
             get

@@ -433,13 +433,13 @@ namespace Snap.AnyOS.Windows
         {
             curFileStream = srcStream ?? throw new ArgumentNullException(nameof(srcStream));
 
-            BinaryReader reader = new BinaryReader(curFileStream);
+            var reader = new BinaryReader(curFileStream);
             dosHeader = FromBinaryReader<IMAGE_DOS_HEADER>(reader);
 
             // Add 4 bytes to the offset
             srcStream.Seek(dosHeader.e_lfanew, SeekOrigin.Begin);
 
-            UInt32 ntHeadersSignature = reader.ReadUInt32();
+            var ntHeadersSignature = reader.ReadUInt32();
             fileHeader = FromBinaryReader<IMAGE_FILE_HEADER>(reader);
             this.fileHeaderOffset = srcStream.Position;
             if (this.Is32BitHeader)
@@ -453,7 +453,7 @@ namespace Snap.AnyOS.Windows
             }
 
             imageSectionHeaders = new IMAGE_SECTION_HEADER[fileHeader.NumberOfSections];
-            for (int headerNo = 0; headerNo < imageSectionHeaders.Length; ++headerNo)
+            for (var headerNo = 0; headerNo < imageSectionHeaders.Length; ++headerNo)
             {
                 imageSectionHeaders[headerNo] = FromBinaryReader<IMAGE_SECTION_HEADER>(reader);
             }
@@ -475,11 +475,11 @@ namespace Snap.AnyOS.Windows
         public static T FromBinaryReader<T>(BinaryReader reader)
         {
             // Read in a byte array
-            byte[] bytes = reader.ReadBytes(Marshal.SizeOf(typeof(T)));
+            var bytes = reader.ReadBytes(Marshal.SizeOf(typeof(T)));
 
             // Pin the managed memory while, copy it out the data, then unpin it
-            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            T theStructure = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            var theStructure = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
             handle.Free();
 
             return theStructure;

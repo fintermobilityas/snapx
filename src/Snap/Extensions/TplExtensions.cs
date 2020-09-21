@@ -33,7 +33,6 @@ namespace Snap.Extensions
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal static class TplExtensions
     {
         // https://blogs.msdn.microsoft.com/pfxteam/2012/10/05/how-do-i-cancel-non-cancelable-async-operations/
@@ -45,7 +44,7 @@ namespace Snap.Extensions
             var tcs = new TaskCompletionSource<bool>();
 
             // Register with the cancellation token.
-            using (cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetResult(true), tcs))
+            await using (cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetResult(true), tcs))
             {
                 // If the task waited on is the cancellation token...
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))
@@ -66,7 +65,7 @@ namespace Snap.Extensions
             var tcs = new TaskCompletionSource<bool>();
 
             // Register with the cancellation token.
-            using (cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetResult(true), tcs))
+            await using (cancellationToken.Register(state => ((TaskCompletionSource<bool>)state).TrySetResult(true), tcs))
             {
                 // If the task waited on is the cancellation token...
                 if (task != await Task.WhenAny(task, tcs.Task).ConfigureAwait(false))

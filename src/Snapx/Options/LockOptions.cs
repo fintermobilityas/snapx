@@ -21,6 +21,7 @@ namespace snapx.Options
         public string Id { get; [UsedImplicitly] set; }
 
         [Usage(ApplicationAlias = "snapx")]
+        [UsedImplicitly]
         public static IEnumerable<Example> Examples
         {
             get

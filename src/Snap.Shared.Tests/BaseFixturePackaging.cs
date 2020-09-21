@@ -18,8 +18,6 @@ using Xunit;
 
 namespace Snap.Shared.Tests
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal class SnapReleaseBuilder : IDisposable, IEnumerable<string>
     {
         readonly Dictionary<string, IDisposable> _nuspec;
@@ -227,7 +225,7 @@ namespace Snap.Shared.Tests
         internal void AssertDeltaChangeset(SnapRelease snapRelease, string[] newNuspecTargetPaths = null, string[] deletedNuspecTargetPaths = null,
              string[] modifiedNuspecTargetPaths = null, string[] unmodifiedNuspecTargetPaths = null)
         {
-            void AssertDeltaChangesetSnapReleaseImpl(string[] expectedTargetPaths, List<SnapReleaseChecksum> actualChecksums)
+            static void AssertDeltaChangesetSnapReleaseImpl(string[] expectedTargetPaths, List<SnapReleaseChecksum> actualChecksums)
             {
                 if (actualChecksums == null) throw new ArgumentNullException(nameof(actualChecksums));
                 if (expectedTargetPaths == null) throw new ArgumentNullException(nameof(expectedTargetPaths));
@@ -240,8 +238,8 @@ namespace Snap.Shared.Tests
                     Assert.Equal(expectedTargetPath, actualChecksum.NuspecTargetPath);
                 }
             }
-            
-            void AssertDeltaChangesetNuspecTargetPathImpl(string[] expectedTargetPaths, List<string> actualTargetPaths)
+
+            static void AssertDeltaChangesetNuspecTargetPathImpl(string[] expectedTargetPaths, List<string> actualTargetPaths)
             {
                 if (actualTargetPaths == null) throw new ArgumentNullException(nameof(actualTargetPaths));
                 if (expectedTargetPaths == null) throw new ArgumentNullException(nameof(expectedTargetPaths));
@@ -255,10 +253,10 @@ namespace Snap.Shared.Tests
                 }
             }
 
-            AssertDeltaChangesetSnapReleaseImpl(newNuspecTargetPaths ?? new string[] {}, snapRelease.New);
-            AssertDeltaChangesetNuspecTargetPathImpl(deletedNuspecTargetPaths ?? new string[] {}, snapRelease.Deleted);
-            AssertDeltaChangesetSnapReleaseImpl(modifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Modified);
-            AssertDeltaChangesetNuspecTargetPathImpl(unmodifiedNuspecTargetPaths ?? new string[] {}, snapRelease.Unmodified);            
+            AssertDeltaChangesetSnapReleaseImpl(newNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.New);
+            AssertDeltaChangesetNuspecTargetPathImpl(deletedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Deleted);
+            AssertDeltaChangesetSnapReleaseImpl(modifiedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Modified);
+            AssertDeltaChangesetNuspecTargetPathImpl(unmodifiedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Unmodified);            
         }
 
         internal void AssertChannels([NotNull] SnapApp snapApp, [NotNull] params string[] channels)
@@ -409,7 +407,6 @@ namespace Snap.Shared.Tests
             return GetEnumerator();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedTupleComponentInReturnValue")]
         (string targetPath, string nuspecPath, string diskAbsoluteFilename) NormalizePath([NotNull] SnapRelease snapRelease, [NotNull] string relativePath)
         {
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
@@ -421,14 +418,14 @@ namespace Snap.Shared.Tests
             string targetPath;
             if (relativePath.StartsWith(SnapConstants.NuspecAssetsTargetPath))
             {
-                relativePath = relativePath.Substring(SnapConstants.NuspecAssetsTargetPath.Length + 1);
+                relativePath = relativePath[(SnapConstants.NuspecAssetsTargetPath.Length + 1)..];
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, relativePath);
                 var isCoreRunExe = relativePath.EndsWith(CoreRunExe);
                 diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : snapAppInstallDirectory, relativePath);
             }
             else if (relativePath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
-                relativePath = relativePath.Substring(SnapConstants.NuspecRootTargetPath.Length + 1);
+                relativePath = relativePath[(SnapConstants.NuspecRootTargetPath.Length + 1)..];
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath);
                 diskAbsoluteFilename = SnapFilesystem.PathCombine(snapAppInstallDirectory, relativePath);
             }
@@ -462,7 +459,6 @@ namespace Snap.Shared.Tests
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal class BuildPackageContext : IDisposable
     {
         public MemoryStream FullPackageMemoryStream { get; set; }
@@ -533,7 +529,10 @@ namespace Snap.Shared.Tests
 
             var (coreRunMemoryStream, _, _) =
                 releaseBuilder.SnapEmbeddedResources.GetCoreRunForSnapApp(releaseBuilder.SnapApp, releaseBuilder.SnapFilesystem, releaseBuilder.CoreRunLib);
-            coreRunMemoryStream.Dispose();
+            if (coreRunMemoryStream != null)
+            {
+                await coreRunMemoryStream.DisposeAsync();
+            }
 
             var nuspecBaseDirectory = releaseBuilder.SnapFilesystem.PathCombine(releaseBuilder.NugetPackagingDirectory, "content");
             releaseBuilder.SnapFilesystem.DirectoryCreate(nuspecBaseDirectory);

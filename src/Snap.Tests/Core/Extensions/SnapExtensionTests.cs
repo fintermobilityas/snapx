@@ -445,7 +445,6 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         public void ParseNugetFilename_When_Null()
         {
             string value = null;
@@ -503,19 +502,12 @@ namespace Snap.Tests.Core.Extensions
         [InlineData(NuGetProtocolVersion.V3)]
         public void TestBuildNugetSourcesFromSnapApp(NuGetProtocolVersion protocolVersion)
         {
-            string feedUrl;
-
-            switch (protocolVersion)
+            var feedUrl = protocolVersion switch
             {
-                case NuGetProtocolVersion.V2:
-                    feedUrl = NuGetConstants.V2FeedUrl;
-                    break;
-                case NuGetProtocolVersion.V3:
-                    feedUrl = NuGetConstants.V3FeedUrl;
-                    break;
-                default:
-                    throw new NotSupportedException(protocolVersion.ToString());
-            }
+                NuGetProtocolVersion.V2 => NuGetConstants.V2FeedUrl,
+                NuGetProtocolVersion.V3 => NuGetConstants.V3FeedUrl,
+                _ => throw new NotSupportedException(protocolVersion.ToString())
+            };
 
             var snapNugetFeed = new SnapNugetFeed
             {
@@ -605,19 +597,12 @@ namespace Snap.Tests.Core.Extensions
         [InlineData(NuGetProtocolVersion.V3)]
         public void TestBuildSnapFeedsFromNugetPackageSources(NuGetProtocolVersion protocolVersion)
         {
-            string feedUrl;
-
-            switch (protocolVersion)
+            var feedUrl = protocolVersion switch
             {
-                case NuGetProtocolVersion.V2:
-                    feedUrl = NuGetConstants.V2FeedUrl;
-                    break;
-                case NuGetProtocolVersion.V3:
-                    feedUrl = NuGetConstants.V3FeedUrl;
-                    break;
-                default:
-                    throw new NotSupportedException(protocolVersion.ToString());
-            }
+                NuGetProtocolVersion.V2 => NuGetConstants.V2FeedUrl,
+                NuGetProtocolVersion.V3 => NuGetConstants.V3FeedUrl,
+                _ => throw new NotSupportedException(protocolVersion.ToString())
+            };
 
             var snapNugetFeed = new SnapNugetFeed
             {

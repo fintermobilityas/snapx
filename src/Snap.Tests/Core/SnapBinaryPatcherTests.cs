@@ -15,14 +15,14 @@ namespace Snap.Tests.Core
 
             byte[] patchData;
 
-            using (var patchOut = new MemoryStream())
+            await using (var patchOut = new MemoryStream())
             {
                 await SnapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
                 patchData = patchOut.ToArray();
             }
 
-            using var toPatch = new MemoryStream(baseFileData);
-            using var patched = new MemoryStream();
+            await using var toPatch = new MemoryStream(baseFileData);
+            await using var patched = new MemoryStream();
             await SnapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
 
             Assert.Equal(newFileData, patched.ToArray());

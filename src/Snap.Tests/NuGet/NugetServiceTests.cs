@@ -74,9 +74,9 @@ namespace Snap.Tests.NuGet
             var initialPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
                 $"{initialPackageIdentity.Id}.{initialPackageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(initialPackageIdentity);
+                await using var nupkgStream = BuildNupkg(initialPackageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
@@ -85,9 +85,9 @@ namespace Snap.Tests.NuGet
             var secondPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
                 $"{secondPackageIdentity.Id}.{secondPackageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(secondPackageIdentity);
+                await using var nupkgStream = BuildNupkg(secondPackageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
@@ -96,16 +96,16 @@ namespace Snap.Tests.NuGet
             var differentPackageFilenameAbsolute = _snapFilesystem.PathCombine(packagesDirectory,
                 $"{differentPackageIdentity.Id}.{differentPackageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(differentPackageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(differentPackageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(differentPackageIdentity);
+                await using var nupkgStream = BuildNupkg(differentPackageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
             var packageSources = new NuGetInMemoryPackageSources(packagesDirectory, packageSource);
 
             var packages = await _nugetService
-                .GetMetadatasAsync("test", packageSources, CancellationToken.None, false);
+                .GetMetadatasAsync("test", packageSources, false, cancellationToken: CancellationToken.None);
 
             Assert.Equal(2, packages.Count);
         }
@@ -128,9 +128,9 @@ namespace Snap.Tests.NuGet
                 $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
 
             int packageFileSize;
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(packageIdentity);
+                await using var nupkgStream = BuildNupkg(packageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
 
                 packageFileSize = (int)nupkgStream.Length;
@@ -196,9 +196,9 @@ namespace Snap.Tests.NuGet
             var initialPackageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageDirectory,
                 $"{initialPackageIdentity.Id}.{initialPackageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(initialPackageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(initialPackageIdentity);
+                await using var nupkgStream = BuildNupkg(initialPackageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
             
@@ -208,9 +208,9 @@ namespace Snap.Tests.NuGet
                 $"{secondPackageIdentity.Id}.{secondPackageIdentity.Version.ToNormalizedString()}.nupkg");
 
             int packageFileSize;
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(secondPackageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(secondPackageIdentity);
+                await using var nupkgStream = BuildNupkg(secondPackageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
 
                 packageFileSize = (int)nupkgStream.Length;
@@ -222,7 +222,7 @@ namespace Snap.Tests.NuGet
                 PackageFileSize = packageFileSize
             };
 
-            using var downloadResourceResult = await _nugetService.DownloadLatestAsync(secondPackageIdentity.Id, packageSource, default, true, true);
+            using var downloadResourceResult = await _nugetService.DownloadLatestAsync(secondPackageIdentity.Id, packageSource, true, true);
             Assert.NotNull(downloadResourceResult);
             Assert.Equal(downloadContext.PackageFileSize, downloadResourceResult.PackageStream.Length);
             Assert.Equal(0, downloadResourceResult.PackageStream.Position);
@@ -243,9 +243,9 @@ namespace Snap.Tests.NuGet
             var packageFilenameAbsolute = _snapFilesystem.PathCombine(testPackageSrcDirectory,
                 $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(packageIdentity);
+                await using var nupkgStream = BuildNupkg(packageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
@@ -279,9 +279,9 @@ namespace Snap.Tests.NuGet
             var packageFilenameAbsolute = _snapFilesystem.PathCombine(deletePackageSrcDirectory,
                 $"{packageIdentity.Id}.{packageIdentity.Version.ToNormalizedString()}.nupkg");
 
-            using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
+            await using (var packageOutputStream = _snapFilesystem.FileReadWrite(packageFilenameAbsolute))
             {
-                using var nupkgStream = BuildNupkg(packageIdentity);
+                await using var nupkgStream = BuildNupkg(packageIdentity);
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
@@ -309,10 +309,12 @@ namespace Snap.Tests.NuGet
 
         static MemoryStream BuildNupkg(PackageIdentity packageIdentity)
         {
-            var packageBuilder = new PackageBuilder();
+            var packageBuilder = new PackageBuilder
+            {
+                Id = packageIdentity.Id, 
+                Version = packageIdentity.Version
+            };
 
-            packageBuilder.Id = packageIdentity.Id;
-            packageBuilder.Version = packageIdentity.Version;
             packageBuilder.Authors.Add("test");
             packageBuilder.Description = "description";
 

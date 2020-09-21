@@ -6,7 +6,6 @@ using Mono.Cecil;
 
 namespace Snap.Reflection
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ITypeReflector
     {
         IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
@@ -30,7 +29,7 @@ namespace Snap.Reflection
         {
             if (!_type.HasCustomAttributes)
             {
-                return new IAttributeReflector[] { };
+                return Array.Empty<IAttributeReflector>();
             }
 
             var expectedTypeName = typeof(T).Name;

@@ -251,31 +251,16 @@ namespace Snap.AnyOS.Unix
                     return null;
                 }
 
-                var value = line.Substring(identifier.Length).TrimStart('\t');
+                var value = line[identifier.Length..].TrimStart('\t');
                 return value;
             }
 
             foreach (var line in text.Split('\r', '\n').Where(x => !string.IsNullOrWhiteSpace(x)))
             {
-                if (distributorId == null)
-                {
-                    distributorId = Extract(line, "distributor id:");
-                }
-
-                if (description == null)
-                {
-                    description = Extract(line, "description:");
-                }
-
-                if (release == null)
-                {
-                    release = Extract(line, "release:");
-                }
-
-                if (codeName == null)
-                {
-                    codeName = Extract(line, "codeName:");
-                }
+                distributorId ??= Extract(line, "distributor id:");
+                description ??= Extract(line, "description:");
+                release ??= Extract(line, "release:");
+                codeName ??= Extract(line, "codeName:");
             }
 
             done:
@@ -288,11 +273,9 @@ namespace Snap.AnyOS.Unix
             
             var workingDirectory = Filesystem.PathGetDirectoryName(shortcutDescription.ExeAbsolutePath);
 
-            switch (DistroType)
+            return DistroType switch
             {
-                case SnapOsDistroType.Ubuntu:
-                case SnapOsDistroType.RaspberryPi:
-                    return $@"[Desktop Entry]
+                SnapOsDistroType.Ubuntu or SnapOsDistroType.RaspberryPi => $@"[Desktop Entry]
 Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
@@ -300,10 +283,9 @@ Terminal=false
 Exec=bash -c 'cd ""{workingDirectory}"" && LD_LIBRARY_PATH=. {shortcutDescription.ExeAbsolutePath}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
-Comment={description}";
-                default:
-                    return null;
-            }
+Comment={description}",
+                _ => null,
+            };
         }
 
      

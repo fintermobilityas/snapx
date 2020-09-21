@@ -73,8 +73,7 @@ namespace snapx
                 var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);
                 if (table != default) continue;
 
-                var tableColumns = new List<string>();
-                tableColumns.Add("Rid");
+                var tableColumns = new List<string> {"Rid"};
                 tableColumns.AddRange(snapApp.Channels.Select(x => $"Channel: {x.Name}"));
                 tableColumns.Add("Summary");
 
@@ -95,7 +94,7 @@ namespace snapx
                 try
                 {
                     var downloadResult = await SnapUtility.RetryAsync(async () => 
-                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamId(), x.packageSource, cancellationToken, false, true),
+                        await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamId(), x.packageSource, false, true, cancellationToken),
                         retriesPerTask, delayInMilliseconds);
                     downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
                 }

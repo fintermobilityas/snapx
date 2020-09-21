@@ -22,7 +22,7 @@ namespace Snap.Installer.Core
             GifAnimation = new List<byte[]>();
 
             const string animatedGifNs = "AnimatedGif.";
-            foreach (var image in Resources.Where(x => x.Filename.StartsWith(animatedGifNs)).OrderBy(x => x.Filename.Substring(animatedGifNs.Length).ToIntSafe()))
+            foreach (var image in Resources.Where(x => x.Filename.StartsWith(animatedGifNs)).OrderBy(x => x.Filename[animatedGifNs.Length..].ToIntSafe()))
             {
                 GifAnimation.Add(image.Stream.ToArray());
             }

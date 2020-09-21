@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
 namespace Snap.Core.Resources
 {
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IEmbedResources : IDisposable
     {
         IEnumerable<EmbeddedResource> Resources { get; }
@@ -16,8 +13,6 @@ namespace Snap.Core.Resources
         EmbeddedResource Find(Type typeRoot, string filename);
     }
 
-    [SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IEmbeddedResource : IDisposable
     {
         Type TypeRoot { get; }
@@ -100,7 +95,7 @@ namespace Snap.Core.Resources
 
                 embededResourceStream.Seek(0, SeekOrigin.Begin);
 
-                _resources.Add(new EmbeddedResource(typeRoot, embededResourceStream, resource.Substring(typeRootNamespace.Length + 1)));
+                _resources.Add(new EmbeddedResource(typeRoot, embededResourceStream, resource[(typeRootNamespace.Length + 1)..]));
             }
         }
 

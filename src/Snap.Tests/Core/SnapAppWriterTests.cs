@@ -199,8 +199,11 @@ namespace Snap.Tests.Core
 
             // Assembly is rewritten so we have to use a dynamic cast :(
 
+            var optimizedAssembltType = optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName 
+                                                 ?? throw new InvalidOperationException(), true);
+
             var optimizedEmbeddedResources = (dynamic)Activator.CreateInstance
-                (optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName, true), true);
+                (optimizedAssembltType ?? throw new InvalidOperationException(), true);
 
             Assert.NotNull(optimizedEmbeddedResources);
 

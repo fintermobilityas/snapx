@@ -14,8 +14,6 @@ using Snap.Extensions;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     internal interface ISnapCryptoProvider
     {
         string Sha256(byte[] content);

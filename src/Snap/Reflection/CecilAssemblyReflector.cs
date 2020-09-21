@@ -9,9 +9,6 @@ using Snap.Reflection.Exceptions;
 
 namespace Snap.Reflection
 {
-    
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface IAssemblyReflector
     {
         string Location { get; }
@@ -45,7 +42,7 @@ namespace Snap.Reflection
         {
             if (!_assemblyDefinition.HasCustomAttributes)
             {
-                return new IAttributeReflector[] { };
+                return Array.Empty<IAttributeReflector>();
             }
 
             var expectedTypeName = typeof(T).Name;

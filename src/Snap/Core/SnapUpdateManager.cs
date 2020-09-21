@@ -17,8 +17,6 @@ using Snap.NuGet;
 
 namespace Snap.Core
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
     public interface ISnapUpdateManagerProgressSource
     {
         Action<(int progressPercentage, long releasesWithChecksumOk, long releasesChecksummed, long releasesToChecksum)> ChecksumProgress { get; set; }
@@ -70,9 +68,6 @@ namespace Snap.Core
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMemberInSuper.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMethodReturnValue.Global")]
     public interface ISnapUpdateManager : IDisposable
     {
         int ReleaseRetentionLimit { get; set; }
@@ -87,7 +82,6 @@ namespace Snap.Core
             CancellationToken cancellationToken = default);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public sealed class SnapUpdateManager : ISnapUpdateManager
     {
         readonly string _workingDirectory;
@@ -127,7 +121,8 @@ namespace Snap.Core
         [UsedImplicitly]
         public SnapUpdateManager() : this(
             Directory.GetParent(
-                Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location)).FullName)
+                    Path.GetDirectoryName(typeof(SnapUpdateManager).Assembly.Location) ?? throw new InvalidOperationException())
+                ?.FullName ?? throw new InvalidOperationException())
         {
         }
 
@@ -137,21 +132,17 @@ namespace Snap.Core
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "JoinNullCheckWithUsage")]
         internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null,
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null,
             ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null, 
             ISnapHttpClient snapHttpClient = null)
         {
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
-
             _logger = logger ?? LogProvider.For<ISnapUpdateManager>();
             _snapOs = snapOs ?? SnapOs.AnyOs;
-            _workingDirectory = workingDirectory;
+            _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
             _packagesDirectory = _snapOs.Filesystem.PathCombine(_workingDirectory, "packages");
-            _snapApp = snapApp;
+            _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
 
             _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
             _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
@@ -183,7 +174,10 @@ namespace Snap.Core
         {
             var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager
                 .GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken, ApplicationId);
-            releasesMemoryStream?.Dispose();
+            if (releasesMemoryStream != null)
+            {
+                await releasesMemoryStream.DisposeAsync();
+            }
             return snapAppsReleases?.GetReleases(_snapApp);
         }
 
@@ -240,8 +234,8 @@ namespace Snap.Core
                 var deltaUpstreamId = _snapApp.BuildNugetDeltaUpstreamId();
 
                 medatadatas = await Task.WhenAll(
-                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, cancellationToken, true, true),
-                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, cancellationToken, true, true)
+                    _nugetService.GetLatestMetadataAsync(fullUpstreamId, packageSource, true, true, cancellationToken),
+                    _nugetService.GetLatestMetadataAsync(deltaUpstreamId, packageSource, true, true, cancellationToken)
                 );
             }
             catch (Exception e)
@@ -257,7 +251,10 @@ namespace Snap.Core
             }
 
             var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
-            releasesMemoryStream?.Dispose();
+            if(releasesMemoryStream != null)
+            {
+                await releasesMemoryStream.DisposeAsync();
+            }
             if (snapAppsReleases == null)
             {
                 return null;
@@ -448,13 +445,13 @@ namespace Snap.Core
                     .EnumerateDirectories(_workingDirectory)
                     .Select(x =>
                     {
-                        if (x.IndexOf("app-", StringComparison.OrdinalIgnoreCase) == -1)
+                        if (!x.Contains("app-", StringComparison.OrdinalIgnoreCase))
                         {
                             return (null, null);
                         }
 
                         var appDirIndexPosition = x.LastIndexOf("app-", StringComparison.OrdinalIgnoreCase);
-                        SemanticVersion.TryParse(x.Substring(appDirIndexPosition + 4), out var semanticVersion);
+                        _ = SemanticVersion.TryParse(x[(appDirIndexPosition + 4)..], out var semanticVersion);
                         
                         return (absolutePath: x, version: semanticVersion);
                     })

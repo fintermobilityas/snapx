@@ -42,10 +42,7 @@ namespace Snap.AnyOS.Windows
             CtrlShutdownEvent
         }
 
-        /// <summary>
-        /// Need this as a member variable to avoid it being garbage collected.
-        /// </summary>
-        [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")] readonly HandlerRoutine _handlerRoutine;
+        readonly HandlerRoutine _handlerRoutine;
 
         public SnapOsWindowsExitSignal()
         {
@@ -77,13 +74,11 @@ namespace Snap.AnyOS.Windows
 
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal interface ISnapOsWindows : ISnapOsImpl
     {
 
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     internal sealed class SnapOsShortcutDescription
     {
         public SnapApp SnapApp { get; set; }
@@ -151,22 +146,14 @@ namespace Snap.AnyOS.Windows
 
             string GetLinkTarget(SnapShortcutLocation location, string title, string applicationName, bool createDirectoryIfNecessary = true)
             {
-                string targetDirectory;
-
-                switch (location)
+                var targetDirectory = location switch
                 {
-                    case SnapShortcutLocation.Desktop:
-                        targetDirectory = SpecialFolders.DesktopDirectory;
-                        break;
-                    case SnapShortcutLocation.StartMenu:
-                        targetDirectory = Filesystem.PathCombine(SpecialFolders.StartMenu, "Programs", applicationName);
-                        break;
-                    case SnapShortcutLocation.Startup:
-                        targetDirectory = SpecialFolders.StartupDirectory;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(location), location, null);
-                }
+                    SnapShortcutLocation.Desktop => SpecialFolders.DesktopDirectory,
+                    SnapShortcutLocation.StartMenu => Filesystem.PathCombine(SpecialFolders.StartMenu, "Programs",
+                        applicationName),
+                    SnapShortcutLocation.Startup => SpecialFolders.StartupDirectory,
+                    _ => throw new ArgumentOutOfRangeException(nameof(location), location, null)
+                };
 
                 if (createDirectoryIfNecessary)
                 {

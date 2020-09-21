@@ -23,6 +23,7 @@ namespace snapx.Options
         public string Filename { get; set; }
 
         [Usage(ApplicationAlias = "snapx")]
+        [UsedImplicitly]
         public static IEnumerable<Example> Examples
         {
             get

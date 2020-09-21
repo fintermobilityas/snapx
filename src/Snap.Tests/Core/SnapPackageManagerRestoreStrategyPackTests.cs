@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,6 @@ using Snap.Extensions;
 
 namespace Snap.Tests.Core
 {
-    [SuppressMessage("ReSharper", "PrivateFieldCanBeConvertedToLocalVariable")]
     public class SnapPackageManagerRestoreStrategyPackTests : IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
     {
         readonly Mock<INugetService> _nugetServiceMock;

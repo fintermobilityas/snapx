@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
@@ -12,9 +11,6 @@ namespace Snap.Core.Models
     {
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsNugetFeed : SnapsFeed
     {
         public string Name { get; set; }
@@ -25,13 +21,13 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapsNugetFeed([JetBrains.Annotations.NotNull] SnapsNugetFeed feed)
+        public SnapsNugetFeed([NotNull] SnapsNugetFeed feed)
         {
             if (feed == null) throw new ArgumentNullException(nameof(feed));
             Name = feed.Name;
         }
 
-        public SnapsNugetFeed([JetBrains.Annotations.NotNull] SnapNugetFeed feed) : this(new SnapsNugetFeed
+        public SnapsNugetFeed([NotNull] SnapNugetFeed feed) : this(new SnapsNugetFeed
         {
             Name = feed.Name
         })
@@ -40,9 +36,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsHttpFeed : SnapsFeed
     {
         public Uri Source { get; set; }
@@ -53,13 +46,13 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapsHttpFeed([JetBrains.Annotations.NotNull] SnapsHttpFeed feed)
+        public SnapsHttpFeed([NotNull] SnapsHttpFeed feed)
         {
             if (feed == null) throw new ArgumentNullException(nameof(feed));
             Source = feed.Source;
         }
 
-        public SnapsHttpFeed([JetBrains.Annotations.NotNull] SnapHttpFeed feed) : this(new SnapsHttpFeed
+        public SnapsHttpFeed([NotNull] SnapHttpFeed feed) : this(new SnapsHttpFeed
         {
             Source = feed.Source
         })
@@ -68,9 +61,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsChannel
     {
         public string Name { get; set; }
@@ -83,26 +73,21 @@ namespace Snap.Core.Models
             
         }
 
-        internal SnapsChannel([JetBrains.Annotations.NotNull] SnapChannel snapChannel)
+        internal SnapsChannel([NotNull] SnapChannel snapChannel)
         {
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             Name = snapChannel.Name;
             PushFeed = new SnapsNugetFeed(snapChannel.PushFeed);
 
-            switch (snapChannel.UpdateFeed)
+            UpdateFeed = snapChannel.UpdateFeed switch
             {
-                case SnapNugetFeed snapNugetFeed:
-                    UpdateFeed = new SnapsNugetFeed(snapNugetFeed);
-                    break;
-                case SnapHttpFeed snapHttpFeed:
-                    UpdateFeed = new SnapsHttpFeed(snapHttpFeed);
-                    break;
-                default:
-                    throw new NotSupportedException($"Unknown update feed type: {snapChannel.UpdateFeed?.GetType()}.");
-            }
+                SnapNugetFeed snapNugetFeed => new SnapsNugetFeed(snapNugetFeed),
+                SnapHttpFeed snapHttpFeed => new SnapsHttpFeed(snapHttpFeed),
+                _ => throw new NotSupportedException($"Unknown update feed type: {snapChannel.UpdateFeed?.GetType()}.")
+            };
         }
 
-        public SnapsChannel([JetBrains.Annotations.NotNull] SnapsChannel snapChannel)
+        public SnapsChannel([NotNull] SnapsChannel snapChannel)
         {
             if (snapChannel == null) throw new ArgumentNullException(nameof(snapChannel));
             Name = snapChannel.Name;
@@ -111,9 +96,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsTarget
     {
         public OSPlatform Os { get; set; }
@@ -132,7 +114,7 @@ namespace Snap.Core.Models
             Installers = new List<SnapInstallerType>();
         }
 
-        internal SnapsTarget([JetBrains.Annotations.NotNull] SnapTarget target)
+        internal SnapsTarget([NotNull] SnapTarget target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
@@ -144,7 +126,7 @@ namespace Snap.Core.Models
             Installers = target.Installers;
         }
 
-        public SnapsTarget([JetBrains.Annotations.NotNull] SnapsTarget target)
+        public SnapsTarget([NotNull] SnapsTarget target)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
             Os = target.Os;
@@ -157,8 +139,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
-    [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     public sealed class SnapsAppNuspec
     {
         public string ReleaseNotes { get; set; }
@@ -191,9 +171,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapsApp
     {
         public string Id { get; set; }
@@ -213,7 +190,7 @@ namespace Snap.Core.Models
             Nuspec = new SnapsAppNuspec();
         }
 
-        internal SnapsApp([JetBrains.Annotations.NotNull] SnapApp snapApp)
+        internal SnapsApp([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
@@ -224,7 +201,7 @@ namespace Snap.Core.Models
             Nuspec = new SnapsAppNuspec(snapApp);
         }
 
-        public SnapsApp([JetBrains.Annotations.NotNull] SnapsApp snapApp)
+        public SnapsApp([NotNull] SnapsApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
@@ -235,16 +212,12 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "InconsistentNaming")]
     public enum SnapAppsPackStrategy
     {
         [UsedImplicitly] none,
         push
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "AutoPropertyCanBeMadeGetOnly.Global")]
     public sealed class SnapAppsGeneric
     {
         public string Token { get; set; }
@@ -260,7 +233,7 @@ namespace Snap.Core.Models
             
         }
 
-        public SnapAppsGeneric([JetBrains.Annotations.NotNull] SnapAppsGeneric snapAppsGeneric)
+        public SnapAppsGeneric([NotNull] SnapAppsGeneric snapAppsGeneric)
         {
             if (snapAppsGeneric == null) throw new ArgumentNullException(nameof(snapAppsGeneric));
             Artifacts = snapAppsGeneric.Artifacts;
@@ -271,7 +244,6 @@ namespace Snap.Core.Models
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "UnusedMember.Global")]
     public sealed class SnapApps
     {
         public int Schema { get; set; }
@@ -286,7 +258,7 @@ namespace Snap.Core.Models
             Generic = new SnapAppsGeneric();
         }
 
-        internal SnapApps([JetBrains.Annotations.NotNull] SnapApp snapApp)
+        internal SnapApps([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
@@ -294,7 +266,7 @@ namespace Snap.Core.Models
             Generic = new SnapAppsGeneric();            
         }
 
-        public SnapApps([JetBrains.Annotations.NotNull] SnapApps snapApps)
+        public SnapApps([NotNull] SnapApps snapApps)
         {
             if (snapApps == null) throw new ArgumentNullException(nameof(snapApps));
             Channels = snapApps.Channels.Select(x => new SnapsChannel(x)).ToList();
@@ -303,31 +275,31 @@ namespace Snap.Core.Models
             Schema = snapApps.Schema;
         }
 
-        public string BuildLockKey([JetBrains.Annotations.NotNull] SnapApp snapApp)
+        public string BuildLockKey([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{Generic.Token}-{snapApp.Id}";
         }
 
-        public string BuildLockKey([JetBrains.Annotations.NotNull] SnapsApp snapApp)
+        public string BuildLockKey([NotNull] SnapsApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return $"{Generic.Token}-{snapApp.Id}";
         }
 
-        public IEnumerable<string> GetRids([JetBrains.Annotations.NotNull] SnapApp snapApp)
+        public IEnumerable<string> GetRids([NotNull] SnapApp snapApp)
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return GetRids(snapApp.Id);
         } 
 
-        public IEnumerable<string> GetRids([JetBrains.Annotations.NotNull] SnapsApp snapsApp)
+        public IEnumerable<string> GetRids([NotNull] SnapsApp snapsApp)
         {
             if (snapsApp == null) throw new ArgumentNullException(nameof(snapsApp));
             return GetRids(snapsApp.Id);
         } 
 
-        List<string> GetRids([JetBrains.Annotations.NotNull] string snapId)
+        List<string> GetRids([NotNull] string snapId)
         {
             if (snapId == null) throw new ArgumentNullException(nameof(snapId));
             return Apps.Where(x => x.Id == snapId)

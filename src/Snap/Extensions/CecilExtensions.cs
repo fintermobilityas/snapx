@@ -7,7 +7,6 @@ using Mono.Cecil;
 
 namespace Snap.Extensions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     internal static class CecilExtensions
     {
         const string ExpressionCannotBeNullMessage = "The expression cannot be null";
@@ -60,22 +59,20 @@ namespace Snap.Extensions
 
         static string BuildMemberName(Expression expression)
         {
-            switch (expression)
+            return expression switch
             {
-                case null:
-                    throw new ArgumentException(ExpressionCannotBeNullMessage);
-                case MemberExpression memberExpression:
+                null => throw new ArgumentException(ExpressionCannotBeNullMessage),
+                MemberExpression memberExpression =>
                     // Reference type property or field
-                    return memberExpression.Member.Name;
-                case MethodCallExpression methodCallExpression:
+                    memberExpression.Member.Name,
+                MethodCallExpression methodCallExpression =>
                     // Reference type method
-                    return methodCallExpression.Method.Name;
-                case UnaryExpression unaryExpression:
+                    methodCallExpression.Method.Name,
+                UnaryExpression unaryExpression =>
                     // Property, field of method returning value type
-                    return BuildMemberName(unaryExpression);
-                default:
-                    throw new ArgumentException(InvalidExpressionMessage);
-            }
+                    BuildMemberName(unaryExpression),
+                _ => throw new ArgumentException(InvalidExpressionMessage)
+            };
         }
 
         static string BuildMemberName(UnaryExpression unaryExpression)

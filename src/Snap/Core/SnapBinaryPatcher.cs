@@ -49,24 +49,14 @@ namespace Snap.Core
         /// <param name="newData">The new binary data.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
         /// <param name="cancellationToken"></param>
-        public static Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
-        {
-            return CreateAsyncImpl(oldData, newData, output, cancellationToken);
-        }
-
-        static async Task CreateAsyncImpl(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
+        public static async Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
         {
             // check arguments
-            if (oldData.IsEmpty)
-                throw new ArgumentNullException(nameof(oldData));
-            if (newData.IsEmpty)
-                throw new ArgumentNullException(nameof(newData));
-            if (output == null)
-                throw new ArgumentNullException(nameof(output));
-            if (!output.CanSeek)
-                throw new ArgumentException("Output stream must be seekable.", nameof(output));
-            if (!output.CanWrite)
-                throw new ArgumentException("Output stream must be writable.", nameof(output));
+            if (oldData.IsEmpty) throw new ArgumentNullException(nameof(oldData));
+            if (newData.IsEmpty) throw new ArgumentNullException(nameof(newData));
+            if (output == null) throw new ArgumentNullException(nameof(output));
+            if (!output.CanSeek) throw new ArgumentException("Output stream must be seekable.", nameof(output));
+            if (!output.CanWrite) throw new ArgumentException("Output stream must be writable.", nameof(output));
 
             var header = ArrayPool<byte>.Shared.Rent(CHeaderSize);
             var db = ArrayPool<byte>.Shared.Rent(newData.Length);
@@ -95,7 +85,7 @@ namespace Snap.Core
                     32  ??  Bzip2ed ctrl block
                     ??  ??  Bzip2ed diff block
                     ??  ??  Bzip2ed extra block */
-                
+
                 WriteInt64(CFileSignature, header, 0); // "BSDIFF40"
                 WriteInt64(0, header, 8);
                 WriteInt64(0, header, 16);
@@ -112,13 +102,16 @@ namespace Snap.Core
                 await using (var wrappingStream = new WrappingStream(output, Ownership.None))
                 {
                     await using var bz2Stream = new BZip2Stream(wrappingStream, CompressionMode.Compress, true);
+
                     // compute the differences, writing ctrl as we go
+
                     var scan = 0;
                     var pos = 0;
                     var len = 0;
                     var lastscan = 0;
                     var lastpos = 0;
                     var lastoffset = 0;
+
                     while (scan < newData.Length)
                     {
                         var oldscore = 0;
@@ -198,9 +191,13 @@ namespace Snap.Core
                             }
 
                             for (var i = 0; i < lenf; i++)
+                            {
                                 db[dblen + i] = (byte)(newData.Span[lastscan + i] - oldData.Span[lastpos + i]);
+                            }
                             for (var i = 0; i < scan - lenb - (lastscan + lenf); i++)
+                            {
                                 eb[eblen + i] = newData.Span[lastscan + lenf + i];
+                            }
 
                             dblen += lenf;
                             eblen += scan - lenb - (lastscan + lenf);
@@ -272,13 +269,9 @@ namespace Snap.Core
         /// <param name="cancellationToken"></param>
         public static async Task ApplyAsync(Stream input, Func<Task<Stream>> openPatchStream, Stream output, CancellationToken cancellationToken)
         {
-            // check arguments
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
-            if (openPatchStream == null)
-                throw new ArgumentNullException(nameof(openPatchStream));
-            if (output == null)
-                throw new ArgumentNullException(nameof(output));
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            if (openPatchStream == null) throw new ArgumentNullException(nameof(openPatchStream));
+            if (output == null) throw new ArgumentNullException(nameof(output));
 
             /*
             File format:
@@ -297,27 +290,35 @@ namespace Snap.Core
             long controlLength, diffLength, newSize;
             await using (var patchStream = await openPatchStream())
             {
-                // check patch stream capabilities
                 if (!patchStream.CanRead)
+                {
                     throw new ArgumentException("Patch stream must be readable.", nameof(openPatchStream));
+                }
                 if (!patchStream.CanSeek)
+                {
                     throw new ArgumentException("Patch stream must be seekable.", nameof(openPatchStream));
+                }
 
-                var header = await patchStream.ReadExactlyAsync(CHeaderSize, cancellationToken);
+                var header = ArrayPool<byte>.Shared.Rent(CHeaderSize);
+                await patchStream.ReadAsync(header, cancellationToken);
 
                 try
                 {
                     // check for appropriate magic
                     var signature = ReadInt64(header, 0);
                     if (signature != CFileSignature)
+                    {
                         throw new InvalidOperationException("Corrupt patch.");
+                    }
 
                     // read lengths from header
                     controlLength = ReadInt64(header, 8);
                     diffLength = ReadInt64(header, 16);
                     newSize = ReadInt64(header, 24);
                     if (controlLength < 0 || diffLength < 0 || newSize < 0)
+                    {
                         throw new InvalidOperationException("Corrupt patch.");
+                    }
                 }
                 finally
                 {
@@ -358,13 +359,15 @@ namespace Snap.Core
                     // read control data
                     for (var i = 0; i < 3; i++)
                     {
-                        await controlStream.ReadExactlyAsync(buffer, 0, 8, cancellationToken);
+                        await controlStream.ReadAsync(buffer.AsMemory(0, 8), cancellationToken);
                         control[i] = ReadInt64(buffer, 0);
                     }
 
                     // sanity-check
                     if (newPosition + control[0] > newSize)
+                    {
                         throw new InvalidOperationException("Corrupt patch.");
+                    }
 
                     // seek old file to the position that the new data is diffed against
                     input.Position = oldPosition;
@@ -375,14 +378,16 @@ namespace Snap.Core
                         var actualBytesToCopy = Math.Min(bytesToCopy, cBufferSize);
 
                         // read diff string
-                        await diffStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                        await diffStream.ReadAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
 
                         // add old data to diff string
                         var availableInputBytes = Math.Min(actualBytesToCopy, (int)(input.Length - input.Position));
-                        await input.ReadExactlyAsync(oldData, 0, availableInputBytes, cancellationToken);
+                        await input.ReadAsync(oldData.AsMemory(0, availableInputBytes), cancellationToken);
 
                         for (var index = 0; index < availableInputBytes; index++)
+                        {
                             newData[index] += oldData[index];
+                        }
 
                         await output.WriteAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
 
@@ -394,7 +399,9 @@ namespace Snap.Core
 
                     // sanity-check
                     if (newPosition + control[1] > newSize)
+                    {
                         throw new InvalidOperationException("Corrupt patch.");
+                    }
 
                     // read extra string
                     bytesToCopy = (int)control[1];
@@ -402,7 +409,11 @@ namespace Snap.Core
                     {
                         var actualBytesToCopy = Math.Min(bytesToCopy, cBufferSize);
 
-                        await extraStream.ReadExactlyAsync(newData, 0, actualBytesToCopy, cancellationToken);
+                        if (hasExtraData)
+                        {
+                            await extraStream.ReadAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
+                        }
+
                         await output.WriteAsync(newData.AsMemory(0, actualBytesToCopy), cancellationToken);
 
                         newPosition += actualBytesToCopy;
@@ -428,7 +439,9 @@ namespace Snap.Core
             {
                 var diff = left[index + leftOffset] - right[index + rightOffset];
                 if (diff != 0)
+                {
                     return diff;
+                }
             }
             return 0;
         }
@@ -439,7 +452,9 @@ namespace Snap.Core
             for (i = 0; i < oldData.Length - oldOffset && i < newData.Length - newOffset; i++)
             {
                 if (oldData[i + oldOffset] != newData[i + newOffset])
+                {
                     break;
+                }
             }
             return i;
         }
@@ -500,8 +515,14 @@ namespace Snap.Core
                             }
                         }
 
-                        for (var i = 0; i < j; i++) v[I[k + i]] = k + j - 1;
-                        if (j == 1) I[k] = -1;
+                        for (var i = 0; i < j; i++)
+                        {
+                            v[I[k + i]] = k + j - 1;
+                        }
+                        if (j == 1)
+                        {
+                            I[k] = -1;
+                        }
                     }
                 }
                 else
@@ -554,8 +575,15 @@ namespace Snap.Core
 
                     if (jj > start) Split(I, v, start, jj - start, h);
 
-                    for (i = 0; i < kk - jj; i++) v[I[jj + i]] = kk - 1;
-                    if (jj == kk - 1) I[jj] = -1;
+                    for (i = 0; i < kk - jj; i++)
+                    {
+                        v[I[jj + i]] = kk - 1;
+                    }
+
+                    if (jj == kk - 1)
+                    {
+                        I[jj] = -1;
+                    }
 
                     if (start + len > kk)
                     {
@@ -577,24 +605,40 @@ namespace Snap.Core
             Span<int> v = new int[oldData.Length + 1];
 
             foreach (var oldByte in oldData.Span)
+            {
                 buckets[oldByte]++;
+            }
+
             for (var i = 1; i < 256; i++)
+            {
                 buckets[i] += buckets[i - 1];
+            }
+
             for (var i = 255; i > 0; i--)
+            {
                 buckets[i] = buckets[i - 1];
+            }
+
             buckets[0] = 0;
 
             for (var i = 0; i < oldData.Length; i++)
+            {
                 I[++buckets[oldData.Span[i]]] = i;
+            }
 
             for (var i = 0; i < oldData.Length; i++)
+            {
                 v[i] = buckets[oldData.Span[i]];
+            }
 
             for (var i = 1; i < 256; i++)
             {
                 if (buckets[i] == buckets[i - 1] + 1)
+                {
                     I[buckets[i]] = -1;
+                }
             }
+
             I[0] = -1;
 
             for (var h = 1; I[0] != -(oldData.Length + 1); h += h)
@@ -611,7 +655,9 @@ namespace Snap.Core
                     else
                     {
                         if (len != 0)
+                        {
                             I[i - len] = -len;
+                        }
                         len = v[I[i]] + 1 - i;
                         Split(I, v, i, len, h);
                         i += len;
@@ -620,13 +666,17 @@ namespace Snap.Core
                 }
 
                 if (len != 0)
+                {
                     I[i - len] = -len;
+                }
             }
 
             for (var i = 0; i < oldData.Length + 1; i++)
+            {
                 I[v[i]] = i;
+            }
 
-            return new Memory<int>(I.ToArray());
+            return I.ToArray();
         }
 
         static void Swap(ref int first, ref int second)
@@ -636,35 +686,37 @@ namespace Snap.Core
             second = temp;
         }
 
-        static long ReadInt64(ReadOnlySpan<byte> buf, int offset)
+        static long ReadInt64(ReadOnlySpan<byte> buffer, int offset)
         {
-            long value = buf[offset + 7] & 0x7F;
+            long value = buffer[offset + 7] & 0x7F;
 
             for (var index = 6; index >= 0; index--)
             {
                 value *= 256;
-                value += buf[offset + index];
+                value += buffer[offset + index];
             }
 
-            if ((buf[offset + 7] & 0x80) != 0)
+            if ((buffer[offset + 7] & 0x80) != 0)
                 value = -value;
 
             return value;
         }
 
-        static void WriteInt64(long value, Span<byte> buf, int offset)
+        static void WriteInt64(long value, Span<byte> buffer, int offset)
         {
             var valueToWrite = value < 0 ? -value : value;
 
             for (var byteIndex = 0; byteIndex < 8; byteIndex++)
             {
-                buf[offset + byteIndex] = (byte)(valueToWrite % 256);
-                valueToWrite -= buf[offset + byteIndex];
+                buffer[offset + byteIndex] = (byte)(valueToWrite % 256);
+                valueToWrite -= buffer[offset + byteIndex];
                 valueToWrite /= 256;
             }
 
             if (value < 0)
-                buf[offset + 7] |= 0x80;
+            {
+                buffer[offset + 7] |= 0x80;
+            }
         }
 
         const long CFileSignature = 0x3034464649445342L;
@@ -686,7 +738,7 @@ namespace Snap.Core
         /// <param name="ownership">Use Owns if the wrapped stream should be disposed when this stream is disposed.</param>
         public WrappingStream(Stream streamBase, Ownership ownership)
         {
-            m_streamBase = streamBase ?? throw new ArgumentNullException(nameof(streamBase));
+            WrappedStream = streamBase ?? throw new ArgumentNullException(nameof(streamBase));
             m_ownership = ownership;
         }
 
@@ -694,26 +746,26 @@ namespace Snap.Core
         /// Gets a value indicating whether the current stream supports reading.
         /// </summary>
         /// <returns><c>true</c> if the stream supports reading; otherwise, <c>false</c>.</returns>
-        public override bool CanRead => m_streamBase?.CanRead ?? false;
+        public override bool CanRead => WrappedStream?.CanRead ?? false;
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports seeking.
         /// </summary>
         /// <returns><c>true</c> if the stream supports seeking; otherwise, <c>false</c>.</returns>
-        public override bool CanSeek => m_streamBase?.CanSeek ?? false;
+        public override bool CanSeek => WrappedStream?.CanSeek ?? false;
 
         /// <summary>
         /// Gets a value indicating whether the current stream supports writing.
         /// </summary>
         /// <returns><c>true</c> if the stream supports writing; otherwise, <c>false</c>.</returns>
-        public override bool CanWrite => m_streamBase?.CanWrite ?? false;
+        public override bool CanWrite => WrappedStream?.CanWrite ?? false;
 
         /// <summary>
         /// Gets the length in bytes of the stream.
         /// </summary>
         public override long Length
         {
-            get { ThrowIfDisposed(); return m_streamBase.Length; }
+            get { ThrowIfDisposed(); return WrappedStream.Length; }
         }
 
         /// <summary>
@@ -721,8 +773,8 @@ namespace Snap.Core
         /// </summary>
         public override long Position
         {
-            get { ThrowIfDisposed(); return m_streamBase.Position; }
-            set { ThrowIfDisposed(); m_streamBase.Position = value; }
+            get { ThrowIfDisposed(); return WrappedStream.Position; }
+            set { ThrowIfDisposed(); WrappedStream.Position = value; }
         }
 
         /// <summary>
@@ -731,7 +783,7 @@ namespace Snap.Core
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             ThrowIfDisposed();
-            return m_streamBase.BeginRead(buffer, offset, count, callback, state);
+            return WrappedStream.BeginRead(buffer, offset, count, callback, state);
         }
 
         /// <summary>
@@ -740,7 +792,7 @@ namespace Snap.Core
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             ThrowIfDisposed();
-            return m_streamBase.BeginWrite(buffer, offset, count, callback, state);
+            return WrappedStream.BeginWrite(buffer, offset, count, callback, state);
         }
 
         /// <summary>
@@ -749,7 +801,7 @@ namespace Snap.Core
         public override int EndRead(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-            return m_streamBase.EndRead(asyncResult);
+            return WrappedStream.EndRead(asyncResult);
         }
 
         /// <summary>
@@ -758,7 +810,7 @@ namespace Snap.Core
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-            m_streamBase.EndWrite(asyncResult);
+            WrappedStream.EndWrite(asyncResult);
         }
 
         /// <summary>
@@ -767,7 +819,7 @@ namespace Snap.Core
         public override void Flush()
         {
             ThrowIfDisposed();
-            m_streamBase.Flush();
+            WrappedStream.Flush();
         }
 
         /// <summary>
@@ -777,7 +829,7 @@ namespace Snap.Core
         public override int Read(byte[] buffer, int offset, int count)
         {
             ThrowIfDisposed();
-            return m_streamBase.Read(buffer, offset, count);
+            return WrappedStream.Read(buffer, offset, count);
         }
 
         /// <summary>
@@ -786,7 +838,7 @@ namespace Snap.Core
         public override int ReadByte()
         {
             ThrowIfDisposed();
-            return m_streamBase.ReadByte();
+            return WrappedStream.ReadByte();
         }
 
         /// <summary>
@@ -798,7 +850,7 @@ namespace Snap.Core
         public override long Seek(long offset, SeekOrigin origin)
         {
             ThrowIfDisposed();
-            return m_streamBase.Seek(offset, origin);
+            return WrappedStream.Seek(offset, origin);
         }
 
         /// <summary>
@@ -808,7 +860,7 @@ namespace Snap.Core
         public override void SetLength(long value)
         {
             ThrowIfDisposed();
-            m_streamBase.SetLength(value);
+            WrappedStream.SetLength(value);
         }
 
         /// <summary>
@@ -818,7 +870,7 @@ namespace Snap.Core
         public override void Write(byte[] buffer, int offset, int count)
         {
             ThrowIfDisposed();
-            m_streamBase.Write(buffer, offset, count);
+            WrappedStream.Write(buffer, offset, count);
         }
 
         /// <summary>
@@ -827,14 +879,14 @@ namespace Snap.Core
         public override void WriteByte(byte value)
         {
             ThrowIfDisposed();
-            m_streamBase.WriteByte(value);
+            WrappedStream.WriteByte(value);
         }
 
         /// <summary>
         /// Gets the wrapped stream.
         /// </summary>
         /// <value>The wrapped stream.</value>
-        protected Stream WrappedStream => m_streamBase;
+        protected Stream WrappedStream { get; set; }
 
         /// <summary>
         /// Releases the unmanaged resources used by the <see cref="WrappingStream"/> and optionally releases the managed resources.
@@ -847,9 +899,9 @@ namespace Snap.Core
                 // doesn't close the base stream, but just prevents access to it through this WrappingStream
                 if (disposing)
                 {
-                    if (m_streamBase != null && m_ownership == Ownership.Owns)
-                        m_streamBase.Dispose();
-                    m_streamBase = null;
+                    if (WrappedStream != null && m_ownership == Ownership.Owns)
+                        WrappedStream.Dispose();
+                    WrappedStream = null;
                 }
             }
             finally
@@ -861,18 +913,17 @@ namespace Snap.Core
         void ThrowIfDisposed()
         {
             // throws an ObjectDisposedException if this object has been disposed
-            if (m_streamBase == null)
+            if (WrappedStream == null)
                 throw new ObjectDisposedException(GetType().Name);
         }
 
-        Stream m_streamBase;
         readonly Ownership m_ownership;
     }
 
     /// <summary>
     /// Indicates whether an object takes ownership of an item.
     /// </summary>
-    public enum Ownership
+    internal enum Ownership
     {
         /// <summary>
         /// The object does not own this item.
@@ -883,64 +934,5 @@ namespace Snap.Core
         /// The object owns this item, and is responsible for releasing it.
         /// </summary>
         Owns
-    }
-
-    /// <summary>
-    /// Provides helper methods for working with <see cref="Stream"/>.
-    /// </summary>
-    internal static class StreamUtility
-    {
-        /// <summary>
-        /// Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/>.
-        /// </summary>
-        /// <param name="stream">The stream to read from.</param>
-        /// <param name="count">The count of bytes to read.</param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>A new byte array containing the data read from the stream.</returns>
-        public static async Task<byte[]> ReadExactlyAsync(this Stream stream, int count, CancellationToken cancellationToken)
-        {
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-            var buffer = ArrayPool<byte>.Shared.Rent(count);
-            await ReadExactlyAsync(stream, buffer, 0, count, cancellationToken);
-            return buffer;
-        }
-
-        /// <summary>
-        /// Reads exactly <paramref name="count"/> bytes from <paramref name="stream"/> into
-        /// <paramref name="buffer"/>, starting at the byte given by <paramref name="offset"/>.
-        /// </summary>
-        /// <param name="stream">The stream to read from.</param>
-        /// <param name="buffer">The buffer to read data into.</param>
-        /// <param name="offset">The offset within the buffer at which data is first written.</param>
-        /// <param name="count">The count of bytes to read.</param>
-        /// <param name="cancellationToken"></param>
-        public static async Task ReadExactlyAsync(this Stream stream, byte[] buffer, int offset, int count,
-            CancellationToken cancellationToken)
-        {
-            // check arguments
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-            if (offset < 0 || offset > buffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            if (count < 0 || buffer.Length - offset < count)
-                throw new ArgumentOutOfRangeException(nameof(count));
-
-            while (count > 0)
-            {
-                // read data
-                var bytesRead = await stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
-
-                // check for failure to read
-                if (bytesRead == 0)
-                    throw new EndOfStreamException();
-
-                // move to next block
-                offset += bytesRead;
-                count -= bytesRead;
-            }
-        }
     }
 }

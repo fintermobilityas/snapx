@@ -755,7 +755,7 @@ namespace snapx
                     break;
                 case "linux-arm64":
                     installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxArm64;
-                    warpPackerArch = "linux-arm64";
+                    warpPackerArch = "linux-aarch64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
                     break;

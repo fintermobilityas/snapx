@@ -53,7 +53,7 @@ namespace Snap.Tests.Core
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapPackageManager = new SnapPackageManager(_snapFilesystem, new SnapOsSpecialFoldersUnix(), _nugetServiceMock.Object,
+            _snapPackageManager = new SnapPackageManager(_snapFilesystem, new SnapOsSpecialFoldersAnyOs(_snapFilesystem), _nugetServiceMock.Object,
                 _snapHttpClientMock.Object,
                 _snapCryptoProvider, _snapExtractor, _snapAppReader, _snapPack);
             _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem,

@@ -34,11 +34,11 @@ namespace Snap.Tests.Core
         readonly ISnapPack _snapPack;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
-        readonly ISnapOs _snapOs;
         readonly SnapInstaller _snapInstaller;
         readonly ISnapExtractor _snapExtractor;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapCryptoProvider _snapCryptoProvider;
+        readonly ISnapFilesystem _snapFilesystem;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
         readonly Mock<INugetService> _nugetServiceMock;
         readonly Mock<ISnapHttpClient> _snapHttpClientMock;
@@ -54,12 +54,13 @@ namespace Snap.Tests.Core
             _snapHttpClientMock = new Mock<ISnapHttpClient>();
             _snapCryptoProvider = new SnapCryptoProvider();
             _snapEmbeddedResources = new SnapEmbeddedResources();
-            _snapOs = SnapOs.AnyOs;
+            _snapFilesystem = new SnapFilesystem();
             _snapAppWriter = new SnapAppWriter();
-            _snapPack = new SnapPack(_snapOs.Filesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources);
-            _snapExtractor = new SnapExtractor(_snapOs.Filesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources, _snapAppWriter);
-            _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapOs.Filesystem,
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources);
+            var snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), true);
+            _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
+            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, snapOs, _snapEmbeddedResources, _snapAppWriter);
+            _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem,
                 _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
 
@@ -135,14 +136,14 @@ namespace Snap.Tests.Core
             genesisSnapApp.Version = SemanticVersion.Parse(genesisVersion);
             var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
 
-            using var nugetPackageSourcesDirectory = _snapOs.Filesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
-            using var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem);
-            using var installDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapOs.Filesystem);
+            using var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
+            using var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
+            using var installDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
             using var genesisReleaseBuilder =
                 _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext);
             using var update1ReleaseBuilder =
                 _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext);
-            var packagesDirectory = _snapOs.Filesystem.PathCombine(installDirectory.WorkingDirectory, "packages");
+            var packagesDirectory = _snapFilesystem.PathCombine(installDirectory.WorkingDirectory, "packages");
             var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
 
             genesisReleaseBuilder
@@ -225,18 +226,18 @@ namespace Snap.Tests.Core
             progressSourceMock.Verify(x => x.RaiseTotalProgress(It.Is<int>(v => v == 100)), Times.Once);
             progressSourceMock.Verify(x => x.RaiseTotalProgress(It.IsAny<int>()), Times.Exactly(4));
 
-            var genesisFullNupkgAbsolutePath = _snapOs.Filesystem.PathCombine(packagesDirectory,
+            var genesisFullNupkgAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory,
                 genesisPackageContext.FullPackageSnapApp.BuildNugetFullFilename());
 
-            var update1FullNupkgAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
+            var update1FullNupkgAbsolutePathAfter = _snapFilesystem.PathCombine(packagesDirectory,
                 update1PackageContext.FullPackageSnapApp.BuildNugetFullFilename());
 
-            var update1DeltaAbsolutePathAfter = _snapOs.Filesystem.PathCombine(packagesDirectory,
+            var update1DeltaAbsolutePathAfter = _snapFilesystem.PathCombine(packagesDirectory,
                 update1PackageContext.DeltaPackageSnapApp.BuildNugetDeltaFilename());
 
-            Assert.True(_snapOs.Filesystem.FileExists(genesisFullNupkgAbsolutePath));
-            Assert.False(_snapOs.Filesystem.FileExists(update1FullNupkgAbsolutePathAfter));
-            Assert.True(_snapOs.Filesystem.FileExists(update1DeltaAbsolutePathAfter));
+            Assert.True(_snapFilesystem.FileExists(genesisFullNupkgAbsolutePath));
+            Assert.False(_snapFilesystem.FileExists(update1FullNupkgAbsolutePathAfter));
+            Assert.True(_snapFilesystem.FileExists(update1DeltaAbsolutePathAfter));
         }
 
         [Fact]

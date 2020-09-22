@@ -18,11 +18,11 @@ namespace Snap.Tests.Core
     {
         readonly BaseFixturePackaging _baseFixture;
         readonly ISnapCryptoProvider _snapCryptoProvider;
-        readonly ISnapOs _snapOs;
         readonly SnapAppReader _snapAppReader;
         readonly SnapAppWriter _snapAppWriter;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapPack _snapPack;
+        readonly ISnapFilesystem _snapFilesystem;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _snapReleaseBuilderContext;
 
@@ -30,13 +30,14 @@ namespace Snap.Tests.Core
         {
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
-            _snapOs = SnapOs.AnyOs;
             _snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
             _snapEmbeddedResources = new SnapEmbeddedResources();
-            _snapPack = new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
+            _snapFilesystem = new SnapFilesystem();
+            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
             _coreRunLibMock = new Mock<ICoreRunLib>();
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapOs.Filesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object,
+                _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
 
         [Fact]
@@ -63,7 +64,7 @@ namespace Snap.Tests.Core
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapOs.Filesystem);
+            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))

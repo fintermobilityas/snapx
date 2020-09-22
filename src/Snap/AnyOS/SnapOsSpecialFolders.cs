@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using Snap.Core;
 
 namespace Snap.AnyOS
 {
@@ -63,5 +65,29 @@ namespace Snap.AnyOS
         public override string StartMenu => DesktopDirectory;
         public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
         public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
+    }
+
+    internal sealed class SnapOsSpecialFoldersAnyOs : SnapOsSpecialFolders
+    {
+        readonly string _currentDirectory;
+
+        public override string ApplicationData => Path.Combine(_currentDirectory, "ApplicationData");
+        public override string LocalApplicationData => Path.Combine(_currentDirectory, "LocalApplicationData");
+        public override string DesktopDirectory => Path.Combine(_currentDirectory, "DesktopDirectory");
+        public override string StartupDirectory => DesktopDirectory;
+        public override string StartMenu => DesktopDirectory;
+        public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
+        public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
+
+        public SnapOsSpecialFoldersAnyOs(ISnapFilesystem snapFilesystem)
+        {
+            _currentDirectory = snapFilesystem.PathCombine(snapFilesystem.DirectoryWorkingDirectory(), "appcompat_snapx");
+            snapFilesystem.DirectoryCreateIfNotExists(ApplicationData);
+            snapFilesystem.DirectoryCreateIfNotExists(LocalApplicationData);
+            snapFilesystem.DirectoryCreateIfNotExists(StartupDirectory);
+            snapFilesystem.DirectoryCreateIfNotExists(StartMenu);
+            snapFilesystem.DirectoryCreateIfNotExists(InstallerCacheDirectory);
+            snapFilesystem.DirectoryCreateIfNotExists(NugetCacheDirectory);
+        }
     }
 }

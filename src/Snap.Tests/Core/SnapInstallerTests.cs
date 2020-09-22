@@ -68,8 +68,6 @@ namespace Snap.Tests.Core
                 .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
-            var anyOs = SnapOs.AnyOs;
-            Assert.NotNull(anyOs);
 
             var loggerMock = new Mock<ILog>();
 
@@ -274,8 +272,6 @@ namespace Snap.Tests.Core
             using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
             {
                 using var update2PackageContext = await _baseFixture.BuildPackageAsync(update2SnapReleaseBuilder);
-                var anyOs = SnapOs.AnyOs;
-                Assert.NotNull(anyOs);
 
                 var loggerMock = new Mock<ILog>();
 

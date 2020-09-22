@@ -14,6 +14,9 @@ using Snap.NuGet;
 using Snap.Shared.Tests;
 using Xunit;
 using Snap.Extensions;
+using Snap.Logging;
+using Snap.Shared.Tests.LibLog;
+using Xunit.Abstractions;
 
 namespace Snap.Tests.Core
 {
@@ -22,6 +25,7 @@ namespace Snap.Tests.Core
         readonly Mock<INugetService> _nugetServiceMock;
         readonly BaseFixturePackaging _baseFixturePackaging;
         readonly BaseFixtureNuget _baseFixtureNuget;
+        readonly ITestOutputHelper _testOutputHelper;
         readonly ISnapFilesystem _snapFilesystem;
         readonly SnapCryptoProvider _snapCryptoProvider;
         readonly ISnapPack _snapPack;
@@ -34,13 +38,14 @@ namespace Snap.Tests.Core
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
         readonly Mock<ISnapHttpClient> _snapHttpClientMock;
 
-        public SnapPackageManagerTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
+        public SnapPackageManagerTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget, ITestOutputHelper testOutputHelper)
         {
             _nugetServiceMock = new Mock<INugetService>();
             _coreRunLibMock = new Mock<ICoreRunLib>();
             _snapHttpClientMock = new Mock<ISnapHttpClient>();
             _baseFixturePackaging = baseFixturePackaging;
             _baseFixtureNuget = baseFixtureNuget;
+            _testOutputHelper = testOutputHelper;
             _snapFilesystem = new SnapFilesystem();
             _snapCryptoProvider = new SnapCryptoProvider();
             _snapAppWriter = new SnapAppWriter();
@@ -58,6 +63,8 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestGetSnapsReleasesAsync()
         {
+            using var _ = LogHelper.Capture(_testOutputHelper, LogProvider.SetCurrentLogProvider);
+
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
             var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);

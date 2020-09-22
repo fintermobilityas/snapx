@@ -16,9 +16,12 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Core.Resources;
 using Snap.Extensions;
+using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;
+using Snap.Shared.Tests.LibLog;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Snap.Tests.Core
 {
@@ -27,6 +30,7 @@ namespace Snap.Tests.Core
         readonly BaseFixture _baseFixture;
         readonly BaseFixturePackaging _baseFixturePackaging;
         readonly BaseFixtureNuget _baseFixtureNuget;
+        readonly ITestOutputHelper _testOutputHelper;
         readonly ISnapPack _snapPack;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly Mock<ICoreRunLib> _coreRunLibMock;
@@ -39,11 +43,12 @@ namespace Snap.Tests.Core
         readonly Mock<INugetService> _nugetServiceMock;
         readonly Mock<ISnapHttpClient> _snapHttpClientMock;
 
-        public SnapUpdateManagerTests(BaseFixture baseFixture, BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
+        public SnapUpdateManagerTests(BaseFixture baseFixture, BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget, ITestOutputHelper testOutputHelper)
         {
             _baseFixture = baseFixture;
             _baseFixturePackaging = baseFixturePackaging;
             _baseFixtureNuget = baseFixtureNuget;
+            _testOutputHelper = testOutputHelper;
             _coreRunLibMock = new Mock<ICoreRunLib>();
             _nugetServiceMock = new Mock<INugetService>();
             _snapHttpClientMock = new Mock<ISnapHttpClient>();
@@ -123,6 +128,8 @@ namespace Snap.Tests.Core
         [Theory]
         public async Task TestUpdateToLatestReleaseAsync(string genesisVersion)
         {
+            using var _ = LogHelper.Capture(_testOutputHelper, LogProvider.SetCurrentLogProvider);
+
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
             genesisSnapApp.Version = SemanticVersion.Parse(genesisVersion);

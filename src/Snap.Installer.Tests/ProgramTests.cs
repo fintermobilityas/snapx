@@ -257,20 +257,7 @@ namespace Snap.Installer.Tests
         void SetupSnapOsMock([NotNull] ISnapOsSpecialFolders specialFolders)
         {
             if (specialFolders == null) throw new ArgumentNullException(nameof(specialFolders));
-            _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    return OSPlatform.Linux;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return OSPlatform.Windows;
-                }
-
-                throw new PlatformNotSupportedException();
-            });
+            _snapOsMock.Setup(x => x.OsPlatform).Returns(_baseFixture.OsPlatform);
             _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
             _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFolders);
             _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);

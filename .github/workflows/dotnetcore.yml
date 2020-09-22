@@ -173,8 +173,6 @@ jobs:
     env:
         SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
         SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-    outputs:
-     TEST_SUCCESS: ${{ steps.set-test-status.outputs.BUILD_SUCCESS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2.2.0
@@ -200,16 +198,9 @@ jobs:
       - name: Test .NET
         shell: pwsh
         run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
-      
-      - id: set-test-status
-        if: success()
-        name: Set test status
-        run:  
-          echo "::set-output name=TEST_SUCCESS::1"
 
   publish:
-    if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') 
-      && needs.test-linux-arm64.TEST_SUCCESS == '1'
+    if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     # Must run on Windows in order to support .NET Full Framework.
     runs-on: windows-latest
     name: Publish

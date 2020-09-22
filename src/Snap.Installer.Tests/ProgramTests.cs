@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Moq;
 using Snap.AnyOS;
 using Snap.Core;
@@ -20,8 +21,6 @@ namespace Snap.Installer.Tests
 {
     public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixturePackaging>
     {
-        //readonly BaseFixture _baseFixturePackaging;
-
         readonly BaseFixture _baseFixture;
         readonly BaseFixturePackaging _baseFixturePackaging;
         readonly ISnapPack _snapPack;
@@ -59,7 +58,10 @@ namespace Snap.Installer.Tests
         [Fact]
         public async Task TestMainImplAsync()
         {
+            using var cts = new CancellationTokenSource();
             var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
+
+            SetupSnapOsMock(specialFoldersAnyOs);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
@@ -68,9 +70,7 @@ namespace Snap.Installer.Tests
                 SpecialFolders = specialFoldersAnyOs
             };
 
-            using var cts = new CancellationTokenSource();
-
-            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, x =>
+            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
             {
                 x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
                 return (ISnapInstallerEnvironment)x.GetInstance(typeof(ISnapInstallerEnvironment));
@@ -85,6 +85,9 @@ namespace Snap.Installer.Tests
         {
             await using var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
             await using var packagesDirectory = new DisposableDirectory(specialFoldersAnyOs.WorkingDirectory, _snapFilesystem);
+            using var cts = new CancellationTokenSource();
+
+            SetupSnapOsMock(specialFoldersAnyOs);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
@@ -92,26 +95,6 @@ namespace Snap.Installer.Tests
                 ThisExeWorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
                 SpecialFolders = specialFoldersAnyOs,
             };
-
-            _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    return OSPlatform.Linux;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return OSPlatform.Windows;
-                }
-
-                throw new PlatformNotSupportedException();
-            });
-            _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
-            _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFoldersAnyOs);
-            _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);
-                
-            using var cts = new CancellationTokenSource();
 
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp(localPackageSourceDirectory: packagesDirectory);
@@ -135,14 +118,11 @@ namespace Snap.Installer.Tests
             await _snapFilesystem.FileWriteAsync(genesisPackageContext.FullPackageMemoryStream, setupNupkgFilename, cts.Token);
             await _snapFilesystem.FileWriteAsync(releasePackageMemoryStream, releasesFilename, cts.Token);
 
-            using (var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp))
-            {
-                snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
-            }
+            using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp);
+            snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
 
-            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, x =>
+            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
             {
-                x.Register(_ => _snapOsMock.Object);
                 x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
                 return (ISnapInstallerEnvironment) x.GetInstance(typeof(ISnapInstallerEnvironment));
             });
@@ -173,35 +153,19 @@ namespace Snap.Installer.Tests
         [Fact]
         public async Task TestInstall_Web_Using_Local_PackageSource()
         {
+            using var cts = new CancellationTokenSource();
+
             await using var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
             await using var packagesDirectory = new DisposableDirectory(specialFoldersAnyOs.WorkingDirectory, _snapFilesystem);
+
+            SetupSnapOsMock(specialFoldersAnyOs);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
                 WorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
                 ThisExeWorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
-                SpecialFolders = specialFoldersAnyOs,
+                SpecialFolders = specialFoldersAnyOs
             };
-
-            _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    return OSPlatform.Linux;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return OSPlatform.Windows;
-                }
-
-                throw new PlatformNotSupportedException();
-            });
-            _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
-            _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFoldersAnyOs);
-            _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);
-
-            using var cts = new CancellationTokenSource();
 
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp(localPackageSourceDirectory: packagesDirectory);
@@ -246,10 +210,8 @@ namespace Snap.Installer.Tests
 
             await using var releasePackageMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
 
-            using (var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp))
-            {
-                snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
-            }
+            using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp);
+            snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
 
             await genesisPackageContext.WriteToAsync(packagesDirectory, _snapFilesystem, cts.Token, writeDeltaNupkg: false);
             await update1PackageContext.WriteToAsync(packagesDirectory, _snapFilesystem, cts.Token, writeFullNupkg: false);
@@ -258,9 +220,8 @@ namespace Snap.Installer.Tests
             var releasesFilename = _snapFilesystem.PathCombine(packagesDirectory, update2PackageContext.FullPackageSnapApp.BuildNugetReleasesFilename());
             await _snapFilesystem.FileWriteAsync(releasePackageMemoryStream, releasesFilename, cts.Token);
 
-            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, x =>
+            var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
             {
-                x.Register(_ => _snapOsMock.Object);
                 x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
                 return (ISnapInstallerEnvironment)x.GetInstance(typeof(ISnapInstallerEnvironment));
             });
@@ -291,6 +252,28 @@ namespace Snap.Installer.Tests
             Assert.EndsWith("test1.dll", files[4]);
             Assert.EndsWith("test2.dll", files[5]);
             Assert.EndsWith("test3.dll", files[6]);
+        }
+
+        void SetupSnapOsMock([NotNull] ISnapOsSpecialFolders specialFolders)
+        {
+            if (specialFolders == null) throw new ArgumentNullException(nameof(specialFolders));
+            _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    return OSPlatform.Linux;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return OSPlatform.Windows;
+                }
+
+                throw new PlatformNotSupportedException();
+            });
+            _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
+            _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFolders);
+            _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);
         }
     }
 }

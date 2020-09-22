@@ -33,16 +33,29 @@ namespace Snap.Installer
         public static async Task<int> Main(string[] args)
         {
             using var environmentCts = new CancellationTokenSource();
-            var (exitCode, _)  = await MainImplAsync(args, LogLevel.Trace, environmentCts);
+
+            ISnapOs snapOs;
+            try
+            {
+                snapOs = SnapOs.AnyOs;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return 1;
+            }
+
+            var (exitCode, _)  = await MainImplAsync(args, LogLevel.Trace, environmentCts, snapOs);
             return exitCode;
         }
 
         public static async Task<(int finalExitCode, SnapInstallerType finalInstallerType)> MainImplAsync([NotNull] string[] args, LogLevel logLevel,
-            [NotNull] CancellationTokenSource environmentCts, 
+            [NotNull] CancellationTokenSource environmentCts, [NotNull] ISnapOs snapOs,
             Func<IServiceContainer, ISnapInstallerEnvironment> containerBuilder = null)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (environmentCts == null) throw new ArgumentNullException(nameof(environmentCts));
+            if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
 
             if (Environment.GetEnvironmentVariable("SNAPX_WAIT_DEBUGGER") == "1")
             {
@@ -64,8 +77,6 @@ namespace Snap.Installer
             {
                 var headless = args.Any(x => string.Equals("--headless", x, StringComparison.Ordinal));
 
-                var snapOs = SnapOs.AnyOs;
-                
                 ConfigureNlog(snapOs);
                 LogProvider.SetCurrentLogProvider(new NLogLogProvider());
 

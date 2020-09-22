@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
+using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.Resources;
+using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;
@@ -60,6 +62,23 @@ namespace Snap.Tests.NuGet
 
             var packageSource = packageSources.Items.Single();
             Assert.True(packageSource.Source == NuGetConstants.V3FeedUrl);
+        }
+
+        [Fact]
+        public async Task TestBuildHttpSource()
+        {
+            var nugetOrgOfficialV3PackageSources = new NugetOrgOfficialV3PackageSources();
+
+            var nugetOrgPackageSourceV3 = nugetOrgOfficialV3PackageSources.Items.Single();
+            Assert.True(nugetOrgPackageSourceV3.Source == NuGetConstants.V3FeedUrl);
+
+            var sourceRepository = new SourceRepository(nugetOrgPackageSourceV3, Repository.Provider.GetCoreV3());
+            var downloadResourceV3 = (DownloadResourceV3) await sourceRepository.GetResourceAsync<DownloadResource>();
+            Assert.NotNull(downloadResourceV3);
+
+            var httpSource = downloadResourceV3.BuildHttpSource();
+            Assert.NotNull(httpSource);
+            Assert.Equal("https://api.nuget.org/v3/index.json", httpSource.PackageSource);
         }
 
         [Fact]

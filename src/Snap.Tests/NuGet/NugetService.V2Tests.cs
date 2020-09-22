@@ -5,8 +5,11 @@ using System.Threading.Tasks;
 using Moq;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
 using Snap.Shared.Tests;
@@ -122,7 +125,24 @@ namespace Snap.Tests.NuGet
             
             Assert.Equal(progressSourceMock.Invocations.Count, percentages.Count);
         }
-        
+
+        [Fact]
+        public async Task TestBuildV2FeedParser()
+        {
+            var nugetOrgOfficialV3PackageSources = new NugetOrgOfficialV2PackageSources();
+
+            var nugetOrgPackageSourceV2 = nugetOrgOfficialV3PackageSources.Items.Single();
+            Assert.True(nugetOrgPackageSourceV2.Source == NuGetConstants.V2FeedUrl);
+
+            var sourceRepository = new SourceRepository(nugetOrgPackageSourceV2, Repository.Provider.GetCoreV3());
+            var downloadResourceV3 = (DownloadResourceV2Feed) await sourceRepository.GetResourceAsync<DownloadResource>();
+            Assert.NotNull(downloadResourceV3);
+
+            var httpSource = downloadResourceV3.BuildV2FeedParser();
+            Assert.NotNull(httpSource);
+            Assert.Equal("https://www.nuget.org/api/v2/", httpSource.Source);
+        }
+
         [Fact]
         public async Task TestDownloadAsyncWithProgressAsync_Unknown_File_Size()
         {

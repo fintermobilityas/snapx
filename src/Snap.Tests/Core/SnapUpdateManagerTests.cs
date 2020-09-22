@@ -39,6 +39,7 @@ namespace Snap.Tests.Core
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapFilesystem _snapFilesystem;
+        readonly ISnapOs _snapOs;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
         readonly Mock<INugetService> _nugetServiceMock;
         readonly Mock<ISnapHttpClient> _snapHttpClientMock;
@@ -57,9 +58,9 @@ namespace Snap.Tests.Core
             _snapFilesystem = new SnapFilesystem();
             _snapAppWriter = new SnapAppWriter();
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources);
-            var snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), true);
+            _snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), true);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, snapOs, _snapEmbeddedResources, _snapAppWriter);
+            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources, _snapAppWriter);
             _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem,
                 _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
         }
@@ -113,7 +114,7 @@ namespace Snap.Tests.Core
             });
 
             var snapUpdateManager = BuildUpdateManager(_baseFixturePackaging.WorkingDirectory, snapApp, _nugetServiceMock.Object,
-                snapHttpClient: _snapHttpClientMock.Object, applicationId: applicationId);
+                snapHttpClient: _snapHttpClientMock.Object, snapOs: _snapOs, applicationId: applicationId);
             
             var snapReleases = await snapUpdateManager.GetSnapReleasesAsync(default);
             Assert.Null(snapReleases);
@@ -172,7 +173,7 @@ namespace Snap.Tests.Core
             SetupUpdateManagerProgressSource(progressSourceMock);
 
             var snapUpdateManager = BuildUpdateManager(installDirectory.WorkingDirectory,
-                genesisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object);
+                genesisPackageContext.FullPackageSnapApp, _nugetServiceMock.Object, snapOs: _snapOs);
 
             var updatedSnapApp = await snapUpdateManager.UpdateToLatestReleaseAsync(progressSourceMock.Object);
             Assert.NotNull(updatedSnapApp);

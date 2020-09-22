@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using Snap.Core;
 
 namespace Snap.AnyOS
@@ -69,25 +70,27 @@ namespace Snap.AnyOS
 
     internal sealed class SnapOsSpecialFoldersAnyOs : SnapOsSpecialFolders
     {
+        readonly ISnapFilesystem _snapFilesystem;
         readonly string _currentDirectory;
 
-        public override string ApplicationData => Path.Combine(_currentDirectory, "ApplicationData");
-        public override string LocalApplicationData => Path.Combine(_currentDirectory, "LocalApplicationData");
-        public override string DesktopDirectory => Path.Combine(_currentDirectory, "DesktopDirectory");
+        public override string ApplicationData => _snapFilesystem.PathCombine(_currentDirectory, "ApplicationData");
+        public override string LocalApplicationData => _snapFilesystem.PathCombine(_currentDirectory, "LocalApplicationData");
+        public override string DesktopDirectory => _snapFilesystem.PathCombine(_currentDirectory, "DesktopDirectory");
         public override string StartupDirectory => DesktopDirectory;
         public override string StartMenu => DesktopDirectory;
-        public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
-        public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
+        public override string InstallerCacheDirectory => _snapFilesystem.PathCombine(ApplicationData, "snapx");
+        public override string NugetCacheDirectory => _snapFilesystem.PathCombine(InstallerCacheDirectory, "temp", "nuget");
 
-        public SnapOsSpecialFoldersAnyOs(ISnapFilesystem snapFilesystem)
+        public SnapOsSpecialFoldersAnyOs([NotNull] ISnapFilesystem snapFilesystem)
         {
-            _currentDirectory = snapFilesystem.PathCombine(snapFilesystem.DirectoryWorkingDirectory(), "appcompat_snapx");
-            snapFilesystem.DirectoryCreateIfNotExists(ApplicationData);
-            snapFilesystem.DirectoryCreateIfNotExists(LocalApplicationData);
-            snapFilesystem.DirectoryCreateIfNotExists(StartupDirectory);
-            snapFilesystem.DirectoryCreateIfNotExists(StartMenu);
-            snapFilesystem.DirectoryCreateIfNotExists(InstallerCacheDirectory);
-            snapFilesystem.DirectoryCreateIfNotExists(NugetCacheDirectory);
+            _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+            _currentDirectory = _snapFilesystem.PathCombine(_snapFilesystem.DirectoryWorkingDirectory(), "appcompat_snapx");
+            _snapFilesystem.DirectoryCreateIfNotExists(ApplicationData);
+            _snapFilesystem.DirectoryCreateIfNotExists(LocalApplicationData);
+            _snapFilesystem.DirectoryCreateIfNotExists(StartupDirectory);
+            _snapFilesystem.DirectoryCreateIfNotExists(StartMenu);
+            _snapFilesystem.DirectoryCreateIfNotExists(InstallerCacheDirectory);
+            _snapFilesystem.DirectoryCreateIfNotExists(NugetCacheDirectory);
         }
     }
 }

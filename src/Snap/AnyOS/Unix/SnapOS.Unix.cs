@@ -145,7 +145,7 @@ namespace Snap.AnyOS.Unix
                 autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
             } else if (DistroType == SnapOsDistroType.RaspberryPi)
             {
-                applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", "Desktop");
+                applicationsDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".local/share/applications");
                 autoStartDirectoryAbsolutePath = Filesystem.PathCombine($"/home/{Username}", ".config/autostart");
             }
             else

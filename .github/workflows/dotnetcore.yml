@@ -197,9 +197,9 @@ jobs:
           chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
           ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
 
-      #- name: Test .NET
-      #  shell: pwsh
-      #  run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+      - name: Test .NET
+        shell: pwsh
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
       - id: set-test-status
         if: success()
@@ -209,7 +209,7 @@ jobs:
 
   publish:
     if: (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master') 
-      #&& needs.test-linux-arm64.TEST_SUCCESS == '1'
+      && needs.test-linux-arm64.TEST_SUCCESS == '1'
     # Must run on Windows in order to support .NET Full Framework.
     runs-on: windows-latest
     name: Publish

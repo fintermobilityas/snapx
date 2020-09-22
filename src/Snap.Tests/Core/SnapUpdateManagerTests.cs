@@ -57,7 +57,8 @@ namespace Snap.Tests.Core
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapAppWriter = new SnapAppWriter();
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), 
+                new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
             _snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), _baseFixturePackaging.WorkingDirectory, true);
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
             _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources, _snapAppWriter);

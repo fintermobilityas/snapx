@@ -36,7 +36,8 @@ namespace Snap.Tests.NuGet
             _snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
             _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources());
+            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(),
+                new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources(), new SnapBinaryPatcher());
         }
 
         [Fact]

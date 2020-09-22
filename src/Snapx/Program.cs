@@ -157,7 +157,9 @@ namespace snapx
             var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
-            var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, snapAppWriter, snapCryptoProvider, snapEmbeddedResources);
+            var snapBinaryPatcher = new SnapBinaryPatcher();
+            var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, 
+                snapAppWriter, snapCryptoProvider, snapEmbeddedResources, snapBinaryPatcher);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
             var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);

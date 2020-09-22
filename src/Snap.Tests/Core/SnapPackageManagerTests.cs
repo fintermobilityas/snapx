@@ -51,9 +51,11 @@ namespace Snap.Tests.Core
             _snapAppWriter = new SnapAppWriter();
             _snapAppReader = new SnapAppReader();
             _snapEmbeddedResources = new SnapEmbeddedResources();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter,
+                _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapPackageManager = new SnapPackageManager(_snapFilesystem, new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), 
+            _snapPackageManager = new SnapPackageManager(_snapFilesystem,
+                new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), 
                 _nugetServiceMock.Object,
                 _snapHttpClientMock.Object,
                 _snapCryptoProvider, _snapExtractor, _snapAppReader, _snapPack);

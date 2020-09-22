@@ -190,12 +190,14 @@ namespace Snap.Installer
             container.Register<ISnapCryptoProvider>(c => new SnapCryptoProvider());
             container.Register<ISnapAppReader>(c => new SnapAppReader());
             container.Register<ISnapAppWriter>(c => new SnapAppWriter());
+            container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher());
             container.Register<ISnapPack>(c => new SnapPack(
                 c.GetInstance<ISnapFilesystem>(), 
                 c.GetInstance<ISnapAppReader>(), 
                 c.GetInstance<ISnapAppWriter>(), 
                 c.GetInstance<ISnapCryptoProvider>(), 
-                c.GetInstance<ISnapEmbeddedResources>()));
+                c.GetInstance<ISnapEmbeddedResources>(),
+                c.GetInstance<ISnapBinaryPatcher>()));
             container.Register<ISnapExtractor>(c => new SnapExtractor(
                 c.GetInstance<ISnapFilesystem>(),
                 c.GetInstance<ISnapPack>(),

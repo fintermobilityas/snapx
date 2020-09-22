@@ -98,6 +98,7 @@ namespace Snap.Core
         readonly ISnapPackageManager _snapPackageManager;
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapHttpClient _snapHttpClient;
+        readonly ISnapBinaryPatcher _snapBinaryPatcher;
 
         /// <summary>
         /// The number of releases that should be retained after a new updated has been successfully applied.
@@ -136,7 +137,7 @@ namespace Snap.Core
             ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null,
             ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null, 
-            ISnapHttpClient snapHttpClient = null)
+            ISnapHttpClient snapHttpClient = null, ISnapBinaryPatcher snapBinaryPatcher = null)
         {
             _logger = logger ?? LogProvider.For<ISnapUpdateManager>();
             _snapOs = snapOs ?? SnapOs.AnyOs;
@@ -149,7 +150,9 @@ namespace Snap.Core
             snapEmbeddedResources ??= new SnapEmbeddedResources();
             _snapAppReader = snapAppReader ?? new SnapAppReader();
             _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
-            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, snapEmbeddedResources);
+            _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher();
+            _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter,
+                _snapCryptoProvider, snapEmbeddedResources, _snapBinaryPatcher);
             _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
             _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources, _snapAppWriter);
             _snapHttpClient = snapHttpClient ?? new SnapHttpClient(new HttpClient());

@@ -34,7 +34,8 @@ namespace Snap.Tests.Core
             ISnapEmbeddedResources snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapAppReader = new SnapAppReader();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, new SnapAppWriter(), snapCryptoProvider, snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
+                new SnapAppWriter(), snapCryptoProvider, snapEmbeddedResources, new SnapBinaryPatcher());
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, snapEmbeddedResources);
             _snapReleaseBuilderContext =
                 new SnapReleaseBuilderContext(coreRunLibMock.Object, _snapFilesystem, snapCryptoProvider, snapEmbeddedResources, _snapPack);

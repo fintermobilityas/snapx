@@ -48,7 +48,8 @@ namespace Snap.Installer.Tests
             _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources);
+            _snapPack = new SnapPack(_snapFilesystem, 
+                _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
             _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapOsMock.Object, _snapEmbeddedResources, _snapAppWriter);

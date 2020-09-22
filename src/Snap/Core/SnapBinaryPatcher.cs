@@ -39,7 +39,7 @@ namespace Snap.Core
     IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
     */
-    internal sealed class SnapBinaryPatcher
+    internal interface ISnapBinaryPatcher
     {
         /// <summary>
         /// Creates a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) that can be used
@@ -49,7 +49,32 @@ namespace Snap.Core
         /// <param name="newData">The new binary data.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
         /// <param name="cancellationToken"></param>
-        public static async Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
+        Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Applies a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) to the data in
+        /// <paramref name="input"/> and writes the results of patching to <paramref name="output"/>.
+        /// </summary>
+        /// <param name="input">A <see cref="Stream"/> containing the input data.</param>
+        /// <param name="openPatchStream">A func that can open a <see cref="Stream"/> positioned at the start of the patch data.
+        /// This stream must support reading and seeking, and <paramref name="openPatchStream"/> must allow multiple streams on
+        /// the patch to be opened concurrently.</param>
+        /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
+        /// <param name="cancellationToken"></param>
+        Task ApplyAsync(Stream input, Func<Task<Stream>> openPatchStream, Stream output, CancellationToken cancellationToken);
+    }
+
+    internal sealed class SnapBinaryPatcher : ISnapBinaryPatcher
+    {
+        /// <summary>
+        /// Creates a binary patch (in <a href="http://www.daemonology.net/bsdiff/">bsdiff</a> format) that can be used
+        /// (by <see cref="ApplyAsync"/>) to transform <paramref name="oldData"/> into <paramref name="newData"/>.
+        /// </summary>
+        /// <param name="oldData">The original binary data.</param>
+        /// <param name="newData">The new binary data.</param>
+        /// <param name="output">A <see cref="Stream"/> to which the patch will be written.</param>
+        /// <param name="cancellationToken"></param>
+        public async Task CreateAsync(ReadOnlyMemory<byte> oldData, ReadOnlyMemory<byte> newData, Stream output, CancellationToken cancellationToken)
         {
             // check arguments
             if (oldData.IsEmpty) throw new ArgumentNullException(nameof(oldData));
@@ -267,7 +292,7 @@ namespace Snap.Core
         /// the patch to be opened concurrently.</param>
         /// <param name="output">A <see cref="Stream"/> to which the patched data is written.</param>
         /// <param name="cancellationToken"></param>
-        public static async Task ApplyAsync(Stream input, Func<Task<Stream>> openPatchStream, Stream output, CancellationToken cancellationToken)
+        public async Task ApplyAsync(Stream input, Func<Task<Stream>> openPatchStream, Stream output, CancellationToken cancellationToken)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));
             if (openPatchStream == null) throw new ArgumentNullException(nameof(openPatchStream));
@@ -739,7 +764,7 @@ namespace Snap.Core
         public WrappingStream(Stream streamBase, Ownership ownership)
         {
             WrappedStream = streamBase ?? throw new ArgumentNullException(nameof(streamBase));
-            m_ownership = ownership;
+            _ownership = ownership;
         }
 
         /// <summary>
@@ -899,7 +924,7 @@ namespace Snap.Core
                 // doesn't close the base stream, but just prevents access to it through this WrappingStream
                 if (disposing)
                 {
-                    if (WrappedStream != null && m_ownership == Ownership.Owns)
+                    if (WrappedStream != null && _ownership == Ownership.Owns)
                         WrappedStream.Dispose();
                     WrappedStream = null;
                 }
@@ -914,10 +939,12 @@ namespace Snap.Core
         {
             // throws an ObjectDisposedException if this object has been disposed
             if (WrappedStream == null)
+            {
                 throw new ObjectDisposedException(GetType().Name);
+            }
         }
 
-        readonly Ownership m_ownership;
+        readonly Ownership _ownership;
     }
 
     /// <summary>

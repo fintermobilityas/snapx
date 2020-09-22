@@ -128,6 +128,7 @@ namespace Snap.Core
         readonly ISnapAppWriter _snapAppWriter;
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapEmbeddedResources _snapEmbeddedResources;
+        readonly ISnapBinaryPatcher _snapBinaryPatcher;
         readonly SemanticVersion _snapDllVersion;
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
@@ -142,14 +143,16 @@ namespace Snap.Core
         };
 
         public SnapPack(ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
-            [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
+            [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapEmbeddedResources snapEmbeddedResources,
+            [NotNull] ISnapBinaryPatcher snapBinaryPatcher)
         {
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
             _snapAppReader = snapAppReader ?? throw new ArgumentNullException(nameof(snapAppReader));
             _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
             _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
             _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
-            
+            _snapBinaryPatcher = snapBinaryPatcher ?? throw new ArgumentNullException(nameof(snapBinaryPatcher));
+
             var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             _snapDllVersion = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
         }
@@ -530,7 +533,7 @@ namespace Snap.Core
                 if (newDataStream.Length > 0
                     && oldDataStream.Length > 0)
                 {
-                    await SnapBinaryPatcher.CreateAsync(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream, cancellationToken);
+                    await _snapBinaryPatcher.CreateAsync(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream, cancellationToken);
                 } else if (newDataStream.Length > 0)
                 {
                     await newDataStream.CopyToAsync(patchStream, cancellationToken);
@@ -823,7 +826,7 @@ namespace Snap.Core
                             return intermediatePatchStream;
                         }
 
-                        await SnapBinaryPatcher.ApplyAsync(packageFileStream, async () => await OpenPatchStream(), outputStream, cancellationToken);
+                        await _snapBinaryPatcher.ApplyAsync(packageFileStream, async () => await OpenPatchStream(), outputStream, cancellationToken);
 
                         if (!skipChecksum)
                         {

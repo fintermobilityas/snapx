@@ -99,16 +99,16 @@ namespace Snap.AnyOS
             OsImpl = snapOsImpl ?? throw new ArgumentNullException(nameof(snapOsImpl));
         }
 
-        public SnapOs(ISnapFilesystem snapFilesystem, ISnapOsProcessManager snapOsProcessManager, bool isUnitTest)
+        public SnapOs(ISnapFilesystem snapFilesystem, ISnapOsProcessManager snapOsProcessManager, string workingDirectory, bool isUnitTest)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 OsImpl = new SnapOsWindows(snapFilesystem, snapOsProcessManager, isUnitTest ?
-                    (ISnapOsSpecialFolders) new SnapOsSpecialFoldersAnyOs(snapFilesystem) : new SnapOsSpecialFoldersWindows(), isUnitTest);
+                    (ISnapOsSpecialFolders) new SnapOsSpecialFoldersUnitTest(snapFilesystem, workingDirectory) : new SnapOsSpecialFoldersWindows(), isUnitTest);
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 OsImpl = new SnapOsUnix(snapFilesystem, snapOsProcessManager, isUnitTest ?
-                    (ISnapOsSpecialFolders) new SnapOsSpecialFoldersAnyOs(snapFilesystem) : new SnapOsSpecialFoldersUnix());
+                    (ISnapOsSpecialFolders) new SnapOsSpecialFoldersUnitTest(snapFilesystem, workingDirectory) : new SnapOsSpecialFoldersUnix());
             }
             else
             {

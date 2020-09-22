@@ -58,7 +58,7 @@ namespace Snap.Tests.Core
             
             Assert.True(genesisSnapApp.Channels.Count >= 2);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genesisSnapApp);
             genesisSnapReleaseBuilder
@@ -102,7 +102,7 @@ namespace Snap.Tests.Core
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             using var installCts = new CancellationTokenSource();
             var snapCurrentChannel = genesisPackageContext.FullPackageSnapApp.GetCurrentChannelOrThrow();
                         
@@ -173,7 +173,7 @@ namespace Snap.Tests.Core
 
             Assert.True(genesisSnapApp.Channels.Count >= 2);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             var mainAssemblyDefinition = _baseFixture.BuildSnapExecutable(genesisSnapApp);
             genesisSnapReleaseBuilder
@@ -210,7 +210,7 @@ namespace Snap.Tests.Core
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             using var installCts = new CancellationTokenSource();
             var nextSnapChannel = genesisSnapApp.GetNextChannel();
                         
@@ -238,7 +238,7 @@ namespace Snap.Tests.Core
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -306,7 +306,7 @@ namespace Snap.Tests.Core
                         It.IsAny<CancellationToken>()))
                     .Returns(Task.CompletedTask);
 
-                using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+                await using var baseDirectory = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
                 using var updateCts = new CancellationTokenSource();
                 await _snapInstaller.InstallAsync(
                     genesisPackageContext.FullPackageAbsolutePath,

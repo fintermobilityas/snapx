@@ -18,27 +18,6 @@ using Xunit;
 
 namespace Snap.Installer.Tests
 {
-    internal sealed class UnitTestSpecialFoldersAnyOs : SnapOsSpecialFolders
-    {
-        public override string ApplicationData
-        {
-            get;
-        }
-        public override string LocalApplicationData { get; }
-        public override string DesktopDirectory { get; }
-        public override string StartupDirectory => DesktopDirectory;
-        public override string StartMenu => DesktopDirectory;
-        public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
-        public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
-
-        public UnitTestSpecialFoldersAnyOs(string applicationData, string localApplicationData, string desktopDirectory)
-        {
-            ApplicationData = applicationData;
-            LocalApplicationData = localApplicationData;
-            DesktopDirectory = desktopDirectory;
-        }
-    }
-
     public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixturePackaging>
     {
         //readonly BaseFixture _baseFixturePackaging;
@@ -80,21 +59,13 @@ namespace Snap.Installer.Tests
         [Fact]
         public async Task TestMainImplAsync()
         {
-            using var installDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var localApplicationDataDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var desktopDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var installerExeWorkingDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-
-            var unitTestSpecialFoldersAnyOs = new UnitTestSpecialFoldersAnyOs(installDirectory,
-                desktopDirectory,
-                desktopDirectory
-            );
+            var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
-                WorkingDirectory = installerExeWorkingDirectory,
-                ThisExeWorkingDirectory = installerExeWorkingDirectory,
-                SpecialFolders = unitTestSpecialFoldersAnyOs,
+                WorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                ThisExeWorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                SpecialFolders = specialFoldersAnyOs
             };
 
             using var cts = new CancellationTokenSource();
@@ -112,21 +83,14 @@ namespace Snap.Installer.Tests
         [Fact]
         public async Task TestInstall_Offline_Using_Local_PackageSource()
         {
-            using var installDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var localApplicationDataDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var desktopDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var installerExeWorkingDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-
-            var unitTestSpecialFoldersAnyOs = new UnitTestSpecialFoldersAnyOs(installDirectory,
-                desktopDirectory,
-                desktopDirectory
-            );
+            await using var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
+            await using var packagesDirectory = new DisposableDirectory(specialFoldersAnyOs.WorkingDirectory, _snapFilesystem);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
-                WorkingDirectory = installerExeWorkingDirectory,
-                ThisExeWorkingDirectory = installerExeWorkingDirectory,
-                SpecialFolders = unitTestSpecialFoldersAnyOs,
+                WorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                ThisExeWorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                SpecialFolders = specialFoldersAnyOs,
             };
 
             _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
@@ -144,11 +108,10 @@ namespace Snap.Installer.Tests
                 throw new PlatformNotSupportedException();
             });
             _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
-            _snapOsMock.Setup(x => x.SpecialFolders).Returns(() => unitTestSpecialFoldersAnyOs);
+            _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFoldersAnyOs);
             _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);
                 
             using var cts = new CancellationTokenSource();
-            using var packagesDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
 
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp(localPackageSourceDirectory: packagesDirectory);
@@ -188,7 +151,7 @@ namespace Snap.Installer.Tests
             Assert.Equal(SnapInstallerType.Offline, installerType);
 
             var appInstallDirectory = _snapInstaller.GetApplicationDirectory(
-                _snapFilesystem.PathCombine(unitTestSpecialFoldersAnyOs.LocalApplicationData, genesisSnapApp.Id), genesisSnapApp.Version);
+                _snapFilesystem.PathCombine(specialFoldersAnyOs.LocalApplicationData, genesisSnapApp.Id), genesisSnapApp.Version);
 
             var files = _snapFilesystem.DirectoryGetAllFiles(appInstallDirectory).OrderBy(x => x, new OrdinalIgnoreCaseComparer()).ToList();
             Assert.Equal(3, files.Count);
@@ -210,21 +173,14 @@ namespace Snap.Installer.Tests
         [Fact]
         public async Task TestInstall_Web_Using_Local_PackageSource()
         {
-            using var installDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var localApplicationDataDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var desktopDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-            using var installerExeWorkingDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
-
-            var unitTestSpecialFoldersAnyOs = new UnitTestSpecialFoldersAnyOs(installDirectory,
-                desktopDirectory,
-                desktopDirectory
-            );
+            await using var specialFoldersAnyOs = new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory);
+            await using var packagesDirectory = new DisposableDirectory(specialFoldersAnyOs.WorkingDirectory, _snapFilesystem);
 
             var snapInstallerIoEnvironment = new SnapInstallerIoEnvironment
             {
-                WorkingDirectory = installerExeWorkingDirectory,
-                ThisExeWorkingDirectory = installerExeWorkingDirectory,
-                SpecialFolders = unitTestSpecialFoldersAnyOs,
+                WorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                ThisExeWorkingDirectory = specialFoldersAnyOs.WorkingDirectory,
+                SpecialFolders = specialFoldersAnyOs,
             };
 
             _snapOsMock.Setup(x => x.OsPlatform).Returns(() =>
@@ -242,11 +198,10 @@ namespace Snap.Installer.Tests
                 throw new PlatformNotSupportedException();
             });
             _snapOsMock.Setup(x => x.Filesystem).Returns(_snapFilesystem);
-            _snapOsMock.Setup(x => x.SpecialFolders).Returns(() => unitTestSpecialFoldersAnyOs);
+            _snapOsMock.Setup(x => x.SpecialFolders).Returns(specialFoldersAnyOs);
             _snapOsMock.Setup(x => x.ProcessManager).Returns(_snapOsProcessManager);
 
             using var cts = new CancellationTokenSource();
-            using var packagesDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
 
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixturePackaging.BuildSnapApp(localPackageSourceDirectory: packagesDirectory);
@@ -314,7 +269,7 @@ namespace Snap.Installer.Tests
             Assert.Equal(SnapInstallerType.Web, installerType);
 
             var appInstallDirectory = _snapInstaller.GetApplicationDirectory(
-                _snapFilesystem.PathCombine(unitTestSpecialFoldersAnyOs.LocalApplicationData, update2SnapApp.Id), update2SnapApp.Version);
+                _snapFilesystem.PathCombine(specialFoldersAnyOs.LocalApplicationData, update2SnapApp.Id), update2SnapApp.Version);
 
             var files = _snapFilesystem.DirectoryGetAllFiles(appInstallDirectory).OrderBy(x => x, new OrdinalIgnoreCaseComparer()).ToList();
             Assert.Equal(7, files.Count);

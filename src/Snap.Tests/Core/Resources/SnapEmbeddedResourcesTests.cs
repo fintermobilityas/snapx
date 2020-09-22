@@ -162,7 +162,7 @@ namespace Snap.Tests.Core.Resources
                 throw new PlatformNotSupportedException();
             }
 
-            using var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var tempDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             var expectedDllFilenameAbsolute = _snapFilesystem.PathCombine(tempDir.WorkingDirectory, expectedDllFilename);
             await _snapEmbeddedResources.ExtractCoreRunLibAsync(_snapFilesystem, _snapCryptoProvider, tempDir.WorkingDirectory, osPlatform);
                 

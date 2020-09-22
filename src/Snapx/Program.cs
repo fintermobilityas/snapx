@@ -701,7 +701,7 @@ namespace snapx
                 }
             };
 
-            using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
+            await using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
             MemoryStream installerZipMemoryStream;
             MemoryStream warpPackerMemoryStream;
 

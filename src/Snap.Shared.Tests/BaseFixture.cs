@@ -27,7 +27,6 @@ namespace Snap.Shared.Tests
         static readonly Random RandomSource = new Random();
 
         public string WorkingDirectory => Directory.GetCurrentDirectory();
-        public string NugetTempDirectory => Path.Combine(WorkingDirectory, "nuget");
 
         public OSPlatform OsPlatform
         {
@@ -172,14 +171,6 @@ namespace Snap.Shared.Tests
                     assemblyDefinition.Dispose();
                 }
             }
-        }
-
-        public void WriteAssemblies(string workingDirectory, bool disposeAssemblyDefinitions = false, params AssemblyDefinition[] assemblyDefinitions)
-        {
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
-
-            WriteAssemblies(workingDirectory, assemblyDefinitions.ToList(), disposeAssemblyDefinitions);
         }
 
         public AssemblyDefinition BuildLibrary(string libraryName, SemanticVersion semanticVersion = null, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> assemblyReferencesDefinitions = null)

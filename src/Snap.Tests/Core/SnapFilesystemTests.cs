@@ -20,7 +20,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync()
         {
-            using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
             _snapFilesystem.DirectoryCreate(rootDirectory);
 
@@ -38,7 +38,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync_Non_Existant_Directory()
         {
-            using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");                
             await _snapFilesystem.DirectoryDeleteAsync(rootDirectory);                
             Assert.False(_snapFilesystem.DirectoryExists(rootDirectory));
@@ -47,7 +47,7 @@ namespace Snap.Tests.Core
         [Fact]
         public async Task TestDirectoryDeleteAsync_ExcludePaths()
         {
-            using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+            await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
             var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
             _snapFilesystem.DirectoryCreate(rootDirectory);
 
@@ -79,16 +79,16 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
-        public void TestDirectoryGetParent()
+        public async Task TestDirectoryGetParent()
         {
-            using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
+            await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
             Assert.Equal(_baseFixture.WorkingDirectory, _snapFilesystem.DirectoryGetParent(tmpDir.WorkingDirectory));
         }
 
         [Fact]
         public async Task TestTryMoveFile()
         {
-            using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
+            await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
             var srcFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
             var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test2.txt");
             await _snapFilesystem.FileWriteUtf8StringAsync("test", srcFilenameAbsolutePath, default);

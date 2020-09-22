@@ -120,7 +120,7 @@ namespace Snap.Installer
                 var nupkgAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, SnapConstants.SetupNupkgFilename);
                 var nupkgReleasesAbsolutePath = snapFilesystem.PathCombine(environment.Io.ThisExeWorkingDirectory, snapApp.BuildNugetReleasesFilename());
 
-                using (var webInstallerDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
+                await using (var webInstallerDir = new DisposableDirectory(snapOs.SpecialFolders.NugetCacheDirectory, snapFilesystem))
                 {
                     ISnapAppChannelReleases snapAppChannelReleases;
                     SnapRelease snapReleaseToInstall;

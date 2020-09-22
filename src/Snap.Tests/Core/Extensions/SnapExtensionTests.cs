@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using Snap.Core;
+using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
@@ -500,8 +502,10 @@ namespace Snap.Tests.Core.Extensions
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]
-        public void TestBuildNugetSourcesFromSnapApp(NuGetProtocolVersion protocolVersion)
+        public async Task TestBuildNugetSourcesFromSnapApp(NuGetProtocolVersion protocolVersion)
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var feedUrl = protocolVersion switch
             {
                 NuGetProtocolVersion.V2 => NuGetConstants.V2FeedUrl,
@@ -531,7 +535,7 @@ namespace Snap.Tests.Core.Extensions
                 Channels = new List<SnapChannel> { snapChannel }
             };
 
-            var nuGetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            var nuGetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
             Assert.Single(nuGetPackageSources.Items);
 
             var packageSource = nuGetPackageSources.Items.Single();
@@ -567,8 +571,10 @@ namespace Snap.Tests.Core.Extensions
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]
-        public void TestBuildNugetSources_Source_Uri_Is_Null(NuGetProtocolVersion protocolVersion)
+        public async Task TestBuildNugetSources_Source_Uri_Is_Null(NuGetProtocolVersion protocolVersion)
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var snapNugetFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
@@ -588,15 +594,17 @@ namespace Snap.Tests.Core.Extensions
                 Channels = new List<SnapChannel> { snapChannel }
             };
 
-            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
             Assert.Empty(nugetPackageSources);
         }
 
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]
-        public void TestBuildSnapFeedsFromNugetPackageSources(NuGetProtocolVersion protocolVersion)
+        public async Task TestBuildSnapFeedsFromNugetPackageSources(NuGetProtocolVersion protocolVersion)
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var feedUrl = protocolVersion switch
             {
                 NuGetProtocolVersion.V2 => NuGetConstants.V2FeedUrl,
@@ -626,11 +634,11 @@ namespace Snap.Tests.Core.Extensions
                 Channels = new List<SnapChannel> { snapChannel }
             };
 
-            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
             Assert.NotNull(nugetPackageSources.Settings);
             Assert.Single(nugetPackageSources.Items);
 
-            var snapFeeds = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            var snapFeeds = snapApp.BuildNugetSources(nugetTempDirectory);
             Assert.NotNull(snapFeeds.Settings);
             Assert.Single(snapFeeds.Items);
 
@@ -655,11 +663,11 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestGetSnapAppFromDirectory()
+        public async Task TestGetSnapAppFromDirectory()
         {
             var snapApp = _baseFixture.BuildSnapApp();
 
-            using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
+            await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
             using var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp);
             var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
             assemblyDefinition.Write(snapAppDllAbsolutePath); 
@@ -669,8 +677,10 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestBuildSnapApp()
+        public async Task TestBuildSnapApp()
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
@@ -740,7 +750,8 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem);
+            var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, 
+                snapAppBefore.BuildNugetSources(nugetTempDirectory), _fileSystem);
             snapAppAfter.Version = snapAppBefore.Version.BumpMajor();
 
             // Generic
@@ -835,8 +846,10 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestBuildSnapApp_Throws_If_Multiple_Nuget_Push_Feed_Names()
+        public async Task TestBuildSnapApp_Throws_If_Multiple_Nuget_Push_Feed_Names()
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
@@ -910,13 +923,16 @@ namespace Snap.Tests.Core.Extensions
 
             var snapApps = new SnapApps(snapAppBefore);
 
-            var ex = Assert.Throws<Exception>(() => snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem));
+            var ex = Assert.Throws<Exception>(() => snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, 
+                snapAppBefore.BuildNugetSources(nugetTempDirectory), _fileSystem));
             Assert.Equal($"Multiple nuget push feeds is not supported: nuget.org,nuget2.org. Application id: {snapAppBefore.Id}", ex.Message);
         }
 
         [Fact]
-        public void TestBuildSnapApp_Ignore_Non_Existant_Feeds()
+        public async Task TestBuildSnapApp_Ignore_Non_Existant_Feeds()
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var testChannel = new SnapChannel
             {
                 Name = "test",
@@ -950,7 +966,7 @@ namespace Snap.Tests.Core.Extensions
             var snapApps = new SnapApps(snapAppBefore);
 
             var snapAppAfter = snapApps.BuildSnapApp(snapAppBefore.Id, snapAppBefore.Target.Rid, 
-                snapAppBefore.BuildNugetSources(_baseFixture.NugetTempDirectory), _fileSystem,
+                snapAppBefore.BuildNugetSources(nugetTempDirectory), _fileSystem,
                 false, false);
 
             Assert.NotNull(snapAppAfter);
@@ -959,8 +975,10 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestBuildNugetSources_SnapApp()
+        public async Task TestBuildNugetSources_SnapApp()
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
@@ -976,7 +994,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var nugetPackageSources = snapApp.BuildNugetSources(_baseFixture.NugetTempDirectory);
+            var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
             Assert.Single(nugetPackageSources.Items);
 
             var packageSource = nugetPackageSources.Items.First();
@@ -984,8 +1002,10 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
-        public void TestBuildNugetSources_SnapApps()
+        public async Task TestBuildNugetSources_SnapApps()
         {
+            await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);
+
             var nugetOrgFeed = new SnapNugetFeed
             {
                 Name = "nuget.org",
@@ -1027,7 +1047,7 @@ namespace Snap.Tests.Core.Extensions
                 }
             };
 
-            var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(_baseFixture.NugetTempDirectory, new List<PackageSource>
+            var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(nugetTempDirectory, new List<PackageSource>
             {
                 new PackageSource(nugetOrgFeed.Source.ToString(), nugetOrgFeed.Name),
                 new PackageSource(nugetOrgMirrorFeed.Source.ToString(), nugetOrgMirrorFeed.Name)

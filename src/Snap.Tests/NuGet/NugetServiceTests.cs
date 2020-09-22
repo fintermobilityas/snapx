@@ -62,7 +62,7 @@ namespace Snap.Tests.NuGet
         [InlineData(NuGetProtocolVersion.V3)]
         public async Task TestGetMetadatasAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
-            using var packagesDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var packagesDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageSource = new PackageSource(packagesDirectory, "test", true)
             {
@@ -115,7 +115,7 @@ namespace Snap.Tests.NuGet
         [InlineData(NuGetProtocolVersion.V3)]
         public async Task TestDirectDownloadWithProgressAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
-            using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageSource = new PackageSource(testPackageDirectory, "test", true)
             {
@@ -184,7 +184,7 @@ namespace Snap.Tests.NuGet
         [InlineData(NuGetProtocolVersion.V3)]
         public async Task TestDownloadLatestAsync_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
-            using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testPackageDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageSource = new PackageSource(testPackageDirectory, "test", true)
             {
@@ -236,7 +236,7 @@ namespace Snap.Tests.NuGet
         [InlineData(NuGetProtocolVersion.V3)]
         public async Task TestPushPackage_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
-            using var testPackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testPackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
 
@@ -249,7 +249,7 @@ namespace Snap.Tests.NuGet
                 await nupkgStream.CopyToAsync(packageOutputStream);
             }
 
-            using var publishDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var publishDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageSource = new PackageSource(publishDirectory, "test", true)
             {
@@ -272,7 +272,7 @@ namespace Snap.Tests.NuGet
         [InlineData(NuGetProtocolVersion.V3)]
         public async Task TestDeletePackage_Local_Directory_PackageSource(NuGetProtocolVersion protocolVersion)
         {
-            using var deletePackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var deletePackageSrcDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             var packageIdentity = new PackageIdentity("test", NuGetVersion.Parse("1.0.0"));
 

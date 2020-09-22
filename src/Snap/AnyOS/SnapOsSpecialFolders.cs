@@ -1,8 +1,9 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Core;
+using Snap.Core.IO;
 
 namespace Snap.AnyOS
 {
@@ -68,29 +69,36 @@ namespace Snap.AnyOS
         public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
     }
 
-    internal sealed class SnapOsSpecialFoldersAnyOs : SnapOsSpecialFolders
+    internal sealed class SnapOsSpecialFoldersUnitTest : SnapOsSpecialFolders, IAsyncDisposable
     {
         readonly ISnapFilesystem _snapFilesystem;
-        readonly string _currentDirectory;
+        readonly DisposableDirectory _disposableDirectory;
 
-        public override string ApplicationData => _snapFilesystem.PathCombine(_currentDirectory, "ApplicationData");
-        public override string LocalApplicationData => _snapFilesystem.PathCombine(_currentDirectory, "LocalApplicationData");
-        public override string DesktopDirectory => _snapFilesystem.PathCombine(_currentDirectory, "DesktopDirectory");
-        public override string StartupDirectory => DesktopDirectory;
-        public override string StartMenu => DesktopDirectory;
-        public override string InstallerCacheDirectory => _snapFilesystem.PathCombine(ApplicationData, "snapx");
-        public override string NugetCacheDirectory => _snapFilesystem.PathCombine(InstallerCacheDirectory, "temp", "nuget");
+        public override string ApplicationData => _snapFilesystem.PathCombine(WorkingDirectory, nameof(ApplicationData));
+        public override string LocalApplicationData => _snapFilesystem.PathCombine(WorkingDirectory, nameof(LocalApplicationData));
+        public override string DesktopDirectory => _snapFilesystem.PathCombine(WorkingDirectory, nameof(DesktopDirectory));
+        public override string StartupDirectory => _snapFilesystem.PathCombine(DesktopDirectory, nameof(StartupDirectory));
+        public override string StartMenu => _snapFilesystem.PathCombine(DesktopDirectory, nameof(StartMenu));
+        public override string InstallerCacheDirectory => _snapFilesystem.PathCombine(LocalApplicationData, nameof(InstallerCacheDirectory));
+        public override string NugetCacheDirectory => _snapFilesystem.PathCombine(LocalApplicationData, nameof(NugetCacheDirectory));
+        public string WorkingDirectory => _disposableDirectory.WorkingDirectory;
 
-        public SnapOsSpecialFoldersAnyOs([NotNull] ISnapFilesystem snapFilesystem)
+        public SnapOsSpecialFoldersUnitTest([NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
         {
+            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
             _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-            _currentDirectory = _snapFilesystem.PathCombine(_snapFilesystem.DirectoryWorkingDirectory(), "appcompat_snapx");
+            _disposableDirectory = new DisposableDirectory(workingDirectory, _snapFilesystem);
             _snapFilesystem.DirectoryCreateIfNotExists(ApplicationData);
             _snapFilesystem.DirectoryCreateIfNotExists(LocalApplicationData);
             _snapFilesystem.DirectoryCreateIfNotExists(StartupDirectory);
             _snapFilesystem.DirectoryCreateIfNotExists(StartMenu);
             _snapFilesystem.DirectoryCreateIfNotExists(InstallerCacheDirectory);
             _snapFilesystem.DirectoryCreateIfNotExists(NugetCacheDirectory);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return _disposableDirectory.DisposeAsync();
         }
     }
 }

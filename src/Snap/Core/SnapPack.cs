@@ -346,7 +346,7 @@ namespace Snap.Core
                     && fullSnapApp.Target.Os == OSPlatform.Windows
                     && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    using var tmpDir = _snapFilesystem.WithDisposableTempDirectory();
+                    await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory();
                     await using var mainExecutableStream = await mainExecutablePackageFile.GetStream().ReadToEndAsync(cancellationToken: cancellationToken);
                     var mainExecutableTempFilename = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, mainExecutableFileName);
                     await using (var mainExecutableTmpStream = _snapFilesystem.FileWrite(mainExecutableTempFilename))

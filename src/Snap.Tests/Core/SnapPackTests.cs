@@ -127,7 +127,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp(isGenesis: true);
             genesisSnapApp.MainExe = "demoapp2";
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
@@ -152,7 +152,7 @@ namespace Snap.Tests.Core
             genesisSnapApp.Description = "a description";
             genesisSnapApp.Authors = "peter";
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
@@ -182,7 +182,7 @@ namespace Snap.Tests.Core
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
@@ -223,7 +223,7 @@ namespace Snap.Tests.Core
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
@@ -248,7 +248,7 @@ namespace Snap.Tests.Core
             var snapAppsReleases = new SnapAppsReleases();
             var genesisSnapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
@@ -287,7 +287,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -358,7 +358,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -410,7 +410,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -458,7 +458,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -513,7 +513,7 @@ namespace Snap.Tests.Core
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -576,7 +576,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -656,7 +656,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -723,7 +723,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -793,7 +793,7 @@ namespace Snap.Tests.Core
             var genesisSnapApp = _baseFixture.BuildSnapApp();
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -868,7 +868,7 @@ namespace Snap.Tests.Core
             var update1SnapApp = _baseFixture.Bump(genesisSnapApp);
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -989,7 +989,7 @@ namespace Snap.Tests.Core
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
             var update3SnapApp = _baseFixture.Bump(update2SnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -1078,7 +1078,7 @@ namespace Snap.Tests.Core
             var update2SnapApp = _baseFixture.Bump(update1SnapApp);
             var update3SnapApp = _baseFixture.Bump(update2SnapApp);
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
             using var genesisSnapReleaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext);
             using var update1SnapReleaseBuilder =
@@ -1186,7 +1186,7 @@ namespace Snap.Tests.Core
 
             var snapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleasesBefore, snapApp, _snapReleaseBuilderContext)
@@ -1245,7 +1245,7 @@ namespace Snap.Tests.Core
 
             var snapApp = _baseFixture.BuildSnapApp();
 
-            using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
 
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, snapApp, _snapReleaseBuilderContext)

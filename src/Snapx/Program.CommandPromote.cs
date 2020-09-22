@@ -217,7 +217,7 @@ namespace snapx
                 return 1;
             }
 
-            using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
+            await using var tmpDir = new DisposableDirectory(specialFolders.NugetCacheDirectory, filesystem);
             var releasesPackageFilename = snapApp.BuildNugetReleasesFilename();
             var releasesPackageAbsolutePath = filesystem.PathCombine(tmpDir.WorkingDirectory, releasesPackageFilename);
             await filesystem.FileWriteAsync(releasesPackageMemoryStream, releasesPackageAbsolutePath, cancellationToken);

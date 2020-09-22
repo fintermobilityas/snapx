@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Snap.Extensions;
 
 namespace Snap.Core.IO
 {
-    internal sealed class DisposableDirectory : IDisposable
+    internal sealed class DisposableDirectory : IAsyncDisposable
     {
         readonly ISnapFilesystem _filesystem;
 
@@ -19,9 +20,9 @@ namespace Snap.Core.IO
             filesystem.DirectoryCreateIfNotExists(WorkingDirectory);
         }
         
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
-            TplHelper.RunSync(() => _filesystem.DirectoryDeleteAsync(WorkingDirectory));
+            await _filesystem.DirectoryDeleteAsync(WorkingDirectory);
         }
     }
 }

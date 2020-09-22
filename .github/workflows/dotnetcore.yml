@@ -173,11 +173,6 @@ jobs:
     env:
         SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
         SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-        # These environment variables are not configured in our build environment.
-        # They may be removed when github actions adds supports for hosted ARM64 agents.
-        ApplicationData: ${{ github.workspace }}/ApplicationData
-        LocalApplicationData: ${{ github.workspace }}/LocalApplicationData
-        DesktopDirectory: ${{ github.workspace }}/DesktopDirectory
     outputs:
      TEST_SUCCESS: ${{ steps.set-test-status.outputs.BUILD_SUCCESS }}
     steps:

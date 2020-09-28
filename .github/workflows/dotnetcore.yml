@@ -159,45 +159,45 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
-  test-linux-arm64:
-    name: Test ${{ matrix.rid }}-${{ matrix.configuration }}
-    runs-on: [self-hosted, linux, ARM64]
-    needs: [setup, linux]
-    strategy:
-      matrix:
-        include: 
-          - rid: linux-arm64
-            configuration: Debug
-          - rid: linux-arm64
-            configuration: Release
-    env:
-        SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
-        SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.2.0
-        with:
-          fetch-depth: 0
-
-      - name: Download ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }} artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
-          path: ${{ github.workspace }}
-                
-      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
-        uses: actions/setup-dotnet@v1.6.0
-        with:
-          dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
-          
-      - name: Test native
-        run: |
-          chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
-          ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
-
-      - name: Test .NET
-        shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+  #test-linux-arm64:
+  #  name: Test ${{ matrix.rid }}-${{ matrix.configuration }}
+  #  runs-on: [self-hosted, linux, ARM64]
+  #  needs: [setup, linux]
+  #  strategy:
+  #    matrix:
+  #      include: 
+  #        - rid: linux-arm64
+  #          configuration: Debug
+  #        - rid: linux-arm64
+  #          configuration: Release
+  #  env:
+  #      SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
+  #      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+  #  steps:
+  #    - name: Checkout
+  #      uses: actions/checkout@v2.2.0
+  #     with:
+  #       fetch-depth: 0
+  #
+  #    - name: Download ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }} artifacts
+  #      uses: actions/download-artifact@v2
+  #      with:
+  #        name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
+  #        path: ${{ github.workspace }}
+  #              
+  #    - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
+  #      uses: actions/setup-dotnet@v1.6.0
+  #      with:
+  #        dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
+  #        
+  #    - name: Test native
+  #      run: |
+  #        chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
+  #        ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
+  #
+  #    - name: Test .NET
+  #      shell: pwsh
+  #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
   publish:
     if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')

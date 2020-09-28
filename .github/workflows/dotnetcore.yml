@@ -201,10 +201,9 @@ jobs:
 
   publish:
     if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
-    # Must run on Windows in order to support .NET Full Framework.
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     name: Publish
-    needs: [setup, windows, linux, test-linux-arm64]
+    needs: [setup, windows, linux] # todo: enable me when github actions supports arm64: test-linux-arm64
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:

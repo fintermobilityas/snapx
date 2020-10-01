@@ -174,6 +174,8 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
+        [YamlMember(Alias = "install-directory")]
+        public string InstallDirectoryName { get; set; }
         [YamlMember(Alias = "main")]
         public string MainExe { get; set; }
         [YamlMember(Alias = "supervisorid")]
@@ -194,6 +196,7 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
+            InstallDirectoryName = snapApp.InstallDirectoryName;
             MainExe = snapApp.MainExe;
             SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
@@ -205,6 +208,8 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Id = snapApp.Id;
+            InstallDirectoryName = snapApp.InstallDirectoryName;
+            MainExe = snapApp.MainExe;
             SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x).ToList();
             Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();

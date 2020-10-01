@@ -38,6 +38,7 @@ namespace Snap.Core.Models
     public sealed class SnapApp
     {
         public string Id { get; set; }
+        public string InstallDirectoryName { get; set; }
         public string MainExe { get; set; }
         public string SuperVisorId { get; set; }
         public SemanticVersion Version { get; set; }
@@ -64,6 +65,7 @@ namespace Snap.Core.Models
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             Id = app.Id;
+            InstallDirectoryName = app.InstallDirectoryName;
             MainExe = app.MainExe;
             SuperVisorId = app.SuperVisorId;
             Version = app.Version;

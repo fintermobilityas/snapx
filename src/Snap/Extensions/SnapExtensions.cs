@@ -460,7 +460,12 @@ namespace Snap.Extensions
 
             if (snapApp.MainExe != null && string.IsNullOrWhiteSpace(snapApp.MainExe))
             {
-                throw new Exception("MainExe property cannot be null or whitespace.");
+                throw new Exception($"{nameof(snapApp.MainExe)} property cannot be null or whitespace.");
+            }
+
+            if (snapApp.InstallDirectoryName != null && string.IsNullOrWhiteSpace(snapApp.InstallDirectoryName))
+            {
+                throw new Exception($"{nameof(snapApp.InstallDirectoryName)} property cannot be null or whitespace.");
             }
 
             var snapAppUniqueRuntimeIdentifiers = snapApp.Targets.Select(x => x.Rid).ToList();
@@ -590,6 +595,7 @@ namespace Snap.Extensions
             return new SnapApp
             {
                 Id = snapApp.Id,
+                InstallDirectoryName = snapApp.InstallDirectoryName,
                 MainExe = snapApp.MainExe,
                 SuperVisorId = superVisorId.ToString(),
                 Channels = snapAppChannels,

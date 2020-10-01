@@ -109,6 +109,7 @@ namespace Snap.Shared.Tests
             {
                 Id = id,
                 MainExe = id,
+                InstallDirectoryName = id,
                 SuperVisorId = Guid.NewGuid().ToString(),
                 Version = new SemanticVersion(1, 0, 0),
                 IsGenesis = isGenesis,

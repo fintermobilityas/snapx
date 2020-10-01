@@ -330,7 +330,7 @@ namespace Snap.Installer
                         goto done;
                     }
 
-                    var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.Id);
+                    var baseDirectory = snapFilesystem.PathCombine(snapOs.SpecialFolders.LocalApplicationData, snapApp.InstallDirectoryName ?? snapApp.Id);
 
                     mainWindowLogger.Info($"Installing {snapApp.Id}. Channel name: {snapChannel.Name}");
 

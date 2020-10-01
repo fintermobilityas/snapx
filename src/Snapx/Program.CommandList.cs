@@ -89,6 +89,10 @@ namespace snapx
 
             var downloadResults = new List<(bool downloadSuccess, DownloadResourceResult downloadResourceResult, string id)>();
 
+            var snapDatabaseIds = string.Join(", ", snapAppsesPackageSources.DistinctBy(x => x.snapApp.Id).Select(x => x.snapApp.Id));
+            logger.Info('-'.Repeat(TerminalBufferWidth));
+            logger.Info($"Downloading application databases: {snapDatabaseIds}.");
+
             await snapAppsesPackageSources.DistinctBy(x => x.snapApp.Id).ForEachAsync(async x =>
             {
                 try
@@ -110,7 +114,7 @@ namespace snapx
 
                 if (!downloadSuccess)
                 {
-                    logger.Error($"Failed to download releases nupkg for application: {thisSnapApps.Id}.");
+                    logger.Error($"Failed to download releases nupkg for application: {thisSnapApps.Id}. Status: {downloadResourceResult?.Status}.");
                     continue;
                 }
 

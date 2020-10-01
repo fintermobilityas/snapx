@@ -152,7 +152,7 @@ namespace Snap.NuGet
             var metadata = await GetLatestMetadataAsync(packageId, packageSource, includePreRelease, noCache, cancellationToken);
             if (metadata == null)
             {
-                return null;
+                return new DownloadResourceResult(DownloadResourceResultStatus.NotFound);
             }
 
             return await DownloadAsync(metadata.Source, metadata.Identity, cancellationToken);

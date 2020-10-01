@@ -446,59 +446,6 @@ namespace Snap.Tests.Core.Extensions
             Assert.Equal(expectedFilename, actualFilename);
         }
 
-        [Fact]
-        public void ParseNugetFilename_When_Null()
-        {
-            string value = null;
-            var (valid, _, _, _, _) = value.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
-            Assert.False(valid);
-        }
-
-        [Fact]
-        public void ParseNugetFilename_When_Incorrect_Delimiter_Count()
-        {
-            const string value = "demoapp_full_linux-x64_snapx1.0.0";
-            var (valid, _, _, _, _) = value.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
-            Assert.False(valid);
-        }
-
-        [Fact]
-        public void ParseNugetFilename_When_Empty_Id()
-        {
-            const string value = "_full_linux-x64_snapx.1.0.0.nupkg";
-            var (valid, id, _, _, _) = value.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
-            Assert.False(valid);
-            Assert.Null(id);
-        }
-
-        [Fact]
-        public void ParseNugetFilename_When_Not_FullOrDelta()
-        {
-            const string value = "demoapp_yolo_linux-x64_snapx.1.0.0.nupkg";
-            var (valid, _, fullOrDelta, _, _) = value.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
-            Assert.False(valid);
-            Assert.Null(fullOrDelta);
-        }
-      
-        [Theory]
-        [InlineData("demoapp_full_linux-arm64_snapx.1.0.0.nupkg", "demoapp", "full", "linux-arm64", "1.0.0")]
-        [InlineData("demoapp_delta_linux-arm64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-arm64", "1.0.0")]
-        [InlineData("demoapp_full_linux-x64_snapx.1.0.0.nupkg", "demoapp", "full", "linux-x64", "1.0.0")]
-        [InlineData("demoapp_delta_linux-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "linux-x64", "1.0.0")]
-        [InlineData("demoapp_full_win-x64_snapx.1.0.0.nupkg", "demoapp", "full", "win-x64", "1.0.0")]
-        [InlineData("demoapp_delta_win-x64_snapx.1.0.0.nupkg", "demoapp", "delta", "win-x64", "1.0.0")]
-        [InlineData("demoapp_delta_linux-x64_snapx.575.0.0.nupkg", "demoapp", "delta", "linux-x64", "575.0.0")]
-        public void ParseNugetFilename(string filename, string expectedId, string expectedFullOrDelta,
-            string expectedRid, string expectedSemanticVersionStr)
-        {
-            var (valid, id, fullOrDelta, semanticVersion, rid) = filename.ParseNugetFilename(StringComparison.OrdinalIgnoreCase);
-            Assert.True(valid);
-            Assert.Equal(id, expectedId);
-            Assert.Equal(fullOrDelta, expectedFullOrDelta);
-            Assert.Equal(semanticVersion, SemanticVersion.Parse(expectedSemanticVersionStr));
-            Assert.Equal(rid, expectedRid);
-        }
-
         [Theory]
         [InlineData(NuGetProtocolVersion.V2)]
         [InlineData(NuGetProtocolVersion.V3)]

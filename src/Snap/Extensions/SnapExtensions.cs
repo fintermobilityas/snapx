@@ -343,54 +343,6 @@ namespace Snap.Extensions
             
             return deltaSnapRelease; 
         }
-        
-        internal static (bool valid, string id, string fullOrDelta, SemanticVersion semanticVersion, string rid) ParseNugetFilename([NotNull] this string filename, 
-            StringComparison stringComparisonType)
-        {
-            string id = default;
-            string fullOrDelta = default;
-            SemanticVersion semanticVersion = default;
-            string rid = default;
-            var nupkgExtensionPos = -1;
-
-            if (string.IsNullOrWhiteSpace(filename))
-            {
-                goto done;
-            }
-
-            var values = filename.Split('_').ToList();
-            if (values.Count != 4)
-            {
-                goto done;
-            }
-
-            nupkgExtensionPos = filename.LastIndexOf(".nupkg", stringComparisonType);
-            if (nupkgExtensionPos == -1)
-            {
-                goto done;
-            }
-
-            id = string.IsNullOrWhiteSpace(values[0]) ? null : values[0];
-            fullOrDelta = values[1] == "delta" ? "delta" : values[1] == "full" ? "full" : null;
-            rid = string.IsNullOrWhiteSpace(values[2]) ? null : values[2];            
-
-            if (!values[3].StartsWith("snapx.", stringComparisonType))
-            {
-                goto done;
-            }
-            
-            var semanticVersionStr = nupkgExtensionPos == -1 || 
-                                     string.IsNullOrWhiteSpace(values[3]) ? null : values[3].Replace(".nupkg", string.Empty);
-            semanticVersionStr = semanticVersionStr?.Replace("snapx.", string.Empty);
-            if (!SemanticVersion.TryParse(semanticVersionStr, out semanticVersion))
-            {
-                semanticVersion = null;
-            }
-
-            done:
-            var valid = id != null && fullOrDelta != null && semanticVersion != null && rid != null && nupkgExtensionPos != -1;
-            return (valid, id, fullOrDelta, semanticVersion, rid);
-        }
 
         internal static PackageSource BuildPackageSource([NotNull] this SnapNugetFeed snapFeed, [NotNull] ISettings settings)
         {

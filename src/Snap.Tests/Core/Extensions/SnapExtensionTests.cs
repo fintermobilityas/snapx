@@ -78,6 +78,7 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("win-x86", true)]
         [InlineData("win-x64", true)]
         [InlineData("linux-x64", true)]
+        [InlineData("linux-arm64", true)]
         [InlineData("unknown-x64", false)]
         [InlineData(null, false)]
         public void TestIsRuntimeIdentifierValidSafe(string runtimeIdentifier, bool valid)

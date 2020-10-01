@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
-using NuGet.Versioning;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -424,11 +423,8 @@ namespace Snap.Extensions
             [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapFilesystem snapFilesystem,
             bool requireUpdateFeed = true, bool requirePushFeed = true)
         {
-            foreach (var snapsApp in snapApps.Apps)
-            {
-                yield return snapApps.BuildSnapApp(snapsApp.Id, snapsApp.Target.Rid, 
-                    nuGetPackageSources, snapFilesystem, requireUpdateFeed, requirePushFeed);
-            }
+            return snapApps.Apps.Select(snapsApp => snapApps.BuildSnapApp(snapsApp.Id, snapsApp.Target.Rid, 
+                nuGetPackageSources, snapFilesystem, requireUpdateFeed, requirePushFeed));
         }
 
         internal static SnapApp BuildSnapApp([NotNull] this SnapApps snapApps, string id, [NotNull] string rid,

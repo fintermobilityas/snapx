@@ -174,7 +174,7 @@ namespace Snap.Core.Models
     public sealed class SnapsApp
     {
         public string Id { get; set; }
-        [YamlMember(Alias = "install-directory")]
+        [YamlMember(Alias = "installDirectory")]
         public string InstallDirectoryName { get; set; }
         [YamlMember(Alias = "main")]
         public string MainExe { get; set; }

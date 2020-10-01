@@ -14,7 +14,6 @@ using Snap.Core.IO;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
-using Snap.Shared.Tests.Extensions;
 using MethodAttributes = Mono.Cecil.MethodAttributes;
 using ParameterAttributes = Mono.Cecil.ParameterAttributes;
 using TypeAttributes = Mono.Cecil.TypeAttributes;
@@ -158,22 +157,6 @@ namespace Snap.Shared.Tests
             };
         }
 
-        public void WriteAssemblies(string workingDirectory, List<AssemblyDefinition> assemblyDefinitions, bool disposeAssemblyDefinitions = false)
-        {
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-            if (assemblyDefinitions == null) throw new ArgumentNullException(nameof(assemblyDefinitions));
-
-            foreach (var assemblyDefinition in assemblyDefinitions)
-            {
-                assemblyDefinition.Write(Path.Combine(workingDirectory, assemblyDefinition.BuildRelativeFilename()));
-
-                if (disposeAssemblyDefinitions)
-                {
-                    assemblyDefinition.Dispose();
-                }
-            }
-        }
-
         public AssemblyDefinition BuildLibrary(string libraryName, SemanticVersion semanticVersion = null, bool randomVersion = false, IReadOnlyCollection<AssemblyDefinition> assemblyReferencesDefinitions = null)
         {
             if (libraryName == null) throw new ArgumentNullException(nameof(libraryName));
@@ -304,34 +287,6 @@ namespace Snap.Shared.Tests
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             return BuildExecutable(snapApp.MainExe ?? snapApp.Id, randomVersion, references);
-        }
-
-        public AssemblyDefinition BuildLibrary(string libraryName, string className, IReadOnlyCollection<AssemblyDefinition> assemblyReferencesDefinitions = null)
-        {
-            if (libraryName == null) throw new ArgumentNullException(nameof(libraryName));
-            if (className == null) throw new ArgumentNullException(nameof(className));
-
-            var assembly = AssemblyDefinition.CreateAssembly(
-                new AssemblyNameDefinition(libraryName, new Version(1, 0, 0, 0)), libraryName, ModuleKind.Dll);
-
-            var mainModule = assembly.MainModule;
-
-            var simpleClass = new TypeDefinition(libraryName, className,
-                TypeAttributes.Class | TypeAttributes.Public, mainModule.TypeSystem.Object);
-
-            mainModule.Types.Add(simpleClass);
-
-            if (assemblyReferencesDefinitions == null)
-            {
-                return assembly;
-            }
-
-            foreach (var assemblyDefinition in assemblyReferencesDefinitions)
-            {
-                mainModule.AssemblyReferences.Add(assemblyDefinition.Name);
-            }
-
-            return assembly;
         }
 
         static void AddVersioningAttributes([NotNull] AssemblyDefinition assemblyDefinition, [NotNull] SemanticVersion semanticVersion)

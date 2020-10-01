@@ -626,6 +626,25 @@ namespace Snap.Tests.Core.Extensions
         }
 
         [Fact]
+        public async Task TestGetSnapAppFromDirectory_Supports_Yaml_Member_Aliases()
+        {
+            var snapApp = _baseFixture.BuildSnapApp();
+            snapApp.MainExe = "mymainexe";
+            snapApp.InstallDirectoryName = "mydirectory";
+
+            await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
+            using var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp);
+            var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
+            assemblyDefinition.Write(snapAppDllAbsolutePath); 
+                               
+            var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
+            Assert.NotNull(appSpecAfter);
+
+            Assert.Equal(snapApp.MainExe, appSpecAfter.MainExe);
+            Assert.Equal(snapApp.InstallDirectoryName, appSpecAfter.InstallDirectoryName);
+        }
+
+        [Fact]
         public async Task TestBuildSnapApp()
         {
             await using var nugetTempDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _fileSystem);

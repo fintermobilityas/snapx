@@ -20,7 +20,7 @@ namespace Snap.Extensions
 {
     internal static class SnapExtensions
     {
-        static readonly Regex AppIdRegex = new Regex(@"^\w+([._]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+        static readonly Regex AppIdRegex = new Regex(@"^\w+([._-]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ChannelNameRegex = new Regex(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex NetAppRegex = new Regex("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
         static readonly Regex ExpansionRegex = new Regex("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);

@@ -63,7 +63,8 @@ namespace Snap.Tests.Core.Extensions
         [InlineData("demoapp.1", true)]
         [InlineData("demoapp_1", true)]
         [InlineData("DEMOApp.1", true)]
-        [InlineData("demoapp-1", false)]
+        [InlineData("demoapp-1", true)]
+        [InlineData("demoapp@1", false)]
         public void TestIsValidAppId(string appName, bool isValid)
         {
             var snapApp = new SnapApp

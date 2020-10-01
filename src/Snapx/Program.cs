@@ -383,7 +383,7 @@ namespace snapx
                     goto error;
                 }
 
-                const int expectedSchemaVersion = 1;
+                const int expectedSchemaVersion = 2;
                 if (snapApps.Schema != expectedSchemaVersion)
                 {
                     throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {expectedSchemaVersion}.");
@@ -495,7 +495,7 @@ namespace snapx
                     goto error;
                 }
 
-                const int expectedSchemaVersion = 1;
+                const int expectedSchemaVersion = 2;
                 if (snapApps.Schema != expectedSchemaVersion)
                 {
                     throw new Exception($"Invalid schema version: {snapApps.Schema}. Expected schema version: {expectedSchemaVersion}.");

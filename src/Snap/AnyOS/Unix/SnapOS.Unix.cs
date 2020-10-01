@@ -68,40 +68,38 @@ namespace Snap.AnyOS.Unix
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                {
-                    try
-                    {
-                        const string filename = "/proc/device-tree/model";
-                        using var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        using var streamReader = new StreamReader(stream, Encoding.UTF8);
-                        var content = streamReader.ReadToEnd();
+                const string ubuntuReleaseFilename = "lsb_release";
+                const string rasperryPiReleaseFilename = "/proc/device-tree/model";
 
-                        DistroType = content.StartsWith("Raspberry Pi", StringComparison.InvariantCultureIgnoreCase) ? 
-                            SnapOsDistroType.RaspberryPi : SnapOsDistroType.Unknown;
+                try
+                {
+                    var (lsbReleaseExitCode, lsbReleaseStdOutput) = TplHelper.RunSync(() => OsProcessManager
+                        .RunAsync(new ProcessStartInfoBuilder(ubuntuReleaseFilename).Add("-a"), CancellationToken.None));
+                    if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
+                    {
+                        var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
+                        DistroType = distroId == "Ubuntu" ? SnapOsDistroType.Ubuntu : SnapOsDistroType.Unknown;
                         return;
                     }
-                    catch (Exception e)
-                    {
-                        _logger.Warn("Exception thrown while reading from 'lsb_release'", e);
-                    }
-                } else if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+                }
+                catch (Exception e)
                 {
-                    try
-                    {
-                        var (lsbReleaseExitCode, lsbReleaseStdOutput) = TplHelper.RunSync(() => OsProcessManager
-                            .RunAsync(new ProcessStartInfoBuilder("lsb_release").Add("-a"), CancellationToken.None));
-                        if (lsbReleaseExitCode == 0 && lsbReleaseStdOutput != null)
-                        {
-                            var (distroId, _, _, _) = ParseLsbRelease(lsbReleaseStdOutput);
-                            DistroType = distroId == "Ubuntu" ? SnapOsDistroType.Ubuntu : SnapOsDistroType.Unknown;
-                            return;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.Warn("Exception thrown while executing 'lsb_release'", e);
-                    }
+                    _logger.Warn("Exception thrown while executing 'lsb_release'", e);
+                }
+
+                try
+                {
+                    using var stream = new FileStream(rasperryPiReleaseFilename, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var streamReader = new StreamReader(stream, Encoding.UTF8);
+                    var content = streamReader.ReadToEnd();
+
+                    DistroType = content.StartsWith("Raspberry Pi", StringComparison.InvariantCultureIgnoreCase) ? 
+                        SnapOsDistroType.RaspberryPi : SnapOsDistroType.Unknown;
+                    return;
+                }
+                catch (Exception e)
+                {
+                    _logger.Warn($"Exception thrown while reading from '{rasperryPiReleaseFilename}'", e);
                 }
 
                 DistroType = SnapOsDistroType.Unknown;

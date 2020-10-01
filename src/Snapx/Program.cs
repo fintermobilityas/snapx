@@ -450,30 +450,10 @@ namespace snapx
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             var (snapApps, snapAppTargets, _, snapsAbsoluteFilename) = BuildSnapAppsesFromDirectory(filesystem, reader, nuGetPackageSources, workingDirectory);
-
-            var snapApp = ApplicationIdAndRid() ?? ApplicationIdContainsRid();
+            var snapApp = snapAppTargets.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
+                                                            && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
 
             return (snapApps, snapApp, snapApps == null, snapsAbsoluteFilename);
-
-            SnapApp ApplicationIdAndRid()
-            {
-                return snapAppTargets.SingleOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)
-                                                           && string.Equals(x.Target.Rid, rid, StringComparison.OrdinalIgnoreCase));
-            }
-
-            SnapApp ApplicationIdContainsRid()
-            {
-                return snapAppTargets.SingleOrDefault(x =>
-                {
-                    // Application id contains the rid, e.g. demoapp-linux-x64.
-                    if (!x.Id.Contains("-", StringComparison.OrdinalIgnoreCase)) return false;
-                    var lastDashPosition = x.Id.IndexOf("-", StringComparison.OrdinalIgnoreCase);
-                    if (lastDashPosition == -1) return false;
-                    var lhsIdAndRid = $"{x.Id.Substring(0, lastDashPosition)}-{x.Target.Rid}";
-                    var rhsIdAndRid = $"{id}-{rid}";
-                    return string.Equals(lhsIdAndRid, rhsIdAndRid, StringComparison.OrdinalIgnoreCase);
-                });
-            }
         }
 
         static (SnapApps snapApps, List<SnapApp> snapAppTargets, bool error, string snapsAbsoluteFilename) BuildSnapAppsesFromDirectory(

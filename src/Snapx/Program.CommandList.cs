@@ -140,7 +140,7 @@ namespace snapx
                                 $"\nSnapx pack id: {snapAppsReleases.PackId:N}" +
                                 $"\nSnapx version: {snapAppsReleases.PackVersion}";
                 
-                foreach (var target in snapApps.Apps.Where(x => x.Id == thisSnapApps.Id).SelectMany(x => x.Targets))
+                foreach (var target in snapApps.Apps.Where(x => x.Id == thisSnapApps.Id).Select(x => x.Target))
                 {                    
                     var rowValues = new List<object>
                     {

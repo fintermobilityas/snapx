@@ -426,10 +426,8 @@ namespace Snap.Extensions
         {
             foreach (var snapsApp in snapApps.Apps)
             {
-                foreach (var snapsTarget in snapsApp.Targets)
-                {
-                    yield return snapApps.BuildSnapApp(snapsApp.Id, snapsTarget.Rid, nuGetPackageSources, snapFilesystem, requireUpdateFeed, requirePushFeed);
-                }
+                yield return snapApps.BuildSnapApp(snapsApp.Id, snapsApp.Target.Rid, 
+                    nuGetPackageSources, snapFilesystem, requireUpdateFeed, requirePushFeed);
             }
         }
 
@@ -468,50 +466,38 @@ namespace Snap.Extensions
                 throw new Exception($"{nameof(snapApp.InstallDirectoryName)} property cannot be null or whitespace.");
             }
 
-            var snapAppUniqueRuntimeIdentifiers = snapApp.Targets.Select(x => x.Rid).ToList();
-            if (snapAppUniqueRuntimeIdentifiers.Distinct().Count() != snapApp.Targets.Count)
-            {
-                throw new Exception($"Target runtime identifiers (rids) must be unique: {string.Join(",", snapAppUniqueRuntimeIdentifiers)}. Snap id: {snapApp.Id}");
-            }
-                        
-            var snapAppTarget = snapApp.Targets.SingleOrDefault(x => string.Equals(x.Rid, rid, StringComparison.OrdinalIgnoreCase));
-            if (snapAppTarget == null)
-            {
-                throw new Exception($"Unable to find target with rid: {rid}. Snap id: {snapApp.Id}");
-            }
+            snapApp.Target.Installers = snapApp.Target.Installers.Distinct().ToList();
+            snapApp.Target.Rid = snapApp.Target.Rid?.ToLowerInvariant();
 
-            snapAppTarget.Installers = snapAppTarget.Installers.Distinct().ToList();
-            snapAppTarget.Rid = snapAppTarget.Rid?.ToLowerInvariant();
-
-            if (!snapAppTarget.Rid.IsRuntimeIdentifierValidSafe())
+            if (!snapApp.Target.Rid.IsRuntimeIdentifierValidSafe())
             {
                 throw new Exception($"Unsupported rid: {rid}. Snap id: {snapApp.Id}");
             }
 
-            if (!snapAppTarget.Framework.IsNetFrameworkValidSafe())
+            if (!snapApp.Target.Framework.IsNetFrameworkValidSafe())
             {
-                throw new Exception($"Unknown .NET framework: {snapAppTarget.Framework}");
+                throw new Exception($"Unknown .NET framework: {snapApp.Target.Framework}");
             }
             
-            var snapAppTargetUniqueShortcuts = snapAppTarget.Shortcuts.Select(x => x).ToList();
-            if (snapAppTargetUniqueShortcuts.Distinct().Count() != snapAppTarget.Shortcuts.Count)
+            var snapAppTargetUniqueShortcuts = snapApp.Target.Shortcuts.Select(x => x).ToList();
+            if (snapAppTargetUniqueShortcuts.Distinct().Count() != snapApp.Target.Shortcuts.Count)
             {
                 throw new Exception($"Target shortcut locations must be unique: {string.Join(", ", snapAppTargetUniqueShortcuts)}. Snap id: {snapApp.Id}");
             }
             
-            var snapAppTargetUniqueInstallers = snapAppTarget.Installers.Select(x => x).ToList();
-            if (snapAppTargetUniqueInstallers.Distinct().Count() != snapAppTarget.Installers.Count)
+            var snapAppTargetUniqueInstallers = snapApp.Target.Installers.Select(x => x).ToList();
+            if (snapAppTargetUniqueInstallers.Distinct().Count() != snapApp.Target.Installers.Count)
             {
                 throw new Exception($"Target installer types must be unique: {string.Join(", ", snapAppTargetUniqueInstallers)}. Snap id: {snapApp.Id}");
             }
             
-            if (snapAppTarget.Icon != null)
+            if (snapApp.Target.Icon != null)
             {
-                snapAppTarget.Icon = snapFilesystem.PathGetFullPath(snapAppTarget.Icon);
+                snapApp.Target.Icon = snapFilesystem.PathGetFullPath(snapApp.Target.Icon);
 
-                if (!snapFilesystem.FileExists(snapAppTarget.Icon))
+                if (!snapFilesystem.FileExists(snapApp.Target.Icon))
                 {                    
-                    throw new Exception($"Unable to find icon: {snapAppTarget.Icon}.");
+                    throw new Exception($"Unable to find icon: {snapApp.Target.Icon}.");
                 }
             }
 
@@ -587,7 +573,7 @@ namespace Snap.Extensions
                 throw new Exception($"Multiple nuget push feeds is not supported: {string.Join(",", snapChannelNugetFeedNames)}. Application id: {snapApp.Id}");
             }
 
-            if (snapAppTarget.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.OrdinalIgnoreCase)))
+            if (snapApp.Target.PersistentAssets.Any(x => x.StartsWith("app-", StringComparison.OrdinalIgnoreCase)))
             {
                 throw new Exception("Fatal error! A persistent asset starting with 'app-' was detected in manifest. This is a reserved keyword.");
             }
@@ -599,7 +585,7 @@ namespace Snap.Extensions
                 MainExe = snapApp.MainExe,
                 SuperVisorId = superVisorId.ToString(),
                 Channels = snapAppChannels,
-                Target = new SnapTarget(snapAppTarget),
+                Target = new SnapTarget(snapApp.Target),
                 Authors = snapApp.Nuspec.Authors,
                 Description = snapApp.Nuspec.Description,
                 ReleaseNotes = snapApp.Nuspec.ReleaseNotes,

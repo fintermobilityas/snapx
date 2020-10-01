@@ -80,13 +80,9 @@ namespace snapx
 
             foreach(var snapsApp in snapApps.Apps)
             {
-                foreach (var target in snapsApp.Targets.Where(target => 
-                    anyRid || string.Equals(options.Rid, target.Rid, StringComparison.OrdinalIgnoreCase)))
-                {
-                    anyRidSnapApp = snapApps.BuildSnapApp(snapsApp.Id, target.Rid, nuGetPackageSources, filesystem);
-                    runtimeIdentifiers.AddRange(snapApps.GetRids(anyRidSnapApp));
-                    break;
-                }
+                anyRidSnapApp = snapApps.BuildSnapApp(snapsApp.Id, snapsApp.Target.Rid, nuGetPackageSources, filesystem);
+                runtimeIdentifiers.AddRange(snapApps.GetRids(anyRidSnapApp));
+                break;
             }
 
             if (anyRidSnapApp == null)

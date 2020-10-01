@@ -181,15 +181,15 @@ namespace Snap.Core.Models
         [YamlMember(Alias = "supervisorid")]
         public string SuperVisorId { get; set; }
         public List<string> Channels { get; set; }
-        public List<SnapsTarget> Targets { get; set; }
+        public SnapsTarget Target { get; set; }
         public SnapsAppNuspec Nuspec { get; set; }
 
         [UsedImplicitly]
         public SnapsApp()
         {
             Channels = new List<string>();
-            Targets = new List<SnapsTarget>();
             Nuspec = new SnapsAppNuspec();
+            Target = new SnapsTarget();
         }
 
         internal SnapsApp([NotNull] SnapApp snapApp)
@@ -200,7 +200,7 @@ namespace Snap.Core.Models
             MainExe = snapApp.MainExe;
             SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x.Name).ToList();
-            Targets = new List<SnapsTarget> { new SnapsTarget(snapApp.Target) };
+            Target = new SnapsTarget(snapApp.Target);
             Nuspec = new SnapsAppNuspec(snapApp);
         }
 
@@ -212,7 +212,7 @@ namespace Snap.Core.Models
             MainExe = snapApp.MainExe;
             SuperVisorId = snapApp.SuperVisorId;
             Channels = snapApp.Channels.Select(x => x).ToList();
-            Targets = snapApp.Targets.Select(x => new SnapsTarget(x)).ToList();
+            Target = new SnapsTarget(snapApp.Target);
             Nuspec = new SnapsAppNuspec(snapApp.Nuspec);
         }
     }
@@ -308,8 +308,7 @@ namespace Snap.Core.Models
         {
             if (snapId == null) throw new ArgumentNullException(nameof(snapId));
             return Apps.Where(x => x.Id == snapId)
-                .SelectMany(x => x.Targets)
-                .Select(x => x.Rid)
+                .Select(x => x.Target.Rid)
                 .Distinct()
                 .ToList();
         } 

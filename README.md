@@ -36,7 +36,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Docker Desktop >= v2.3.0.3
 - GitVersion `dotnet tool update gitversion.tool -g`
 - Powershell v7 `dotnet tool update powershell -g`
-- .NET SDK v5.0-rc.1
+- .NET SDK v5.0-rc.2
 
 - Visual Studio 2019 16.8 Preview Community with C++ workload installed
 

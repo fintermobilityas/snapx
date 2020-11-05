@@ -22,7 +22,7 @@ jobs:
       SNAPX_VERSION: ${{ steps.set-version.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.2
+        uses: actions/checkout@v2.3.4
         with:
           fetch-depth: 0
         
@@ -32,7 +32,6 @@ jobs:
         run: |
           dotnet tool update GitVersion.Tool --global --version ${{ env.GITVERSION_VERSION }}
           $SNAPX_VERSION = (dotnet gitversion /showVariable NugetVersionv2) | out-string
-          echo "::set-env name=SNAPX_VERSION::$SNAPX_VERSION"
           echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
             
   linux:
@@ -48,7 +47,7 @@ jobs:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.2
+        uses: actions/checkout@v2.3.4
         with:
           lfs: true
           submodules: true
@@ -116,13 +115,13 @@ jobs:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:      
       - name: Checkout
-        uses: actions/checkout@v2.3.2
+        uses: actions/checkout@v2.3.4
         with:
           lfs: true
           submodules: true   
                 
       - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
-        uses: actions/setup-dotnet@v1.6.0
+        uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
 
@@ -175,7 +174,7 @@ jobs:
   #      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
   #  steps:
   #    - name: Checkout
-  #      uses: actions/checkout@v2.2.0
+  #      uses: actions/checkout@v2.3.4
   #     with:
   #       fetch-depth: 0
   #
@@ -186,7 +185,7 @@ jobs:
   #        path: ${{ github.workspace }}
   #              
   #    - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
-  #      uses: actions/setup-dotnet@v1.6.0
+  #      uses: actions/setup-dotnet@v1.7.2
   #      with:
   #        dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
   #        
@@ -208,7 +207,7 @@ jobs:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.2
+        uses: actions/checkout@v2.3.4
         with: 
           lfs: true
 
@@ -237,7 +236,7 @@ jobs:
           path: ${{ github.workspace }}
           
       - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
-        uses: actions/setup-dotnet@v1.6.0
+        uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
     

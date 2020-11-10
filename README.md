@@ -78,7 +78,7 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
     - 18.04
     - 20.04
   
-- Raspberry PI 4 arm64 
+- Raspberry Pi OS arm64 
 
 ## Code of Conduct
 

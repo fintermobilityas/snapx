@@ -14,6 +14,7 @@ namespace Snap.NuGet
         public string Path { get; }
         public string EffectivePath { get; }
         public FrameworkName TargetFramework { get; }
+        public NuGetFramework NuGetFramework { get; }
         public DateTimeOffset LastWriteTime { get; }
         public string Filename { get; }
 
@@ -24,6 +25,7 @@ namespace Snap.NuGet
             _memoryStream = memoryStream ?? throw new ArgumentNullException(nameof(memoryStream));
 
             TargetFramework = new FrameworkName(nuGetFramework.DotNetFrameworkName);
+            NuGetFramework = nuGetFramework;
             Path = EffectivePath = targetPath ?? throw new ArgumentNullException(nameof(targetPath));
             Filename = filename ?? throw new ArgumentNullException(nameof(filename));
             LastWriteTime = DateTimeOffset.Now;

@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "3.0.100",
+	[string] $DockerVersion = "3.0.101",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -70,7 +70,6 @@ switch -regex ($OSVersion) {
 
 $DockerFilenamePath = Join-Path $WorkingDir docker\Dockerfile
 $DockerGithubRegistryUrl = "docker.pkg.github.com/fintermobilityas/snapx"
-$DockerContainerUrl = "mcr.microsoft.com/dotnet/sdk:5.0.100-rc.1-focal"
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 $SummaryStopwatch = $Stopwatch::StartNew()
@@ -512,10 +511,6 @@ switch ($Target) {
         }
     }
     "Publish-Docker-Image" {
-		$DockerFileContent = Get-Content $DockerFilenamePath
-		$DockerFileContent[0] = "FROM $DockerContainerUrl as env-build"
-		$DockerFileContent | Out-File $DockerFilenamePath -Encoding $Utf8NoBomEncoding
-
 		Invoke-Command-Colored $CommandDocker @(
 			"build -f ""$DockerFilenamePath"" -t ${DockerGithubRegistryUrl}/${DockerImageName}:${DockerVersion} docker"
         )

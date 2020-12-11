@@ -10,7 +10,7 @@
         <PackageReference Include="NuGet.Protocol" Version="5.8.0"/>
         <PackageReference Include="YamlDotNet" Version="9.1.0"/>
         <PackageReference Include="SharpCompress" Version="0.26.0"/>
-        <PackageReference Include="MessagePack" Version="2.2.60" />
+        <PackageReference Include="MessagePack" Version="2.2.85" />
         <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
     </ItemGroup>
 </Project>

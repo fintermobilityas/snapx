@@ -411,7 +411,7 @@ namespace snapx
 
             await packages.ForEachAsync(async packageAbsolutePath =>
                 await PushPackageAsync(nugetService, filesystem, distributedMutex,
-                    nugetSources, pushFeedPackageSource, snapChannel, packageAbsolutePath, cancellationToken, logger), pushDegreeOfParallelism);
+                    nugetSources, pushFeedPackageSource, snapChannel, packageAbsolutePath, logger, cancellationToken), pushDegreeOfParallelism);
 
             logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");
 

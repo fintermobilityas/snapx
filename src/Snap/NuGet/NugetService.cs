@@ -93,8 +93,9 @@ namespace Snap.NuGet
         Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, 
             bool includePreRelease, bool noCache = false, CancellationToken cancellationToken = default);
 
-        Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource, ISnapNugetLogger nugetLogger = default,
-            int timeoutInSeconds = 5 * 60, CancellationToken cancellationToken = default);
+        Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource,
+            int timeoutInSeconds, ISnapNugetLogger nugetLogger = default,
+            CancellationToken cancellationToken = default);
 
         Task DeleteAsync([NotNull] PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource,
             ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
@@ -157,8 +158,9 @@ namespace Snap.NuGet
             return await DownloadAsync(metadata.Source, metadata.Identity, cancellationToken);
         }
 
-        public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources, [NotNull] PackageSource packageSource,
-            ISnapNugetLogger nugetLogger = default, int timeOutInSeconds = 0, CancellationToken cancellationToken = default)
+        public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources,
+            [NotNull] PackageSource packageSource,
+            int timeOutInSeconds, ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
         {
             if (packagePath == null) throw new ArgumentNullException(nameof(packagePath));
             if (packageSources == null) throw new ArgumentNullException(nameof(packageSources));

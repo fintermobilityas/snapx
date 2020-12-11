@@ -294,7 +294,7 @@ namespace snapx
                 logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
 
                 await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
-                    channel, releasesPackageAbsolutePath, cancellationToken, logger);
+                    channel, releasesPackageAbsolutePath, logger, cancellationToken);
 
                 var skipInitialBlock = packageSource.IsLocalOrUncPath();
 

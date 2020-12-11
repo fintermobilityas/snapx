@@ -642,8 +642,8 @@ namespace snapx
         static Task PushPackageAsync([NotNull] INugetService nugetService, [NotNull] ISnapFilesystem filesystem,
             [NotNull] IDistributedMutex distributedMutex, [NotNull] INuGetPackageSources nugetSources,
             [NotNull] PackageSource packageSource, SnapChannel channel, [NotNull] string packageAbsolutePath,
-            CancellationToken cancellationToken,
-            [NotNull] ILog logger)
+            [NotNull] ILog logger,
+            CancellationToken cancellationToken)
         {
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
@@ -660,6 +660,8 @@ namespace snapx
 
             var packageName = filesystem.PathGetFileName(packageAbsolutePath);
 
+            const int timeOutInSeconds = int.MaxValue;
+
             return SnapUtility.RetryAsync(async () =>
             {
                 if (!distributedMutex.Acquired)
@@ -671,7 +673,7 @@ namespace snapx
                 logger.Info($"Pushing {packageName} to channel {channel.Name} using package source {packageSource.Name}");
                 var pushStopwatch = new Stopwatch();
                 pushStopwatch.Restart();
-                await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, null, cancellationToken: cancellationToken);
+                await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, timeOutInSeconds, cancellationToken: cancellationToken);
                 logger.Info($"Pushed {packageName} to channel {channel.Name} using package source {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
             });
         }

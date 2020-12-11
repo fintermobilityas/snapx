@@ -258,7 +258,7 @@ namespace Snap.Tests.NuGet
 
             var nuGetPackageSources = new NuGetInMemoryPackageSources(publishDirectory, packageSource);
 
-            await _nugetService.PushAsync(packageFilenameAbsolute, nuGetPackageSources, packageSource);
+            await _nugetService.PushAsync(packageFilenameAbsolute, nuGetPackageSources, packageSource, default);
 
             var dstFilename = _snapFilesystem.PathCombine(publishDirectory, _snapFilesystem.PathGetFileName(packageFilenameAbsolute));
             

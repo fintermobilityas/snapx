@@ -187,7 +187,7 @@ namespace Snap
                 pid_t(int value) => Value = value;
 
                 public static implicit operator int(pid_t arg) => arg.Value;
-                public static implicit operator pid_t(int arg) => new pid_t(arg);
+                public static implicit operator pid_t(int arg) => new(arg);
 
                 public override string ToString() => Value.ToString();
 
@@ -205,7 +205,7 @@ namespace Snap
 
                 public bool Equals(pid_t v) => this == v;
 
-                public static pid_t operator -(pid_t v) => new pid_t(-v.Value);
+                public static pid_t operator -(pid_t v) => new(-v.Value);
                 public static bool operator ==(pid_t v1, pid_t v2) => v1.Value == v2.Value;
                 public static bool operator !=(pid_t v1, pid_t v2) => v1.Value != v2.Value;
             }

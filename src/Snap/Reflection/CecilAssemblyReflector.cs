@@ -71,7 +71,7 @@ namespace Snap.Reflection
 
         public CecilResourceReflector GetResourceReflector()
         {
-            return new CecilResourceReflector(_assemblyDefinition);
+            return new(_assemblyDefinition);
         }
 
         public void AddCustomAttribute([NotNull] CustomAttribute attribute)

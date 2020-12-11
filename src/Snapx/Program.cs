@@ -38,7 +38,7 @@ namespace snapx
         static readonly ILog SnapRestoreLogger = LogProvider.GetLogger("Snapx.Restore");
         static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
         static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
-        static readonly List<IDistributedMutex> DistributedMutexes = new List<IDistributedMutex>();
+        static readonly List<IDistributedMutex> DistributedMutexes = new();
 
         internal static int TerminalBufferWidth
         {

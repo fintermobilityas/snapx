@@ -8,10 +8,9 @@ namespace Snap.NuGet
 {
     internal class NugetConcurrentSourceRepositoryCache
     {
-        readonly ConcurrentDictionary<PackageSource, SourceRepository> _packageSources
-            = new ConcurrentDictionary<PackageSource, SourceRepository>();
+        readonly ConcurrentDictionary<PackageSource, SourceRepository> _packageSources = new();
 
-        public SourceRepository Get([NotNull] PackageSource source)
+        public SourceRepository GetOrAdd([NotNull] PackageSource source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             return _packageSources.GetOrAdd(source, CreateSourceRepository);

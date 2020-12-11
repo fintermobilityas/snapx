@@ -267,7 +267,7 @@ namespace Snap.Core.Models
         {
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
-            Apps = new List<SnapsApp> { new SnapsApp(snapApp) };
+            Apps = new List<SnapsApp> { new(snapApp) };
             Generic = new SnapAppsGeneric();            
         }
 

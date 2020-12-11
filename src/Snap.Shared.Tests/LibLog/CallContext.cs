@@ -6,7 +6,7 @@ namespace Snap.Shared.Tests.LibLog
     // https://www.cazzulino.com/callcontext-netstandard-netcore.html
     public static class CallContext<T>
     {
-        static readonly ConcurrentDictionary<string, AsyncLocal<T>> state = new ConcurrentDictionary<string, AsyncLocal<T>>();
+        static readonly ConcurrentDictionary<string, AsyncLocal<T>> state = new();
 
         /// <summary>
         /// Stores a given object and associates it with the specified name.
@@ -23,6 +23,6 @@ namespace Snap.Shared.Tests.LibLog
         /// <param name="name">The name of the item in the call context.</param>
         /// <returns>The object in the call context associated with the specified name, or a default value for <typeparamref name="T"/> if none is found.</returns>
         public static T GetData(string name) =>
-            state.TryGetValue(name, out var data) ? data.Value : default(T);
+            state.TryGetValue(name, out var data) ? data.Value : default;
     }
 }

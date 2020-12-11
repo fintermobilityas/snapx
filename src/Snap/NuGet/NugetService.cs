@@ -114,8 +114,7 @@ namespace Snap.NuGet
         readonly ISnapNugetLogger _nugetLogger;
         readonly ISnapFilesystem _snapFilesystem;
 
-        readonly NugetConcurrentSourceRepositoryCache _packageSources
-            = new NugetConcurrentSourceRepositoryCache();
+        readonly NugetConcurrentSourceRepositoryCache _packageSources = new();
 
         public NugetService([NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapNugetLogger snapNugetLogger)
         {
@@ -177,7 +176,7 @@ namespace Snap.NuGet
                 return;
             }
 
-            var sourceRepository = _packageSources.Get(packageSource);
+            var sourceRepository = _packageSources.GetOrAdd(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
             await packageUpdateResource.Push(packagePath, null, timeOutInSeconds, false, _ => BuildApiKey(packageSources, packageSource), _ => null,
@@ -203,7 +202,7 @@ namespace Snap.NuGet
                 return;
             }
 
-            var sourceRepository = _packageSources.Get(packageSource);
+            var sourceRepository = _packageSources.GetOrAdd(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
             await packageUpdateResource.Delete(packageIdentity.Id, packageIdentity.Version.ToNormalizedString(), 
@@ -254,7 +253,7 @@ namespace Snap.NuGet
                 }
             }))
             {
-                var sourceRepository = _packageSources.Get(packageSource);
+                var sourceRepository = _packageSources.GetOrAdd(packageSource);
                 var downloadResource = await sourceRepository.GetResourceAsync<DownloadResource>(cancellationToken);
 
                 Uri downloadUrl;
@@ -385,7 +384,7 @@ namespace Snap.NuGet
                 cacheContext.WithRefreshCacheTrue();
             }
 
-            var sourceRepository = _packageSources.Get(packageSource);
+            var sourceRepository = _packageSources.GetOrAdd(packageSource);
             var metadataResource = localPackageMetadataResource ?? await sourceRepository.GetResourceAsync<PackageMetadataResource>(cancellationToken);
             var metadatas = await metadataResource.GetMetadataAsync(packageId, includePrerelease, 
                 false, cacheContext, _nugetLogger, cancellationToken);

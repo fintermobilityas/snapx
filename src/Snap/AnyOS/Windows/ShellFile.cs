@@ -119,7 +119,7 @@ namespace Snap.AnyOS.Windows
 
             public static PROPERTYKEY PKEY_AppUserModel_ID {
                 get {
-                    return new PROPERTYKEY() {
+                    return new() {
                         fmtid = Guid.ParseExact("{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}", "B"),
                         pid = new UIntPtr(5),
                     };
@@ -128,7 +128,7 @@ namespace Snap.AnyOS.Windows
 
             public static PROPERTYKEY PKEY_AppUserModel_ToastActivatorCLSID {
                 get {
-                    return new PROPERTYKEY() {
+                    return new() {
                         fmtid = Guid.ParseExact("{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}", "B"),
                         pid = new UIntPtr(26),
                     };

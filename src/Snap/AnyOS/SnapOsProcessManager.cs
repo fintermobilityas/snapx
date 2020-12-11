@@ -74,7 +74,7 @@ namespace Snap.AnyOS
 
         public SnapOsProcess Build(int pid, string name, string workingDirectory = default, string exeAbsoluteLocation = default)
         {
-            return new SnapOsProcess
+            return new()
             {
                 Pid = pid,
                 Name = name,

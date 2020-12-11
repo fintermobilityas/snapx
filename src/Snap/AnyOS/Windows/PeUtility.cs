@@ -219,7 +219,7 @@ namespace Snap.AnyOS.Windows
 
             public string Section
             {
-                get { return new string(Name); }
+                get { return new(Name); }
             }
         }
 

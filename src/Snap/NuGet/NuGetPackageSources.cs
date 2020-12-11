@@ -47,7 +47,7 @@ namespace Snap.NuGet
     internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
     {
         static readonly PackageSource PackageSourceV2 =
-            new PackageSource(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
+            new(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
             {
                 ProtocolVersion = (int) NuGetProtocolVersion.V2,
                 IsMachineWide = true
@@ -61,7 +61,7 @@ namespace Snap.NuGet
     internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
     {
         static readonly PackageSource PackageSourceV3 =
-            new PackageSource(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
+            new(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
             {
                 ProtocolVersion = (int) NuGetProtocolVersion.V3,
                 IsMachineWide = true
@@ -121,7 +121,7 @@ namespace Snap.NuGet
         public ISettings Settings { get; protected set; }
         public IReadOnlyCollection<PackageSource> Items { get; protected set; }
 
-        public static NuGetPackageSources Empty => new NuGetPackageSources();
+        public static NuGetPackageSources Empty => new();
 
         protected NuGetPackageSources()
         {

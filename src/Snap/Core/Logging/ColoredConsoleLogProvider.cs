@@ -12,8 +12,8 @@ namespace Snap.Core.Logging
     {
         readonly LogLevel _logLevel;
 
-        static readonly Dictionary<LogLevel, ConsoleColor> Colors = new Dictionary<LogLevel, ConsoleColor>
-            {
+        static readonly Dictionary<LogLevel, ConsoleColor> Colors = new()
+        {
                 {LogLevel.Fatal, ConsoleColor.Red},
                 {LogLevel.Error, ConsoleColor.Red},
                 {LogLevel.Warn, ConsoleColor.Magenta},

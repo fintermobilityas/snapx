@@ -8,8 +8,7 @@ namespace Snap.Extensions
     // https://stackoverflow.com/a/25097498
     internal static class TplHelper
     {
-        static readonly TaskFactory MyTaskFactory = new 
-            TaskFactory(CancellationToken.None, 
+        static readonly TaskFactory MyTaskFactory = new(CancellationToken.None, 
                 TaskCreationOptions.None, 
                 TaskContinuationOptions.None, 
                 TaskScheduler.Default);

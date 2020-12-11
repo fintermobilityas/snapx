@@ -9,7 +9,7 @@ namespace Snap.Shared.Tests.LibLog
 {
     public static class LogHelper
     {
-        static readonly object _initLock = new object();
+        static readonly object _initLock = new();
         static bool _initialized;
         static readonly XUnitLogProvider LogProvider;
 

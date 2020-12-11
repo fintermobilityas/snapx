@@ -959,8 +959,8 @@ namespace Snap.Tests.Core.Extensions
             {
                 Channels = new List<SnapChannel>
                 {
-                    new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
-                    new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"}
+                    new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
+                    new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"}
                 }
             };
 
@@ -994,9 +994,9 @@ namespace Snap.Tests.Core.Extensions
                 Version = new SemanticVersion(1, 0, 0),                
                 Channels = new List<SnapChannel>
                 {
-                    new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
-                    new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"},
-                    new SnapChannel {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgMirrorFeed, Name = "production"}
+                    new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
+                    new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"},
+                    new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgMirrorFeed, Name = "production"}
                 },
                 Target = new SnapTarget
                 {
@@ -1010,7 +1010,7 @@ namespace Snap.Tests.Core.Extensions
             {
                 Schema = 1,
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
+                Apps = new List<SnapsApp> { new(snapApp) },
                 Generic = new SnapAppsGeneric
                 {
                     Packages = "./packages"
@@ -1019,8 +1019,8 @@ namespace Snap.Tests.Core.Extensions
 
             var nugetPackageSources = snapApps.BuildNugetSources(new NuGetInMemoryPackageSources(nugetTempDirectory, new List<PackageSource>
             {
-                new PackageSource(nugetOrgFeed.Source.ToString(), nugetOrgFeed.Name),
-                new PackageSource(nugetOrgMirrorFeed.Source.ToString(), nugetOrgMirrorFeed.Name)
+                new(nugetOrgFeed.Source.ToString(), nugetOrgFeed.Name),
+                new(nugetOrgMirrorFeed.Source.ToString(), nugetOrgMirrorFeed.Name)
             }));
             Assert.Equal(2, nugetPackageSources.Items.Count);
 

@@ -8,7 +8,7 @@ namespace Snap.Tests.Core
 {
     public class SnapBinaryPatcherTests
     {
-        static readonly Random Random = new Random();
+        static readonly Random Random = new();
         readonly ISnapBinaryPatcher _snapBinaryPatcher;
 
         public SnapBinaryPatcherTests()

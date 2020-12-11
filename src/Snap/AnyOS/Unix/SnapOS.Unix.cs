@@ -23,9 +23,9 @@ namespace Snap.AnyOS.Unix
         public event EventHandler Exit;
 
         readonly UnixSignal[] _signals = {
-            new UnixSignal(Mono.Unix.Native.Signum.SIGTERM), 
-            new UnixSignal(Mono.Unix.Native.Signum.SIGINT),
-            new UnixSignal(Mono.Unix.Native.Signum.SIGUSR1)
+            new(Mono.Unix.Native.Signum.SIGTERM), 
+            new(Mono.Unix.Native.Signum.SIGINT),
+            new(Mono.Unix.Native.Signum.SIGUSR1)
         };
 
         public SnapOsUnixExitSignal()

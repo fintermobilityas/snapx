@@ -10,7 +10,7 @@ namespace Snap.Core
         /// <summary>
         /// The namespace for ISO OIDs (from RFC 4122, Appendix C).
         /// </summary>
-        static readonly Guid IsoOidNamespace = new Guid("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
+        static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
 
         // Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
         static void SwapByteOrder(byte[] guid)

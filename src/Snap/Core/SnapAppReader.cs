@@ -25,13 +25,13 @@ namespace Snap.Core
 
     internal sealed class SnapAppReader : ISnapAppReader
     {
-        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApp = new Dictionary<string, Type>
+        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApp = new()
         {
             { "nuget", typeof(SnapNugetFeed) }, 
             { "http", typeof(SnapHttpFeed)}
         };
 
-        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApps = new Dictionary<string, Type>
+        internal static readonly Dictionary<string, Type> AbstractClassTypeMappingsSnapApps = new()
         {
             { "nuget", typeof(SnapsNugetFeed) },
             { "http", typeof(SnapsHttpFeed)}

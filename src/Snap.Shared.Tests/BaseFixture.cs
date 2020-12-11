@@ -23,7 +23,7 @@ namespace Snap.Shared.Tests
     [UsedImplicitly]
     public class BaseFixture
     {
-        static readonly Random RandomSource = new Random();
+        static readonly Random RandomSource = new();
 
         public string WorkingDirectory => Directory.GetCurrentDirectory();
 
@@ -148,7 +148,7 @@ namespace Snap.Shared.Tests
             {
                 Schema = 1,
                 Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-                Apps = new List<SnapsApp> { new SnapsApp(snapApp) },
+                Apps = new List<SnapsApp> { new(snapApp) },
                 Generic = new SnapAppsGeneric
                 {
                     Nuspecs = "snap/nuspecs",

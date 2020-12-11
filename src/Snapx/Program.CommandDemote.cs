@@ -259,7 +259,7 @@ namespace snapx
             var packageSource = nugetSources.Items.Single(x => x.Name == anySnapTargetDefaultChannel.PushFeed.Name);
 
             await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
-                anySnapTargetDefaultChannel, releasesNupkgAbsolutePath, cancellationToken, logger);
+                anySnapTargetDefaultChannel, releasesNupkgAbsolutePath, logger, cancellationToken);
 
             var skipInitialBlock = packageSource.IsLocalOrUncPath();
 

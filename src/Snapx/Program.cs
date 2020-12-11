@@ -660,7 +660,7 @@ namespace snapx
 
             var packageName = filesystem.PathGetFileName(packageAbsolutePath);
 
-            const int timeOutInSeconds = int.MaxValue;
+            const int timeOutInSeconds = 3600;
 
             return SnapUtility.RetryAsync(async () =>
             {

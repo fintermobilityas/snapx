@@ -111,9 +111,10 @@ namespace Snap.Core
 
         Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
             BuildPackageAsync([NotNull] ISnapPackageDetails packageDetails, [NotNull] ICoreRunLib coreRunLib, CancellationToken cancellationToken = default);
-        Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
-            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease, 
-            IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default);
+        Task<(SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
+            [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease,
+            IRebuildPackageProgressSource rebuildPackageProgressSource = null, ISnapFilesystem filesystem = default,
+            CancellationToken cancellationToken = default);
         MemoryStream BuildEmptyReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases);
         MemoryStream BuildReleasesPackage([NotNull] SnapApp snapApp, [NotNull] SnapAppsReleases snapAppsReleases, int? version = null);
         Task<SnapApp> GetSnapAppAsync([NotNull] IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default);
@@ -576,23 +577,24 @@ namespace Snap.Core
             return deltaNupkgPackageBuilder;
         }
 
-        public async Task<(MemoryStream outputStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync(string packagesDirectory,
-            ISnapAppChannelReleases snapAppChannelReleases, SnapRelease snapRelease, IRebuildPackageProgressSource rebuildPackageProgressSource = null, CancellationToken cancellationToken = default)
+        public async Task<(SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync(string packagesDirectory,
+            ISnapAppChannelReleases snapAppChannelReleases, SnapRelease snapRelease, IRebuildPackageProgressSource rebuildPackageProgressSource = null,
+            ISnapFilesystem filesystem = default, CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
 
-            var outputStream = new MemoryStream();
+            
 
             var (packageBuilder, fullSnapApp, fullSnapRelease) =
                 await RebuildFullPackageAsyncInternal(packagesDirectory, snapAppChannelReleases, snapRelease, rebuildPackageProgressSource, cancellationToken);
-            packageBuilder.Save(outputStream);
-            outputStream.Seek(0, SeekOrigin.Begin);
+            using var filestream=filesystem.FileWrite(filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename));
+            packageBuilder.Save(filestream);
 
             snapRelease.Sort();
 
-            return (outputStream, fullSnapApp, fullSnapRelease);
+            return (fullSnapApp, fullSnapRelease);
         }
 
         async Task<(PackageBuilder packageBuilder, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildFullPackageAsyncInternal(string packagesDirectory,

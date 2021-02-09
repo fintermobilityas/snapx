@@ -584,12 +584,13 @@ namespace Snap.Core
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
             if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
+            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
 
             
 
             var (packageBuilder, fullSnapApp, fullSnapRelease) =
                 await RebuildFullPackageAsyncInternal(packagesDirectory, snapAppChannelReleases, snapRelease, rebuildPackageProgressSource, cancellationToken);
-            using var filestream=filesystem.FileWrite(filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename));
+            await using var filestream=filesystem.FileWrite(filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename));
             packageBuilder.Save(filestream);
 
             snapRelease.Sort();

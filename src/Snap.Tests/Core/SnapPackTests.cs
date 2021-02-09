@@ -1163,18 +1163,17 @@ namespace Snap.Tests.Core
             update3SnapReleaseBuilder.AssertChecksums(update3PackageContext.FullPackageSnapApp, update3PackageContext.DeltaPackageSnapRelease,
                 update3ExtractedFiles);
                     
-            var (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease) = await _snapPack.RebuildPackageAsync(
+            var (fullSnapApp, fullSnapRelease) = await _snapPack.RebuildPackageAsync(
                 update3SnapReleaseBuilder.SnapAppPackagesDirectory,
                 snapAppsReleases.GetReleases(update3PackageContext.DeltaPackageSnapApp,
                     update3PackageContext.DeltaPackageSnapApp.GetCurrentChannelOrThrow()),
-                update3PackageContext.DeltaPackageSnapRelease);
+                update3PackageContext.DeltaPackageSnapRelease,filesystem:_snapFilesystem);
 
-            await using (fullNupkgMemoryStream)
-            {
-                Assert.NotNull(fullNupkgMemoryStream);
-                Assert.Equal(update3PackageContext.FullPackageSnapApp.BuildNugetFilename(), fullSnapApp.BuildNugetFilename());
-                Assert.Equal(update3PackageContext.FullPackageSnapRelease.BuildNugetFilename(), fullSnapRelease.BuildNugetFilename());
-            }
+            var packageFile = _snapFilesystem.PathCombine(update3SnapReleaseBuilder.SnapAppPackagesDirectory, fullSnapRelease.Filename);
+            Assert.True(_snapFilesystem.FileDeleteIfExists(packageFile));
+
+            Assert.Equal(update3PackageContext.FullPackageSnapApp.BuildNugetFilename(), fullSnapApp.BuildNugetFilename());
+            Assert.Equal(update3PackageContext.FullPackageSnapRelease.BuildNugetFilename(), fullSnapRelease.BuildNugetFilename());
         }
 
         [Fact]

@@ -541,19 +541,13 @@ namespace Snap.Core
                 {
                     try
                     {
-                        var (fullNupkgMemoryStream, _, fullSnapRelease) =
-                            await _snapPack.RebuildPackageAsync(packagesDirectory, snapAppChannelReleases, x, compoundProgressSource, cancellationToken);
+                        var ( _, fullSnapRelease) =
+                            await _snapPack.RebuildPackageAsync(packagesDirectory, snapAppChannelReleases, x, compoundProgressSource, _filesystem, cancellationToken);
 
-                        await using (fullNupkgMemoryStream)
-                        {
-                            var fullNupkgAbsolutePath = _filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
-                            await _filesystem.FileWriteAsync(fullNupkgMemoryStream, fullNupkgAbsolutePath, cancellationToken);
+                        var releasesReassembledSoFarVolatile = Interlocked.Increment(ref releasesReassembled);
+                        restoreSummary.ReassembleSummary.Add(new SnapPackageManagerReleaseStatus(fullSnapRelease, true));
 
-                            var releasesReassembledSoFarVolatile = Interlocked.Increment(ref releasesReassembled);
-                            restoreSummary.ReassembleSummary.Add(new SnapPackageManagerReleaseStatus(fullSnapRelease, true));
-
-                            logger?.Debug($"Successfully restored {releasesReassembledSoFarVolatile} of {releasesToReassemble.Count()}.");
-                        }
+                        logger?.Debug($"Successfully restored {releasesReassembledSoFarVolatile} of {releasesToReassemble.Count()}.");
                     }
                     catch (Exception e)
                     {

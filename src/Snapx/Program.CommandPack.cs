@@ -418,7 +418,7 @@ namespace snapx
             var skipInitialBlock = pushFeedPackageSource.IsLocalOrUncPath();
 
             await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases,
-                snapApp, snapChannel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock);
+                snapApp, snapChannel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock,packOptions.SkipAwaitUpdate );
         }
     }
 }

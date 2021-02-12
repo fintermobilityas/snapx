@@ -41,6 +41,11 @@ namespace snapx.Options
         [Option("skip-installers",
             HelpText = "Skip building installers.")]
         public bool SkipInstallers { get; set; }
+        
+        [Option("skip-await-update", 
+            HelpText = "Skip waiting for the nuget feed update.")]
+        public bool SkipAwaitUpdate { get; set; }
+
 
         [Value(0, HelpText = "Application id", Required = true)]
         public string Id { get; [UsedImplicitly] set; }

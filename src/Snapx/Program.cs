@@ -568,8 +568,9 @@ namespace snapx
 
         static async Task BlockUntilSnapUpdatedReleasesNupkgAsync([NotNull] ILog logger, [NotNull] ISnapPackageManager snapPackageManager,
             [NotNull] SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp,
-            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken, bool skipInitialBlock = true)
+            [NotNull] SnapChannel snapChannel, TimeSpan retryInterval, CancellationToken cancellationToken, bool skipInitialBlock = true, bool skipAwaitUpdate=false)
         {
+            if (skipAwaitUpdate) return;
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (snapAppsReleases == null) throw new ArgumentNullException(nameof(snapAppsReleases));

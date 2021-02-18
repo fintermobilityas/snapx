@@ -37,8 +37,9 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - GitVersion `dotnet tool update gitversion.tool -g`
 - Powershell v7 `dotnet tool update powershell -g`
 - .NET SDK v5.0
+- .NET SDK v6.0
 
-- Visual Studio 2019 16.8 Community with C++ workload installed
+- Visual Studio 2019 16.9 Preview 4.0 Community with C++ workload installed
 
 #### Bootstrap snapx 
 
@@ -47,7 +48,8 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 ## .NET frameworks supported
 
-- .NET >= 5.0
+- .NET 5.0
+- .NET 6.0
 
 ## Platforms supported
 

@@ -264,7 +264,7 @@ namespace snapx
             var skipInitialBlock = packageSource.IsLocalOrUncPath();
 
             await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager, snapAppsReleases, anyRidSnapApp, 
-                anySnapTargetDefaultChannel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock);
+                anySnapTargetDefaultChannel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock, options.SkipAwaitUpdate);
 
             logger.Info('-'.Repeat(TerminalBufferWidth));
 

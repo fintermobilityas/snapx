@@ -20,7 +20,7 @@
     <ItemGroup>
         <PackageReference Include="Castle.Core" Version="4.4.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.1" />
-        <PackageReference Include="Moq" Version="4.16.0" />
+        <PackageReference Include="Moq" Version="4.16.1" />
         <PackageReference Include="System.CodeDom" Version="5.0.0" />
         <PackageReference Include="System.Security.Permissions" Version="5.0.0" />
         <PackageReference Include="xunit" Version="2.4.1" />

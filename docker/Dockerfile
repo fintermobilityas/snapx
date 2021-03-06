@@ -1,4 +1,4 @@
-FROM ubuntu:18.04 as env-build
+FROM ubuntu:20.04 as env-build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -12,10 +12,10 @@ RUN \
   apt-get clean && \
   apt-get autoclean && \
   rm -rf /var/lib/apt/lists/* && \
-  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports bionic main restricted universe multiverse" >> /etc/apt/sources.list && \
-  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports bionic-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
-  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports bionic-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
-  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports bionic-security main restricted universe multiverse" >> /etc/apt/sources.list && \
+  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main restricted universe multiverse" >> /etc/apt/sources.list && \
+  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-updates main restricted universe multiverse" >> /etc/apt/sources.list && \
+  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
+  echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
   apt-get update && \
   apt-get install -y --no-install-recommends \ 
    	 uuid-dev:arm64 
@@ -41,7 +41,7 @@ RUN \
 RUN \
 	apt-get update && \
 	apt-get install -y apt-transport-https:amd64 ca-certificates:amd64 && \
-	wget --no-check-certificate https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+	wget --no-check-certificate https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
  	dpkg -i packages-microsoft-prod.deb && \
 	apt-get update && \
 	apt-get install -y dotnet-sdk-5.0:amd64 && \

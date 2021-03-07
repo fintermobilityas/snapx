@@ -11,8 +11,9 @@ on:
 env:
   GITVERSION_VERSION: 5.6.6
   MSVS_TOOLSET_VERSION: 16
-  DOTNET_FRAMEWORK_VERSION: net6.0
-  DOTNET_SDK_VERSION: 6.0.100-preview.1.21103.13
+  SNAPX_DOTNET_FRAMEWORK_VERSION: net6.0
+  DOTNET5_SDK_VERSION: 5.0.200
+  DOTNET6_SDK_VERSION: 6.0.100-preview.1.21103.13
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: 1
@@ -65,23 +66,33 @@ jobs:
           username: ${{ github.actor }} 
           password: ${{secrets.GITHUB_TOKEN }}     
 
+      - name: Setup .NET 5 sdk
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: '${{ env.DOTNET5_SDK_VERSION }}'
+
+      - name: Setup .NET 6 sdk
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: '${{ env.DOTNET6_SDK_VERSION }}'
+
       - name: Build native
         shell: pwsh
-        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
     
       - name: Test native
         if: matrix.rid != 'linux-arm64'
         shell: pwsh
-        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: Test .NET
         if: matrix.rid != 'linux-arm64'
         shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
       - name: Collect artifacts 
         env:
-          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
+          SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
           SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
@@ -125,26 +136,31 @@ jobs:
         with:
           lfs: true
           submodules: true   
-                
-      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Setup .NET 5 sdk
         uses: actions/setup-dotnet@v1.7.2
         with:
-          dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
+          dotnet-version: '${{ env.DOTNET5_SDK_VERSION }}'
+
+      - name: Setup .NET 6 sdk
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: '${{ env.DOTNET6_SDK_VERSION }}'
 
       - name: Build native
-        run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+        run: ./build.ps1 Bootstrap-Windows -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
       - name: Test native
         shell: pwsh
-        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}          
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}          
 
       - name: Test .NET
         shell: pwsh
-        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
       
       - name: Collect artifacts 
         env:
-          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
+          SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
           SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
         run: |
@@ -190,10 +206,16 @@ jobs:
   #        name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
   #        path: ${{ github.workspace }}
   #              
-  #    - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
+
+  #    - name: Setup .NET 5 sdk
   #      uses: actions/setup-dotnet@v1.7.2
   #      with:
-  #        dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
+  #        dotnet-version: '${{ env.DOTNET5_SDK_VERSION }}'
+
+  #    - name: Setup .NET 6 sdk
+  #      uses: actions/setup-dotnet@v1.7.2
+  #      with:
+  #        dotnet-version: '${{ env.DOTNET6_SDK_VERSION }}'
   #        
   #    - name: Test native
   #      run: |
@@ -202,7 +224,7 @@ jobs:
   #
   #    - name: Test .NET
   #      shell: pwsh
-  #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+  #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
   publish:
     if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
@@ -241,11 +263,16 @@ jobs:
           name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Setup dotnet ${{ env.DOTNET_SDK_VERSION }}
+      - name: Setup .NET 5 sdk
         uses: actions/setup-dotnet@v1.7.2
         with:
-          dotnet-version: '${{ env.DOTNET_SDK_VERSION }}'
-    
+          dotnet-version: '${{ env.DOTNET5_SDK_VERSION }}'
+
+      - name: Setup .NET 6 sdk
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: '${{ env.DOTNET6_SDK_VERSION }}'
+
       - name: Build nupkgs
         shell: pwsh
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release

@@ -299,7 +299,7 @@ namespace snapx
                 var skipInitialBlock = packageSource.IsLocalOrUncPath();
 
                 await BlockUntilSnapUpdatedReleasesNupkgAsync(logger, snapPackageManager,
-                    snapAppsReleases, snapApp, channel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock);
+                    snapAppsReleases, snapApp, channel, TimeSpan.FromSeconds(15), cancellationToken, skipInitialBlock,options.SkipAwaitUpdate );
 
                 logger.Info($"Successfully uploaded releases nupkg to channel: {channel.Name}.");
                 logger.Info('-'.Repeat(TerminalBufferWidth));

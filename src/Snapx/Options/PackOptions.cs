@@ -48,6 +48,10 @@ namespace snapx.Options
             HelpText = "Skip building installers.")]
         public bool SkipInstallers { get; set; }
 
+        [Option("skip-await-update", 
+            HelpText = "Skip waiting for the nuget feed update.")]
+        public bool SkipAwaitUpdate { get; set; }
+
         [Option("release-notes", 
             HelpText = "Overwrite release notes defined in YML manifest.")]
         public string ReleasesNotes { get; set; }

@@ -33,6 +33,10 @@ namespace snapx.Options
             HelpText = "Override lock token.")]
         public string LockToken { get; set; }
 
+        [Option("skip-await-update", 
+            HelpText = "Skip waiting for the nuget feed update.")]
+        public bool SkipAwaitUpdate { get; set; }
+
         [Value(0,
             HelpText = "The Application id.",
             Required = true)]

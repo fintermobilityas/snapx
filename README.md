@@ -33,12 +33,12 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Docker >= 19.03.8
 
 **Windows**:
-- Docker Desktop >= v2.3.0.3
+- Docker Desktop >= v3.2.1
 - GitVersion `dotnet tool update gitversion.tool -g`
-- Powershell v7 `dotnet tool update powershell -g`
-- .NET SDK v5.0
+- Powershell v7.3.1 `dotnet tool update powershell -g`
+- .NET SDK v5.0.201
 
-- Visual Studio 2019 16.8 Community with C++ workload installed
+- Visual Studio 2019 16.9 Community with C++ workload installed
 
 #### Bootstrap snapx 
 

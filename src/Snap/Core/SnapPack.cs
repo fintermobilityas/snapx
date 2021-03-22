@@ -979,7 +979,6 @@ namespace Snap.Core
 
             const string nuspecXmlNs = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
 
-            var upstreamPackageId = snapApp.BuildNugetUpstreamId();
             var packageFiles = new List<(string filename, string targetPath)>();
 
             MemoryStream RewriteNuspecStreamWithEssentials()

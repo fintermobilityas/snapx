@@ -33,7 +33,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Docker >= 19.03.8
 
 **Windows**:
-- Docker Desktop >= v2.3.0.3
+- Docker Desktop >= v3.2.1
 - GitVersion `dotnet tool update gitversion.tool -g`
 - Powershell v7 `dotnet tool update powershell -g`
 - .NET SDK v5.0

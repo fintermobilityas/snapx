@@ -17,8 +17,8 @@ RUN \
   echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
   echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
   apt-get update && \
-  apt-get install -y --no-install-recommends \
-       uuid-dev:arm64  
+  apt-get install -y --no-install-recommends \ 
+   	 uuid-dev:arm64 
 
 RUN \   
    dpkg --force-architecture --remove-architecture arm64 && \
@@ -47,10 +47,15 @@ RUN \
 	apt-get install -y dotnet-sdk-5.0:amd64 && \
 	  dotnet tool update powershell -g 
 
+RUN \
+  wget https://download.visualstudio.microsoft.com/download/pr/579aac9e-53dd-404e-9452-9910bc9be422/1c47683215dd54a3837fc4b338ddb6a6/dotnet-sdk-6.0.100-preview.1.21103.13-linux-x64.tar.gz && \
+  tar zxf dotnet-sdk-6.0.100-preview.1.21103.13-linux-x64.tar.gz -C /root/.dotnet 
+
 RUN \ 
 	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
 
 FROM env-build as env-run
-ENV PATH="/root/.dotnet/tools:${PATH}"
+ENV DOTNET_ROOT="/root/dotnet"
+ENV PATH="/root/dotnet:/root/.dotnet/tools:${PATH}"
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 CMD ["sh", "-c", "(cd $SNAPX_DOCKER_WORKING_DIR && pwsh ./build.ps1 $BUILD_PS_PARAMETERS)"]

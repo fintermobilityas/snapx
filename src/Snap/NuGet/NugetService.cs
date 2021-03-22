@@ -46,7 +46,7 @@ namespace Snap.NuGet
 
         public override IEnumerable<LocalPackageInfo> GetPackages(ILogger logger, CancellationToken token)
         {
-            return _localPackageInfos.TakeWhile(localPackageInfo => !token.IsCancellationRequested);
+            return _localPackageInfos.TakeWhile(_ => !token.IsCancellationRequested);
         }
     }
 
@@ -181,7 +181,7 @@ namespace Snap.NuGet
             var sourceRepository = _packageSources.GetOrAdd(packageSource);
             var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-            await packageUpdateResource.Push(packagePath, null, timeOutInSeconds, false, _ => BuildApiKey(packageSources, packageSource), _ => null,
+            await packageUpdateResource.Push(new List<string> { packagePath }, null, timeOutInSeconds, false, _ => BuildApiKey(packageSources, packageSource), _ => null,
                 false, false, null, nugetLogger ?? NullLogger.Instance);
         }
 
@@ -417,9 +417,8 @@ namespace Snap.NuGet
                     var nuspecReader = await packageArchiveReader.GetNuspecReaderAsync(cancellationToken);
                     var lazyNuspecReader = new Lazy<NuspecReader>(() => nuspecReader);
                     var packageIdentity = await packageArchiveReader.GetIdentityAsync(cancellationToken);
-                    PackageReaderBase GetPackageReader() => packageArchiveReader;
 
-                    return new LocalPackageInfo(packageIdentity, fileInfo.FullName, fileInfo.LastWriteTimeUtc, lazyNuspecReader, GetPackageReader);
+                    return new LocalPackageInfo(packageIdentity, fileInfo.FullName, fileInfo.LastWriteTimeUtc, lazyNuspecReader, false);
                 });
 
             var localPackageInfos = await Task.WhenAll(localPackagesInfosTasks);

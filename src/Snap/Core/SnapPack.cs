@@ -321,8 +321,7 @@ namespace Snap.Core
 
             var nuspecIntermediateStream = new MemoryStream(Encoding.UTF8.GetBytes(nuspecXml));
 
-            var (nuspecStream, packageFiles) = BuildNuspec(nuspecIntermediateStream, nuspecPropertiesResolver,
-                snapNuspecDetails.NuspecBaseDirectory, fullSnapApp, fullSnapRelease);
+            var (nuspecStream, packageFiles) = BuildNuspec(nuspecIntermediateStream, nuspecPropertiesResolver, snapNuspecDetails.NuspecBaseDirectory);
 
             var nuspecStreamCpy = new MemoryStream(nuspecStream.ToArray()); // PackageBuilder closes stream
 
@@ -967,15 +966,12 @@ namespace Snap.Core
             AddPackageFile(packageBuilder, snapAppMemoryStream, SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename, snapRelease);
         }
 
-        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packageFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider,
-            [NotNull] string baseDirectory, [NotNull] SnapApp snapApp, [NotNull] SnapRelease snapRelease)
+        (MemoryStream nuspecStream, List<(string filename, string targetPath)> packageFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, [NotNull] Func<string, string> propertyProvider, [NotNull] string baseDirectory)
         {
             if (nuspecStream == null) throw new ArgumentNullException(nameof(nuspecStream));
             if (nuspecStream == null) throw new ArgumentNullException(nameof(nuspecStream));
             if (propertyProvider == null) throw new ArgumentNullException(nameof(propertyProvider));
             if (baseDirectory == null) throw new ArgumentNullException(nameof(baseDirectory));
-            if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
-            if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
             const string nuspecXmlNs = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
 
@@ -983,10 +979,14 @@ namespace Snap.Core
 
             MemoryStream RewriteNuspecStreamWithEssentials()
             {
-                var nuspecDocument = XmlUtility.LoadSafe(nuspecStream);
-                if (nuspecDocument == null)
+                XDocument nuspecDocument;
+                try
                 {
-                    throw new Exception("Failed to parse nuspec");
+                    nuspecDocument = new NuspecReader(nuspecStream, new DefaultFrameworkNameProvider(), true).Xml;
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("Failed to parse nuspec", e);
                 }
 
                 var metadata = nuspecDocument.SingleOrDefault(XName.Get("metadata", nuspecXmlNs));

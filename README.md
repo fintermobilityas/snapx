@@ -63,12 +63,10 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
     - Windows Server 2019 R2
 
 - Ubuntu Desktop x64 
-    - 16.04
     - 18.04
     - 20.04
 
 - Ubuntu Server x64 
-    - 16.04
     - 18.04
     - 20.04
 

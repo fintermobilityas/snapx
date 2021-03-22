@@ -11,7 +11,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <TargetFrameworkSnapInstaller>net5.0</TargetFrameworkSnapInstaller>
+        <TargetFrameworkSnapInstaller>net6.0</TargetFrameworkSnapInstaller>
         <TargetFrameworks>net6.0</TargetFrameworks>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>

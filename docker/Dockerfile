@@ -28,14 +28,14 @@ RUN \
    rm -rf /var/lib/apt/lists/* && \
    apt-get update && \
    apt-get install -y --no-install-recommends \
-      gcc-aarch64-linux-gnu:amd64 g++-8-aarch64-linux-gnu:amd64 && \ 
+      gcc-aarch64-linux-gnu:amd64 g++-aarch64-linux-gnu:amd64 && \ 
       rm -rf /var/lib/apt/lists/*
 
 # x64
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    cmake:amd64 make:amd64 gcc-8:amd64 g++-8:amd64 uuid-dev:amd64 lsb-core:amd64 curl:amd64 wget:amd64 && \ 
+    cmake:amd64 make:amd64 gcc:amd64 g++:amd64 uuid-dev:amd64 lsb-core:amd64 curl:amd64 wget:amd64 && \ 
     rm -rf /var/lib/apt/lists/*
 
 RUN \
@@ -43,16 +43,18 @@ RUN \
 	apt-get install -y apt-transport-https:amd64 ca-certificates:amd64 && \
 	wget --no-check-certificate https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
  	dpkg -i packages-microsoft-prod.deb && \
-	apt-get update && \
-	apt-get install -y dotnet-sdk-5.0:amd64 && \
-	  dotnet tool update powershell -g 
+	apt-get update
 
 RUN \
-  wget https://download.visualstudio.microsoft.com/download/pr/579aac9e-53dd-404e-9452-9910bc9be422/1c47683215dd54a3837fc4b338ddb6a6/dotnet-sdk-6.0.100-preview.1.21103.13-linux-x64.tar.gz && \
-  tar zxf dotnet-sdk-6.0.100-preview.1.21103.13-linux-x64.tar.gz -C /root/.dotnet 
+  wget https://download.visualstudio.microsoft.com/download/pr/73a9cb2a-1acd-4d20-b864-d12797ca3d40/075dbe1dc3bba4aa85ca420167b861b6/dotnet-sdk-5.0.201-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-5.0.201-linux-x64.tar.gz -C /root/dotnet 
 
-RUN \ 
-	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+RUN \
+  wget https://download.visualstudio.microsoft.com/download/pr/25c7e38e-0a6a-4d66-ac4e-b550a44b8a98/49128be84b903799259e7bebe8e9d969/dotnet-sdk-6.0.100-preview.2.21155.3-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-preview.2.21155.3-linux-x64.tar.gz -C /root/dotnet 
+
+RUN \
+  /root/dotnet/dotnet tool update powershell -g
 
 FROM env-build as env-run
 ENV DOTNET_ROOT="/root/dotnet"

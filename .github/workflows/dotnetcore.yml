@@ -277,7 +277,11 @@ jobs:
         uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
-
+      
+      - name: Add dotnet tools to environment path
+        shell: pwsh
+        run: echo "${HOME}/.dotnet/tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        
       - name: Build nupkgs
         shell: pwsh
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release

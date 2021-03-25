@@ -39,7 +39,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - .NET SDK v5.0
 - .NET SDK v6.0
 
-- Visual Studio 2019 16.9 Preview 4.0 Community with C++ workload installed
+- Visual Studio 2019 16.10.0 Preview 1.0 Community with C++ workload installed
 
 #### Bootstrap snapx 
 

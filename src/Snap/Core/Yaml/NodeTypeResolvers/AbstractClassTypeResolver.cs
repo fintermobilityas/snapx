@@ -23,8 +23,13 @@ namespace Snap.Core.Yaml.NodeTypeResolvers
 
         bool INodeTypeResolver.Resolve(NodeEvent nodeEvent, ref Type currentType)
         {
-            var typeName = nodeEvent.Tag; // this is what gets the "!MyDotnetClass" tag from the yaml
-            if (string.IsNullOrEmpty(typeName))
+            if (nodeEvent.Tag.IsEmpty)
+            {
+                return false;
+            }
+
+            var typeName = nodeEvent.Tag.Value; // this is what gets the "!MyDotnetClass" tag from the yaml
+            if (string.IsNullOrWhiteSpace(typeName))
             {
                 return false;
             }
@@ -33,7 +38,7 @@ namespace Snap.Core.Yaml.NodeTypeResolvers
             if (typeName.EndsWith("[]")) // this handles tags for array types like "!MyDotnetClass[]"
             {
                 arrayType = true;
-                typeName = typeName[0..^2];
+                typeName = typeName[..^2];
             }
 
             if (!_tagMappings.TryGetValue(typeName, out var predefinedType))

@@ -56,6 +56,10 @@ namespace snapx.Options
             HelpText = "Overwrite release notes defined in YML manifest.")]
         public string ReleasesNotes { get; set; }
 
+        [Option("ntp-server", 
+            HelpText = "Set network time provider server and port. Example: time.cloudflare.com:123")]
+        public string NetworkTimeProviderConnectionString { get; set; }
+
         [Value(0,
             HelpText = "The application id.", 
             Required = true)]

@@ -37,6 +37,10 @@ namespace snapx.Options
             HelpText = "Skip waiting for the nuget feed update.")]
         public bool SkipAwaitUpdate { get; set; }
 
+        [Option("ntp-server", 
+            HelpText = "Set network time provider server and port. Example: time.cloudflare.com:123")]
+        public string NetworkTimeProviderConnectionString { get; set; }
+
         [Value(0,
             HelpText = "The Application id.",
             Required = true)]

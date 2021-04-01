@@ -1,10 +1,33 @@
-﻿using System;
+﻿
+using System;
 using System.Linq;
+using Snap.Core;
 
 namespace Snap.Extensions
 {
     internal static class StringExtensions
     {
+        public static ISnapNetworkTimeProvider BuildNtpProvider(this string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var segments = value.Split(":", StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (segments.Count != 2)
+            {
+                return null;
+            }
+
+            if (!int.TryParse(segments[1], out var port) || port <= 0)
+            {
+                return null;
+            }
+
+            return new SnapNetworkTimeProvider(segments[0], port);
+        }
+
         public static bool IsTrue(this string value)
         {
             if (string.IsNullOrWhiteSpace(value))

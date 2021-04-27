@@ -714,8 +714,7 @@ namespace Snap.Core
                             $"Target path: {checksumNuspecTargetPath}. " +
                             $"Nupkg: {deltaRelease.Filename}.");
                     }
-
-                    var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == checksumNuspecTargetPath);
+                    var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, checksumNuspecTargetPath, StringComparison.OrdinalIgnoreCase));
                     if (existingFullChecksum == null)
                     {
                         throw new FileNotFoundException(
@@ -739,7 +738,7 @@ namespace Snap.Core
                         }
                     }
 
-                    var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == deltaChecksum.NuspecTargetPath);
+                    var existingFullChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase)  );
                     if (existingFullChecksum != null)
                     {
                         throw new Exception(
@@ -754,8 +753,8 @@ namespace Snap.Core
                 }
 
                 foreach (var deltaChecksum in deltaRelease.Modified)
-                {                       
-                    var existingChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == deltaChecksum.NuspecTargetPath);
+                {
+                    var existingChecksum = reassembledFullSnapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, deltaChecksum.NuspecTargetPath, StringComparison.OrdinalIgnoreCase));
                     if (existingChecksum == null)
                     {
                         throw new Exception(
@@ -1274,7 +1273,7 @@ namespace Snap.Core
                     throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(packageBuilder)}");
                 }
 
-                var existingSnapReleaseChecksum = snapRelease.Files.SingleOrDefault(x => x.NuspecTargetPath == nuspecTargetPath);
+                var existingSnapReleaseChecksum = snapRelease.Files.SingleOrDefault(x => string.Equals(x.NuspecTargetPath, nuspecTargetPath,StringComparison.OrdinalIgnoreCase));
                 if (existingSnapReleaseChecksum == null)
                 {
                     throw new Exception($"Failed to replace: {nuspecTargetPath}. It does not exist in {nameof(snapRelease)}");

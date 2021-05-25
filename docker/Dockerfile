@@ -46,12 +46,14 @@ RUN \
 	apt-get update
 
 RUN \
-  wget https://download.visualstudio.microsoft.com/download/pr/73a9cb2a-1acd-4d20-b864-d12797ca3d40/075dbe1dc3bba4aa85ca420167b861b6/dotnet-sdk-5.0.201-linux-x64.tar.gz && \
-  mkdir -p /root/dotnet && tar zxf dotnet-sdk-5.0.201-linux-x64.tar.gz -C /root/dotnet 
-
+  wget https://download.visualstudio.microsoft.com/download/pr/98563846-f949-4dc7-81a0-77016735bf08/56d5882a2046382fccb7db032f7d2a02/dotnet-sdk-5.0.300-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-5.0.300-linux-x64.tar.gz -C /root/dotnet && \
+  rm dotnet-sdk-5.0.300-linux-x64.tar.gz 
+  
 RUN \
-  wget https://download.visualstudio.microsoft.com/download/pr/25c7e38e-0a6a-4d66-ac4e-b550a44b8a98/49128be84b903799259e7bebe8e9d969/dotnet-sdk-6.0.100-preview.2.21155.3-linux-x64.tar.gz && \
-  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-preview.2.21155.3-linux-x64.tar.gz -C /root/dotnet 
+  wget https://download.visualstudio.microsoft.com/download/pr/f5c00d7a-e1c8-494a-a88b-9ed1dc62249e/8438122af4fd928900a0ebf129c6c1d6/dotnet-sdk-6.0.100-preview.4.21255.9-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-preview.4.21255.9-linux-x64.tar.gz -C /root/dotnet && \
+  rm dotnet-sdk-6.0.100-preview.4.21255.9-linux-x64.tar.gz
 
 RUN \
   /root/dotnet/dotnet tool update powershell -g

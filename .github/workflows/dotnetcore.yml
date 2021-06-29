@@ -71,12 +71,12 @@ jobs:
           password: ${{secrets.GITHUB_TOKEN }}     
 
       - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
 
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -142,12 +142,12 @@ jobs:
           submodules: true   
 
       - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
 
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -212,12 +212,12 @@ jobs:
   #              
 
   #    - name: Setup .NET 5.0
-  #      uses: actions/setup-dotnet@v1.8.0
+  #      uses: actions/setup-dotnet@v1.8.1
   #      with:
   #        dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
 
   #    - name: Setup .NET 6.0
-  #      uses: actions/setup-dotnet@v1.8.0
+  #      uses: actions/setup-dotnet@v1.8.1
   #      with:
   #        dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -269,12 +269,12 @@ jobs:
           path: ${{ github.workspace }}
           
       - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
 
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.8.0
+        uses: actions/setup-dotnet@v1.8.1
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
       

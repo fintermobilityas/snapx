@@ -5,7 +5,7 @@
         </PackageReference>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Mono.Cecil" Version="0.11.3"/>
+        <PackageReference Include="Mono.Cecil" Version="0.11.4"/>
         <PackageReference Include="YamlDotNet" Version="11.2.1"/>
         <PackageReference Include="SharpCompress" Version="0.28.3"/>
         <PackageReference Include="MessagePack" Version="2.2.85" />

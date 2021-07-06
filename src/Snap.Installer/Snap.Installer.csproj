@@ -16,6 +16,13 @@
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>
 
+    <!-- /p:PublishTrimmed=true -->
+    <!-- https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md#available-feature-switches -->
+    <PropertyGroup Condition="$(OsPlatform) == 'Windows'">
+        <!-- Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com -->
+        <BuiltInComInteropSupport>true<BuiltInComInteropSupport>
+    </PropertyGroup>
+
     <ItemGroup>
         <EmbeddedResource Include="**\*.xaml" SubType="Designer" />
         <EmbeddedResource Include="Assets\**\*" />

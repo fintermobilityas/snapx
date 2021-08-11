@@ -1,7 +1,8 @@
 <Project>
 
     <PropertyGroup>
-        <LangVersion>preview</LangVersion>
+        <LangVersion>9.0</LangVersion>
+        <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
     </PropertyGroup>
 
     <PropertyGroup>

@@ -22,22 +22,30 @@ namespace Snap.AnyOS.Unix
     {
         public event EventHandler Exit;
 
+        #if NET5_0
         readonly UnixSignal[] _signals = {
             new(Mono.Unix.Native.Signum.SIGTERM), 
             new(Mono.Unix.Native.Signum.SIGINT),
-            new(Mono.Unix.Native.Signum.SIGUSR1)
         };
+        #endif
 
         public SnapOsUnixExitSignal()
         {
+            #if NET6_0
+            PosixSignalRegistration.Create(PosixSignal.SIGTERM, _ => OnExitSignalHandler());
+            PosixSignalRegistration.Create(PosixSignal.SIGINT, _ => OnExitSignalHandler());
+            #else
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 // blocking call to wait for any kill signal
                 UnixSignal.WaitAny(_signals, -1);
 
-                Exit?.Invoke(null, EventArgs.Empty);
+                OnExitSignalHandler();
             });
+            #endif
         }
+
+        void OnExitSignalHandler() => Exit?.Invoke(null, EventArgs.Empty);
     }
 
     internal sealed class SnapOsUnix : ISnapOsImpl

@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using SharpCompress.Compressors.BZip2;
@@ -704,11 +705,10 @@ namespace Snap.Core
             return I.ToArray();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void Swap(ref int first, ref int second)
         {
-            var temp = first;
-            first = second;
-            second = temp;
+            (first, second) = (second, first);
         }
 
         static long ReadInt64(ReadOnlySpan<byte> buffer, int offset)

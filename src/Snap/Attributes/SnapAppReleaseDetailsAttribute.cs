@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace Snap.Attributes
+namespace Snap.Attributes;
+
+[AttributeUsage(AttributeTargets.Assembly)]
+internal sealed class SnapAppReleaseDetailsAttribute : Attribute
 {
-    [AttributeUsage(AttributeTargets.Assembly)]
-    internal sealed class SnapAppReleaseDetailsAttribute : Attribute
-    {
   
-    }
 }

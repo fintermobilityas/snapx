@@ -6,28 +6,25 @@ using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.EventEmitters;
 
-namespace Snap.Core.Yaml.Emitters
-{   
-    // https://github.com/aaubry/YamlDotNet/pull/229/files
+namespace Snap.Core.Yaml.Emitters;
+// https://github.com/aaubry/YamlDotNet/pull/229/files
 
-    internal class AbstractClassTagEventEmitter : ChainedEventEmitter
+internal class AbstractClassTagEventEmitter : ChainedEventEmitter
+{
+    readonly IDictionary<Type, string> _tagMappings;
+
+    public AbstractClassTagEventEmitter(IEventEmitter inner, [NotNull] IDictionary<string, Type> tagMappings) : base(inner)
     {
-        readonly IDictionary<Type, string> _tagMappings;
+        if (tagMappings == null) throw new ArgumentNullException(nameof(tagMappings));
+        _tagMappings = tagMappings.ToDictionary(x => x.Value, x => $"!{x.Key}");
+    }
 
-        public AbstractClassTagEventEmitter(IEventEmitter inner, [NotNull] IDictionary<string, Type> tagMappings) : base(inner)
+    public override void Emit(MappingStartEventInfo eventInfo, IEmitter emitter)
+    {
+        if(_tagMappings.ContainsKey(eventInfo.Source.Type))
         {
-            if (tagMappings == null) throw new ArgumentNullException(nameof(tagMappings));
-            _tagMappings = tagMappings.ToDictionary(x => x.Value, x => $"!{x.Key}");
+            eventInfo.Tag = _tagMappings[eventInfo.Source.Type];
         }
-
-        public override void Emit(MappingStartEventInfo eventInfo, IEmitter emitter)
-        {
-            if(_tagMappings.ContainsKey(eventInfo.Source.Type))
-            {
-                eventInfo.Tag = _tagMappings[eventInfo.Source.Type];
-            }
-            base.Emit(eventInfo, emitter);
-        }
+        base.Emit(eventInfo, emitter);
     }
 }
-

@@ -7,154 +7,153 @@ using NuGet.Configuration;
 using Snap.Core;
 using Snap.Logging;
 
-namespace Snap.NuGet
+namespace Snap.NuGet;
+
+internal class NuGetMachineWideSettings : IMachineWideSettings
 {
-    internal class NuGetMachineWideSettings : IMachineWideSettings
+    readonly Lazy<ISettings> _settings;
+
+    public ISettings Settings => _settings.Value;
+
+    public NuGetMachineWideSettings([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, ILog logger = null)
     {
-        readonly Lazy<ISettings> _settings;
+        if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+        if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
-        public ISettings Settings => _settings.Value;
+        logger ??= LogProvider.For<NuGetMachineWideSettings>();
 
-        public NuGetMachineWideSettings([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, ILog logger = null)
+        // https://github.com/NuGet/NuGet.Client/blob/8cb7886a7e9052308cfa51308f6f901c7caf5004/src/NuGet.Core/NuGet.Commands/SourcesCommands/SourceRunners.cs#L102
+
+        _settings = new Lazy<ISettings>(() =>
         {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-
-            logger ??= LogProvider.For<NuGetMachineWideSettings>();
-
-            // https://github.com/NuGet/NuGet.Client/blob/8cb7886a7e9052308cfa51308f6f901c7caf5004/src/NuGet.Core/NuGet.Commands/SourcesCommands/SourceRunners.cs#L102
-
-            _settings = new Lazy<ISettings>(() =>
+            ISettings settings;
+            try
             {
-                ISettings settings;
-                try
-                {
-                    settings = global::NuGet.Configuration.Settings.LoadDefaultSettings(workingDirectory,
-                        configFileName: null,
-                        machineWideSettings: new XPlatMachineWideSetting());
-                }
-                catch (NuGetConfigurationException ex) when (ex.InnerException is UnauthorizedAccessException)
-                {
-                    logger.ErrorException("Error loading machine wide settings", ex.InnerException ?? ex);
-                    return new NullSettings();
-                }
-
-                return settings;
-            });
-        }
-    }
-
-    internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
-    {
-        static readonly PackageSource PackageSourceV2 =
-            new(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
+                settings = global::NuGet.Configuration.Settings.LoadDefaultSettings(workingDirectory,
+                    configFileName: null,
+                    machineWideSettings: new XPlatMachineWideSetting());
+            }
+            catch (NuGetConfigurationException ex) when (ex.InnerException is UnauthorizedAccessException)
             {
-                ProtocolVersion = (int) NuGetProtocolVersion.V2,
-                IsMachineWide = true
-            };
-
-        public NugetOrgOfficialV2PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV2})
-        {
-        }
-    }
-
-    internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
-    {
-        static readonly PackageSource PackageSourceV3 =
-            new(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
-            {
-                ProtocolVersion = (int) NuGetProtocolVersion.V3,
-                IsMachineWide = true
-            };
-
-        public NugetOrgOfficialV3PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV3})
-        {
-        }
-    }
-
-    internal class NuGetMachineWidePackageSources : NuGetPackageSources
-    {
-        public NuGetMachineWidePackageSources([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
-        {
-            if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-            if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-
-            var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
-            var packageSources = new List<PackageSource>();
-
-            var nugetConfigReader = new NuGetConfigFileReader();
-            foreach (var packageSource in nugetConfigReader.ReadNugetSources(workingDirectory).Where(x => x.IsEnabled))
-            {
-                if (!packageSources.Contains(packageSource))
-                {
-                    packageSources.Add(packageSource);
-                }
+                logger.ErrorException("Error loading machine wide settings", ex.InnerException ?? ex);
+                return new NullSettings();
             }
 
-            Items = packageSources;
-            Settings = nugetMachineWideSettings.Settings;
+            return settings;
+        });
+    }
+}
+
+internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
+{
+    static readonly PackageSource PackageSourceV2 =
+        new(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
+        {
+            ProtocolVersion = (int) NuGetProtocolVersion.V2,
+            IsMachineWide = true
+        };
+
+    public NugetOrgOfficialV2PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV2})
+    {
+    }
+}
+
+internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
+{
+    static readonly PackageSource PackageSourceV3 =
+        new(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
+        {
+            ProtocolVersion = (int) NuGetProtocolVersion.V3,
+            IsMachineWide = true
+        };
+
+    public NugetOrgOfficialV3PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV3})
+    {
+    }
+}
+
+internal class NuGetMachineWidePackageSources : NuGetPackageSources
+{
+    public NuGetMachineWidePackageSources([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory)
+    {
+        if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+        if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+
+        var nugetMachineWideSettings = new NuGetMachineWideSettings(filesystem, workingDirectory);
+        var packageSources = new List<PackageSource>();
+
+        var nugetConfigReader = new NuGetConfigFileReader();
+        foreach (var packageSource in nugetConfigReader.ReadNugetSources(workingDirectory).Where(x => x.IsEnabled))
+        {
+            if (!packageSources.Contains(packageSource))
+            {
+                packageSources.Add(packageSource);
+            }
         }
+
+        Items = packageSources;
+        Settings = nugetMachineWideSettings.Settings;
+    }
+}
+
+internal class NuGetInMemoryPackageSources : NuGetPackageSources
+{
+    public NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources) : base(
+        new NugetInMemorySettings(tempDirectory), packageSources)
+    {
+
     }
 
-    internal class NuGetInMemoryPackageSources : NuGetPackageSources
+    public NuGetInMemoryPackageSources(string tempDirectory, PackageSource packageSource) : this(tempDirectory, new List<PackageSource> { packageSource })
     {
-        public NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources) : base(
-            new NugetInMemorySettings(tempDirectory), packageSources)
-        {
-
-        }
-
-        public NuGetInMemoryPackageSources(string tempDirectory, PackageSource packageSource) : this(tempDirectory, new List<PackageSource> { packageSource })
-        {
             
-        }
+    }
+}
+
+internal interface INuGetPackageSources : IEnumerable<PackageSource>
+{
+    ISettings Settings { get; }
+    IReadOnlyCollection<PackageSource> Items { get; }
+}
+
+internal class NuGetPackageSources : INuGetPackageSources
+{
+    public ISettings Settings { get; protected set; }
+    public IReadOnlyCollection<PackageSource> Items { get; protected set; }
+
+    public static NuGetPackageSources Empty => new();
+
+    protected NuGetPackageSources()
+    {
+        Items = new List<PackageSource>();
+        Settings = new NullSettings();
     }
 
-    internal interface INuGetPackageSources : IEnumerable<PackageSource>
+    [UsedImplicitly]
+    public NuGetPackageSources([NotNull] ISettings settings) : this(settings,
+        settings.GetConfigFilePaths().Select(x => new PackageSource(x)).ToList())
     {
-        ISettings Settings { get; }
-        IReadOnlyCollection<PackageSource> Items { get; }
+        if (settings == null) throw new ArgumentNullException(nameof(settings));
     }
 
-    internal class NuGetPackageSources : INuGetPackageSources
+    public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
     {
-        public ISettings Settings { get; protected set; }
-        public IReadOnlyCollection<PackageSource> Items { get; protected set; }
+        Items = sources ?? throw new ArgumentNullException(nameof(sources));
+        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    }
 
-        public static NuGetPackageSources Empty => new();
+    public IEnumerator<PackageSource> GetEnumerator()
+    {
+        return Items.GetEnumerator();
+    }
 
-        protected NuGetPackageSources()
-        {
-            Items = new List<PackageSource>();
-            Settings = new NullSettings();
-        }
+    public override string ToString()
+    {
+        return string.Join(",", Items.Select(s => s.SourceUri.ToString()));
+    }
 
-        [UsedImplicitly]
-        public NuGetPackageSources([NotNull] ISettings settings) : this(settings,
-            settings.GetConfigFilePaths().Select(x => new PackageSource(x)).ToList())
-        {
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
-        }
-
-        public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
-        {
-            Items = sources ?? throw new ArgumentNullException(nameof(sources));
-            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        }
-
-        public IEnumerator<PackageSource> GetEnumerator()
-        {
-            return Items.GetEnumerator();
-        }
-
-        public override string ToString()
-        {
-            return string.Join(",", Items.Select(s => s.SourceUri.ToString()));
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

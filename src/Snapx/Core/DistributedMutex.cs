@@ -6,247 +6,246 @@ using ServiceStack;
 using Snap.Logging;
 using snapx.Api;
 
-namespace snapx.Core
+namespace snapx.Core;
+
+internal sealed class DistributedMutexUnknownException : Exception
 {
-    internal sealed class DistributedMutexUnknownException : Exception
+    public DistributedMutexUnknownException(string message) : base(message, null)
     {
-        public DistributedMutexUnknownException(string message) : base(message, null)
-        {
             
-        }
+    }
+}
+
+internal interface IDistributedMutexClient
+{
+    Task<string> AcquireAsync(string name, TimeSpan lockDuration);
+    Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod = null);
+    Task RenewAsync(string name, string challenge);
+}
+
+internal sealed class DistributedMutexClient : IDistributedMutexClient
+{
+    readonly IHttpRestClientAsync _httpRestClientAsync;
+
+    public DistributedMutexClient([NotNull] IHttpRestClientAsync httpRestClientAsync)
+    {
+        _httpRestClientAsync = httpRestClientAsync ?? throw new ArgumentNullException(nameof(httpRestClientAsync));
     }
 
-    internal interface IDistributedMutexClient
+    public Task<string> AcquireAsync(string name, TimeSpan lockDuration)
     {
-        Task<string> AcquireAsync(string name, TimeSpan lockDuration);
-        Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod = null);
-        Task RenewAsync(string name, string challenge);
+        return _httpRestClientAsync.PostAsync(new Lock { Name = name, Duration = lockDuration });
     }
 
-    internal sealed class DistributedMutexClient : IDistributedMutexClient
+    public Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod)
     {
-        readonly IHttpRestClientAsync _httpRestClientAsync;
-
-        public DistributedMutexClient([NotNull] IHttpRestClientAsync httpRestClientAsync)
-        {
-            _httpRestClientAsync = httpRestClientAsync ?? throw new ArgumentNullException(nameof(httpRestClientAsync));
-        }
-
-        public Task<string> AcquireAsync(string name, TimeSpan lockDuration)
-        {
-            return _httpRestClientAsync.PostAsync(new Lock { Name = name, Duration = lockDuration });
-        }
-
-        public Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod)
-        {
-            return _httpRestClientAsync.DeleteAsync(new Unlock { Name = name, Challenge = challenge, BreakPeriod = breakPeriod });
-        }
-
-        public Task RenewAsync(string name, string challenge)
-        {
-            return _httpRestClientAsync.PutAsync(new RenewLock { Name = name, Challenge = challenge });
-        }
+        return _httpRestClientAsync.DeleteAsync(new Unlock { Name = name, Challenge = challenge, BreakPeriod = breakPeriod });
     }
 
-    internal interface IDistributedMutex : IAsyncDisposable
+    public Task RenewAsync(string name, string challenge)
     {
-        string Name { get; }
-        bool Acquired { get; }
-        bool Disposed { get; }
-        Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0);
-        Task<bool> TryReleaseAsync();
+        return _httpRestClientAsync.PutAsync(new RenewLock { Name = name, Challenge = challenge });
+    }
+}
+
+internal interface IDistributedMutex : IAsyncDisposable
+{
+    string Name { get; }
+    bool Acquired { get; }
+    bool Disposed { get; }
+    Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0);
+    Task<bool> TryReleaseAsync();
+}
+
+internal sealed class DistributedMutex : IDistributedMutex
+{
+    long _acquired;
+    long _disposed;
+
+    readonly IDistributedMutexClient _distributedMutexClient;
+    readonly ILog _logger;
+    readonly CancellationToken _cancellationToken;
+    readonly bool _releaseOnDispose;
+    readonly SemaphoreSlim _semaphore;
+    string _challenge;
+
+    public string Name { get; }
+    public bool Acquired => Interlocked.Read(ref _acquired) == 1;
+    public bool Disposed => Interlocked.Read(ref _disposed) == 1;
+
+    public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient,
+        [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken, bool releaseOnDispose = true)
+    {
+        _distributedMutexClient = distributedMutexClient ?? throw new ArgumentNullException(nameof(distributedMutexClient));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        _cancellationToken = cancellationToken;
+        _releaseOnDispose = releaseOnDispose;
+        _semaphore = new SemaphoreSlim(1, 1);
     }
 
-    internal sealed class DistributedMutex : IDistributedMutex
+    public async Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0)
     {
-        long _acquired;
-        long _disposed;
-
-        readonly IDistributedMutexClient _distributedMutexClient;
-        readonly ILog _logger;
-        readonly CancellationToken _cancellationToken;
-        readonly bool _releaseOnDispose;
-        readonly SemaphoreSlim _semaphore;
-        string _challenge;
-
-        public string Name { get; }
-        public bool Acquired => Interlocked.Read(ref _acquired) == 1;
-        public bool Disposed => Interlocked.Read(ref _disposed) == 1;
-
-        public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient,
-            [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken, bool releaseOnDispose = true)
+        if (Disposed)
         {
-            _distributedMutexClient = distributedMutexClient ?? throw new ArgumentNullException(nameof(distributedMutexClient));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            Name = name ?? throw new ArgumentNullException(nameof(name));
-            _cancellationToken = cancellationToken;
-            _releaseOnDispose = releaseOnDispose;
-            _semaphore = new SemaphoreSlim(1, 1);
+            throw new ObjectDisposedException(nameof(DistributedMutex), $"Mutex is already disposed. Name: {Name}");
         }
 
-        public async Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0)
+        if (Acquired)
         {
-            if (Disposed)
+            throw new SynchronizationLockException($"Mutex is already acquired: {Name}");
+        }
+
+        await _semaphore.WaitAsync(_cancellationToken);
+
+        retries = Math.Max(0, retries);
+
+        return await RetryAsync(async () =>
+        {
+            if (_cancellationToken.IsCancellationRequested)
             {
-                throw new ObjectDisposedException(nameof(DistributedMutex), $"Mutex is already disposed. Name: {Name}");
+                return false;
             }
 
-            if (Acquired)
+            _logger.Info($"Attempting to acquire mutex: {Name}.");
+
+            try
             {
-                throw new SynchronizationLockException($"Mutex is already acquired: {Name}");
+                _challenge = await _distributedMutexClient.AcquireAsync(Name, TimeSpan.FromHours(24));
+            }
+            catch (Exception e)
+            {
+                _logger.InfoException($"Failed to acquire mutex: {Name}.", e);
+                throw;
             }
 
-            await _semaphore.WaitAsync(_cancellationToken);
-
-            retries = Math.Max(0, retries);
-
-            return await RetryAsync(async () =>
+            if (!string.IsNullOrEmpty(_challenge))
             {
-                if (_cancellationToken.IsCancellationRequested)
+                Interlocked.Exchange(ref _acquired, 1);
+                _logger.Info($"Successfully acquired mutex: {Name}. ");
+                return true;
+            }
+
+            throw new DistributedMutexUnknownException($"Challenge should not be null or empty. Mutex: {Name}. Challenge: {_challenge}");
+
+        }, retryDelayTs, retries, ex => ex is DistributedMutexUnknownException);
+    }
+
+    public async Task<bool> TryReleaseAsync()
+    {
+        if (Disposed || !Acquired)
+        {
+            return false;
+        }
+
+        try
+        {
+            _logger.Info($"Attempting to force release of mutex: {Name}.");
+            await _distributedMutexClient.ReleaseLockAsync(Name, _challenge, TimeSpan.Zero);
+            Interlocked.Exchange(ref _acquired, 0);
+            _logger.Info($"Successfully released mutex: {Name}.");
+            return true;
+        }
+        catch (WebServiceException exception)
+        {
+            _logger.InfoException($"Failed to force release mutex with name: {Name}.", exception);
+            return false;
+        }
+    }
+
+    public static async Task<bool> TryForceReleaseAsync([NotNull] string name, [NotNull] IDistributedMutexClient distributedMutexClient,
+        [NotNull] ILog logger)
+    {
+        if (name == null) throw new ArgumentNullException(nameof(name));
+        if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
+        if (logger == null) throw new ArgumentNullException(nameof(logger));
+
+        try
+        {
+            logger.Info($"Attempting to force release of mutex: {name}.");
+            await distributedMutexClient.ReleaseLockAsync(name, null, TimeSpan.Zero);
+            logger.Info($"Successfully released mutex: {name}.");
+            return true;
+        }
+        catch (WebServiceException exception)
+        {
+            logger.InfoException($"Failed to force release mutex with name: {name}.", exception);
+            return false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        var disposed = Interlocked.Exchange(ref _disposed, 1) == 1;
+        var acquired = Interlocked.Read(ref _acquired) == 1;
+        if (disposed)
+        {
+            return;
+        }
+
+        _semaphore.Dispose();
+
+        if (acquired && _releaseOnDispose)
+        {
+            var success = await RetryAsync(async () =>
+            {
+                _logger.Info($"Disposing mutex: {Name}");
+                await _distributedMutexClient.ReleaseLockAsync(Name, _challenge);
+                Interlocked.Exchange(ref _acquired, 0);
+                _logger.Info($"Successfully disposed mutex: {Name}");
+                return true;
+            }, TimeSpan.FromMilliseconds(500), 3, ex =>
+            {
+                _logger.ErrorException($"Unknown error disposing mutex: {Name}", ex);
+                return false;
+            });
+
+            if (!success)
+            {
+                _logger.Error($"Unknown error disposing mutex: {Name}.");
+            }
+        }
+    }
+
+    async Task<T> RetryAsync<T>(Func<Task<T>> retryFunc, TimeSpan delayTs, int retries = 0, Func<Exception, bool> shouldThrowFunc = null)
+    {
+        while (true)
+        {
+            try
+            {
+                return await retryFunc();
+            }
+            catch (Exception e)
+            {
+                if (--retries > 0)
                 {
-                    return false;
+                    try
+                    {
+                        await Task.Delay(delayTs, _cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    continue;
                 }
 
-                _logger.Info($"Attempting to acquire mutex: {Name}.");
-
-                try
+                var shouldThrow = shouldThrowFunc?.Invoke(e) ?? false;
+                if (shouldThrow)
                 {
-                    _challenge = await _distributedMutexClient.AcquireAsync(Name, TimeSpan.FromHours(24));
-                }
-                catch (Exception e)
-                {
-                    _logger.InfoException($"Failed to acquire mutex: {Name}.", e);
                     throw;
                 }
 
-                if (!string.IsNullOrEmpty(_challenge))
-                {
-                    Interlocked.Exchange(ref _acquired, 1);
-                    _logger.Info($"Successfully acquired mutex: {Name}. ");
-                    return true;
-                }
-
-                throw new DistributedMutexUnknownException($"Challenge should not be null or empty. Mutex: {Name}. Challenge: {_challenge}");
-
-            }, retryDelayTs, retries, ex => ex is DistributedMutexUnknownException);
-        }
-
-        public async Task<bool> TryReleaseAsync()
-        {
-            if (Disposed || !Acquired)
-            {
-                return false;
-            }
-
-            try
-            {
-                _logger.Info($"Attempting to force release of mutex: {Name}.");
-                await _distributedMutexClient.ReleaseLockAsync(Name, _challenge, TimeSpan.Zero);
-                Interlocked.Exchange(ref _acquired, 0);
-                _logger.Info($"Successfully released mutex: {Name}.");
-                return true;
-            }
-            catch (WebServiceException exception)
-            {
-                _logger.InfoException($"Failed to force release mutex with name: {Name}.", exception);
-                return false;
+                return default;
             }
         }
 
-        public static async Task<bool> TryForceReleaseAsync([NotNull] string name, [NotNull] IDistributedMutexClient distributedMutexClient,
-            [NotNull] ILog logger)
-        {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
-            if (logger == null) throw new ArgumentNullException(nameof(logger));
-
-            try
-            {
-                logger.Info($"Attempting to force release of mutex: {name}.");
-                await distributedMutexClient.ReleaseLockAsync(name, null, TimeSpan.Zero);
-                logger.Info($"Successfully released mutex: {name}.");
-                return true;
-            }
-            catch (WebServiceException exception)
-            {
-                logger.InfoException($"Failed to force release mutex with name: {name}.", exception);
-                return false;
-            }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            var disposed = Interlocked.Exchange(ref _disposed, 1) == 1;
-            var acquired = Interlocked.Read(ref _acquired) == 1;
-            if (disposed)
-            {
-                return;
-            }
-
-            _semaphore.Dispose();
-
-            if (acquired && _releaseOnDispose)
-            {
-                var success = await RetryAsync(async () =>
-                {
-                    _logger.Info($"Disposing mutex: {Name}");
-                    await _distributedMutexClient.ReleaseLockAsync(Name, _challenge);
-                    Interlocked.Exchange(ref _acquired, 0);
-                    _logger.Info($"Successfully disposed mutex: {Name}");
-                    return true;
-                }, TimeSpan.FromMilliseconds(500), 3, ex =>
-                {
-                    _logger.ErrorException($"Unknown error disposing mutex: {Name}", ex);
-                    return false;
-                });
-
-                if (!success)
-                {
-                    _logger.Error($"Unknown error disposing mutex: {Name}.");
-                }
-            }
-        }
-
-        async Task<T> RetryAsync<T>(Func<Task<T>> retryFunc, TimeSpan delayTs, int retries = 0, Func<Exception, bool> shouldThrowFunc = null)
-        {
-            while (true)
-            {
-                try
-                {
-                    return await retryFunc();
-                }
-                catch (Exception e)
-                {
-                    if (--retries > 0)
-                    {
-                        try
-                        {
-                            await Task.Delay(delayTs, _cancellationToken);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            break;
-                        }
-
-                        if (_cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        continue;
-                    }
-
-                    var shouldThrow = shouldThrowFunc?.Invoke(e) ?? false;
-                    if (shouldThrow)
-                    {
-                        throw;
-                    }
-
-                    return default;
-                }
-            }
-
-            return default;
-        }
+        return default;
     }
 }

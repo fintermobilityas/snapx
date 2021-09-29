@@ -1,6 +1,5 @@
-﻿namespace Snap.Installer.Assets
+﻿namespace Snap.Installer.Assets;
+
+class AssetsTypeRoot
 {
-    class AssetsTypeRoot
-    {
-    }
 }

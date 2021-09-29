@@ -5,46 +5,46 @@ using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 
-namespace Snap.Extensions
+namespace Snap.Extensions;
+
+internal static class EnumerableExtensions
 {
-    internal static class EnumerableExtensions
+    public static Dictionary<TKey, List<TValue>> ToDictionaryByKey<TValue, TKey>(this IEnumerable<TValue> list, Func<TValue, TKey> predicate)
     {
-        public static Dictionary<TKey, List<TValue>> ToDictionaryByKey<TValue, TKey>(this IEnumerable<TValue> list, Func<TValue, TKey> predicate)
+        return list.GroupBy(predicate).ToDictionary(g => g.Key, values => values.ToList());
+    }
+
+    public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> onNext)
+    {
+        if (source == null)
+            throw new ArgumentNullException(nameof(source));
+        if (onNext == null)
+            throw new ArgumentNullException(nameof(onNext));
+
+        foreach (var item in source) onNext(item);
+    }
+
+    public static Task ForEachAsync<T>([NotNull] this IEnumerable<T> source, [NotNull] Func<T, Task> body, int concurrency = 0)
+    {
+        if (source == null) throw new ArgumentNullException(nameof(source));
+        if (body == null) throw new ArgumentNullException(nameof(body));
+        if (concurrency < 0) throw new ArgumentOutOfRangeException(nameof(concurrency));
+
+        const int maxConcurrency = 8;
+            
+        if (concurrency == 0)
         {
-            return list.GroupBy(predicate).ToDictionary(g => g.Key, values => values.ToList());
+            concurrency = Environment.ProcessorCount;
         }
 
-        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> onNext)
+        if (concurrency > maxConcurrency)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-            if (onNext == null)
-                throw new ArgumentNullException(nameof(onNext));
-
-            foreach (var item in source) onNext(item);
+            concurrency = maxConcurrency;
         }
-
-        public static Task ForEachAsync<T>([NotNull] this IEnumerable<T> source, [NotNull] Func<T, Task> body, int concurrency = 0)
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (body == null) throw new ArgumentNullException(nameof(body));
-            if (concurrency < 0) throw new ArgumentOutOfRangeException(nameof(concurrency));
-
-            const int maxConcurrency = 8;
             
-            if (concurrency == 0)
-            {
-                concurrency = Environment.ProcessorCount;
-            }
-
-            if (concurrency > maxConcurrency)
-            {
-                concurrency = maxConcurrency;
-            }
-            
-            // https://devblogs.microsoft.com/pfxteam/implementing-a-simple-foreachasync-part-2/
-            return Task.WhenAll(
-                Partitioner
+        // https://devblogs.microsoft.com/pfxteam/implementing-a-simple-foreachasync-part-2/
+        return Task.WhenAll(
+            Partitioner
                 .Create(source)
                 .GetPartitions(concurrency)
                 .Select(partition => Task.Run(async delegate
@@ -58,6 +58,5 @@ namespace Snap.Extensions
                     }
                 }))); 
             
-        }    
-    }
+    }    
 }

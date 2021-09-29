@@ -6,50 +6,48 @@ using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
-namespace Snap.Core.Yaml.NodeTypeResolvers
+namespace Snap.Core.Yaml.NodeTypeResolvers;
+// https://github.com/aaubry/YamlDotNet/issues/343#issuecomment-424882014
+
+public sealed class AbstractClassTypeResolver : INodeTypeResolver
 {
-    // https://github.com/aaubry/YamlDotNet/issues/343#issuecomment-424882014
+    readonly IDictionary<string, Type> _tagMappings;
 
-    public sealed class AbstractClassTypeResolver : INodeTypeResolver
+    public AbstractClassTypeResolver([NotNull] Dictionary<string, Type> typesByName)
     {
-        readonly IDictionary<string, Type> _tagMappings;
+        if (typesByName == null) throw new ArgumentNullException(nameof(typesByName));
+        var tagMappings = typesByName.ToDictionary(kv => "!" + kv.Key, kv => kv.Value);
+        _tagMappings = tagMappings;
+    }
 
-        public AbstractClassTypeResolver([NotNull] Dictionary<string, Type> typesByName)
+    bool INodeTypeResolver.Resolve(NodeEvent nodeEvent, ref Type currentType)
+    {
+        if (nodeEvent.Tag.IsEmpty)
         {
-            if (typesByName == null) throw new ArgumentNullException(nameof(typesByName));
-            var tagMappings = typesByName.ToDictionary(kv => "!" + kv.Key, kv => kv.Value);
-            _tagMappings = tagMappings;
+            return false;
         }
 
-        bool INodeTypeResolver.Resolve(NodeEvent nodeEvent, ref Type currentType)
+        var typeName = nodeEvent.Tag.Value; // this is what gets the "!MyDotnetClass" tag from the yaml
+        if (string.IsNullOrWhiteSpace(typeName))
         {
-            if (nodeEvent.Tag.IsEmpty)
-            {
-                return false;
-            }
-
-            var typeName = nodeEvent.Tag.Value; // this is what gets the "!MyDotnetClass" tag from the yaml
-            if (string.IsNullOrWhiteSpace(typeName))
-            {
-                return false;
-            }
-
-            var arrayType = false;
-            if (typeName.EndsWith("[]")) // this handles tags for array types like "!MyDotnetClass[]"
-            {
-                arrayType = true;
-                typeName = typeName[..^2];
-            }
-
-            if (!_tagMappings.TryGetValue(typeName, out var predefinedType))
-            {
-                throw new YamlException(
-                    $"I can't find the type '{nodeEvent.Tag}'. Is it spelled correctly? If there are" +
-                    $" multiple types named '{nodeEvent.Tag}', you must used the fully qualified type name.");
-            }
-
-            currentType = arrayType ? predefinedType.MakeArrayType() : predefinedType;
-            return true;
+            return false;
         }
+
+        var arrayType = false;
+        if (typeName.EndsWith("[]")) // this handles tags for array types like "!MyDotnetClass[]"
+        {
+            arrayType = true;
+            typeName = typeName[..^2];
+        }
+
+        if (!_tagMappings.TryGetValue(typeName, out var predefinedType))
+        {
+            throw new YamlException(
+                $"I can't find the type '{nodeEvent.Tag}'. Is it spelled correctly? If there are" +
+                $" multiple types named '{nodeEvent.Tag}', you must used the fully qualified type name.");
+        }
+
+        currentType = arrayType ? predefinedType.MakeArrayType() : predefinedType;
+        return true;
     }
 }

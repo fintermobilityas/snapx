@@ -12,57 +12,56 @@ using Snap.Installer.ViewModels;
 using Snap.Installer.Windows;
 using Snap.Logging;
 
-namespace Snap.Installer
+namespace Snap.Installer;
+
+internal sealed class MainWindow : CustomChromeWindow
 {
-    internal sealed class MainWindow : CustomChromeWindow
+    public static ISnapInstallerEnvironment Environment { get; set; }
+    public static AvaloniaMainWindowViewModel ViewModel { get; set; }
+
+    public MainWindow()
     {
-        public static ISnapInstallerEnvironment Environment { get; set; }
-        public static AvaloniaMainWindowViewModel ViewModel { get; set; }
-
-        public MainWindow()
-        {
-            Debug.Assert(Environment != null, nameof(Environment) + " != null");
+        Debug.Assert(Environment != null, nameof(Environment) + " != null");
             
-            var logger = Environment.BuildLogger<MainWindow>();
+        var logger = Environment.BuildLogger<MainWindow>();
 
-            InitializeComponent();
+        InitializeComponent();
 
-            ViewModel.CancelCommand = ReactiveCommand.CreateFromTask(async () =>
-            {
-                await ViewModel.SetStatusTextAsync("Cancelling installation because user pressed CTRL + C");
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                Close();
-            });
-
-            DataContext = ViewModel;
-
-            Environment.CancellationToken.Register(() =>
-            {
-                logger.Info("Cancellation detected, closing main window.");
-                Dispatcher.UIThread.InvokeAsync(Close);
-            });
-        }
-
-        protected override void OnOpened(EventArgs eventArgs)
+        ViewModel.CancelCommand = ReactiveCommand.CreateFromTask(async () =>
         {
-            ViewModel.GifAnimation = this.FindControl<GifAnimationControl>("GifAnimation");
-            ViewModel.OnInitialized();
+            await ViewModel.SetStatusTextAsync("Cancelling installation because user pressed CTRL + C");
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            Close();
+        });
 
-            base.OnOpened(eventArgs);
-        }
+        DataContext = ViewModel;
 
-        protected override void OnClosing(CancelEventArgs e)
+        Environment.CancellationToken.Register(() =>
         {
-            if (!Environment.CancellationToken.IsCancellationRequested)
-            {
-                Environment.Shutdown();
-            }
-            base.OnClosing(e);
-        }
+            logger.Info("Cancellation detected, closing main window.");
+            Dispatcher.UIThread.InvokeAsync(Close);
+        });
+    }
 
-        void InitializeComponent()
+    protected override void OnOpened(EventArgs eventArgs)
+    {
+        ViewModel.GifAnimation = this.FindControl<GifAnimationControl>("GifAnimation");
+        ViewModel.OnInitialized();
+
+        base.OnOpened(eventArgs);
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!Environment.CancellationToken.IsCancellationRequested)
         {
-            AvaloniaXamlLoader.Load(this);
+            Environment.Shutdown();
         }
+        base.OnClosing(e);
+    }
+
+    void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
     }
 }

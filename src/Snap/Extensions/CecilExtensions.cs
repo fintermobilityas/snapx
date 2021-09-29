@@ -5,91 +5,90 @@ using System.Linq.Expressions;
 using JetBrains.Annotations;
 using Mono.Cecil;
 
-namespace Snap.Extensions
+namespace Snap.Extensions;
+
+internal static class CecilExtensions
 {
-    internal static class CecilExtensions
+    const string ExpressionCannotBeNullMessage = "The expression cannot be null";
+    const string InvalidExpressionMessage = "Invalid expression";
+
+    public static byte[] ToByteArray([NotNull] this AssemblyDefinition assemblyDefinition, WriterParameters writerParameters = null)
     {
-        const string ExpressionCannotBeNullMessage = "The expression cannot be null";
-        const string InvalidExpressionMessage = "Invalid expression";
+        if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+        using var srcStream = new MemoryStream();
+        assemblyDefinition.Write(srcStream, writerParameters ?? new WriterParameters());
+        return srcStream.ToArray();
+    }
 
-        public static byte[] ToByteArray([NotNull] this AssemblyDefinition assemblyDefinition, WriterParameters writerParameters = null)
+    public static string BuildMemberName<T>(this Expression<Func<T, object>> expression)
+    {
+        return BuildMemberName(expression.Body);
+    }
+
+    public static string BuildPropertyGetterSyntax<T>(this Expression<Func<T, object>> expression)
+    {
+        var propertyName = expression.BuildMemberName();
+        return $"get_{propertyName}";
+    }
+
+    public static string BuildPropertySetterSyntax<T>(this Expression<Func<T, object>> expression)
+    {
+        var propertyName = expression.BuildMemberName();
+        return $"set_{propertyName}";
+    }
+
+    public static TypeDefinition ResolveTypeDefinition<T>([NotNull] this AssemblyDefinition assemblyDefinition)
+    {
+        return ResolveTypeDefinitionImpl<T>(assemblyDefinition);
+    }
+
+    public static (TypeDefinition typeDefinition, PropertyDefinition propertyDefinition, string getterName, string setterName) ResolveAutoProperty<T>([NotNull] this AssemblyDefinition assemblyDefinition, [NotNull] Expression<Func<T, object>> selector)
+    {
+        if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+        if (selector == null) throw new ArgumentNullException(nameof(selector));
+
+        var getter = selector.BuildPropertyGetterSyntax();
+        var setter = selector.BuildPropertySetterSyntax();
+
+        var typeDefinition = assemblyDefinition.ResolveTypeDefinition<T>();
+        var propertyDefinition = typeDefinition?.Properties.SingleOrDefault(m =>
+            m.GetMethod?.Name == getter || m.SetMethod?.Name == setter);
+
+        return (typeDefinition, propertyDefinition, getter, setter);
+    }
+
+    static string BuildMemberName(Expression expression)
+    {
+        return expression switch
         {
-            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            using var srcStream = new MemoryStream();
-            assemblyDefinition.Write(srcStream, writerParameters ?? new WriterParameters());
-            return srcStream.ToArray();
+            null => throw new ArgumentException(ExpressionCannotBeNullMessage),
+            MemberExpression memberExpression =>
+                // Reference type property or field
+                memberExpression.Member.Name,
+            MethodCallExpression methodCallExpression =>
+                // Reference type method
+                methodCallExpression.Method.Name,
+            UnaryExpression unaryExpression =>
+                // Property, field of method returning value type
+                BuildMemberName(unaryExpression),
+            _ => throw new ArgumentException(InvalidExpressionMessage)
+        };
+    }
+
+    static string BuildMemberName(UnaryExpression unaryExpression)
+    {
+        if (unaryExpression.Operand is MethodCallExpression methodExpression)
+        {
+            return methodExpression.Method.Name;
         }
 
-        public static string BuildMemberName<T>(this Expression<Func<T, object>> expression)
-        {
-            return BuildMemberName(expression.Body);
-        }
+        return ((MemberExpression)unaryExpression.Operand).Member.Name;
+    }
 
-        public static string BuildPropertyGetterSyntax<T>(this Expression<Func<T, object>> expression)
-        {
-            var propertyName = expression.BuildMemberName();
-            return $"get_{propertyName}";
-        }
-
-        public static string BuildPropertySetterSyntax<T>(this Expression<Func<T, object>> expression)
-        {
-            var propertyName = expression.BuildMemberName();
-            return $"set_{propertyName}";
-        }
-
-        public static TypeDefinition ResolveTypeDefinition<T>([NotNull] this AssemblyDefinition assemblyDefinition)
-        {
-            return ResolveTypeDefinitionImpl<T>(assemblyDefinition);
-        }
-
-        public static (TypeDefinition typeDefinition, PropertyDefinition propertyDefinition, string getterName, string setterName) ResolveAutoProperty<T>([NotNull] this AssemblyDefinition assemblyDefinition, [NotNull] Expression<Func<T, object>> selector)
-        {
-            if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-            if (selector == null) throw new ArgumentNullException(nameof(selector));
-
-            var getter = selector.BuildPropertyGetterSyntax();
-            var setter = selector.BuildPropertySetterSyntax();
-
-            var typeDefinition = assemblyDefinition.ResolveTypeDefinition<T>();
-            var propertyDefinition = typeDefinition?.Properties.SingleOrDefault(m =>
-                m.GetMethod?.Name == getter || m.SetMethod?.Name == setter);
-
-            return (typeDefinition, propertyDefinition, getter, setter);
-        }
-
-        static string BuildMemberName(Expression expression)
-        {
-            return expression switch
-            {
-                null => throw new ArgumentException(ExpressionCannotBeNullMessage),
-                MemberExpression memberExpression =>
-                    // Reference type property or field
-                    memberExpression.Member.Name,
-                MethodCallExpression methodCallExpression =>
-                    // Reference type method
-                    methodCallExpression.Method.Name,
-                UnaryExpression unaryExpression =>
-                    // Property, field of method returning value type
-                    BuildMemberName(unaryExpression),
-                _ => throw new ArgumentException(InvalidExpressionMessage)
-            };
-        }
-
-        static string BuildMemberName(UnaryExpression unaryExpression)
-        {
-            if (unaryExpression.Operand is MethodCallExpression methodExpression)
-            {
-                return methodExpression.Method.Name;
-            }
-
-            return ((MemberExpression)unaryExpression.Operand).Member.Name;
-        }
-
-        static TypeDefinition ResolveTypeDefinitionImpl<T>([NotNull] AssemblyDefinition assemblyDefinition)
-        {
-            var tSourceFullName = typeof(T).FullName;
-            var tSource = assemblyDefinition.MainModule.Types.SingleOrDefault(x => x.FullName == tSourceFullName);
-            return tSource;
-        }
+    static TypeDefinition ResolveTypeDefinitionImpl<T>([NotNull] AssemblyDefinition assemblyDefinition)
+    {
+        var tSourceFullName = typeof(T).FullName;
+        var tSource = assemblyDefinition.MainModule.Types.SingleOrDefault(x => x.FullName == tSourceFullName);
+        return tSource;
     }
 }

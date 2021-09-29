@@ -4,33 +4,32 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace Snap.Core
+namespace Snap.Core;
+
+public interface ISnapHttpClient
 {
-    public interface ISnapHttpClient
+    Task<Stream> GetStreamAsync(Uri requestUri, IDictionary<string, string> headers = null);
+}
+
+public sealed class SnapHttpClient : ISnapHttpClient
+{
+    readonly HttpClient _httpClient;
+
+    public SnapHttpClient(HttpClient httpClient)
     {
-        Task<Stream> GetStreamAsync(Uri requestUri, IDictionary<string, string> headers = null);
+        _httpClient = httpClient;
     }
 
-    public sealed class SnapHttpClient : ISnapHttpClient
+    public async Task<Stream> GetStreamAsync(Uri requestUri, IDictionary<string, string> headers = null)
     {
-        readonly HttpClient _httpClient;
-
-        public SnapHttpClient(HttpClient httpClient)
+        var httpResponseMessage = await _httpClient.GetAsync(requestUri);
+        if (headers != null)
         {
-            _httpClient = httpClient;
-        }
-
-        public async Task<Stream> GetStreamAsync(Uri requestUri, IDictionary<string, string> headers = null)
-        {
-            var httpResponseMessage = await _httpClient.GetAsync(requestUri);
-            if (headers != null)
+            foreach (var pair in headers)
             {
-                foreach (var pair in headers)
-                {
-                    httpResponseMessage.Headers.Add(pair.Key, pair.Value);
-                }
+                httpResponseMessage.Headers.Add(pair.Key, pair.Value);
             }
-            return await httpResponseMessage.Content.ReadAsStreamAsync();
         }
+        return await httpResponseMessage.Content.ReadAsStreamAsync();
     }
 }

@@ -4,40 +4,39 @@ using System.Linq;
 using JetBrains.Annotations;
 using Mono.Cecil;
 
-namespace Snap.Reflection
+namespace Snap.Reflection;
+
+internal interface ITypeReflector
 {
-    internal interface ITypeReflector
+    IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
+    string FullName { get; }
+    string Name { get; }
+}
+
+internal class CecilTypeReflector : ITypeReflector
+{
+    readonly TypeDefinition _type;
+
+    public string FullName => _type.FullName;
+    public string Name => _type.Name;
+
+    public CecilTypeReflector([NotNull] TypeDefinition type)
     {
-        IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute;
-        string FullName { get; }
-        string Name { get; }
+        _type = type ?? throw new ArgumentNullException(nameof(type));
     }
 
-    internal class CecilTypeReflector : ITypeReflector
+    public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
     {
-        readonly TypeDefinition _type;
-
-        public string FullName => _type.FullName;
-        public string Name => _type.Name;
-
-        public CecilTypeReflector([NotNull] TypeDefinition type)
+        if (!_type.HasCustomAttributes)
         {
-            _type = type ?? throw new ArgumentNullException(nameof(type));
+            return Array.Empty<IAttributeReflector>();
         }
 
-        public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
-        {
-            if (!_type.HasCustomAttributes)
-            {
-                return Array.Empty<IAttributeReflector>();
-            }
-
-            var expectedTypeName = typeof(T).Name;
-            return _type.CustomAttributes
-                .Where(a => a.AttributeType.Name == expectedTypeName)
-                .Select(a => new CecilAttributeReflector(a))
-                .ToList();
-        }
-
+        var expectedTypeName = typeof(T).Name;
+        return _type.CustomAttributes
+            .Where(a => a.AttributeType.Name == expectedTypeName)
+            .Select(a => new CecilAttributeReflector(a))
+            .ToList();
     }
+
 }

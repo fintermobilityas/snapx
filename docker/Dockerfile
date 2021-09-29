@@ -44,16 +44,11 @@ RUN \
 	wget --no-check-certificate https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
  	dpkg -i packages-microsoft-prod.deb && \
 	apt-get update
-
-RUN \
-  wget https://download.visualstudio.microsoft.com/download/pr/5972698f-ba44-4664-9c50-bdc69ca70fb7/1cf7d94425d8dd4d5789dfa978d61475/dotnet-sdk-5.0.401-linux-x64.tar.gz && \
-  mkdir -p /root/dotnet && tar zxf dotnet-sdk-5.0.401-linux-x64.tar.gz -C /root/dotnet && \
-  rm dotnet-sdk-5.0.401-linux-x64.tar.gz 
   
 RUN \
-  wget https://download.visualstudio.microsoft.com/download/pr/4880c5a4-9c22-47a7-b298-651f1294a385/795f7828d8684059705e625b33027f89/dotnet-sdk-6.0.100-rc.1.21458.32-linux-x64.tar.gz && \
-  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-rc.1.21458.32-linux-x64.tar.gz -C /root/dotnet && \
-  rm dotnet-sdk-6.0.100-rc.1.21458.32-linux-x64.tar.gz
+  wget https://download.visualstudio.microsoft.com/download/pr/5fcb98bb-21e1-47a5-bb8e-bb25f41a3e52/04811d5d05b7e694f040d2a13c1aae4c/dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz -C /root/dotnet && \
+  rm dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz
 
 RUN \
   /root/dotnet/dotnet tool update powershell -g

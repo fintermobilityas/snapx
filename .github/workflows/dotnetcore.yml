@@ -9,11 +9,10 @@ on:
       - develop
 
 env:
-  GITVERSION_VERSION: 5.6.11
+  GITVERSION_VERSION: 5.7.0
   MSVS_TOOLSET_VERSION: 16
   SNAPX_DOTNET_FRAMEWORK_VERSION: net6.0
-  DOTNET_NET50_VERSION: 5.0.401
-  DOTNET_NET60_VERSION: 6.0.100-rc.1.21458.32
+  DOTNET_NET60_VERSION: 6.0.100-rc.1.21463.6
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: 1
@@ -69,11 +68,6 @@ jobs:
           login-server: docker.pkg.github.com
           username: ${{ github.actor }} 
           password: ${{secrets.GITHUB_TOKEN }}     
-
-      - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.2
-        with:
-          dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
 
       - name: Setup .NET 6.0
         uses: actions/setup-dotnet@v1.8.2
@@ -141,11 +135,6 @@ jobs:
           lfs: true
           submodules: true   
 
-      - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.2
-        with:
-          dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
-
       - name: Setup .NET 6.0
         uses: actions/setup-dotnet@v1.8.2
         with:
@@ -211,11 +200,6 @@ jobs:
   #        path: ${{ github.workspace }}
   #              
 
-  #    - name: Setup .NET 5.0
-  #      uses: actions/setup-dotnet@v1.8.2
-  #      with:
-  #        dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
-
   #    - name: Setup .NET 6.0
   #      uses: actions/setup-dotnet@v1.8.2
   #      with:
@@ -268,11 +252,6 @@ jobs:
           name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}
           
-      - name: Setup .NET 5.0
-        uses: actions/setup-dotnet@v1.8.2
-        with:
-          dotnet-version: ${{ env.DOTNET_NET50_VERSION }}    
-
       - name: Setup .NET 6.0
         uses: actions/setup-dotnet@v1.8.2
         with:

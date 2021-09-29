@@ -15,34 +15,15 @@ using Snap.Logging;
 
 namespace Snap.AnyOS.Unix;
 
-using Mono.Unix;
-
 // https://stackoverflow.com/a/32716784/2470592
 internal sealed class SnapOsUnixExitSignal : ISnapOsExitSignal
 {
     public event EventHandler Exit;
 
-#if NET5_0
-        readonly UnixSignal[] _signals = {
-            new(Mono.Unix.Native.Signum.SIGTERM), 
-            new(Mono.Unix.Native.Signum.SIGINT),
-        };
-#endif
-
     public SnapOsUnixExitSignal()
     {
-#if NET6_0
         PosixSignalRegistration.Create(PosixSignal.SIGTERM, _ => OnExitSignalHandler());
         PosixSignalRegistration.Create(PosixSignal.SIGINT, _ => OnExitSignalHandler());
-#else
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                // blocking call to wait for any kill signal
-                UnixSignal.WaitAny(_signals, -1);
-
-                OnExitSignalHandler();
-            });
-#endif
     }
 
     void OnExitSignalHandler() => Exit?.Invoke(null, EventArgs.Empty);

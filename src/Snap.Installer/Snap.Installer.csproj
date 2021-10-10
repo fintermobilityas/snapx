@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <PropertyGroup>
-        <AvaloniaVersion>0.10.7</AvaloniaVersion>
+        <AvaloniaVersion>0.10.8</AvaloniaVersion>
     </PropertyGroup>
 
     <Import Project="..\Snap\Snap.Deps.targets" />

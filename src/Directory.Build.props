@@ -1,13 +1,14 @@
 <Project>
 
     <PropertyGroup>
-        <LangVersion>9.0</LangVersion>
+        <LangVersion>10.0</LangVersion>
+        <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
     </PropertyGroup>
 
     <PropertyGroup>
-        <Authors>Finter Mobility As</Authors>
+        <Authors>Finter As</Authors>
         <Product>Snapx</Product>
-        <Copyright>Copyright © Finter Mobility As</Copyright>
+        <Copyright>Copyright © Finter As</Copyright>
         <NeutralLanguage>en-US</NeutralLanguage>
         <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
         <PackageProjectUrl>https://github.com/fintermobilityas/snapx</PackageProjectUrl>

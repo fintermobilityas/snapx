@@ -1,6 +1,5 @@
-﻿namespace snapx.Resources
+﻿namespace snapx.Resources;
+
+class ResourcesTypeRoot
 {
-    class ResourcesTypeRoot
-    {
-    }
 }

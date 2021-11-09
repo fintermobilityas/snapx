@@ -1,6 +1,5 @@
-﻿namespace Snap.Resources
+﻿namespace Snap.Resources;
+
+internal class SnapEmbeddedResourcesTypeRoot
 {
-    internal class SnapEmbeddedResourcesTypeRoot
-    {
-    }
 }

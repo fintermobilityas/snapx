@@ -162,7 +162,6 @@ namespace snapx
                 snapAppWriter, snapCryptoProvider, snapEmbeddedResources, snapBinaryPatcher);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
             var snapSpecsReader = new SnapAppReader();
-            var snapNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);
             var snapHttpClient = new SnapHttpClient(new HttpClient());
 
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
@@ -187,10 +186,8 @@ namespace snapx
 
             return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapSpecsReader, snapCryptoProvider,
-                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer, snapNetworkTimeProvider,
-                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandDemote,
-                nugetServiceCommandRestore, nugetServiceNoopLogger, distributedMutexClient,
-                toolWorkingDirectory, workingDirectory, cts.Token);
+                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer,
+                nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandDemote, nugetServiceNoopLogger, distributedMutexClient, workingDirectory, cts.Token);
         }
 
         static async Task OnExitAsync()
@@ -220,14 +217,11 @@ namespace snapx
             [NotNull] ISnapAppWriter snapAppWriter,
             [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
             [NotNull] SnapPackageManager snapPackageManager,
-            [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
             [NotNull] INugetService nugetServiceCommandPack, 
             [NotNull] INugetService nugetServiceCommandPromote,
             [NotNull] INugetService nugetServiceCommandDemote,
-            INugetService nugetServiceCommandRestore,
             [NotNull] INugetService nugetServiceNoopLogger,
-            [NotNull] IDistributedMutexClient distributedMutexClient,
-            [NotNull] string toolWorkingDirectory, 
+            [NotNull] IDistributedMutexClient distributedMutexClient, 
             [NotNull] string workingDirectory, 
             CancellationToken cancellationToken)
         {
@@ -242,14 +236,14 @@ namespace snapx
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
-            if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
             if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
-            if (toolWorkingDirectory == null) throw new ArgumentNullException(nameof(toolWorkingDirectory));
             if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
 
             if (args == null) throw new ArgumentNullException(nameof(args));
+
+            var defaultNetworkTimeProvider = new SnapNetworkTimeProvider("time.cloudflare.com", 123);
 
             return Parser
                 .Default
@@ -262,6 +256,9 @@ namespace snapx
                         {
                             return 1;
                         }
+
+                        var snapNetworkTimeProvider = opts.NetworkTimeProviderConnectionString.BuildNtpProvider() ?? defaultNetworkTimeProvider;
+
                         return TplHelper.RunSync(() => CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandDemote, distributedMutexClient, snapPackageManager, snapPack,
                             snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
@@ -274,6 +271,9 @@ namespace snapx
                         {
                             return 1;
                         }
+
+                        var snapNetworkTimeProvider = opts.NetworkTimeProviderConnectionString.BuildNtpProvider() ?? defaultNetworkTimeProvider;
+
                         return TplHelper.RunSync(() => CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
                             snapOs.SpecialFolders,
@@ -287,6 +287,9 @@ namespace snapx
                         {
                             return 1;
                         }
+
+                        var snapNetworkTimeProvider = opts.NetworkTimeProviderConnectionString.BuildNtpProvider() ?? defaultNetworkTimeProvider;
+
                         return TplHelper.RunSync(() => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
                             snapExtractor, snapPackageManager, coreRunLib,

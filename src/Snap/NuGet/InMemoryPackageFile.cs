@@ -5,35 +5,34 @@ using JetBrains.Annotations;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 
-namespace Snap.NuGet
+namespace Snap.NuGet;
+
+internal sealed class InMemoryPackageFile : IPackageFile
 {
-    internal sealed class InMemoryPackageFile : IPackageFile
+    readonly Stream _memoryStream;
+
+    public string Path { get; }
+    public string EffectivePath { get; }
+    public FrameworkName TargetFramework { get; }
+    public NuGetFramework NuGetFramework { get; }
+    public DateTimeOffset LastWriteTime { get; }
+    public string Filename { get; }
+
+    public InMemoryPackageFile([NotNull] Stream memoryStream, [NotNull] NuGetFramework nuGetFramework, [NotNull] string targetPath, [NotNull] string filename)
     {
-        readonly Stream _memoryStream;
+        if (nuGetFramework == null) throw new ArgumentNullException(nameof(nuGetFramework));
+        if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
+        _memoryStream = memoryStream ?? throw new ArgumentNullException(nameof(memoryStream));
 
-        public string Path { get; }
-        public string EffectivePath { get; }
-        public FrameworkName TargetFramework { get; }
-        public NuGetFramework NuGetFramework { get; }
-        public DateTimeOffset LastWriteTime { get; }
-        public string Filename { get; }
+        TargetFramework = new FrameworkName(nuGetFramework.DotNetFrameworkName);
+        NuGetFramework = nuGetFramework;
+        Path = EffectivePath = targetPath ?? throw new ArgumentNullException(nameof(targetPath));
+        Filename = filename ?? throw new ArgumentNullException(nameof(filename));
+        LastWriteTime = DateTimeOffset.Now;
+    }
 
-        public InMemoryPackageFile([NotNull] Stream memoryStream, [NotNull] NuGetFramework nuGetFramework, [NotNull] string targetPath, [NotNull] string filename)
-        {
-            if (nuGetFramework == null) throw new ArgumentNullException(nameof(nuGetFramework));
-            if (targetPath == null) throw new ArgumentNullException(nameof(targetPath));
-            _memoryStream = memoryStream ?? throw new ArgumentNullException(nameof(memoryStream));
-
-            TargetFramework = new FrameworkName(nuGetFramework.DotNetFrameworkName);
-            NuGetFramework = nuGetFramework;
-            Path = EffectivePath = targetPath ?? throw new ArgumentNullException(nameof(targetPath));
-            Filename = filename ?? throw new ArgumentNullException(nameof(filename));
-            LastWriteTime = DateTimeOffset.Now;
-        }
-
-        public Stream GetStream()
-        {
-            return _memoryStream;
-        }
+    public Stream GetStream()
+    {
+        return _memoryStream;
     }
 }

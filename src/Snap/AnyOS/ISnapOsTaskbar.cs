@@ -1,6 +1,5 @@
-﻿namespace Snap.AnyOS
+﻿namespace Snap.AnyOS;
+
+internal interface ISnapOsTaskbar
 {
-    internal interface ISnapOsTaskbar
-    {
-    }
 }

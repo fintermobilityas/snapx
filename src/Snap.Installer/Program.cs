@@ -266,7 +266,8 @@ namespace Snap.Installer
             var fileTarget = new FileTarget("logfile")
             {
                 FileName = snapOs.Filesystem.PathCombine(snapOs.Filesystem.DirectoryWorkingDirectory(), $"{processName}.log"),
-                Layout = layout
+                Layout = layout,
+                KeepFileOpen = true
             };
             
             Console.WriteLine($"Logfile: {fileTarget.FileName}");

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <PropertyGroup>
-        <AvaloniaVersion>0.10.0</AvaloniaVersion>
+        <AvaloniaVersion>0.10.10</AvaloniaVersion>
     </PropertyGroup>
 
     <Import Project="..\Snap\Snap.Deps.targets" />
@@ -11,9 +11,16 @@
         <OutputType>Exe</OutputType>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
-        <TargetFrameworks>net5.0</TargetFrameworks>
+        <TargetFrameworks>net6.0</TargetFrameworks>
         <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
+    </PropertyGroup>
+
+    <!-- /p:PublishTrimmed=true -->
+    <!-- https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md#available-feature-switches -->
+    <PropertyGroup Condition="$(OsPlatform) == 'Windows'">
+        <!-- Built-in COM has been disabled via a feature switch. See https://aka.ms/dotnet-illink/com -->
+        <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     </PropertyGroup>
 
     <ItemGroup>
@@ -26,11 +33,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Snap\Snap.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- https://github.com/mono/linker/issues/652#issuecomment-511874899 -->
-        <TrimmerRootAssembly Include="mscorlib" />
     </ItemGroup>
 
 </Project>

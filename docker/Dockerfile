@@ -17,8 +17,8 @@ RUN \
   echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-backports main restricted universe multiverse" >> /etc/apt/sources.list && \
   echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-security main restricted universe multiverse" >> /etc/apt/sources.list && \
   apt-get update && \
-  apt-get install -y --no-install-recommends \
-       uuid-dev:arm64  
+  apt-get install -y --no-install-recommends \ 
+   	 uuid-dev:arm64 
 
 RUN \   
    dpkg --force-architecture --remove-architecture arm64 && \
@@ -28,14 +28,14 @@ RUN \
    rm -rf /var/lib/apt/lists/* && \
    apt-get update && \
    apt-get install -y --no-install-recommends \
-      gcc-aarch64-linux-gnu:amd64 g++-8-aarch64-linux-gnu:amd64 && \ 
+      gcc-aarch64-linux-gnu:amd64 g++-aarch64-linux-gnu:amd64 && \ 
       rm -rf /var/lib/apt/lists/*
 
 # x64
 RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    cmake:amd64 make:amd64 gcc-8:amd64 g++-8:amd64 uuid-dev:amd64 lsb-core:amd64 curl:amd64 wget:amd64 && \ 
+    cmake:amd64 make:amd64 gcc:amd64 g++:amd64 uuid-dev:amd64 lsb-core:amd64 curl:amd64 wget:amd64 && \ 
     rm -rf /var/lib/apt/lists/*
 
 RUN \
@@ -43,14 +43,18 @@ RUN \
 	apt-get install -y apt-transport-https:amd64 ca-certificates:amd64 && \
 	wget --no-check-certificate https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
  	dpkg -i packages-microsoft-prod.deb && \
-	apt-get update && \
-	apt-get install -y dotnet-sdk-5.0:amd64 && \
-	  dotnet tool update powershell -g 
+	apt-get update
+  
+RUN \
+  wget https://download.visualstudio.microsoft.com/download/pr/5fcb98bb-21e1-47a5-bb8e-bb25f41a3e52/04811d5d05b7e694f040d2a13c1aae4c/dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz && \
+  mkdir -p /root/dotnet && tar zxf dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz -C /root/dotnet && \
+  rm dotnet-sdk-6.0.100-rc.1.21463.6-linux-x64.tar.gz
 
-RUN \ 
-	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+RUN \
+  /root/dotnet/dotnet tool update powershell -g
 
 FROM env-build as env-run
-ENV PATH="/root/.dotnet/tools:${PATH}"
+ENV DOTNET_ROOT="/root/dotnet"
+ENV PATH="/root/dotnet:/root/.dotnet/tools:${PATH}"
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 CMD ["sh", "-c", "(cd $SNAPX_DOCKER_WORKING_DIR && pwsh ./build.ps1 $BUILD_PS_PARAMETERS)"]

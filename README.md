@@ -38,7 +38,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Powershell v7 `dotnet tool update powershell -g`
 - .NET SDK v6.0
 
-- Visual Studio 2022 Preview 4.1 Community with C++ workload installed
+- Visual Studio 2022 Community Edition with C++ workload installed
 
 #### Bootstrap snapx 
 

@@ -70,7 +70,7 @@ jobs:
           password: ${{secrets.GITHUB_TOKEN }}     
 
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.9.0
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -136,7 +136,7 @@ jobs:
           submodules: true   
 
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.9.0
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -201,7 +201,7 @@ jobs:
   #              
 
   #    - name: Setup .NET 6.0
-  #      uses: actions/setup-dotnet@v1.9.0
+  #      uses: actions/setup-dotnet@v2
   #      with:
   #        dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
 
@@ -253,7 +253,7 @@ jobs:
           path: ${{ github.workspace }}
           
       - name: Setup .NET 6.0
-        uses: actions/setup-dotnet@v1.9.0
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: ${{ env.DOTNET_NET60_VERSION }}
       

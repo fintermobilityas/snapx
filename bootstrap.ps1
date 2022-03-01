@@ -47,8 +47,8 @@ $CommandGTestsDefaultArguments = @(
 switch -regex ($OSVersion) {
     "^Microsoft Windows" {
         $OSPlatform = "Windows"
-        $VisualStudioVersion = 16
-        $CmakeGenerator = "Visual Studio $VisualStudioVersion 2019"
+        $VisualStudioVersion = 17
+        $CmakeGenerator = "Visual Studio $VisualStudioVersion 2022"
         $CommandCmake = "cmake.exe"
         $CommandDotnet = "dotnet.exe"
         $CommandVsWhere = Join-Path $ToolsDir vswhere-win-x64.exe

@@ -1,6 +1,6 @@
 # 📖 About Snapx 
 
-![dependabot](https://api.dependabot.com/badges/status?host=github&repo=fintermobilityas/snapx) [![Gitter](https://badges.gitter.im/fintermobilityas-snapx/community.svg)](https://gitter.im/fintermobilityas-snapx/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) ![License](https://img.shields.io/github/license/fintermobilityas/snapx.svg)
+[![Gitter](https://badges.gitter.im/fintermobilityas-snapx/community.svg)](https://gitter.im/fintermobilityas-snapx/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) ![License](https://img.shields.io/github/license/fintermobilityas/snapx.svg)
 <br>
 [![NuGet](https://img.shields.io/nuget/v/snapx.svg)](https://www.nuget.org/packages/snapx) [![downloads](https://img.shields.io/nuget/dt/snapx)](https://www.nuget.org/packages/snapx) ![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/snapx) ![Size](https://img.shields.io/github/repo-size/fintermobilityas/snapx.svg) 
 

@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "10.0",
+	[string] $DockerVersion = "11.0",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -409,8 +409,19 @@ switch ($Target) {
     }
     "Bootstrap" {
         Invoke-Clean-Build
-        Invoke-Bootstrap-Unix -Rid $Rid
-        Invoke-Bootstrap-Windows -Rid $Rid
+   	    switch($OSPlatform) {
+            "Windows" {
+                Invoke-Clean-Build
+	            Invoke-Bootstrap-Unix -Rid $Rid
+	            Invoke-Bootstrap-Windows -Rid $Rid
+            }
+            "Unix" {
+	            Invoke-Bootstrap-Unix -Rid $Rid            
+            }
+            Default {
+                Invoke-Exit "Unsupported os: $OSPlatform"
+            }
+        }
         Invoke-Summary
     }
     "Snap" {

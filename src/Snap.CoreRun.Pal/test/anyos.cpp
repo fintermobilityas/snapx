@@ -604,7 +604,7 @@ namespace
     }
 
     TEST(PAL_SEMAPHORE, CreateAndRelease) {
-        const auto sema_name = xg::newGuid().str();
+        const auto sema_name = corerun::support::util::test_utils::build_random_str();
         pal_semaphore_machine_wide sema(sema_name);
         EXPECT_TRUE(sema.try_create());
         EXPECT_FALSE(sema.try_create());

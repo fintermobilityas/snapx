@@ -1,9 +1,6 @@
 [submodule "src/Vendor/gtest"]
 	path = src/Vendor/gtest
 	url = https://github.com/google/googletest.git
-[submodule "src/Vendor/crossguid"]
-	path = src/Vendor/crossguid
-	url = https://github.com/graeme-hill/crossguid.git
 [submodule "src/Vendor/plog"]
 	path = src/Vendor/plog
 	url = https://github.com/SergiusTheBest/plog.git

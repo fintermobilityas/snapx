@@ -26,6 +26,7 @@ if (BUILD_ENABLE_TESTS)
     message(STATUS "Unit tests enabled.")
 
     add_subdirectory(Vendor/gtest)
+    add_subdirectory(Vendor/nanoid_cpp)
     enable_testing()
 
     set(GTEST_ALL_CPP_FILENAME ${PROJECT_SOURCE_DIR}/Vendor/gtest/googletest/src/gtest-all.cc)

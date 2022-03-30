@@ -1,12 +1,12 @@
 [submodule "src/Vendor/gtest"]
 	path = src/Vendor/gtest
 	url = https://github.com/google/googletest.git
-[submodule "src/Vendor/crossguid"]
-	path = src/Vendor/crossguid
-	url = https://github.com/graeme-hill/crossguid.git
 [submodule "src/Vendor/plog"]
 	path = src/Vendor/plog
 	url = https://github.com/SergiusTheBest/plog.git
 [submodule "src/Vendor/cxxopts"]
 	path = src/Vendor/cxxopts
 url=https://github.com/jarro2783/cxxopts.git
+[submodule "src/Vendor/nanoid_cpp"]
+	path = src/Vendor/nanoid_cpp
+	url = https://github.com/mcmikecreations/nanoid_cpp.git

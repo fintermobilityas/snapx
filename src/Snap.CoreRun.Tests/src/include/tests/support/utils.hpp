@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pal/pal.hpp"
-#include "crossguid/Guid.hpp"
+#include "nanoid/nanoid.h"
 #include <string>
 
 namespace corerun
@@ -79,7 +79,7 @@ namespace corerun
                     }
 
                     const auto random_dir = std::make_unique<char*>(nullptr);
-                    if(!pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), random_dir.get()))
+                    if(!pal_path_combine(working_dir.c_str(), nanoid::generate().c_str(), random_dir.get()))
                     {
                         return std::string();
                     }
@@ -100,7 +100,7 @@ namespace corerun
                     }
 
                     const auto dst_directory = std::make_unique<char*>(nullptr);
-                    if(!pal_path_combine(working_dir.c_str(), xg::newGuid().str().c_str(), dst_directory.get()))
+                    if(!pal_path_combine(working_dir.c_str(), nanoid::generate().c_str(), dst_directory.get()))
                     {
                         return std::string();
                     }
@@ -138,7 +138,7 @@ namespace corerun
 
                 static std::string build_random_str()
                 {
-                    return xg::newGuid().str();
+                    return nanoid::generate();
                 }
 
                 static std::string build_random_filename(const std::string& ext = ".txt")

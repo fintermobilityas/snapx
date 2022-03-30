@@ -4,7 +4,8 @@ project(corerun_tests CXX)
 
 set(corerun_tests_SOURCES 
     ${GTEST_ALL_CPP_FILENAME}
-    ../Vendor/crossguid/Guid.cpp
+    ../Vendor/nanoid_cpp/src/nanoid/crypto_random.cpp
+    ../Vendor/nanoid_cpp/src/nanoid/nanoid.cpp
     ../Snap.CoreRun.Pal/test/anyos.cpp
     ../Snap.CoreRun/test/anyos.cpp
     src/main.cpp
@@ -14,17 +15,13 @@ list(APPEND corerun_tests_INCLUDE_DIRS_VENDOR
     ${gtest_SOURCE_DIR}/include
     ${gtest_SOURCE_DIR}
     ../Vendor
+    ../Vendor/nanoid_cpp/inc
     ../Vendor/json/include
 )
-
-set_source_files_properties(Vendor/crossguid/Guid.cpp PROPERTIES COMPILE_FLAGS -w)
 
 if(WIN32)
     list(APPEND corerun_tests_SOURCES
         ../Snap.CoreRun.Pal/test/windows.cpp
-    )
-    list(APPEND corerun_tests_DEFINES		
-	    GUID_WINDOWS
     )
     list(APPEND corerun_tests_LIBS
 	    ole32
@@ -34,12 +31,6 @@ if(WIN32)
 elseif(UNIX)
     list(APPEND corerun_tests_SOURCES
         ../Snap.CoreRun.Pal/test/unix.cpp
-    )
-    list(APPEND corerun_tests_DEFINES		
-	    GUID_LIBUUID
-    )
-    list(APPEND corerun_tests_LIBS
-	    uuid
     )
 endif()
 

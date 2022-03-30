@@ -4,7 +4,9 @@ param(
     [Parameter(Position = 1, ValueFromPipelineByPropertyName = $true)]
     [switch] $WithRunDotNetTests,
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
-    [switch] $WithDebugOnly
+    [switch] $WithDebugOnly,
+    [Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
+    [switch] $DockerLocal
 )
 
 $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
@@ -25,14 +27,14 @@ Write-Output-Colored "Init: $ConfigurationsStr. This might take a while! :)"
 $Configurations  | ForEach-Object {
     $Configuration = $_
 
-    Invoke-Command-Colored pwsh @("build.ps1 -Target Bootstrap -Version $SnapxVersion -Configuration $Configuration -CIBuild:$WithCIBuild")
+    Invoke-Command-Colored pwsh @("build.ps1 -Target Bootstrap -Version $SnapxVersion -Configuration $Configuration -CIBuild:$WithCIBuild -DockerLocal:$DockerLocal")
 }
 
 if($WithRunDotNetTests) {
     $Configurations  | ForEach-Object {
         $Configuration = $_
 
-        Invoke-Command-Colored pwsh @("build.ps1 -Target Run-Dotnet-UnitTests -Version $SnapxVersion -Configuration $Configuration -CIBuild:$WithCIBuild")
+        Invoke-Command-Colored pwsh @("build.ps1 -Target Run-Dotnet-UnitTests -Version $SnapxVersion -Configuration $Configuration -CIBuild:$WithCIBuild -DockerLocal:$DockerLocal")
     }
 }
 

@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 #include "main.hpp"
-#include "crossguid/Guid.hpp"
 #include "nlohmann/json.hpp"
 #include "vendor/semver/semver200.h"
+#include "nanoid/nanoid.h"
 #include "tests/support/utils.hpp"
 
 #include <string>
@@ -118,7 +118,7 @@ namespace {
 
     private:
         snapx(const std::string& app_name, const std::string& working_dir, const std::string& os_file_ext) :
-            m_unique_id(xg::newGuid()),
+            m_unique_id(nanoid::generate()),
             m_apps(std::vector<corerun_app_details>()),
             app_name(app_name),
             working_dir(working_dir),

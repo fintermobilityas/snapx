@@ -199,7 +199,7 @@ jobs:
   #       fetch-depth: 0
   #
   #    - name: Download ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }} artifacts
-  #      uses: actions/download-artifact@v2
+  #      uses: actions/download-artifact@v3
   #      with:
   #        name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
   #        path: ${{ github.workspace }}
@@ -236,25 +236,25 @@ jobs:
           lfs: true
 
       - name: Download ubuntu-latest-linux-arm64-Release artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ubuntu-latest-linux-arm64-Release
           path: ${{ github.workspace }}
 
       - name: Download ubuntu-latest-linux-x64-Release artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ubuntu-latest-linux-x64-Release
           path: ${{ github.workspace }}
 
       - name: Download windows-latest-win-x86-Release artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: windows-latest-win-x86-Release
           path: ${{ github.workspace }}
 
       - name: Download windows-latest-win-x64-Release artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}

@@ -9,6 +9,8 @@ on:
     branches:
       - develop
 
+# NOTE: Remember to update docker images if you update .NET sdks
+
 env:
   GITVERSION_VERSION: 5.9.0
   MSVS_TOOLSET_VERSION: 16

@@ -202,7 +202,6 @@ public static class Snapx
 
         var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id} --corerun-supervise-id={superVisorId}";
 
-        SuperVisorProcess?.Dispose();
         SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
             .AddRange(restartArguments ?? new List<string>())
             .Add(coreRunArgument)

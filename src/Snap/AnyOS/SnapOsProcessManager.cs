@@ -104,7 +104,7 @@ internal sealed class SnapOsProcessManager : ISnapOsProcessManager
 
     static async Task<(int exitCode, string standardOutput)> RunAsync(ProcessStartInfo processStartInfo, CancellationToken cancellationToken)
     {
-        using var process = Process.Start(processStartInfo);
+        var process = Process.Start(processStartInfo);
         if (process == null)
         {
             throw new Exception($"Error invoking process: {processStartInfo.FileName}. Arguments: {processStartInfo.Arguments}");

@@ -389,7 +389,7 @@ internal sealed class SnapInstaller : ISnapInstaller
                 .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}");
             try
             {
-                _snapOs.ProcessManager
+                using var _ = _snapOs.ProcessManager
                     .StartNonBlocking(builder);
             }
             catch (Exception ex)

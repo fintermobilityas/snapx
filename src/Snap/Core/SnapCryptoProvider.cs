@@ -30,7 +30,7 @@ internal sealed class SnapCryptoProvider : ISnapCryptoProvider
     {
         if (content == null) throw new ArgumentNullException(nameof(content));
 
-        var sha256 = SHA256.Create();
+        using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(content);
 
         return HashToString(hash);
@@ -47,7 +47,7 @@ internal sealed class SnapCryptoProvider : ISnapCryptoProvider
 
         content.Seek(0, SeekOrigin.Begin);
 
-        var sha256 = SHA256.Create();
+        using var sha256 = SHA256.Create();
         var hash = sha256.ComputeHash(content);
 
         content.Seek(0, SeekOrigin.Begin);

@@ -2,7 +2,7 @@
     <ItemGroup>
         <PackageReference Include="Jetbrains.Annotations" Version="2022.1.0" PrivateAssets="All" />
         <PackageReference Include="Mono.Cecil" Version="0.11.4"/>
-        <PackageReference Include="YamlDotNet" Version="11.2.1"/>
+        <PackageReference Include="YamlDotNet" Version="12.0.0"/>
         <PackageReference Include="SharpCompress" Version="0.32.1"/>
         <PackageReference Include="MessagePack" Version="2.4.35" />
         <PackageReference Include="NuGet.Packaging.Core" Version="6.2.1" />

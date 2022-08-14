@@ -6,6 +6,6 @@
         <PackageReference Include="SharpCompress" Version="0.32.2"/>
         <PackageReference Include="MessagePack" Version="2.4.35" />
         <PackageReference Include="NuGet.Packaging.Core" Version="6.3.0" />
-        <PackageReference Include="NuGet.Protocol" Version="6.2.1"/>
+        <PackageReference Include="NuGet.Protocol" Version="6.3.0"/>
     </ItemGroup>
 </Project>

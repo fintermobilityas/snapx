@@ -70,7 +70,7 @@ jobs:
         with:
           login-server: ghcr.io
           username: ${{ github.actor }}
-          password: ${{secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.SNAPX_DOCKER_READ_PAT }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v2

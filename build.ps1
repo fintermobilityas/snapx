@@ -70,7 +70,6 @@ switch -regex ($OSVersion) {
 
 $DockerFilenamePath = Join-Path $WorkingDir docker\Dockerfile
 $DockerGithubRegistryUrl = "ghcr.io/fintermobilityas"
-$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
 
 $SummaryStopwatch = $Stopwatch::StartNew()
 $SummaryStopwatch.Restart()

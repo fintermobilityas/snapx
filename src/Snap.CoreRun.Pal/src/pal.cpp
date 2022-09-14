@@ -11,15 +11,14 @@
 #include "vendor/rcedit/rcedit.hpp"
 #include <system_error>
 #elif defined(PAL_PLATFORM_LINUX)
-#include <sys/types.h> // O_RDONLY
 #include <sys/wait.h> // wait
 #include <unistd.h> // getcwd
 #include <fcntl.h> // open
 #include <dirent.h> // opendir
 #include <libgen.h> // dirname
 #include <dlfcn.h> // dlopen
-#include <signal.h> // kill
-#include <time.h> // nanosleep
+#include <csignal> // kill
+#include <ctime> // nanosleep
 static const char* symlink_entrypoint_executable = "/proc/self/exe";
 #endif
 

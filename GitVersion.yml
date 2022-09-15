@@ -1,4 +1,4 @@
-next-version: 4.0.11
+next-version: 4.0.12
 mode: ContinuousDeployment
 continuous-delivery-fallback-tag: ''
 branches:

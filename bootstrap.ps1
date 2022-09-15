@@ -434,10 +434,11 @@ function Invoke-Dotnet-UnitTests
             $ProjectSrcDirectory
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
+            "--arch $Platform"
             "--verbosity normal"
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
-            "--results-directory:""$ProjectTestResultsDirectory""",
+            "--results-directory:""$ProjectTestResultsDirectory"""
             $BuildProperties
         )
     }

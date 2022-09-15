@@ -411,7 +411,6 @@ function Invoke-Dotnet-UnitTests
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform"
             "/p:TargetFrameworks=$ProjectDotnetFramework"
         )
 
@@ -420,6 +419,7 @@ function Invoke-Dotnet-UnitTests
             $BuildProperties
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
+            "--arch $Platform"
             $ProjectSrcDirectory
         )
 
@@ -431,8 +431,8 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
-            $BuildProperties
             $ProjectSrcDirectory
+            $BuildProperties
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
             "--arch $Platform"

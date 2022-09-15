@@ -431,6 +431,7 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
+            $BuildProperties
             $ProjectSrcDirectory
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
@@ -439,7 +440,6 @@ function Invoke-Dotnet-UnitTests
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
             "--results-directory:""$ProjectTestResultsDirectory"""
-            $BuildProperties
         )
     }
 

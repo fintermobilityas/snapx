@@ -420,7 +420,7 @@ function Invoke-Dotnet-UnitTests
             $BuildProperties
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
-            "$ProjectSrcDirectory"
+            $ProjectSrcDirectory
         )
 
         if($BuildOnly) {
@@ -431,14 +431,14 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
-            $BuildProperties
-            "$ProjectSrcDirectory"
+            $ProjectSrcDirectory
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
             "--verbosity normal"
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""
-            "--results-directory:""$ProjectTestResultsDirectory"""
+            "--results-directory:""$ProjectTestResultsDirectory""",
+            $BuildProperties
         )
     }
 

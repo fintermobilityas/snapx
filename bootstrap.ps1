@@ -411,7 +411,6 @@ function Invoke-Dotnet-UnitTests
         $BuildProperties = @(
             "/p:SnapInstallerAllowElevatedContext=" + ($CIBuild ? "True" : "False")
             "/p:SnapRid=$Rid"
-            "/p:Platform=$Platform"
             "/p:TargetFrameworks=$ProjectDotnetFramework"
         )
 
@@ -420,7 +419,8 @@ function Invoke-Dotnet-UnitTests
             $BuildProperties
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
-            "$ProjectSrcDirectory"
+            "--arch $Platform"
+            $ProjectSrcDirectory
         )
 
         if($BuildOnly) {
@@ -431,10 +431,11 @@ function Invoke-Dotnet-UnitTests
 
         Invoke-Command-Colored $CommandDotnet @(
             "test"
+            $ProjectSrcDirectory
             $BuildProperties
-            "$ProjectSrcDirectory"
             "--configuration $Configuration"
             "--framework $ProjectDotnetFramework"
+            "--arch $Platform"
             "--verbosity normal"
             "--no-build"
             "--logger:""xunit;LogFileName=TestResults.xml"""

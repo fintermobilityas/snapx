@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Snap.Core;
@@ -210,13 +210,13 @@ internal sealed class CoreRunLib : ICoreRunLib
             public static bool operator !=(pid_t v1, pid_t v2) => v1.Value != v2.Value;
         }
             
-        [DllImport("libdl", SetLastError = true, EntryPoint = "dlsym", CharSet = CharSet.Ansi)]
+        [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlsym", CharSet = CharSet.Ansi)]
         public static extern IntPtr dlsym(IntPtr handle, string symbol);
-        [DllImport("libdl", SetLastError = true, EntryPoint = "dlopen", CharSet = CharSet.Ansi)]
+        [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlopen", CharSet = CharSet.Ansi)]
         public static extern IntPtr dlopen(string filename, int flags);
-        [DllImport("libdl", SetLastError = true, EntryPoint = "dlclose")]
+        [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlclose")]
         public static extern int dlclose(IntPtr hModule);            
-        [DllImport("libc", SetLastError = true, EntryPoint = "kill")]
+        [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "kill")]
         public static extern int kill (pid_t pid, int sig);
     }
 

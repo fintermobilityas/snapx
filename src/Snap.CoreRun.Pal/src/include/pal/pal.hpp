@@ -35,10 +35,10 @@
 #define PAL_API __declspec( dllexport )
 #define PAL_CALLING_CONVENTION __cdecl
 #elif PAL_PLATFORM_LINUX
-#include <limits.h>
+#include <climits>
 #include <cstdio>
-#include <wait.h>
 #include <cstdint>
+#include <sys/wait.h>
 #include <sys/stat.h> // mode_t
 #define PAL_MAX_PATH PATH_MAX
 #define PAL_DIRECTORY_SEPARATOR_STR "/"

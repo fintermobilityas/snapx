@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
 
@@ -30,8 +30,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommandLineParser" Version="2.9.1" />
-        <PackageReference Include="ServiceStack.HttpClient" Version="6.4.0" />
+        <PackageReference Include="CommandLineParser" />
+        <PackageReference Include="ServiceStack.HttpClient" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="Snap.Deps.targets" />
 
@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="LibLog" Version="5.0.8">
+        <PackageReference Include="LibLog">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
         </PackageReference>

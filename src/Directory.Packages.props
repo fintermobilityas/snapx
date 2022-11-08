@@ -11,7 +11,7 @@
     <PackageVersion Include="LibLog" Version="5.0.8" />
     <PackageVersion Include="LightInject" Version="6.6.1" />
     <PackageVersion Include="MessagePack" Version="2.4.35" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.4" />
     <PackageVersion Include="Moq" Version="4.18.2" />
     <PackageVersion Include="NLog" Version="5.0.5" />

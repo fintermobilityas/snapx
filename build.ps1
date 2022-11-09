@@ -144,6 +144,10 @@ function Invoke-Install-Snapx
     )
 
     Invoke-Command-Colored dotnet @(
+        "nuget add source $NupkgsDir --name snapx-local"
+    ) -IgnoreExitCode
+
+    Invoke-Command-Colored dotnet @(
         "build"
         "/p:Version=$Version"
         "/p:SnapRid=pack"
@@ -155,10 +159,9 @@ function Invoke-Install-Snapx
     Invoke-Command-Colored dotnet @(
         "tool"
         "update"
-        "snapx"
         "--global"
-        "--add-source $NupkgsDir"
         "--version $Version"
+        "snapx"
     )
 
     Resolve-Shell-Dependency snapx

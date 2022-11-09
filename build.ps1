@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "17.0",
+	[string] $DockerVersion = "18.0",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -16,7 +16,7 @@ param(
     [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
     [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
-    [string] $NetCoreAppVersion = "net6.0",
+    [string] $NetCoreAppVersion = "net7.0",
     [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]

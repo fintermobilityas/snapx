@@ -65,10 +65,10 @@ namespace Snap.Tests.NuGet
 
             Assert.NotEmpty(packages);
             
-            var v450Release = packages.SingleOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.5.0"));
-            var v492Release = packages.SingleOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.9.2"));
-            Assert.NotNull(v450Release);
-            Assert.NotNull(v492Release);
+            var v640Release = packages.SingleOrDefault(x => x.Identity.Version == SemanticVersion.Parse("6.4.0"));
+            var v400Release = packages.SingleOrDefault(x => x.Identity.Version == SemanticVersion.Parse("4.0.0"));
+            Assert.NotNull(v640Release);
+            Assert.NotNull(v400Release);
         }
 
         [Fact]

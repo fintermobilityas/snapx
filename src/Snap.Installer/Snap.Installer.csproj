@@ -11,7 +11,7 @@
         <OutputType>Exe</OutputType>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
-        <TargetFrameworks>net6.0</TargetFrameworks>
+        <TargetFrameworks>net7.0</TargetFrameworks>
         <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>

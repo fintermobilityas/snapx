@@ -13,7 +13,7 @@
     <PackageVersion Include="MessagePack" Version="2.4.59" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.4" />
-    <PackageVersion Include="Moq" Version="4.18.2" />
+    <PackageVersion Include="Moq" Version="4.18.3" />
     <PackageVersion Include="NLog" Version="5.1.0" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.4.0" />
     <PackageVersion Include="NuGet.Protocol" Version="6.4.0" />

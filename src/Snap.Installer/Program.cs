@@ -72,7 +72,8 @@ namespace Snap.Installer
 
             int finalExitCode;
             var finalInstallerType = SnapInstallerType.None;
-           
+
+            ILog snapInstallerLogger = null;
             try
             {
                 var headless = args.Any(x => string.Equals("--headless", x, StringComparison.Ordinal));
@@ -80,7 +81,7 @@ namespace Snap.Installer
                 ConfigureNlog(snapOs);
                 LogProvider.SetCurrentLogProvider(new NLogLogProvider());
 
-                var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
+                snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
                 
                 var container = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
 
@@ -94,7 +95,14 @@ namespace Snap.Installer
             }
             catch (Exception e)
             {
-                await Console.Error.WriteLineAsync($"Exception thrown during installation: {e.Message}");
+                if (snapInstallerLogger != null)
+                {
+                    snapInstallerLogger.ErrorException("Exception thrown during installation", e);
+                }
+                else
+                {
+                    await Console.Error.WriteLineAsync($"Exception thrown during installation: {e.Message}");
+                }
                 finalExitCode = 1;
             }
 

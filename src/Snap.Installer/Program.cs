@@ -3,10 +3,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.ReactiveUI;
 using JetBrains.Annotations;
 using LightInject;
 using NLog;
@@ -250,16 +252,29 @@ namespace Snap.Installer
 
         static AppBuilder BuildAvaloniaApp<TWindow>() where TWindow : Application, new()
         {
-            var result = AppBuilder.Configure<TWindow>();
-            result
-                .UsePlatformDetect();
-            #if PLATFORM_UNIX
-            result.With(new X11PlatformOptions
+            var result = AppBuilder
+                .Configure<TWindow>()
+                .UseReactiveUI();
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                UseDBusMenu = false // Bug in Avalonia 11 preview 5.
-            });
-            #endif
-            return result;
+                return result
+                    .UseWin32()
+                    .UseSkia();
+            }
+
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return result
+                    .With(new X11PlatformOptions
+                    {
+                        UseDBusMenu = false // Bug in Avalonia 11 preview 5.
+                    })
+                    .UseX11()
+                    .UseSkia();
+            }
+
+            throw new PlatformNotSupportedException();
         }
 
         static void ConfigureNlog([NotNull] ISnapOs snapOs)

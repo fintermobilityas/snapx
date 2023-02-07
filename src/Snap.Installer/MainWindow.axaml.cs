@@ -51,13 +51,14 @@ internal sealed class MainWindow : CustomChromeWindow
         base.OnOpened(eventArgs);
     }
 
-    protected override void OnClosing(CancelEventArgs e)
+    protected override void OnClosing(WindowClosingEventArgs e)
     {
+        base.OnClosing(e);
+
         if (!Environment.CancellationToken.IsCancellationRequested)
         {
             Environment.Shutdown();
         }
-        base.OnClosing(e);
     }
 
     void InitializeComponent()

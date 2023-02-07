@@ -2,6 +2,9 @@
     <ItemGroup>
         <PackageReference Include="Avalonia.Desktop" />
         <PackageReference Include="Avalonia.ReactiveUI" />
+        <PackageReference Include="Avalonia.X11" Condition="'$(SnapRid)' == 'linux-arm64' OR '$(SnapRid)' == 'linux-x64'" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
+        <PackageReference Include="Avalonia.Diagnostics" Condition="'$(Configuration)' == 'Debug'" />
         <PackageReference Include="LightInject" />
         <PackageReference Include="NLog" />    
     </ItemGroup>

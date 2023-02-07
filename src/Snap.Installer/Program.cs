@@ -251,7 +251,14 @@ namespace Snap.Installer
         static AppBuilder BuildAvaloniaApp<TWindow>() where TWindow : Application, new()
         {
             var result = AppBuilder.Configure<TWindow>();
-            result.UsePlatformDetect();
+            result
+                .UsePlatformDetect();
+            #if PLATFORM_UNIX
+            result.With(new X11PlatformOptions
+            {
+                UseDBusMenu = false // Bug in Avalonia 11 preview 5.
+            });
+            #endif
             return result;
         }
 

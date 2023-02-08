@@ -91,7 +91,7 @@ namespace Snap.Installer
                     containerBuilder.Invoke(container) : 
                     container.GetInstance<ISnapInstallerEnvironment>();
 
-                var (installerExitCode, installerType) = await MainImplAsync(environment, snapInstallerLogger, headless);
+                var (installerExitCode, installerType) = await MainImplAsync(environment, snapInstallerLogger, headless, args);
                 finalExitCode = installerExitCode;
                 finalInstallerType = installerType;
             }
@@ -124,7 +124,7 @@ namespace Snap.Installer
         }
 
         static async Task<(int exitCode, SnapInstallerType installerType)> MainImplAsync([NotNull] ISnapInstallerEnvironment snapInstallerEnvironment,
-            [NotNull] ILog snapInstallerLogger, bool headless)
+            [NotNull] ILog snapInstallerLogger, bool headless, string[] args)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
@@ -153,7 +153,7 @@ namespace Snap.Installer
                 return InstallAsync(snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
                     snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger,
-                    headless);
+                    headless, args);
             }
 
             try

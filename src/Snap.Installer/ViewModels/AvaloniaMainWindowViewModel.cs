@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -65,7 +65,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
 
         StatusText = string.Empty;
         Progress = 0;
-        StatusTextBrush = (IImmutableBrush)Brush.Parse("#fff");
+        StatusTextBrush = (IImmutableBrush)Brush.Parse("#000");
 
         progressSource.Progress = installationProgressPercentage =>
         {

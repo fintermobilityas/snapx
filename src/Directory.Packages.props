@@ -1,29 +1,33 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <AvaloniaVersion>11.0.0-preview5</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <PackageVersion Include="Avalonia.ReactiveUI" Version="$(AvaloniaVersion)" />
-    <PackageVersion Include="Castle.Core" Version="5.1.0" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.X11" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="$(AvaloniaVersion)" />
+    <PackageVersion Include="Castle.Core" Version="5.1.1" />
     <PackageVersion Include="CommandLineParser" Version="2.9.1" />
     <PackageVersion Include="Jetbrains.Annotations" Version="2022.3.1" />
     <PackageVersion Include="LibLog" Version="5.0.8" />
-    <PackageVersion Include="LightInject" Version="6.6.1" />
-    <PackageVersion Include="MessagePack" Version="2.4.35" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
+    <PackageVersion Include="LightInject" Version="6.6.3" />
+    <PackageVersion Include="MessagePack" Version="2.4.59" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.4" />
-    <PackageVersion Include="Moq" Version="4.18.2" />
-    <PackageVersion Include="NLog" Version="5.0.5" />
+    <PackageVersion Include="Moq" Version="4.18.4" />
+    <PackageVersion Include="NLog" Version="5.1.1" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.4.0" />
     <PackageVersion Include="NuGet.Protocol" Version="6.4.0" />
-    <PackageVersion Include="ServiceStack.HttpClient" Version="6.4.0" />
+    <PackageVersion Include="ServiceStack.HttpClient" Version="6.6.0" />
     <PackageVersion Include="SharpCompress" Version="0.32.2" />
     <PackageVersion Include="System.CodeDom" Version="7.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="7.0.0" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
-    <PackageVersion Include="XunitXml.TestLogger" Version="3.0.70" />
-    <PackageVersion Include="YamlDotNet" Version="12.0.2" />
+    <PackageVersion Include="XunitXml.TestLogger" Version="3.0.78" />
+    <PackageVersion Include="YamlDotNet" Version="12.3.1" />
   </ItemGroup>
 </Project>

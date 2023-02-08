@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Reactive;
@@ -21,7 +21,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
     GifAnimationControl _gifGifAnimationControl;
     string _statusText;
     double _progress;
-    Brush _statusTextBrush;
+    IImmutableBrush _statusTextBrush;
         
     public bool Headless => false;
 
@@ -40,7 +40,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
     }
 
     [UsedImplicitly]
-    public Brush StatusTextBrush
+    public IImmutableBrush StatusTextBrush
     {
         get => _statusTextBrush;
         set => this.RaiseAndSetIfChanged(ref _statusTextBrush, value);
@@ -65,7 +65,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
 
         StatusText = string.Empty;
         Progress = 0;
-        StatusTextBrush = (Brush) Brush.Parse("#fff");
+        StatusTextBrush = (IImmutableBrush)Brush.Parse("#000");
 
         progressSource.Progress = installationProgressPercentage =>
         {
@@ -82,7 +82,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
     {
         return Dispatcher.UIThread.InvokeAsync(() =>
         {
-            StatusTextBrush = (Brush) Brush.Parse("#B80F0A");
+            StatusTextBrush = (IImmutableBrush)Brush.Parse("#B80F0A");
         });
     }
 

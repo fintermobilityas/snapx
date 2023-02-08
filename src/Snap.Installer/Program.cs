@@ -3,10 +3,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.ReactiveUI;
 using JetBrains.Annotations;
 using LightInject;
 using NLog;
@@ -72,7 +74,8 @@ namespace Snap.Installer
 
             int finalExitCode;
             var finalInstallerType = SnapInstallerType.None;
-           
+
+            ILog snapInstallerLogger = null;
             try
             {
                 var headless = args.Any(x => string.Equals("--headless", x, StringComparison.Ordinal));
@@ -80,7 +83,7 @@ namespace Snap.Installer
                 ConfigureNlog(snapOs);
                 LogProvider.SetCurrentLogProvider(new NLogLogProvider());
 
-                var snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
+                snapInstallerLogger = LogProvider.GetLogger(ApplicationName);
                 
                 var container = BuildEnvironment(snapOs, environmentCts, logLevel, snapInstallerLogger);
 
@@ -88,13 +91,20 @@ namespace Snap.Installer
                     containerBuilder.Invoke(container) : 
                     container.GetInstance<ISnapInstallerEnvironment>();
 
-                var (installerExitCode, installerType) = await MainImplAsync(environment, snapInstallerLogger, headless);
+                var (installerExitCode, installerType) = await MainImplAsync(environment, snapInstallerLogger, headless, args);
                 finalExitCode = installerExitCode;
                 finalInstallerType = installerType;
             }
             catch (Exception e)
             {
-                await Console.Error.WriteLineAsync($"Exception thrown during installation: {e.Message}");
+                if (snapInstallerLogger != null)
+                {
+                    snapInstallerLogger.ErrorException("Exception thrown during installation", e);
+                }
+                else
+                {
+                    await Console.Error.WriteLineAsync($"Exception thrown during installation: {e.Message}");
+                }
                 finalExitCode = 1;
             }
 
@@ -114,7 +124,7 @@ namespace Snap.Installer
         }
 
         static async Task<(int exitCode, SnapInstallerType installerType)> MainImplAsync([NotNull] ISnapInstallerEnvironment snapInstallerEnvironment,
-            [NotNull] ILog snapInstallerLogger, bool headless)
+            [NotNull] ILog snapInstallerLogger, bool headless, string[] args)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
@@ -143,7 +153,7 @@ namespace Snap.Installer
                 return InstallAsync(snapInstallerEnvironment, snapInstallerEmbeddedResources,
                     snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
                     snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger,
-                    headless);
+                    headless, args);
             }
 
             try
@@ -242,9 +252,29 @@ namespace Snap.Installer
 
         static AppBuilder BuildAvaloniaApp<TWindow>() where TWindow : Application, new()
         {
-            var result = AppBuilder.Configure<TWindow>();
-            result.UsePlatformDetect();
-            return result;
+            var result = AppBuilder
+                .Configure<TWindow>()
+                .UseReactiveUI();
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return result
+                    .UseWin32()
+                    .UseSkia();
+            }
+
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return result
+                    .With(new X11PlatformOptions
+                    {
+                        UseDBusMenu = false // Bug in Avalonia 11 preview 5.
+                    })
+                    .UseX11()
+                    .UseSkia();
+            }
+
+            throw new PlatformNotSupportedException();
         }
 
         static void ConfigureNlog([NotNull] ISnapOs snapOs)

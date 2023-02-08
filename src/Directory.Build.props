@@ -1,8 +1,7 @@
 <Project>
 
     <PropertyGroup>
-        <LangVersion>10.0</LangVersion>
-        <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+        <LangVersion>11.0</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>

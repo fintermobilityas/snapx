@@ -28,7 +28,7 @@ internal partial class Program
         [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
         [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager,
         [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger,
-        bool headless)
+        bool headless, string[] args)
     {
         if (environment == null) throw new ArgumentNullException(nameof(environment));
         if (snapInstallerEmbeddedResources == null) throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
@@ -434,7 +434,7 @@ internal partial class Program
                 Task.Factory.StartNew(() => InstallInBackgroundAsync(MainWindow.ViewModel), TaskCreationOptions.LongRunning);
             });
 
-        avaloniaApp.StartWithClassicDesktopLifetime(null);
+        avaloniaApp.StartWithClassicDesktopLifetime(args);
 
         return (exitCode, installerType);
     }

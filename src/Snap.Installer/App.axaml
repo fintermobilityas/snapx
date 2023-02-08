@@ -2,6 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Snap.Installer.App">
     <Application.Styles>
-        <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Themes.Fluent/FluentTheme.xaml"/>
     </Application.Styles>
 </Application>

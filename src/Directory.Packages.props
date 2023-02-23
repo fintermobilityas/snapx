@@ -20,7 +20,7 @@
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="NLog" Version="5.1.2" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.4.0" />
-    <PackageVersion Include="NuGet.Protocol" Version="6.4.0" />
+    <PackageVersion Include="NuGet.Protocol" Version="6.5.0" />
     <PackageVersion Include="ServiceStack.HttpClient" Version="6.6.0" />
     <PackageVersion Include="SharpCompress" Version="0.32.2" />
     <PackageVersion Include="System.CodeDom" Version="7.0.0" />

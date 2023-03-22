@@ -36,6 +36,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Powershell v7 `dotnet tool update powershell -g`
 - .NET SDK v6.0
 - .NET SDK v7.0
+- .NET SDK v8.0
 
 **Windows**:
 
@@ -44,6 +45,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 - Powershell v7 `dotnet tool update powershell -g`
 - .NET SDK v6.0
 - .NET SDK v7.0
+- .NET SDK v8.0
 
 - Visual Studio 2022 Community Edition with C++ workload installed
 
@@ -56,6 +58,7 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 - .NET 6.0 LTS
 - .NET 7.0
+- .NET 8.0
 
 ## Platforms supported
 

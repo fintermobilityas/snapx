@@ -246,7 +246,7 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                 var sourceLocation = packageSource.IsLocalOrUncPath()
                     ? $"path: {_filesystem.PathGetFullPath(packageSource.SourceUri.AbsolutePath)}. Does the location exist?"
                     : packageSource.Name;
-                logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {sourceLocation}");
+                logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {sourceLocation}. Status: {snapReleasesDownloadResult.Status}.");
                 return (null, null, null);
             }
 
@@ -593,7 +593,7 @@ internal sealed class SnapPackageManager : ISnapPackageManager
             {
                 if (!downloadResult.SuccessSafe())
                 {
-                    logger?.Error($"Unknown error downloading nupkg: {snapRelease.Filename}.");
+                    logger?.Error($"Unknown error downloading nupkg: {snapRelease.Filename}. Status: {downloadResult.Status}.");
                     return false;
                 }
                                         

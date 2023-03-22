@@ -316,8 +316,11 @@ internal class NugetService : INugetService
                     
             async Task<DownloadResourceResult> ProcessAsync(Stream packageStream)
             {
-                if (packageStream == null) throw new ArgumentNullException(nameof(packageStream));
-                        
+                if (packageStream == null)
+                {
+                    return new DownloadResourceResult(DownloadResourceResultStatus.NotFound);
+                }
+                
                 var outputStream = new MemoryStream();
                 var buffer = ArrayPool<byte>.Shared.Rent(84000); // Less than LOH
                         

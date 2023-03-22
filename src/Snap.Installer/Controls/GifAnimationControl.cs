@@ -10,7 +10,7 @@ using JetBrains.Annotations;
 
 namespace Snap.Installer.Controls;
 
-public class GifAnimationControl : Canvas
+public class GifAnimationControl : Control
 {
     readonly List<Bitmap> _bitmaps;
     DispatcherTimer _dispatcherTimer;

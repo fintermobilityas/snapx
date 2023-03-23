@@ -14,7 +14,7 @@ using Snap.Logging;
 
 namespace Snap.Installer;
 
-internal sealed class MainWindow : CustomChromeWindow
+internal sealed partial class MainWindow : CustomChromeWindow
 {
     public static ISnapInstallerEnvironment Environment { get; set; }
     public static AvaloniaMainWindowViewModel ViewModel { get; set; }

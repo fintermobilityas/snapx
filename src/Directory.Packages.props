@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AvaloniaVersion>11.0.0-preview5</AvaloniaVersion>
+    <AvaloniaVersion>11.0.0-preview6</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
@@ -14,20 +14,20 @@
     <PackageVersion Include="Jetbrains.Annotations" Version="2022.3.1" />
     <PackageVersion Include="LibLog" Version="5.0.8" />
     <PackageVersion Include="LightInject" Version="6.6.3" />
-    <PackageVersion Include="MessagePack" Version="2.4.59" />
+    <PackageVersion Include="MessagePack" Version="2.5.108" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.4" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="NLog" Version="5.1.2" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.5.0" />
     <PackageVersion Include="NuGet.Protocol" Version="6.5.0" />
-    <PackageVersion Include="ServiceStack.HttpClient" Version="6.6.0" />
-    <PackageVersion Include="SharpCompress" Version="0.32.2" />
+    <PackageVersion Include="ServiceStack.HttpClient" Version="6.7.0" />
+    <PackageVersion Include="SharpCompress" Version="0.33.0" />
     <PackageVersion Include="System.CodeDom" Version="7.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="7.0.0" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageVersion Include="XunitXml.TestLogger" Version="3.0.78" />
-    <PackageVersion Include="YamlDotNet" Version="12.3.1" />
+    <PackageVersion Include="YamlDotNet" Version="13.0.2" />
   </ItemGroup>
 </Project>

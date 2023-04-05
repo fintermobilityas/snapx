@@ -176,8 +176,7 @@ internal partial class Program
             SnapApp = snapApp,
             NuspecBaseDirectory = artifactsDirectory,
             PackagesDirectory = packagesDirectory,
-            SnapAppsReleases = snapAppsReleases,
-            MaxDeltaFileSizeInBytes = packOptions.MaxDeltaFileSizeInBytes
+            SnapAppsReleases = snapAppsReleases
         };
 
         logger.Info('-'.Repeat(TerminalBufferWidth));

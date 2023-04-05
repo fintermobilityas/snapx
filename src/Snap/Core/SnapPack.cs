@@ -73,7 +73,6 @@ namespace Snap.Core
         SnapAppsReleases SnapAppsReleases { get; }
         SnapApp SnapApp { get; }
         string PackagesDirectory { get; }
-        long MaxDeltaFileSizeInBytes { get; }
     }
 
     internal sealed class SnapPackageDetails : ISnapPackageDetails
@@ -83,7 +82,6 @@ namespace Snap.Core
         public string NuspecBaseDirectory { get; set; }
         public IReadOnlyDictionary<string, string> NuspecProperties { get; [UsedImplicitly] set; }
         public string PackagesDirectory { get; set; }
-        public long MaxDeltaFileSizeInBytes { get; set; }
 
         public SnapPackageDetails()
         {
@@ -427,7 +425,7 @@ namespace Snap.Core
         }
 
         async Task<PackageBuilder> BuildDeltaPackageAsyncInternal([NotNull] string packagesDirectory,
-            [NotNull] ISnapPackageDetails snapPackageDetails,
+            [NotNull] ISnapNuspecDetails snapNuspecDetails,
             [NotNull] SnapRelease previousFullSnapRelease,
             [NotNull] SnapRelease currentFullSnapRelease,
             [NotNull] SnapApp currentDeltaSnapApp,
@@ -438,7 +436,7 @@ namespace Snap.Core
             [NotNull] Func<string, string> currentFullNupkgNuspecPropertiesResolverFn, CancellationToken cancellationToken = default)
         {
             if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));
-            if (snapPackageDetails == null) throw new ArgumentNullException(nameof(snapPackageDetails));
+            if (snapNuspecDetails == null) throw new ArgumentNullException(nameof(snapNuspecDetails));
             if (previousFullSnapRelease == null) throw new ArgumentNullException(nameof(previousFullSnapRelease));
             if (currentDeltaSnapApp == null) throw new ArgumentNullException(nameof(currentDeltaSnapApp));
             if (previousFullNupkgPackageBuilder == null) throw new ArgumentNullException(nameof(previousFullNupkgPackageBuilder));
@@ -471,25 +469,20 @@ namespace Snap.Core
                 AddPackageFile(packageBuilder, srcStream, packageFile.EffectivePath, string.Empty);
             }
 
-            bool ShouldGenerateBsDiff(IPackageFile packageFile, long packageFileSizeInBytes)
+            bool ShouldGenerateBsDiff(IPackageFile packageFile)
             {
                 if (packageFile == null) throw new ArgumentNullException(nameof(packageFile));
                 var targetPath = NeverGenerateBsDiffsTheseAssemblies
                     .SingleOrDefault(x =>
                         string.Equals(x, packageFile.EffectivePath, StringComparison.OrdinalIgnoreCase));
-                if (targetPath != null)
-                {
-                    return false;
-                }
-                return snapPackageDetails.MaxDeltaFileSizeInBytes <= 0 ||
-                       snapPackageDetails.MaxDeltaFileSizeInBytes > packageFileSizeInBytes;
+                return targetPath == null;
             }
             
             currentFullNupkgNuspecMemoryStream.Seek(0, SeekOrigin.Begin);
 
             var deltaNupkgPackageBuilder = new PackageBuilder(
                 currentFullNupkgNuspecMemoryStream, 
-                snapPackageDetails.NuspecBaseDirectory,
+                snapNuspecDetails.NuspecBaseDirectory,
                 currentFullNupkgNuspecPropertiesResolverFn)
             {
                 Id = currentDeltaSnapRelease.UpstreamId,
@@ -525,7 +518,7 @@ namespace Snap.Core
                 currentDeltaSnapRelease.Modified.Add(currentChecksum);
                 deletedChecksums.Remove(previousChecksum);
 
-                if (!ShouldGenerateBsDiff(currentPackageFile, currentChecksum.FullFilesize))
+                if (!ShouldGenerateBsDiff(currentPackageFile))
                 {
                     await AddNoBsDiffPackageFileAsync(deltaNupkgPackageBuilder, currentChecksum, currentPackageFile);
                     continue;

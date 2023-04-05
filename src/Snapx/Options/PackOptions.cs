@@ -60,10 +60,6 @@ internal class PackOptions : BaseSubOptions
         HelpText = "Set network time provider server and port. Example: time.cloudflare.com:123")]
     public string NetworkTimeProviderConnectionString { get; set; }
 
-    [Option("max-delta-file-size",
-        HelpText = "Do not create delta patch file if a file is larger than N bytes.")]
-    public long MaxDeltaFileSizeInBytes { get; set; } = 0;
-
     [Value(0,
         HelpText = "The application id.", 
         Required = true)]

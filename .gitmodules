@@ -10,3 +10,6 @@ url=https://github.com/jarro2783/cxxopts.git
 [submodule "src/Vendor/nanoid_cpp"]
 	path = src/Vendor/nanoid_cpp
 	url = https://github.com/mcmikecreations/nanoid_cpp.git
+[submodule "src/Vendor/bsdiff"]
+	path = src/Vendor/bsdiff
+	url = https://github.com/fintermobilityas/bsdiff.git

@@ -9,7 +9,6 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using Snap.Core;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
@@ -20,24 +19,12 @@ namespace Snap.Tests.NuGet
 {
     public class NugetServiceV3Tests : IClassFixture<BaseFixture>
     {
-        readonly BaseFixture _baseFixture;
         readonly INugetService _nugetService;
-        readonly ISnapFilesystem _snapFilesystem;
-        readonly ISnapPack _snapPack;
-        readonly ISnapCryptoProvider _snapCryptoProvider;
-        readonly ISnapEmbeddedResources _snapEmbeddedResources;
-        readonly Mock<ICoreRunLib> _coreRunLibMock;
 
-        public NugetServiceV3Tests(BaseFixture baseFixture)
+        public NugetServiceV3Tests()
         {
-            _baseFixture = baseFixture;
-            _coreRunLibMock = new Mock<ICoreRunLib>();
-            _snapEmbeddedResources = new SnapEmbeddedResources();
-            _snapCryptoProvider = new SnapCryptoProvider();
-            _snapFilesystem = new SnapFilesystem();
-            _nugetService = new NugetService(_snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
-            _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(),
-                new SnapAppWriter(), _snapCryptoProvider, new SnapEmbeddedResources(), new SnapBinaryPatcher());
+            ISnapFilesystem snapFilesystem = new SnapFilesystem();
+            _nugetService = new NugetService(snapFilesystem, new NugetLogger(new LogProvider.NoOpLogger()));
         }
 
         [Fact]

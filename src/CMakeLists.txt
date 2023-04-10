@@ -17,9 +17,14 @@ set(MSVS_CXX_WARNING_FLAGS "/W4")
 option(BUILD_ENABLE_LTO "Build with LINK TIME OPTIMIZATION enabled" OFF)
 option(BUILD_ENABLE_TESTS "Build with tests enabled" OFF)
 option(BUILD_ENABLE_LOGGING "Build with logging enabled" ON)
+option(BUILD_ENABLE_BSDIFF "Build with bsdiff support enabled" ON)
 
 add_subdirectory(Snap.CoreRun.Pal)
 add_subdirectory(Snap.CoreRun)
+
+if(BUILD_ENABLE_BSDIFF)
+add_subdirectory(Vendor/bsdiff)
+endif()
 
 if (BUILD_ENABLE_TESTS)
 
@@ -79,6 +84,7 @@ string(STRIP "${SNAP_COMPILER_STR}" SNAP_COMPILER_STR)
 message(STATUS "")
 message(STATUS "  Options:")
 message(STATUS "    Lto: "           ${BUILD_ENABLE_LTO})
+message(STATUS "    Bsdiff: "        ${BUILD_ENABLE_BSDIFF})
 message(STATUS "    Tests: "		 ${BUILD_ENABLE_TESTS})
 message(STATUS "    Toolchain file: " ${CMAKE_TOOLCHAIN_FILE})
 

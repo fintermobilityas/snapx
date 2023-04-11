@@ -53,7 +53,7 @@ internal sealed class CoreRunLib : ICoreRunLib
             osPlatform = OSPlatform.Linux;
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            osPlatform = OSPlatform.Linux;
+            osPlatform = OSPlatform.Windows;
         }
         
         if (!osPlatform.IsSupportedOsVersion())

@@ -71,11 +71,7 @@ if(WIN32)
             )
 
     if(BUILD_ENABLE_BSDIFF)
-        list(APPEND pal_static_LIBS bsdiff)
-    endif()
-
-    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        target_compile_options(pal_static PUBLIC "/MT$<$<CONFIG:Debug>:d>")
+        list(APPEND pal_LIBS bsdiff)
     endif()
 
     pal_mitigate_dll_hijacking_for_targets(pal)

@@ -117,6 +117,8 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}/libsnap_bsdiff.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}/libsnap_bsdiff.so
 
       - name: Upload artifacts
@@ -178,6 +180,8 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}/snap_bsdiff.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}/snap_bsdiff.dll
 
       - name: Upload artifacts

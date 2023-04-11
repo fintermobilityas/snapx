@@ -19,6 +19,7 @@ using SharpCompress.Common;
 using SharpCompress.Writers;
 using Snap.Core.Models;
 using Snap.Extensions;
+using Snap.Logging;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -122,7 +123,7 @@ namespace Snap.Core
             CancellationToken cancellationToken = default);
     }
 
-    internal sealed partial class SnapPack : ISnapPack
+    internal sealed class SnapPack : ISnapPack
     {
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapAppReader _snapAppReader;
@@ -146,7 +147,9 @@ namespace Snap.Core
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
         };
 
-        public SnapPack(ISnapFilesystem snapFilesystem, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
+        public SnapPack(ISnapFilesystem snapFilesystem,
+            [NotNull] ISnapAppReader snapAppReader, 
+            [NotNull] ISnapAppWriter snapAppWriter,
             [NotNull] ISnapCryptoProvider snapCryptoProvider, 
             [NotNull] ISnapBinaryPatcher snapBinaryPatcher)
         {
@@ -155,7 +158,7 @@ namespace Snap.Core
             _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
             _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
             _snapBinaryPatcher = snapBinaryPatcher ?? throw new ArgumentNullException(nameof(snapBinaryPatcher));
-
+        
             var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
             _snapDllVersion = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
         }
@@ -526,7 +529,7 @@ namespace Snap.Core
                 if (newDataStream.Length > 0
                     && oldDataStream.Length > 0)
                 {
-                    await _snapBinaryPatcher.CreateAsync(oldDataStream.ToArray(), newDataStream.ToArray(), patchStream, cancellationToken);
+                    _snapBinaryPatcher.Create(oldDataStream, newDataStream, patchStream);
                 } else if (newDataStream.Length > 0)
                 {
                     await newDataStream.CopyToAsync(patchStream, cancellationToken);
@@ -808,19 +811,8 @@ namespace Snap.Core
                                 throw new SnapReleaseFileChecksumDeltaMismatchException(deltaChecksum, snapRelease, patchStream.Length);
                             }
                         }
-
-                        async Task<MemoryStream> OpenPatchStream()
-                        {
-                            var intermediatePatchStream = new MemoryStream();
-                            // ReSharper disable once AccessToDisposedClosure
-                            patchStream.Seek(0, SeekOrigin.Begin);
-                            // ReSharper disable once AccessToDisposedClosure
-                            await patchStream.CopyToAsync(intermediatePatchStream, cancellationToken: cancellationToken);
-                            intermediatePatchStream.Seek(0, SeekOrigin.Begin);
-                            return intermediatePatchStream;
-                        }
-
-                        await _snapBinaryPatcher.ApplyAsync(packageFileStream, async () => await OpenPatchStream(), outputStream, cancellationToken);
+                        
+                        await _snapBinaryPatcher.ApplyAsync((MemoryStream)packageFileStream, patchStream, outputStream, cancellationToken);
 
                         if (!skipChecksum)
                         {

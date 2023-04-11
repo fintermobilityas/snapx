@@ -36,7 +36,7 @@ namespace Snap.Tests.Core
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
             ISnapPack snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
-                snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher());
+                snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, snapPack);
             _snapInstaller = new SnapInstaller(snapExtractor, snapPack, _snapOsMock.Object, snapAppWriter);

@@ -16,7 +16,6 @@ using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Installer.ViewModels;
 using Snap.Logging;
-using Snap.NuGet;
 
 namespace Snap.Installer;
 
@@ -24,9 +23,9 @@ internal partial class Program
 {
     static async Task<(int exitCode, SnapInstallerType installerType)> InstallAsync([NotNull] ISnapInstallerEnvironment environment,
         [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
-        [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapOs snapOs,
-        [NotNull] CoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
-        [NotNull] INugetService nugetService, [NotNull] ISnapPackageManager snapPackageManager,
+        [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapOs snapOs,
+        [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
+        [NotNull] ISnapPackageManager snapPackageManager,
         [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger,
         bool headless, string[] args)
     {
@@ -34,12 +33,10 @@ internal partial class Program
         if (snapInstallerEmbeddedResources == null) throw new ArgumentNullException(nameof(snapInstallerEmbeddedResources));
         if (snapInstaller == null) throw new ArgumentNullException(nameof(snapInstaller));
         if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
-        if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
         if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
         if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
         if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
-        if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
         if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
         if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
         if (diskLogger == null) throw new ArgumentNullException(nameof(diskLogger));

@@ -28,7 +28,7 @@ namespace Snap.Tests.Core
             var snapAppWriter = new SnapAppWriter();
             _snapFilesystem = new SnapFilesystem();
             _snapPack = new SnapPack(_snapFilesystem, snapAppReader, 
-                snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher());
+                snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
             _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib,
                 _snapFilesystem, _snapCryptoProvider, _snapPack);
         }

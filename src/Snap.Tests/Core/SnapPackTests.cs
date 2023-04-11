@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Moq;
 using NuGet.Packaging;
 using NuGet.Versioning;
 using Snap.Core;
@@ -28,15 +27,15 @@ namespace Snap.Tests.Core
         public SnapPackTests(BaseFixturePackaging baseFixture)
         {
             _baseFixture = baseFixture;
-            var coreRunLibMock = new Mock<ICoreRunLib>();
+            var coreRunLib = new CoreRunLib();
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
             _snapAppReader = new SnapAppReader();
             _snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
-                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher());
+                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
             _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
             _snapReleaseBuilderContext =
-                new SnapReleaseBuilderContext(coreRunLibMock.Object, _snapFilesystem, snapCryptoProvider, _snapPack);
+                new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Fact]

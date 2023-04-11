@@ -1,9 +1,50 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using Snap.Extensions;
 
 namespace Snap;
+
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
+internal enum PalBsDiffStatusType
+{
+    Success = 0,
+    Error = 1,
+    InvalidArg = 2,
+    OutOfMemory = 3,
+    FileError = 4,
+    EndOfFile = 5,
+    CorruptPatch = 6,
+    SizeTooLarge = 7
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct PalBsPatchCtx
+{
+    public IntPtr log_error;
+    public nint older;
+    public long older_size;
+    public readonly nint newer;
+    public readonly long newer_size;
+    public nint patch_filename;
+    public readonly PalBsDiffStatusType status;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct PalBsDiffCtx
+{
+    public IntPtr log_error;
+    public nint older;
+    public long older_size;
+    public nint newer;
+    public long newer_size;
+    public readonly nint patch;
+    public readonly long patch_size;
+    public readonly PalBsDiffStatusType status;
+}
 
 internal interface ICoreRunLib : IDisposable
 {
@@ -11,13 +52,16 @@ internal interface ICoreRunLib : IDisposable
     bool IsElevated();
     bool SetIcon(string exeAbsolutePath, string iconAbsolutePath);
     bool FileExists(string filename);
+    void BsDiff([NotNull] MemoryStream olderStream, [NotNull] MemoryStream newerStream, [NotNull] Stream patchStream);
+    Task BsPatchAsync([NotNull] MemoryStream olderStream, [NotNull] MemoryStream patchStream, [NotNull] Stream outputStream, CancellationToken cancellationToken);
 }
 
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 internal sealed class CoreRunLib : ICoreRunLib
 {
     IntPtr _libPtr;
     readonly OSPlatform _osPlatform;
-
+    
     // generic
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
     delegate int pal_is_elevated_delegate();
@@ -42,6 +86,22 @@ internal sealed class CoreRunLib : ICoreRunLib
         [MarshalAs(UnmanagedType.LPUTF8Str)] string filename
     );
     readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+    delegate int pal_bsdiff_delegate(ref PalBsDiffCtx ctx);
+    readonly Delegate<pal_bsdiff_delegate> pal_bsdiff;
+    
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+    delegate int pal_bsdiff_free_delegate(ref PalBsDiffCtx ctx);
+    readonly Delegate<pal_bsdiff_free_delegate> pal_bsdiff_free;
+    
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+    delegate int pal_bspatch_delegate(ref PalBsPatchCtx ctx);
+    readonly Delegate<pal_bspatch_delegate> pal_bspatch;
+    
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
+    delegate int pal_bspatch_free_delegate(ref PalBsPatchCtx ctx);
+    readonly Delegate<pal_bspatch_free_delegate> pal_bspatch_free;
 
     public CoreRunLib() 
     {
@@ -94,11 +154,17 @@ internal sealed class CoreRunLib : ICoreRunLib
         // filesystem
         pal_fs_chmod = new Delegate<pal_fs_chmod_delegate>(_libPtr, osPlatform);
         pal_fs_file_exists = new Delegate<pal_fs_file_exists_delegate>(_libPtr, osPlatform);
+        
+        // bsdiff
+        pal_bsdiff = new Delegate<pal_bsdiff_delegate>(_libPtr, osPlatform);
+        pal_bsdiff_free = new Delegate<pal_bsdiff_free_delegate>(_libPtr, osPlatform);
+        pal_bspatch = new Delegate<pal_bspatch_delegate>(_libPtr, osPlatform);
+        pal_bspatch_free = new Delegate<pal_bspatch_free_delegate>(_libPtr, osPlatform);
     }
 
     public bool Chmod([JetBrains.Annotations.NotNull] string filename, int mode)
     {
-        if (filename == null) throw new ArgumentNullException(nameof(filename));
+        ArgumentNullException.ThrowIfNull(filename);
         pal_fs_chmod.ThrowIfDangling();
         return pal_fs_chmod.Invoke(filename, mode) == 1;
     }
@@ -111,8 +177,8 @@ internal sealed class CoreRunLib : ICoreRunLib
 
     public bool SetIcon([JetBrains.Annotations.NotNull] string exeAbsolutePath, [JetBrains.Annotations.NotNull] string iconAbsolutePath)
     {
-        if (exeAbsolutePath == null) throw new ArgumentNullException(nameof(exeAbsolutePath));
-        if (iconAbsolutePath == null) throw new ArgumentNullException(nameof(iconAbsolutePath));
+        ArgumentNullException.ThrowIfNull(exeAbsolutePath);
+        ArgumentNullException.ThrowIfNull(iconAbsolutePath);
         pal_set_icon.ThrowIfDangling();
         if (!FileExists(exeAbsolutePath))
         {
@@ -127,9 +193,194 @@ internal sealed class CoreRunLib : ICoreRunLib
 
     public bool FileExists([JetBrains.Annotations.NotNull] string filename)
     {
-        if (filename == null) throw new ArgumentNullException(nameof(filename));
+        ArgumentNullException.ThrowIfNull(filename);
         pal_fs_file_exists.ThrowIfDangling();
         return pal_fs_file_exists.Invoke(filename) == 1;
+    }
+
+    public void BsDiff(MemoryStream olderStream, MemoryStream newerStream, Stream patchStream)
+    {
+        ArgumentNullException.ThrowIfNull(olderStream);
+        ArgumentNullException.ThrowIfNull(newerStream);
+        ArgumentNullException.ThrowIfNull(patchStream);
+
+        if (!olderStream.CanRead)
+        {
+            throw new Exception($"{nameof(olderStream)} must be readable.");
+        }
+
+        if (!olderStream.CanSeek)
+        {
+            throw new Exception($"{nameof(olderStream)} must be seekable.");
+        }
+        
+        if (!newerStream.CanRead)
+        {
+            throw new Exception($"{nameof(newerStream)} must be readable.");
+        }
+
+        if (!newerStream.CanSeek)
+        {
+            throw new Exception($"{nameof(newerStream)} must be seekable.");
+        }
+        
+        if (!patchStream.CanWrite)
+        {
+            throw new Exception($"{nameof(patchStream)} must be writable.");
+        }
+
+        unsafe
+        {
+            fixed (byte* olderStreamPtr = olderStream.GetBuffer())
+            fixed (byte* newerStreamPtr = newerStream.GetBuffer())
+            {
+                void LogError(void* opaque, char* message)
+                {
+                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8(new IntPtr(message));
+                    if (messageStr == null) return;
+                    Console.WriteLine(messageStr);
+                }
+                
+                var logErrorDelegate = Marshal.GetFunctionPointerForDelegate(LogError);
+                
+                var ctx = new PalBsDiffCtx
+                {
+                    log_error = logErrorDelegate,
+                    older = new IntPtr(olderStreamPtr),
+                    older_size = olderStream.Length,
+                    newer = new IntPtr(newerStreamPtr),
+                    newer_size = newerStream.Length
+                };
+
+                bool success = default;
+                try
+                {
+                    pal_bsdiff.ThrowIfDangling(); 
+                    success = pal_bsdiff.Invoke(ref ctx) == 1;
+
+                    if (!success)
+                    {
+                        throw new Exception($"Failed to execute bsdiff. Error code: {ctx.status}");
+                    }
+                
+                    var offset = 0;
+                    var bytesRemaining = ctx.patch_size;
+
+                    while (bytesRemaining > 0)
+                    {
+                        var sliceSize = bytesRemaining <= int.MaxValue ? (int) bytesRemaining : int.MaxValue;
+                        var slice = new ReadOnlySpan<byte>((void*)(ctx.patch + offset), sliceSize);
+                        patchStream.Write(slice);
+                        offset += sliceSize;
+                        bytesRemaining -= sliceSize;
+                    }
+                }
+                finally
+                {
+                    if (success)
+                    {
+                        pal_bsdiff_free.ThrowIfDangling();
+                        pal_bsdiff_free.Invoke(ref ctx);
+                    }
+                }
+            }
+        }
+    }
+
+    public async Task BsPatchAsync(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(olderStream);
+        ArgumentNullException.ThrowIfNull(patchStream);
+        ArgumentNullException.ThrowIfNull(outputStream);
+
+        if (!olderStream.CanRead)
+        {
+            throw new Exception($"{nameof(olderStream)} must be readable.");
+        }
+
+        if (!olderStream.CanSeek)
+        {
+            throw new Exception($"{nameof(olderStream)} must be seekable.");
+        }
+        
+        if (!patchStream.CanRead)
+        {
+            throw new Exception($"{nameof(patchStream)} must be readable.");
+        }
+
+        if (!patchStream.CanSeek)
+        {
+            throw new Exception($"{nameof(patchStream)} must be seekable.");
+        }
+        
+        if (!patchStream.CanWrite)
+        {
+            throw new Exception($"{nameof(patchStream)} must be writable.");
+        }
+        
+        var patchFileName = $"{Guid.NewGuid():N}.patch";
+        await using (var patchFileStream = File.OpenWrite(patchFileName))
+        {
+            await patchStream.CopyToAsync(patchFileStream, cancellationToken);
+        }
+
+        unsafe
+        {
+            fixed (byte* olderStreamPtr = olderStream.GetBuffer())
+            {
+                void LogError(void* opaque, char* message)
+                {
+                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8(new IntPtr(message));
+                    if (messageStr == null) return;
+                    Console.WriteLine(messageStr);
+                }
+                
+                var logErrorDelegate = Marshal.GetFunctionPointerForDelegate(LogError);
+
+                var ctx = new PalBsPatchCtx
+                {
+                    log_error = logErrorDelegate,
+                    older = new IntPtr(olderStreamPtr),
+                    older_size = olderStream.Length,
+                    patch_filename = patchFileName.ToIntPtrUtf8String()
+                };
+
+                bool success = default;
+                try
+                {
+                    pal_bspatch.ThrowIfDangling(); 
+                    success = pal_bspatch.Invoke(ref ctx) == 1;
+                    
+                    if (!success)
+                    {
+                        throw new Exception($"Failed to execute bspatch. Error code: {ctx.status}");
+                    }
+                
+                    var offset = 0;
+                    var bytesRemaining = ctx.newer_size;
+
+                    while (bytesRemaining > 0)
+                    {
+                        var sliceSize = bytesRemaining <= int.MaxValue ? (int) bytesRemaining : int.MaxValue;
+                        outputStream.Write(new ReadOnlySpan<byte>((void*)(ctx.newer + offset), sliceSize));
+                        offset += sliceSize;
+                        bytesRemaining -= sliceSize;
+                    }
+                }
+                finally
+                {
+                    NativeMemory.Free((void*)ctx.patch_filename);
+                    
+                    if (success)
+                    {
+                        pal_bspatch_free.ThrowIfDangling();
+                        pal_bspatch_free.Invoke(ref ctx);
+                    }
+                    
+                    File.Delete(patchFileName);
+                }
+            }
+        }
     }
 
     public void Dispose()
@@ -179,15 +430,17 @@ internal sealed class CoreRunLib : ICoreRunLib
         public static extern bool dlclose(IntPtr hModule);
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal static class NativeMethodsUnix
     {
         public const int libdl_RTLD_LOCAL = 1; 
         public const int libdl_RTLD_NOW = 2; 
 
         // https://github.com/tmds/Tmds.LibC/blob/f336956facd8f6a0f8dcfa1c652828237dc032fb/src/Sources/linux.common/types.cs#L162
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public readonly struct pid_t : IEquatable<pid_t>
         {
-            internal int Value { get; }
+            int Value { get; }
 
             pid_t(int value) => Value = value;
 
@@ -200,7 +453,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
             public override bool Equals(object obj)
             {
-                if (obj != null && obj is pid_t v)
+                if (obj is pid_t v)
                 {
                     return this == v;
                 }
@@ -225,6 +478,7 @@ internal sealed class CoreRunLib : ICoreRunLib
         public static extern int kill (pid_t pid, int sig);
     }
 
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
     sealed class Delegate<T> where T: Delegate
     {
         public T Invoke { get; }
@@ -241,7 +495,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
             if (Symbol.EndsWith(delegatePrefix, StringComparison.OrdinalIgnoreCase))
             {
-                Symbol = Symbol.Substring(0, Symbol.Length - delegatePrefix.Length);
+                Symbol = Symbol[..^delegatePrefix.Length];
             }
 
             if (!osPlatform.IsSupportedOsVersion())

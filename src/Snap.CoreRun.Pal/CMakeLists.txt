@@ -43,11 +43,6 @@ if(WIN32)
             )
 endif()
 
-if(BUILD_ENABLE_BSDIFF)
-    list(APPEND pal_INCLUDE_DIRS ../Vendor/bsdiff/include)
-    list(APPEND pal_DEFINES PAL_BSDIFF)
-endif()
-
 add_library(pal_static STATIC
         ${pal_SOURCES}
         )
@@ -70,8 +65,8 @@ if(WIN32)
             kernel32
             )
 
-    if(BUILD_ENABLE_BSDIFF)
-        list(APPEND pal_LIBS bsdiff)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(pal_static PUBLIC "/MT$<$<CONFIG:Debug>:d>")
     endif()
 
     pal_mitigate_dll_hijacking_for_targets(pal)
@@ -86,10 +81,6 @@ elseif(UNIX)
     list(APPEND pal_static_LIBS
             libstdc++.a
             )
-
-    if(BUILD_ENABLE_BSDIFF)
-        list(APPEND pal_LIBS bsdiff)
-    endif()
 
     list(APPEND pal_DEFINES
             PAL_PLATFORM_LINUX

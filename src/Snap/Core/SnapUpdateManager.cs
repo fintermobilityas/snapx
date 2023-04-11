@@ -143,14 +143,12 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
         _workingDirectory = workingDirectory ?? throw new ArgumentNullException(nameof(workingDirectory));
         _packagesDirectory = _snapOs.Filesystem.PathCombine(_workingDirectory, "packages");
         _snapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
-
-        var coreRunLib = new CoreRunLib();
-
+        
         _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
         _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
         _snapAppReader = snapAppReader ?? new SnapAppReader();
         _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
-        _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher(coreRunLib);
+        _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher(new BsdiffLib());
         _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter,
             _snapCryptoProvider, _snapBinaryPatcher);
         _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack);

@@ -33,6 +33,8 @@ namespace Snap.Tests.Core
         public SnapPackageManagerTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget, ITestOutputHelper testOutputHelper)
         {
             var coreRunLib = new CoreRunLib();
+            var bsdiffLib = new BsdiffLib();
+
             _nugetServiceMock = new Mock<INugetService>();
             var snapHttpClientMock = new Mock<ISnapHttpClient>();
             _baseFixturePackaging = baseFixturePackaging;
@@ -43,7 +45,7 @@ namespace Snap.Tests.Core
             ISnapAppWriter snapAppWriter = new SnapAppWriter();
             ISnapAppReader snapAppReader = new SnapAppReader();
             _snapPack = new SnapPack(_snapFilesystem, snapAppReader, snapAppWriter,
-                snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
+                snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
             ISnapExtractor snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
             _snapPackageManager = new SnapPackageManager(_snapFilesystem,
                 new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), 

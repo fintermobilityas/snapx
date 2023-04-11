@@ -14,17 +14,17 @@ internal interface ISnapBinaryPatcher
 
 internal sealed class SnapBinaryPatcher : ISnapBinaryPatcher
 {
-    readonly ICoreRunLib _coreRunLib;
+    readonly IBsdiffLib _bsdiffLib;
 
-    public SnapBinaryPatcher([NotNull] ICoreRunLib coreRunLib)
+    public SnapBinaryPatcher([NotNull] IBsdiffLib bsdiffLib)
     {
-        ArgumentNullException.ThrowIfNull(coreRunLib);
-        _coreRunLib = coreRunLib;
+        ArgumentNullException.ThrowIfNull(bsdiffLib);
+        _bsdiffLib = bsdiffLib;
     }
     
     public void Create(MemoryStream olderStream, MemoryStream newerStream, Stream outputStream) => 
-        _coreRunLib.BsDiff(olderStream, newerStream, outputStream);
+        _bsdiffLib.Diff(olderStream, newerStream, outputStream);
 
     public Task ApplyAsync(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken) => 
-        _coreRunLib.BsPatchAsync(olderStream, patchStream, outputStream, cancellationToken);
+        _bsdiffLib.PatchAsync(olderStream, patchStream, outputStream, cancellationToken);
 }

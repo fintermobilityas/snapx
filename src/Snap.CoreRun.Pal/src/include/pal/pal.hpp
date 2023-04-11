@@ -62,10 +62,6 @@
 
 #include <plog/Log.h>
 
-#if defined(PAL_BSDIFF)
-#include <bsdiff.h>
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,49 +83,6 @@ typedef int pal_exit_code_t;
 // - Callbacks
 
 typedef BOOL(*pal_fs_list_filter_callback_t)(const char* filename);
-
-#if defined(PAL_BSDIFF)
-// bsdiff
-
-typedef void (*pal_bsdiff_error_logger_t)(void *opaque, const char *errmsg);
-
-typedef enum _pal_bsdiff_status_type {
-  pal_bsdiff_status_type_success = 0,
-  pal_bsdiff_status_type_error = 1,
-  pal_bsdiff_status_type_invalid_arg = 2,
-  pal_bsdiff_status_type_out_of_memory = 3,
-  pal_bsdiff_status_type_file_error = 4,
-  pal_bsdiff_status_type_end_of_file = 5,
-  pal_bsdiff_status_type_corrupt_patch = 6,
-  pal_bsdiff_status_type_size_too_large = 7
-} pal_bsdiff_status_type;
-
-typedef struct _pal_bsdiff_patch_ctx {
-  pal_bsdiff_error_logger_t error_logger;
-  const void *older;
-  int64_t older_size;
-  uint8_t **newer;
-  int64_t newer_size;
-  const char *patch_filename;
-  pal_bsdiff_status_type status;
-} pal_bsdiff_patch_ctx;
-
-typedef struct _pal_bsdiff_ctx {
-    pal_bsdiff_error_logger_t error_logger;
-    const void *older;
-    int64_t older_size;
-    const void *newer;
-    int64_t newer_size;
-    uint8_t **patch;
-    int64_t patch_size;
-    pal_bsdiff_status_type status;
-} pal_bsdiff_ctx;
-
-PAL_API BOOL PAL_CALLING_CONVENTION pal_bspatch(pal_bsdiff_patch_ctx *p_ctx);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_bspatch_free(pal_bsdiff_patch_ctx* p_ctx);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_bsdiff(pal_bsdiff_ctx* p_ctx);
-PAL_API BOOL PAL_CALLING_CONVENTION pal_bsdiff_free(pal_bsdiff_ctx* p_ctx);
-#endif
 
 // - Generic
 

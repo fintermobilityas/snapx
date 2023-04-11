@@ -149,9 +149,10 @@ namespace snapx
             var snapXEmbeddedResources = new SnapxEmbeddedResources();
             
             var coreRunLib = new CoreRunLib();
+            var bsdiffLib = new BsdiffLib();
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
-            var snapBinaryPatcher = new SnapBinaryPatcher(coreRunLib);
+            var snapBinaryPatcher = new SnapBinaryPatcher(bsdiffLib);
             var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, 
                 snapAppWriter, snapCryptoProvider, snapBinaryPatcher);
             var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack);

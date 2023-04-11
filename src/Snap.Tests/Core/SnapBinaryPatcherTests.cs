@@ -13,7 +13,7 @@ namespace Snap.Tests.Core
 
         public SnapBinaryPatcherTests()
         {
-            _snapBinaryPatcher = new SnapBinaryPatcher(new CoreRunLib());
+            _snapBinaryPatcher = new SnapBinaryPatcher(new BsdiffLib());
         }
 
         [Fact]

@@ -177,7 +177,8 @@ namespace Snap.Installer
             var thisExeWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var workingDirectory = Environment.CurrentDirectory;
 
-            container.Register(_ => new CoreRunLib());
+            container.Register<ICoreRunLib>(_ => new CoreRunLib());
+            container.Register<IBsdiffLib>(_ => new BsdiffLib());
             container.Register(c => snapOs);
             container.Register(c => snapOs.SpecialFolders);
 
@@ -193,7 +194,7 @@ namespace Snap.Installer
             container.Register<ISnapCryptoProvider>(c => new SnapCryptoProvider());
             container.Register<ISnapAppReader>(c => new SnapAppReader());
             container.Register<ISnapAppWriter>(c => new SnapAppWriter());
-            container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher(c.GetInstance<ICoreRunLib>()));
+            container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher(c.GetInstance<IBsdiffLib>()));
             container.Register<ISnapPack>(c => new SnapPack(
                 c.GetInstance<ISnapFilesystem>(), 
                 c.GetInstance<ISnapAppReader>(), 

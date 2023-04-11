@@ -19,7 +19,6 @@ using SharpCompress.Common;
 using SharpCompress.Writers;
 using Snap.Core.Models;
 using Snap.Extensions;
-using Snap.Logging;
 using Snap.NuGet;
 using Snap.Reflection;
 
@@ -133,7 +132,7 @@ namespace Snap.Core
         readonly SemanticVersion _snapDllVersion;
 
         static readonly Regex IsSnapDotnetRuntimesFileRegex =
-            new(@"^runtimes\/(.+?)\/native\/([libcorerun|corerun]+)$",
+            new(@"^runtimes\/(.+?)\/native\/([libpal|libbsdiff|corerun]+)$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
@@ -963,7 +962,8 @@ namespace Snap.Core
                 nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs))?.Remove();
                 
                 var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(baseDirectory).ToList();
-                var coreRunLibFilename = snapApp.GetCoreRunLibFilename();
+                var libPalFilename = snapApp.GetLibPalFilename();
+                var libBsdiffFilename = snapApp.GetLibBsdiffFilename();
                 foreach (var fileAbsolutePath in allFiles)
                 {
                     var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty)[1..];
@@ -978,7 +978,8 @@ namespace Snap.Core
                         }
 
                         var filename = match.Groups[5].Value;
-                        if (string.Equals(filename, coreRunLibFilename, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(filename, libPalFilename, StringComparison.OrdinalIgnoreCase) || 
+                            string.Equals(filename, libBsdiffFilename, StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }

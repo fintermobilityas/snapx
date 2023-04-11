@@ -36,10 +36,10 @@ internal static class SnapExtensions
         string coreRunFilename;
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            coreRunFilename = $"libcorerun-{snapApp.Target.Rid}.dll";
+            coreRunFilename = $"corerun-{snapApp.Target.Rid}.exe";
         } else if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            coreRunFilename = $"libcorerun-{snapApp.Target.Rid}.so";
+            coreRunFilename = $"corerun-{snapApp.Target.Rid}";
         }
         else
         {
@@ -69,18 +69,35 @@ internal static class SnapExtensions
         throw new PlatformNotSupportedException();
     }
 
-    internal static string GetCoreRunLibFilename(this SnapApp snapApp)
+    internal static string GetLibPalFilename(this SnapApp snapApp)
     {
         ArgumentNullException.ThrowIfNull(snapApp);
 
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            return $"libcorerun-{snapApp.Target.Rid}.dll";
+            return $"libpal-{snapApp.Target.Rid}.dll";
         }
 
         if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            return $"libcorerun-{snapApp.Target.Rid}.so";
+            return $"libpal-{snapApp.Target.Rid}.so";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
+    internal static string GetLibBsdiffFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"libbsdiff-{snapApp.Target.Rid}.dll";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"libbsdiff-{snapApp.Target.Rid}.so";
         }
 
         throw new PlatformNotSupportedException();

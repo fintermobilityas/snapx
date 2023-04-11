@@ -24,6 +24,7 @@ add_subdirectory(Snap.CoreRun)
 
 if(BUILD_ENABLE_BSDIFF)
 add_subdirectory(Vendor/bsdiff)
+add_subdirectory(Snap.Bsdiff)
 endif()
 
 if (BUILD_ENABLE_TESTS)
@@ -51,7 +52,6 @@ if(WIN32)
     if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS_DEBUG    "${CMAKE_CXX_FLAGS_DEBUG} /MP -DDEBUG -D_DEBUG ${MSVS_CXX_WARNING_FLAGS}")
         set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} /MP -DNDEBUG ${MSVS_CXX_WARNING_FLAGS}")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
         if(BUILD_ENABLE_LTO)
             set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O1 /GL")

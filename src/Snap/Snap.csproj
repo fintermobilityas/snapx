@@ -32,7 +32,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libcorerun-win-x86.dll">
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libpal-win-x86.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -45,7 +50,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libcorerun-win-x64.dll">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libpal-win-x64.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -60,7 +70,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libcorerun-win-x86.dll">
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libpal-win-x86.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -73,7 +88,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libcorerun-win-x64.dll">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libpal-win-x64.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -90,7 +110,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libcorerun-linux-x64.so">
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libpal-linux-x64.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-x64/native/libbsdiff-linux-x64.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -103,7 +128,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libcorerun-linux-x64.so">
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libpal-linux-x64.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-x64/native/libbsdiff-linux-x64.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -116,7 +146,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-arm64/native/libcorerun-linux-arm64.so">
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-arm64/native/libpal-linux-arm64.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-arm64/native/libbsdiff-linux-arm64.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -133,7 +168,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libcorerun-win-x86.dll">
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/libpal-win-x86.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -141,12 +181,17 @@
         <!-- /Content-x86 -->
 
         <!-- win-x64 -->
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Pack="true" Link="runtimes/win-x64/native/corerun-win-x64.exe">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/corerun.exe" Pack="true" Link="runtimes/win-x64/native/corerun-win-x64.exe">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libcorerun-win-x64.dll">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/libpal-win-x64.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -159,7 +204,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libcorerun-linux-x64.so">
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/libpal-linux-x64.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-x64/native/libbsdiff-linux-x64.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -172,7 +222,12 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-arm64/native/libcorerun-linux-arm64.so">
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-arm64/native/libpal-linux-arm64.so">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+            <PackageCopyToOutput>true</PackageCopyToOutput>
+        </Content>
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-arm64/native/libbsdiff-linux-arm64.so">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>

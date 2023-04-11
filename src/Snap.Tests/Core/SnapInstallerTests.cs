@@ -30,13 +30,14 @@ namespace Snap.Tests.Core
             _baseFixture = baseFixture;
             _snapOsMock = new Mock<ISnapOs>();
             var coreRunLib = new CoreRunLib();
+            var bsdiffLib = new BsdiffLib();
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapAppReader = new SnapAppReader();
             ISnapAppWriter snapAppWriter = new SnapAppWriter();
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
             ISnapPack snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
-                snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
+                snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, snapPack);
             _snapInstaller = new SnapInstaller(snapExtractor, snapPack, _snapOsMock.Object, snapAppWriter);

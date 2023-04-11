@@ -22,13 +22,14 @@ namespace Snap.Tests.Core
         public SnapCryptoProviderTests(BaseFixturePackaging baseFixture)
         {
             var coreRunLib = new CoreRunLib();
+            var bsdiffLib = new BsdiffLib();
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
             _snapFilesystem = new SnapFilesystem();
             _snapPack = new SnapPack(_snapFilesystem, snapAppReader, 
-                snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
+                snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
             _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib,
                 _snapFilesystem, _snapCryptoProvider, _snapPack);
         }

@@ -48,8 +48,9 @@ namespace Snap.Tests.Core
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
             ICoreRunLib coreRunLib = new CoreRunLib();
+            IBsdiffLib bsdiffLib = new BsdiffLib();
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), 
-                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher(coreRunLib));
+                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
             _snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), _baseFixturePackaging.WorkingDirectory, true);
             _releaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, _snapPack);
         }

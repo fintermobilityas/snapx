@@ -53,7 +53,7 @@ internal interface IBsdiffLib : IDisposable
 }
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal sealed class BsdiffLib : IBsdiffLib
+internal sealed class LibBsDiff : IBsdiffLib
 {
     IntPtr _libPtr;
     readonly OSPlatform _osPlatform;
@@ -74,7 +74,7 @@ internal sealed class BsdiffLib : IBsdiffLib
     delegate int snap_bsdiff_patch_free_delegate(ref BsDiffPatchCtx ctx);
     readonly Delegate<snap_bsdiff_patch_free_delegate> snap_bsdiff_patch_free;
 
-    public BsdiffLib() 
+    public LibBsDiff() 
     {
         OSPlatform osPlatform = default;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -93,7 +93,7 @@ internal sealed class BsdiffLib : IBsdiffLib
         _osPlatform = osPlatform;
 
         var rid = _osPlatform.BuildRid();
-        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libbsdiff-");
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libsnapbsdiff-");
 
 #if SNAP_BOOTSTRAP
             return;

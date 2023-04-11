@@ -6,7 +6,7 @@ using Snap.Extensions;
 
 namespace Snap;
 
-internal interface ICoreRunLib : IDisposable
+internal interface ILibPal : IDisposable
 {
     bool Chmod(string filename, int mode);
     bool IsElevated();
@@ -15,7 +15,7 @@ internal interface ICoreRunLib : IDisposable
 }
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-internal sealed class CoreRunLib : ICoreRunLib
+internal sealed class LibPal : ILibPal
 {
     IntPtr _libPtr;
     readonly OSPlatform _osPlatform;
@@ -45,7 +45,7 @@ internal sealed class CoreRunLib : ICoreRunLib
     );
     readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
-    public CoreRunLib() 
+    public LibPal() 
     {
         OSPlatform osPlatform = default;
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -64,7 +64,7 @@ internal sealed class CoreRunLib : ICoreRunLib
         _osPlatform = osPlatform;
 
         var rid = _osPlatform.BuildRid();
-        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libpal-");
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libsnappal-");
 
 #if SNAP_BOOTSTRAP
             return;

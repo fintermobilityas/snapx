@@ -139,12 +139,12 @@ namespace Snap.Installer
             snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);
             var snapPackageManager = snapInstallerEnvironment.Container.GetInstance<ISnapPackageManager>();
             var snapExtractor = snapInstallerEnvironment.Container.GetInstance<ISnapExtractor>();
-            var coreRunLib = snapInstallerEnvironment.Container.GetInstance<ICoreRunLib>();
+            var libPal = snapInstallerEnvironment.Container.GetInstance<ILibPal>();
 
             Task<(int exitCode, SnapInstallerType installerType)> RunInstallerAsync()
             {
                 return InstallAsync(snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                    snapInstaller, snapFilesystem, snapOs, coreRunLib, snapAppReader,
+                    snapInstaller, snapFilesystem, snapOs, libPal, snapAppReader,
                     snapAppWriter, snapPackageManager, snapExtractor, snapInstallerLogger,
                     headless, args);
             }
@@ -177,8 +177,8 @@ namespace Snap.Installer
             var thisExeWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var workingDirectory = Environment.CurrentDirectory;
 
-            container.Register<ICoreRunLib>(_ => new CoreRunLib());
-            container.Register<IBsdiffLib>(_ => new BsdiffLib());
+            container.Register<ILibPal>(_ => new LibPal());
+            container.Register<IBsdiffLib>(_ => new LibBsDiff());
             container.Register(c => snapOs);
             container.Register(c => snapOs.SpecialFolders);
 

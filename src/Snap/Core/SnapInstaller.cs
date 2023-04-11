@@ -245,15 +245,15 @@ internal sealed class SnapInstaller : ISnapInstaller
     {
         var chmod = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-        var coreRunExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(baseDirectory, snapApp.GetCoreRunExeFilename());
+        var stubExeAbsolutePath = _snapOs.Filesystem
+            .PathCombine(baseDirectory, snapApp.GetStubExeFilename());
         var mainExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(appDirectory, snapApp.GetCoreRunExeFilename());
+            .PathCombine(appDirectory, snapApp.GetStubExeFilename());
         var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ?
             _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
         var snapChannel = snapApp.GetCurrentChannelOrThrow();
 
-        logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
+        logger?.Debug($"{nameof(stubExeAbsolutePath)}: {stubExeAbsolutePath}");
         logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
         logger?.Debug($"{nameof(iconAbsolutePath)}: {iconAbsolutePath}");
 
@@ -267,11 +267,11 @@ internal sealed class SnapInstaller : ISnapInstaller
 
         if (chmod)
         {
-            await ChmodAsync(coreRunExeAbsolutePath);
+            await ChmodAsync(stubExeAbsolutePath);
             await ChmodAsync(mainExeAbsolutePath);
         }
 
-        var coreRunExeFilename = _snapOs.Filesystem.PathGetFileName(coreRunExeAbsolutePath);
+        var stubExeFileName = _snapOs.Filesystem.PathGetFileName(stubExeAbsolutePath);
 
         if (!snapApp.Target.Shortcuts.Any())
         {
@@ -290,7 +290,7 @@ internal sealed class SnapInstaller : ISnapInstaller
                     UpdateOnly = isInitialInstall == false,
                     NuspecReader = nuspecReader,
                     ShortcutLocations = shortcutLocations,
-                    ExeAbsolutePath = coreRunExeAbsolutePath,
+                    ExeAbsolutePath = stubExeAbsolutePath,
                     IconAbsolutePath = iconAbsolutePath
                 };
 
@@ -298,7 +298,7 @@ internal sealed class SnapInstaller : ISnapInstaller
             }
             catch (Exception e)
             {
-                logger?.ErrorException($"Exception thrown while creating shortcut for exe: {coreRunExeFilename}", e);
+                logger?.ErrorException($"Exception thrown while creating shortcut for exe: {stubExeFileName}", e);
             }
         }
 

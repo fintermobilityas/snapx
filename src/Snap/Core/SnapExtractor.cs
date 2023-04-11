@@ -48,7 +48,7 @@ internal sealed class SnapExtractor : ISnapExtractor
         if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
 
         var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);                        
-        var coreRunExeFilename = snapApp.GetCoreRunExeFilename();
+        var stubExeFilename = snapApp.GetStubExeFilename();
         var extractedFiles = new List<string>();
             
         _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectoryAbsolutePath);
@@ -70,7 +70,7 @@ internal sealed class SnapExtractor : ISnapExtractor
             {
                 dstFilename = _snapFilesystem.PathCombine(destinationDirectoryAbsolutePath, checksum.Filename);
 
-                if (checksum.Filename == coreRunExeFilename)
+                if (checksum.Filename == stubExeFilename)
                 {
                     dstFilename = _snapFilesystem.PathCombine(
                         _snapFilesystem.DirectoryGetParent(destinationDirectoryAbsolutePath), checksum.Filename);          

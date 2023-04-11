@@ -32,8 +32,8 @@ namespace Snap.Tests.Core
 
         public SnapPackageManagerTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget, ITestOutputHelper testOutputHelper)
         {
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
 
             _nugetServiceMock = new Mock<INugetService>();
             var snapHttpClientMock = new Mock<ISnapHttpClient>();
@@ -52,7 +52,7 @@ namespace Snap.Tests.Core
                 _nugetServiceMock.Object,
                 snapHttpClientMock.Object,
                 snapCryptoProvider, snapExtractor, snapAppReader, _snapPack);
-            _releaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem,
+            _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem,
                 snapCryptoProvider, _snapPack);
         }
 

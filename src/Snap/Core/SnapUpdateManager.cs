@@ -148,7 +148,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
         _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
         _snapAppReader = snapAppReader ?? new SnapAppReader();
         _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
-        _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher(new BsdiffLib());
+        _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher(new LibBsDiff());
         _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter,
             _snapCryptoProvider, _snapBinaryPatcher);
         _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack);
@@ -385,7 +385,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
 
         SnapApp updatedSnapApp = null;
 
-        _snapApp.GetCoreRunExecutableFullPath(_snapOs.Filesystem, _workingDirectory, out var superVisorAbsolutePath);
+        _snapApp.GetStubExeFullPath(_snapOs.Filesystem, _workingDirectory, out var superVisorAbsolutePath);
 
         var superVisorBackupAbsolutePath = superVisorAbsolutePath + ".bak";
         var superVisorRestartArguments = Snapx.SupervisorProcessRestartArguments;

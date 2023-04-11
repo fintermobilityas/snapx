@@ -47,12 +47,12 @@ namespace Snap.Tests.Core
             _snapHttpClientMock = new Mock<ISnapHttpClient>();
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
-            ICoreRunLib coreRunLib = new CoreRunLib();
-            IBsdiffLib bsdiffLib = new BsdiffLib();
+            ILibPal libPal = new LibPal();
+            IBsdiffLib bsdiffLib = new LibBsDiff();
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), 
                 new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
             _snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), _baseFixturePackaging.WorkingDirectory, true);
-            _releaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, _snapPack);
+            _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Theory]

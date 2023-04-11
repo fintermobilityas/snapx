@@ -25,7 +25,7 @@ internal partial class Program
         [NotNull] INugetService nugetService, [NotNull] IDistributedMutexClient distributedMutexClient,
         [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack, [NotNull] ISnapOsSpecialFolders specialFolders,
         [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
-        [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
+        [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ILibPal libPal,
         [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
     {
         if (options == null) throw new ArgumentNullException(nameof(options));
@@ -42,7 +42,7 @@ internal partial class Program
         if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
         if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
         if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         if (options == null) throw new ArgumentNullException(nameof(options));
@@ -208,7 +208,7 @@ internal partial class Program
             
         var restoreSuccess = 0 == await CommandRestoreAsync(
             restoreOptions, filesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
-            snapPackageManager, snapOs, snapxEmbeddedResources, coreRunLib, snapPack,
+            snapPackageManager, snapOs, snapxEmbeddedResources, libPal, snapPack,
             logger, workingDirectory, cancellationToken
         );
 
@@ -236,7 +236,7 @@ internal partial class Program
                     logger.Info('-'.Repeat(TerminalBufferWidth));
 
                     var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
-                        snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                        snapxEmbeddedResources, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                         true, cancellationToken);
 
@@ -260,7 +260,7 @@ internal partial class Program
                 {
                     logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                    var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                    var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, null, releasesPackageAbsolutePath,
                         false, cancellationToken);
 

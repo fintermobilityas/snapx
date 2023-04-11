@@ -21,8 +21,8 @@ namespace Snap.Tests.Core
 
         public SnapCryptoProviderTests(BaseFixturePackaging baseFixture)
         {
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
             var snapAppReader = new SnapAppReader();
@@ -30,7 +30,7 @@ namespace Snap.Tests.Core
             _snapFilesystem = new SnapFilesystem();
             _snapPack = new SnapPack(_snapFilesystem, snapAppReader, 
                 snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib,
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(libPal,
                 _snapFilesystem, _snapCryptoProvider, _snapPack);
         }
 

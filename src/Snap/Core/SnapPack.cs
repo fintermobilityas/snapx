@@ -110,7 +110,7 @@ namespace Snap.Core
         IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies { get; }
 
         Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
-            BuildPackageAsync([NotNull] ISnapPackageDetails packageDetails, [NotNull] ICoreRunLib coreRunLib, CancellationToken cancellationToken = default);
+            BuildPackageAsync([NotNull] ISnapPackageDetails packageDetails, [NotNull] ILibPal libPal, CancellationToken cancellationToken = default);
         Task<(SnapApp fullSnapApp, SnapRelease fullSnapRelease)> RebuildPackageAsync([NotNull] string packagesDirectory,
             [NotNull] ISnapAppChannelReleases snapAppChannelReleases, [NotNull] SnapRelease snapRelease,
             IRebuildPackageProgressSource rebuildPackageProgressSource = null, ISnapFilesystem filesystem = default,
@@ -132,7 +132,7 @@ namespace Snap.Core
         readonly SemanticVersion _snapDllVersion;
 
         static readonly Regex IsSnapDotnetRuntimesFileRegex =
-            new(@"^runtimes\/(.+?)\/native\/([libpal|libbsdiff|corerun]+)$",
+            new(@"^runtimes\/(.+?)\/native\/([libsnap|snapstub]+)$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
@@ -163,13 +163,13 @@ namespace Snap.Core
         }
 
         public async Task<(MemoryStream fullNupkgMemoryStream, SnapApp fullSnapApp, SnapRelease fullSnapRelease, MemoryStream deltaNupkgMemoryStream, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)> 
-            BuildPackageAsync(ISnapPackageDetails packageDetails, ICoreRunLib coreRunLib, CancellationToken cancellationToken = default)
+            BuildPackageAsync(ISnapPackageDetails packageDetails, ILibPal libPal, CancellationToken cancellationToken = default)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
-            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (libPal == null) throw new ArgumentNullException(nameof(libPal));
 
             var (fullNupkgPackageBuilder, fullSnapApp, fullSnapRelease, deltaNupkgPackageBuilder, deltaSnapApp, deltaSnapRelease) =
-                await BuildPackageAsyncInternal(packageDetails, coreRunLib, cancellationToken);
+                await BuildPackageAsyncInternal(packageDetails, libPal, cancellationToken);
 
             fullSnapRelease.Sort();            
             
@@ -212,11 +212,11 @@ namespace Snap.Core
         async Task<(PackageBuilder fullNupkgPackageBuilder, SnapApp fullSnapApp, SnapRelease fullSnapRelease, PackageBuilder deltaNupkgBuilder, SnapApp deltaSnapApp, SnapRelease deltaSnapRelease)>
             BuildPackageAsyncInternal(
                 [NotNull] ISnapPackageDetails packageDetails, 
-                [NotNull] ICoreRunLib coreRunLib,
+                [NotNull] ILibPal libPal,
                 CancellationToken cancellationToken = default)
         {
             if (packageDetails == null) throw new ArgumentNullException(nameof(packageDetails));
-            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (libPal == null) throw new ArgumentNullException(nameof(libPal));
 
             Validate(packageDetails);
 
@@ -243,7 +243,7 @@ namespace Snap.Core
             {           
                 var (genesisPackageBuilder, nuspecMemoryStream, _, genesisSnapApp, genesisSnapRelease) = 
                     await BuildFullPackageAsyncInternal(packageDetails, snapAppChannelReleases, snapAppMetadataOnly, 
-                        snapReleaseMetadataOnly, coreRunLib, cancellationToken);
+                        snapReleaseMetadataOnly, libPal, cancellationToken);
 
                 genesisSnapRelease.Channels = genesisSnapApp.Channels.Select(x => x.Name).ToList();
 
@@ -260,7 +260,7 @@ namespace Snap.Core
 
             var (currentFullNupkgPackageBuilder, currentNuspecMemoryStream, currentNuspecPropertiesResolver, 
                 currentFullSnapApp, currentFullSnapRelease) = await BuildFullPackageAsyncInternal(
-                    packageDetails, snapAppChannelReleases, snapAppMetadataOnly, snapReleaseMetadataOnly, coreRunLib, cancellationToken);
+                    packageDetails, snapAppChannelReleases, snapAppMetadataOnly, snapReleaseMetadataOnly, libPal, cancellationToken);
 
             var deltaSnapApp = currentFullSnapApp.AsDeltaSnapApp();
             var deltaSnapRelease = currentFullSnapRelease.AsDeltaRelease();
@@ -284,12 +284,12 @@ namespace Snap.Core
 
         async Task<(PackageBuilder packageBuilder, MemoryStream nuspecStream, Func<string, string> nuspecPropertiesResolver, SnapApp fullSnapApp, SnapRelease fullSnapRelease)> 
             BuildFullPackageAsyncInternal([NotNull] ISnapPackageDetails snapPackageDetails, [NotNull] ISnapAppChannelReleases snapAppChannelReleases, SnapApp snapAppMetadataOnly,
-                [NotNull] SnapRelease snapReleaseMetadataOnly, [NotNull] ICoreRunLib coreRunLib, CancellationToken cancellationToken = default)
+                [NotNull] SnapRelease snapReleaseMetadataOnly, [NotNull] ILibPal libPal, CancellationToken cancellationToken = default)
         {
             if (snapPackageDetails == null) throw new ArgumentNullException(nameof(snapPackageDetails));
             if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
             if (snapReleaseMetadataOnly == null) throw new ArgumentNullException(nameof(snapReleaseMetadataOnly));
-            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (libPal == null) throw new ArgumentNullException(nameof(libPal));
 
             var isGenesis = !snapAppChannelReleases.Any();
 
@@ -335,7 +335,7 @@ namespace Snap.Core
                     AddPackageFile(packageBuilder, srcStream, targetPath, string.Empty, fullSnapRelease);
                 }
 
-                var mainExecutableFileName = fullSnapApp.GetCoreRunExeFilename();
+                var mainExecutableFileName = fullSnapApp.GetStubExeFilename();
                 var mainExecutableTargetPath = _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, mainExecutableFileName).ForwardSlashesSafe();
                 var mainExecutablePackageFile = packageBuilder.GetPackageFile(mainExecutableTargetPath, StringComparison.OrdinalIgnoreCase);
                 if (mainExecutablePackageFile == null)
@@ -355,7 +355,7 @@ namespace Snap.Core
                         await mainExecutableStream.CopyToAsync(mainExecutableTmpStream, cancellationToken);                                        
                     }
 
-                    if (!coreRunLib.SetIcon(mainExecutableTempFilename, fullSnapApp.Target.Icon))
+                    if (!libPal.SetIcon(mainExecutableTempFilename, fullSnapApp.Target.Icon))
                     {
                         throw new Exception($"Failed to update icon for executable {mainExecutableTempFilename}. Icon: {fullSnapApp.Target.Icon}.");
                     }
@@ -918,9 +918,9 @@ namespace Snap.Core
             AddPackageFile(packageBuilder, await _snapFilesystem.FileReadAsync(snapDllAbsolutePath, cancellationToken),
                 SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename, snapRelease);
 
-            // Corerun shim executable
-            var (coreRunStream, coreRunFilename) = snapApp.GetCoreRunStream(_snapFilesystem, AppContext.BaseDirectory);
-            AddPackageFile(packageBuilder, coreRunStream, SnapConstants.NuspecAssetsTargetPath, coreRunFilename, snapRelease);
+            // Stub executable
+            var (stubExeFileStream, stubExeFileName) = snapApp.GetStubExeStream(_snapFilesystem, AppContext.BaseDirectory);
+            AddPackageFile(packageBuilder, stubExeFileStream, SnapConstants.NuspecAssetsTargetPath, stubExeFileName, snapRelease);
             
             // Snap.App.dll
             using var snapAppDllAssembly = _snapAppWriter.BuildSnapAppAssembly(snapApp);

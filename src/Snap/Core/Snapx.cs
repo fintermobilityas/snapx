@@ -45,7 +45,7 @@ public static class Snapx
                 _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
 
                 typeof(Snapx).Assembly
-                    .GetCoreRunExecutableFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
+                    .GetStubExeFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
 
                 SuperVisorProcessExeDirectory = supervisorExecutableAbsolutePath;
             }
@@ -200,11 +200,11 @@ public static class Snapx
 
         var superVisorId = Current.SuperVisorId;
 
-        var coreRunArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id} --corerun-supervise-id={superVisorId}";
+        var runArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id} --corerun-supervise-id={superVisorId}";
 
         SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
             .AddRange(restartArguments ?? new List<string>())
-            .Add(coreRunArgument)
+            .Add(runArgument)
         );
 
         SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
@@ -238,7 +238,7 @@ public static class Snapx
                 // ReSharper disable once InconsistentNaming
                 const int SIGTERM = 15;
                 // We have to signal the supervisor so we can release the machine wide semaphore.
-                var killResult = CoreRunLib.NativeMethodsUnix.kill(SuperVisorProcess.Id, SIGTERM);
+                var killResult = LibPal.NativeMethodsUnix.kill(SuperVisorProcess.Id, SIGTERM);
                 var killSuccess = killResult == 0;
 
                 if (!killSuccess)

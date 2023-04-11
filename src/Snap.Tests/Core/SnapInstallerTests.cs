@@ -29,8 +29,8 @@ namespace Snap.Tests.Core
         {
             _baseFixture = baseFixture;
             _snapOsMock = new Mock<ISnapOs>();
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapAppReader = new SnapAppReader();
             ISnapAppWriter snapAppWriter = new SnapAppWriter();
@@ -41,7 +41,7 @@ namespace Snap.Tests.Core
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, snapPack);
             _snapInstaller = new SnapInstaller(snapExtractor, snapPack, _snapOsMock.Object, snapAppWriter);
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, snapPack);
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem, snapCryptoProvider, snapPack);
         }
 
         [Fact]
@@ -114,10 +114,10 @@ namespace Snap.Tests.Core
             var snapAppUpdatedChannel = snapAppUpdated.GetCurrentChannelOrThrow();
             Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);
 
-            var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                genesisPackageContext.FullPackageSnapApp.GetCoreRunExeFilename());
+            var stubExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
+                genesisPackageContext.FullPackageSnapApp.GetStubExeFilename());
             var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                $"app-{genesisSnapReleaseBuilder.SnapApp.Version}", genesisSnapReleaseBuilder.CoreRunExe);
+                $"app-{genesisSnapReleaseBuilder.SnapApp.Version}", genesisSnapReleaseBuilder.StubExeFileName);
             var snapInstalledArguments = $"--snapx-installed {genesisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
             var snapFirstRunArguments = $"--snapx-first-run {genesisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";
 
@@ -128,7 +128,7 @@ namespace Snap.Tests.Core
                 snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
                     It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
                 snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                    It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
+                    It.Is<string>(v => v == stubExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
                 snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
                     It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
             }
@@ -141,7 +141,7 @@ namespace Snap.Tests.Core
                 It.IsAny<CancellationToken>()), Times.Once);
 
             _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
+                It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == stubExe),
                 It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == installCts.Token)), Times.Once);
 
             snapOsProcessManager.Verify(x => x.RunAsync(
@@ -326,9 +326,9 @@ namespace Snap.Tests.Core
                     loggerMock.Object,
                     updateCts.Token);
 
-                var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, update2SnapReleaseBuilder.CoreRunExe);
+                var stubExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory, update2SnapReleaseBuilder.StubExeFileName);
                 var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                    $"app-{update2SnapReleaseBuilder.SnapApp.Version}", update2SnapReleaseBuilder.CoreRunExe);
+                    $"app-{update2SnapReleaseBuilder.SnapApp.Version}", update2SnapReleaseBuilder.StubExeFileName);
                 var snapUpdatedArguments = $"--snapx-updated {update2SnapReleaseBuilder.SnapApp.Version.ToNormalizedString()}";
 
                 progressSource.Verify(x => x.Raise(It.Is<int>(v => v == 100)), Times.Once);
@@ -339,7 +339,7 @@ namespace Snap.Tests.Core
                     snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
                         It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
                     snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
-                        It.Is<string>(v => v == coreRunExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
+                        It.Is<string>(v => v == stubExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
                     snapOsProcessManager.Verify(x => x.ChmodExecuteAsync(
                         It.Is<string>(v => v == appExe), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
                 }
@@ -352,7 +352,7 @@ namespace Snap.Tests.Core
                     It.IsAny<CancellationToken>()), Times.Once);
 
                 _snapOsMock.Verify(x => x.CreateShortcutsForExecutableAsync(
-                    It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == coreRunExe),
+                    It.Is<SnapOsShortcutDescription>(v => v.ExeAbsolutePath == stubExe),
                     It.Is<ILog>(v => v != null), It.Is<CancellationToken>(v => v == updateCts.Token)), Times.Once);
 
                 snapOsProcessManager.Verify(x => x.RunAsync(It.Is<ProcessStartInfoBuilder>(

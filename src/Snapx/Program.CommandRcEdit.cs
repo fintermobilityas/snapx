@@ -11,11 +11,11 @@ namespace snapx;
 
 internal partial class Program
 {
-    static int CommandRcEdit([NotNull] RcEditOptions opts, [NotNull] ICoreRunLib coreRunLib, 
+    static int CommandRcEdit([NotNull] RcEditOptions opts, [NotNull] ILibPal libPal, 
         [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ILog logger)
     {
         if (opts == null) throw new ArgumentNullException(nameof(opts));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
 
@@ -58,7 +58,7 @@ internal partial class Program
                 goto done;
             }
 
-            if (!coreRunLib.SetIcon(opts.Filename, opts.IconFilename))
+            if (!libPal.SetIcon(opts.Filename, opts.IconFilename))
             {
                 logger.Error($"Unknown error setting icon for executable {opts.Filename}. Icon filename: {opts.Filename}.");
                 goto done;

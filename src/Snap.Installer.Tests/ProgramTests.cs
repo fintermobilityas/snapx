@@ -36,8 +36,8 @@ namespace Snap.Installer.Tests
             _baseFixturePackaging = baseFixturePackaging;
             _snapOsMock = new Mock<ISnapOs>();
        
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             var snapCryptoProvider = new SnapCryptoProvider();
             var snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
@@ -48,7 +48,7 @@ namespace Snap.Installer.Tests
 
             var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
             _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapOsMock.Object, _snapAppWriter);
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, _snapPack);
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Fact]

@@ -148,8 +148,8 @@ namespace snapx
             var snapCryptoProvider = new SnapCryptoProvider();
             var snapXEmbeddedResources = new SnapxEmbeddedResources();
             
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
             var snapBinaryPatcher = new SnapBinaryPatcher(bsdiffLib);
@@ -179,7 +179,7 @@ namespace snapx
                 await OnExitAsync();
             };
 
-            return MainAsync(args, coreRunLib, snapOs, snapExtractor, snapOs.Filesystem, 
+            return MainAsync(args, libPal, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapSpecsReader, snapCryptoProvider,
                 snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandDemote, nugetServiceNoopLogger, distributedMutexClient, workingDirectory, cts.Token);
@@ -203,7 +203,7 @@ namespace snapx
         }
 
         static int MainAsync([NotNull] string[] args,
-            [NotNull] CoreRunLib coreRunLib,
+            [NotNull] LibPal libPal,
             [NotNull] ISnapOs snapOs, [NotNull] ISnapExtractor snapExtractor,
             [NotNull] ISnapFilesystem snapFilesystem,
             [NotNull] ISnapAppReader snapAppReader,
@@ -221,7 +221,7 @@ namespace snapx
             CancellationToken cancellationToken)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
-            if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+            if (libPal == null) throw new ArgumentNullException(nameof(libPal));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
             if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
             if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
@@ -256,7 +256,7 @@ namespace snapx
 
                         return TplHelper.RunSync(() => CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandDemote, distributedMutexClient, snapPackageManager, snapPack,
-                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
+                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, libPal,
                             SnapDemoteLogger, workingDirectory, cancellationToken));
                     },
                     (PromoteOptions opts) =>
@@ -272,7 +272,7 @@ namespace snapx
                         return TplHelper.RunSync(() => CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
                             snapOs.SpecialFolders,
-                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, coreRunLib,
+                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, libPal,
                             SnapPromoteLogger, workingDirectory, cancellationToken));
                     },
                     (PackOptions opts) =>
@@ -287,12 +287,12 @@ namespace snapx
 
                         return TplHelper.RunSync(() => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
-                            snapExtractor, snapPackageManager, coreRunLib,
+                            snapExtractor, snapPackageManager, libPal,
                             snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient,
                             workingDirectory, cancellationToken));
                     },
                     (Sha256Options opts) => CommandSha256(opts, snapFilesystem, snapCryptoProvider, SnapLogger),
-                    (RcEditOptions opts) => CommandRcEdit(opts, coreRunLib, snapFilesystem, SnapLogger),
+                    (RcEditOptions opts) => CommandRcEdit(opts, libPal, snapFilesystem, SnapLogger),
                     (ListOptions opts) =>
                     {
                         var nuGetPackageSources = BuildNuGetPackageSources(snapFilesystem, SnapListLogger);
@@ -313,7 +313,7 @@ namespace snapx
                         }
                         return TplHelper.RunSync(() => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPackageManager, snapOs,
-                            snapXEmbeddedResources, coreRunLib, snapPack,
+                            snapXEmbeddedResources, libPal, snapPack,
                             SnapRestoreLogger, workingDirectory, cancellationToken));
                     },
                     (LockOptions opts) => TplHelper.RunSync(() => CommandLock(opts, distributedMutexClient, snapFilesystem, 
@@ -679,7 +679,7 @@ namespace snapx
 
         static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
             [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
-            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ICoreRunLib coreRunLib, 
+            [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ILibPal libPal, 
             [NotNull] string installersWorkingDirectory, string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
             CancellationToken cancellationToken)
         {
@@ -816,7 +816,7 @@ namespace snapx
                             IconFilename = setupIcon
                         };
 
-                        CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
+                        CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
                     }
                 }
             }
@@ -858,7 +858,7 @@ namespace snapx
                             IconFilename = setupIcon
                         };
 
-                        CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
+                        CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
                     }
                 }
             }
@@ -913,7 +913,7 @@ namespace snapx
                     //IconFilename = setupIcon 
                 };
 
-                CommandRcEdit(rcEditOptions, coreRunLib, snapOs.Filesystem, logger);
+                CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
             }
 
             if (chmod)

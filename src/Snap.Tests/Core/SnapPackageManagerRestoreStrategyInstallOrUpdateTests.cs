@@ -28,8 +28,8 @@ namespace Snap.Tests.Core
 
         public SnapPackageManagerRestoreStrategyInstallOrUpdateTests(BaseFixturePackaging baseFixturePackaging, BaseFixtureNuget baseFixtureNuget)
         {
-            var coreRunLib = new CoreRunLib();
-            var bsdiffLib = new BsdiffLib();
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             _nugetServiceMock = new Mock<INugetService>();
             var snapHttpClientMock = new Mock<ISnapHttpClient>();
             _baseFixturePackaging = baseFixturePackaging;
@@ -44,7 +44,7 @@ namespace Snap.Tests.Core
             _snapPackageManager = new SnapPackageManager(_snapFilesystem, 
                 new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), _nugetServiceMock.Object, snapHttpClientMock.Object,
                 _snapCryptoProvider, snapExtractor, snapAppReader, _snapPack);
-            _releaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem,
+            _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem,
                 _snapCryptoProvider, _snapPack);
         }
 

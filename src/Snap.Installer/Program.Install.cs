@@ -24,7 +24,7 @@ internal partial class Program
     static async Task<(int exitCode, SnapInstallerType installerType)> InstallAsync([NotNull] ISnapInstallerEnvironment environment,
         [NotNull] ISnapInstallerEmbeddedResources snapInstallerEmbeddedResources, [NotNull] ISnapInstaller snapInstaller,
         [NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapOs snapOs,
-        [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
+        [NotNull] ILibPal libPal, [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter,
         [NotNull] ISnapPackageManager snapPackageManager,
         [NotNull] ISnapExtractor snapExtractor, [NotNull] ILog diskLogger,
         bool headless, string[] args)
@@ -34,7 +34,7 @@ internal partial class Program
         if (snapInstaller == null) throw new ArgumentNullException(nameof(snapInstaller));
         if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
         if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
         if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
@@ -81,7 +81,7 @@ internal partial class Program
             });
 
 #if !SNAP_INSTALLER_ALLOW_ELEVATED_CONTEXT
-            if (coreRunLib.IsElevated())
+            if (libPal.IsElevated())
             {
                 var rootUserText = snapOs.OsPlatform == OSPlatform.Windows ? "Administrator" : "root";
                 mainWindowLogger.Error($"Error! Installer cannot run in an elevated user context: {rootUserText}");

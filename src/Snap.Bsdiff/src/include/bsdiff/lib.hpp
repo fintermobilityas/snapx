@@ -3,7 +3,7 @@
 #include <bsdiff.h>
 #include <cstdint>
 
-#ifdef SNAP_BSDIFF_PLATFORM_WINDOWS
+#ifdef SNAP_PLATFORM_WINDOWS
 #define SNAP_API __declspec( dllexport )
 #define SNAP_CALLING_CONVENTION __cdecl
 #elif SNAP_PLATFORM_LINUX

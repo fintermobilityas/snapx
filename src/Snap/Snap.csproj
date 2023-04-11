@@ -37,7 +37,7 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -55,7 +55,7 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -75,7 +75,7 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/libbsdiff-win-x86.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -93,7 +93,7 @@
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/libsnap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/libbsdiff-win-x64.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>

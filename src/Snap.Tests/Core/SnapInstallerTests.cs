@@ -7,7 +7,6 @@ using Snap.AnyOS.Windows;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.Shared.Tests;
@@ -19,36 +18,29 @@ namespace Snap.Tests.Core
     public class SnapInstallerTests : IClassFixture<BaseFixturePackaging>
     {
         readonly BaseFixturePackaging _baseFixture;
-        readonly ISnapPack _snapPack;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapInstaller _snapInstaller;
         readonly Mock<ISnapOs> _snapOsMock;
         readonly ISnapAppReader _snapAppReader;
-        readonly ISnapAppWriter _snapAppWriter;
-        readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapOsProcessManager _snapOsProcessManager;
-        readonly ISnapCryptoProvider _snapCryptoProvider;
-        readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _snapReleaseBuilderContext;
 
         public SnapInstallerTests(BaseFixturePackaging baseFixture)
         {
             _baseFixture = baseFixture;
             _snapOsMock = new Mock<ISnapOs>();
-            _coreRunLibMock = new Mock<ICoreRunLib>();
-
-            _snapCryptoProvider = new SnapCryptoProvider();
+            var coreRunLib = new CoreRunLib();
+            ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapAppReader = new SnapAppReader();
-            _snapAppWriter = new SnapAppWriter();
-            _snapEmbeddedResources = new SnapEmbeddedResources();
+            ISnapAppWriter snapAppWriter = new SnapAppWriter();
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
-                _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
+            ISnapPack snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
+                snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher());
 
-            var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapOsMock.Object, _snapEmbeddedResources, _snapAppWriter);
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+            var snapExtractor = new SnapExtractor(_snapFilesystem, snapPack);
+            _snapInstaller = new SnapInstaller(snapExtractor, snapPack, _snapOsMock.Object, snapAppWriter);
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(coreRunLib, _snapFilesystem, snapCryptoProvider, snapPack);
         }
 
         [Fact]
@@ -122,7 +114,7 @@ namespace Snap.Tests.Core
             Assert.Equal(snapCurrentChannel.Name, snapAppUpdatedChannel.Name);
 
             var coreRunExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
-                _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(genesisPackageContext.FullPackageSnapApp));
+                genesisPackageContext.FullPackageSnapApp.GetCoreRunExeFilename());
             var appExe = _snapFilesystem.PathCombine(baseDirectory.WorkingDirectory,
                 $"app-{genesisSnapReleaseBuilder.SnapApp.Version}", genesisSnapReleaseBuilder.CoreRunExe);
             var snapInstalledArguments = $"--snapx-installed {genesisPackageContext.FullPackageSnapApp.Version.ToNormalizedString()}";

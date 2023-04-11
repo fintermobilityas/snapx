@@ -1,4 +1,16 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=a010de5d_002D3868_002D4841_002Dbef6_002D9d950d061164/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from Solution" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
-  &lt;Solution /&gt;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=368d8b8e_002D847d_002D4c49_002Dbd45_002D97b00203f6de/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Session #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;And&gt;
+    &lt;Project Location="/home/peters/github/snapx/src" Presentation="&amp;lt;tests&amp;gt;" /&gt;
+    &lt;TargetFrameworkId&gt;net8.0&lt;/TargetFrameworkId&gt;
+  &lt;/And&gt;
+&lt;/SessionState&gt;</s:String>
+	
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e14bbfbf_002De13c_002D4349_002D962a_002Deec72b2b6880/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="Session" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;And&gt;
+    &lt;TestAncestor&gt;
+      &lt;TestId&gt;xUnit::4F05300A-9D3D-4262-A4FC-40D5876B7A8C::net8.0::Snap.Tests.Core.SnapPackTests.TestBuildPackageAsync_Delta_New_File_Is_Added&lt;/TestId&gt;
+    &lt;/TestAncestor&gt;
+    &lt;TargetFrameworkId&gt;net8.0&lt;/TargetFrameworkId&gt;
+  &lt;/And&gt;
 &lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

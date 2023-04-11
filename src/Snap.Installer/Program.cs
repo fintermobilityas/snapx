@@ -16,8 +16,6 @@ using NLog.Config;
 using NLog.Targets;
 using Snap.AnyOS;
 using Snap.Core;
-using Snap.Core.Resources;
-using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Logging;
 using Snap.NuGet;
@@ -129,14 +127,11 @@ namespace Snap.Installer
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
             
-            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();            
-            var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
+            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();
             var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
-
-            var thisExeWorkingDirectory = snapInstallerEnvironment.Io.ThisExeWorkingDirectory;
+            
             var workingDirectory = snapInstallerEnvironment.Io.WorkingDirectory;
-            TplHelper.RunSync(() => snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisExeWorkingDirectory, snapOs.OsPlatform));
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisExeWorkingDirectory);
+            var coreRunLib = new CoreRunLib();
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();
             var snapPack = snapInstallerEnvironment.Container.GetInstance<ISnapPack>();
@@ -189,7 +184,6 @@ namespace Snap.Installer
 
             container.Register(c => snapOs.Filesystem);
             container.Register<ISnapHttpClient>(c => new SnapHttpClient(new HttpClient()));
-            container.Register<ISnapEmbeddedResources>(c => new SnapEmbeddedResources());
             container.Register<ISnapInstallerEmbeddedResources>(c => new SnapInstallerEmbeddedResources());
             container.Register<INuGetPackageSources>(c =>
                 new NuGetMachineWidePackageSources(
@@ -205,18 +199,15 @@ namespace Snap.Installer
                 c.GetInstance<ISnapFilesystem>(), 
                 c.GetInstance<ISnapAppReader>(), 
                 c.GetInstance<ISnapAppWriter>(), 
-                c.GetInstance<ISnapCryptoProvider>(), 
-                c.GetInstance<ISnapEmbeddedResources>(),
+                c.GetInstance<ISnapCryptoProvider>(),
                 c.GetInstance<ISnapBinaryPatcher>()));
             container.Register<ISnapExtractor>(c => new SnapExtractor(
                 c.GetInstance<ISnapFilesystem>(),
-                c.GetInstance<ISnapPack>(),
-                c.GetInstance<ISnapEmbeddedResources>()));
+                c.GetInstance<ISnapPack>()));
             container.Register<ISnapInstaller>(c => new SnapInstaller(
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapPack>(),
                 c.GetInstance<ISnapOs>(),
-                c.GetInstance<ISnapEmbeddedResources>(),
                 c.GetInstance<ISnapAppWriter>()
             ));
             container.Register<ISnapNugetLogger>(c => new NugetLogger(logger));

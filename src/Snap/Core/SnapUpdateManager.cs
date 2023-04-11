@@ -10,7 +10,6 @@ using JetBrains.Annotations;
 using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
@@ -134,7 +133,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
     }
 
     internal SnapUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, ILog logger = null, INugetService nugetService = null,
-        ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
+        ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, 
         ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null, ISnapPack snapPack = null, ISnapExtractor snapExtractor = null,
         ISnapInstaller snapInstaller = null, ISnapPackageManager snapPackageManager = null, 
         ISnapHttpClient snapHttpClient = null, ISnapBinaryPatcher snapBinaryPatcher = null)
@@ -147,14 +146,13 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
 
         _nugetService = nugetService ?? new NugetService(_snapOs.Filesystem, new NugetLogger(_logger));
         _snapCryptoProvider = snapCryptoProvider ?? new SnapCryptoProvider();
-        snapEmbeddedResources ??= new SnapEmbeddedResources();
         _snapAppReader = snapAppReader ?? new SnapAppReader();
         _snapAppWriter = snapAppWriter ?? new SnapAppWriter();
         _snapBinaryPatcher = snapBinaryPatcher ?? new SnapBinaryPatcher();
         _snapPack = snapPack ?? new SnapPack(_snapOs.Filesystem, _snapAppReader, _snapAppWriter,
-            _snapCryptoProvider, snapEmbeddedResources, _snapBinaryPatcher);
-        _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack, snapEmbeddedResources);
-        _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, snapEmbeddedResources, _snapAppWriter);
+            _snapCryptoProvider, _snapBinaryPatcher);
+        _snapExtractor = snapExtractor ?? new SnapExtractor(_snapOs.Filesystem, _snapPack);
+        _snapInstaller = snapInstaller ?? new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapAppWriter);
         _snapHttpClient = snapHttpClient ?? new SnapHttpClient(new HttpClient());
         _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
             _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapHttpClient, _snapCryptoProvider,

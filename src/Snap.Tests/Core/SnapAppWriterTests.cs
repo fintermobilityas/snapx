@@ -1,14 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Snap.Core;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
 using Xunit;
@@ -38,7 +32,7 @@ namespace Snap.Tests.Core
             var snapAppYamlStr = _snapAppWriter.ToSnapAppYamlString(snapApp);
             Assert.NotNull(snapAppYamlStr);
         }
-        
+
         [Fact]
         public void TestToSnapAppsYamlString()
         {
@@ -52,10 +46,7 @@ namespace Snap.Tests.Core
         public void TestBuildSnapAppAssembly_Throws_If_Channel_UpdateFeed_Source_Is_Null()
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
-            snapAppBefore.Channels.ForEach(x =>
-            {
-                x.UpdateFeed.Source = null;
-            });
+            snapAppBefore.Channels.ForEach(x => { x.UpdateFeed.Source = null; });
             Assert.True(snapAppBefore.Channels.Count > 0);
 
             var ex = Assert.Throws<Exception>(() => _snapAppWriter.BuildSnapAppAssembly(snapAppBefore));
@@ -136,22 +127,22 @@ namespace Snap.Tests.Core
 
             var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
 
-            var nugetPushFeed = (SnapNugetFeed) snapAppAfterChannel.UpdateFeed;
+            var nugetPushFeed = (SnapNugetFeed)snapAppAfterChannel.UpdateFeed;
             Assert.Null(nugetPushFeed.ApiKey);
             Assert.Null(nugetPushFeed.Username);
             Assert.Null(nugetPushFeed.Password);
 
-            var nugetUpdateFeed = (SnapNugetFeed) snapAppAfterChannel.UpdateFeed;
+            var nugetUpdateFeed = (SnapNugetFeed)snapAppAfterChannel.UpdateFeed;
             Assert.Null(nugetUpdateFeed.ApiKey);
             Assert.Null(nugetUpdateFeed.Username);
             Assert.Null(nugetUpdateFeed.Password);
         }
-        
+
         [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly_Include_Persistent_Assets()
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
-            
+
             snapAppBefore.Target.PersistentAssets = new List<string>
             {
                 "subdirectory/",
@@ -161,15 +152,15 @@ namespace Snap.Tests.Core
             using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
             var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
             Assert.NotNull(snapAppAfter);
-                
+
             Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
         }
-        
+
         [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly_Include_Shortcuts()
         {
             var snapAppBefore = _baseFixture.BuildSnapApp();
-            
+
             snapAppBefore.Target.Shortcuts = new List<SnapShortcutLocation>
             {
                 SnapShortcutLocation.Desktop,
@@ -179,48 +170,8 @@ namespace Snap.Tests.Core
             using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
             var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
             Assert.NotNull(snapAppAfter);
-                
+
             Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
         }
-
-        [ExcludeFromCodeCoverage]
-        [Theory]
-        [InlineData("WINDOWS")]
-        [InlineData("LINUX")]
-        public async Task TestOptimizeSnapDllForPackageArchive(string osPlatformStr)
-        {
-            var osPlatform = OSPlatform.Create(osPlatformStr);
-
-            using var snapDllAssemblyDefinition = await _snapFilesystem.FileReadAssemblyDefinitionAsync(typeof(SnapAppWriter).Assembly.Location, CancellationToken.None);
-            using var optimizedAssemblyDefinition = _snapAppWriter.OptimizeSnapDllForPackageArchive(snapDllAssemblyDefinition, osPlatform);
-            Assert.NotNull(optimizedAssemblyDefinition);
-
-            var optimizedAssembly = Assembly.Load(optimizedAssemblyDefinition.ToByteArray());
-
-            // Assembly is rewritten so we have to use a dynamic cast :(
-
-            var optimizedAssembltType = optimizedAssembly.GetType(typeof(SnapEmbeddedResources).FullName 
-                                                 ?? throw new InvalidOperationException(), true);
-
-            var optimizedEmbeddedResources = (dynamic)Activator.CreateInstance
-                (optimizedAssembltType ?? throw new InvalidOperationException(), true);
-
-            Assert.NotNull(optimizedEmbeddedResources);
-
-            Assert.True((bool)optimizedEmbeddedResources.IsOptimized);
-
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindowsX86));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindowsX86));
-
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunWindowsX64));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibWindowsX64));
-
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinuxX64));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinuxX64));
-
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLinuxArm64));
-            Assert.Throws<FileNotFoundException>(() => object.ReferenceEquals(null, optimizedEmbeddedResources.CoreRunLibLinuxArm64));
-        }
-
     }
 }

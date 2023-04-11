@@ -24,6 +24,68 @@ internal static class SnapExtensions
     static readonly Regex NetAppRegex = new("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
     static readonly Regex ExpansionRegex = new("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+    public static (FileStream fileStream, string filename) GetCoreRunStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        string coreRunFilename;
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            coreRunFilename = $"libcorerun-{snapApp.Target.Rid}.dll";
+        } else if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            coreRunFilename = $"libcorerun-{snapApp.Target.Rid}.so";
+        }
+        else
+        {
+            throw new PlatformNotSupportedException();
+        }
+        
+        var coreRunStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, coreRunFilename));
+        return (coreRunStream, snapApp.GetCoreRunExeFilename());
+    }
+    
+    internal static string GetCoreRunExeFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        
+        var assemblyName = snapApp.MainExe ?? snapApp.Id;
+        
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"{assemblyName}.exe";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"{assemblyName}";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+
+    internal static string GetCoreRunLibFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"libcorerun-{snapApp.Target.Rid}.dll";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"libcorerun-{snapApp.Target.Rid}.so";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
     internal static string BuildRid(this OSPlatform osPlatform)
     {
 #if SNAPX_ALLOW_RID_OVERRIDE

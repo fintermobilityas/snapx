@@ -19,7 +19,6 @@ using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.Logging;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
@@ -145,22 +144,17 @@ namespace snapx
             {
                 workingDirectory += snapOs.Filesystem.DirectorySeparator;
             }
-            
-            var toolWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
-            
+           
             var snapCryptoProvider = new SnapCryptoProvider();
-            var snapEmbeddedResources = new SnapEmbeddedResources();            
-            TplHelper.RunSync(() => snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider,
-                toolWorkingDirectory, snapOs.OsPlatform));
             var snapXEmbeddedResources = new SnapxEmbeddedResources();
             
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, toolWorkingDirectory);
+            var coreRunLib = new CoreRunLib();
             var snapAppReader = new SnapAppReader();
             var snapAppWriter = new SnapAppWriter();
             var snapBinaryPatcher = new SnapBinaryPatcher();
             var snapPack = new SnapPack(snapOs.Filesystem, snapAppReader, 
-                snapAppWriter, snapCryptoProvider, snapEmbeddedResources, snapBinaryPatcher);
-            var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack, snapEmbeddedResources);
+                snapAppWriter, snapCryptoProvider, snapBinaryPatcher);
+            var snapExtractor = new SnapExtractor(snapOs.Filesystem, snapPack);
             var snapSpecsReader = new SnapAppReader();
             var snapHttpClient = new SnapHttpClient(new HttpClient());
 

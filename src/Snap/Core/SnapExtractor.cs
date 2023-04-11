@@ -9,7 +9,6 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using SharpCompress.Readers;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 
 namespace Snap.Core;
@@ -25,13 +24,11 @@ internal sealed class SnapExtractor : ISnapExtractor
 {   
     readonly ISnapFilesystem _snapFilesystem;
     readonly ISnapPack _snapPack;
-    readonly ISnapEmbeddedResources _snapEmbeddedResources;
 
-    public SnapExtractor(ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack, [NotNull] ISnapEmbeddedResources snapEmbeddedResources)
+    public SnapExtractor(ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack)
     {
         _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
         _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-        _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
     }
 
     public async Task<List<string>> ExtractAsync(string nupkgAbsolutePath, string destinationDirectoryAbsolutePath, SnapRelease snapRelease, CancellationToken cancellationToken = default)
@@ -51,7 +48,7 @@ internal sealed class SnapExtractor : ISnapExtractor
         if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
 
         var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);                        
-        var coreRunExeFilename = _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp);
+        var coreRunExeFilename = snapApp.GetCoreRunExeFilename();
         var extractedFiles = new List<string>();
             
         _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectoryAbsolutePath);

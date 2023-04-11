@@ -10,7 +10,6 @@ using NuGet.Versioning;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests;
 using Xunit;
@@ -31,14 +30,13 @@ namespace Snap.Tests.Core
             _baseFixture = baseFixture;
             var coreRunLibMock = new Mock<ICoreRunLib>();
             ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
-            ISnapEmbeddedResources snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapAppReader = new SnapAppReader();
             _snapPack = new SnapPack(_snapFilesystem, _snapAppReader,
-                new SnapAppWriter(), snapCryptoProvider, snapEmbeddedResources, new SnapBinaryPatcher());
-            _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, snapEmbeddedResources);
+                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher());
+            _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
             _snapReleaseBuilderContext =
-                new SnapReleaseBuilderContext(coreRunLibMock.Object, _snapFilesystem, snapCryptoProvider, snapEmbeddedResources, _snapPack);
+                new SnapReleaseBuilderContext(coreRunLibMock.Object, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Fact]

@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using Snap.Core;
 using Snap.Extensions;
 
 namespace Snap;
@@ -44,11 +43,17 @@ internal sealed class CoreRunLib : ICoreRunLib
     );
     readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
-    public CoreRunLib([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [JetBrains.Annotations.NotNull] string workingDirectory)
+    public CoreRunLib() 
     {
-        if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-        if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-
+        OSPlatform osPlatform = default;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            osPlatform = OSPlatform.Linux;
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            osPlatform = OSPlatform.Linux;
+        }
+        
         if (!osPlatform.IsSupportedOsVersion())
         {
             throw new PlatformNotSupportedException();
@@ -56,13 +61,13 @@ internal sealed class CoreRunLib : ICoreRunLib
 
         _osPlatform = osPlatform;
 
-        var filename = filesystem.PathCombine(workingDirectory, "libcorerun-");
+        var rid = _osPlatform.BuildRid();
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libcorerun-");
 
 #if SNAP_BOOTSTRAP
             return;
 #endif
 
-        var rid = osPlatform.BuildRid();
         if (osPlatform == OSPlatform.Windows)
         {
             filename += $"{rid}.dll";

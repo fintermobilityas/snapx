@@ -10,7 +10,6 @@ using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -49,16 +48,14 @@ internal sealed class SnapInstaller : ISnapInstaller
     readonly ISnapExtractor _snapExtractor;
     readonly ISnapPack _snapPack;
     readonly ISnapOs _snapOs;
-    readonly ISnapEmbeddedResources _snapEmbeddedResources;
     readonly ISnapAppWriter _snapAppWriter;
 
     public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack,
-        [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] ISnapAppWriter snapAppWriter)
+        [NotNull] ISnapOs snapOs, [NotNull] ISnapAppWriter snapAppWriter)
     {
         _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
         _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
-        _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
     }
 
@@ -249,9 +246,9 @@ internal sealed class SnapInstaller : ISnapInstaller
         var chmod = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         var coreRunExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
+            .PathCombine(baseDirectory, snapApp.GetCoreRunExeFilename());
         var mainExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
+            .PathCombine(appDirectory, snapApp.GetCoreRunExeFilename());
         var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ?
             _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
         var snapChannel = snapApp.GetCurrentChannelOrThrow();

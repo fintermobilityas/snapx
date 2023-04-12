@@ -3,7 +3,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Snap.Extensions;
 
 namespace Snap;
@@ -29,7 +28,8 @@ internal struct BsDiffPatchCtx
     public long older_size;
     public readonly nint newer;
     public readonly long newer_size;
-    public nint patch_filename;
+    public nint patch;
+    public long patch_size;
     public readonly BsDiffStatusType status;
 }
 
@@ -49,7 +49,7 @@ internal struct BsDiffCtx
 internal interface IBsdiffLib : IDisposable
 {
     void Diff([NotNull] MemoryStream olderStream, [NotNull] MemoryStream newerStream, [NotNull] Stream patchStream);
-    Task PatchAsync([NotNull] MemoryStream olderStream, [NotNull] MemoryStream patchStream, [NotNull] Stream outputStream, CancellationToken cancellationToken);
+    void Patch([NotNull] MemoryStream olderStream, [NotNull] MemoryStream patchStream, [NotNull] Stream outputStream, CancellationToken cancellationToken);
 }
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -213,7 +213,7 @@ internal sealed class LibBsDiff : IBsdiffLib
         }
     }
 
-    public async Task PatchAsync(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken)
+    public void Patch(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(olderStream);
         ArgumentNullException.ThrowIfNull(patchStream);
@@ -244,15 +244,10 @@ internal sealed class LibBsDiff : IBsdiffLib
             throw new Exception($"{nameof(patchStream)} must be writable.");
         }
         
-        var patchFileName = $"{Guid.NewGuid():N}.patch";
-        await using (var patchFileStream = File.OpenWrite(patchFileName))
-        {
-            await patchStream.CopyToAsync(patchFileStream, cancellationToken);
-        }
-
         unsafe
         {
             fixed (byte* olderStreamPtr = olderStream.GetBuffer())
+            fixed (byte* patchStreamPtr = patchStream.GetBuffer())
             {
                 void LogError(void* opaque, char* message)
                 {
@@ -268,7 +263,8 @@ internal sealed class LibBsDiff : IBsdiffLib
                     log_error = logErrorDelegate,
                     older = new IntPtr(olderStreamPtr),
                     older_size = olderStream.Length,
-                    patch_filename = patchFileName.ToIntPtrUtf8String()
+                    patch = new IntPtr(patchStreamPtr),
+                    patch_size = patchStream.Length
                 };
 
                 bool success = default;
@@ -295,15 +291,11 @@ internal sealed class LibBsDiff : IBsdiffLib
                 }
                 finally
                 {
-                    NativeMemory.Free((void*)ctx.patch_filename);
-                    
                     if (success)
                     {
                         snap_bsdiff_patch_free.ThrowIfDangling();
                         snap_bsdiff_patch_free.Invoke(ref ctx);
                     }
-                    
-                    File.Delete(patchFileName);
                 }
             }
         }

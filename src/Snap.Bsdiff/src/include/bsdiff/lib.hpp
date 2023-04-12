@@ -36,7 +36,8 @@ typedef struct _snap_bsdiff_patch_ctx {
   int64_t older_size;
   uint8_t **newer;
   int64_t newer_size;
-  const char *patch_filename;
+  const void *patch;
+  const int64_t patch_size;
   snap_bsdiff_status_type status;
 } snap_bsdiff_patch_ctx;
 

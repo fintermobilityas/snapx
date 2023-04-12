@@ -8,8 +8,8 @@ namespace Snap.Core;
 
 internal interface ISnapBinaryPatcher
 {
-    void Create([NotNull] MemoryStream olderStream, [NotNull] MemoryStream newerStream, [NotNull] Stream outputStream);
-    Task ApplyAsync([NotNull] MemoryStream olderStream, [NotNull] MemoryStream patchStream, [NotNull] Stream outputStream, CancellationToken cancellationToken);
+    void Diff([NotNull] MemoryStream olderStream, [NotNull] MemoryStream newerStream, [NotNull] Stream outputStream);
+    void Patch([NotNull] MemoryStream olderStream, [NotNull] MemoryStream patchStream, [NotNull] Stream outputStream, CancellationToken cancellationToken);
 }
 
 internal sealed class SnapBinaryPatcher : ISnapBinaryPatcher
@@ -22,9 +22,9 @@ internal sealed class SnapBinaryPatcher : ISnapBinaryPatcher
         _bsdiffLib = bsdiffLib;
     }
     
-    public void Create(MemoryStream olderStream, MemoryStream newerStream, Stream outputStream) => 
+    public void Diff(MemoryStream olderStream, MemoryStream newerStream, Stream outputStream) => 
         _bsdiffLib.Diff(olderStream, newerStream, outputStream);
 
-    public Task ApplyAsync(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken) => 
-        _bsdiffLib.PatchAsync(olderStream, patchStream, outputStream, cancellationToken);
+    public void Patch(MemoryStream olderStream, MemoryStream patchStream, Stream outputStream, CancellationToken cancellationToken) => 
+        _bsdiffLib.Patch(olderStream, patchStream, outputStream, cancellationToken);
 }

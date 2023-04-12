@@ -25,12 +25,12 @@ namespace Snap.Tests.Core
             using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
             using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
             await using var patchStream = new MemoryStream();
-            _snapBinaryPatcher.Create(baseFileStream, newFileStream, patchStream);
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
             patchStream.Seek(0, SeekOrigin.Begin);
             
             await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
             await using var patchedStream = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatchStream, patchStream, patchedStream, default);
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
             
             Assert.Equal(newFileData, patchedStream.ToArray());
         }
@@ -54,12 +54,12 @@ namespace Snap.Tests.Core
             using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
             using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
             await using var patchStream = new MemoryStream();
-            _snapBinaryPatcher.Create(baseFileStream, newFileStream, patchStream);
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
             patchStream.Seek(0, SeekOrigin.Begin);
             
             await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
-            await using var patchedStream = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatchStream, patchStream, patchedStream, default);
+            await using var patchedStream = new MemoryStream(); 
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
             
             Assert.Equal(newFileData, patchedStream.ToArray());
         }
@@ -73,12 +73,12 @@ namespace Snap.Tests.Core
             using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
             using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
             await using var patchStream = new MemoryStream();
-            _snapBinaryPatcher.Create(baseFileStream, newFileStream, patchStream);
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
             patchStream.Seek(0, SeekOrigin.Begin);
       
             await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
             await using var patchedStream = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatchStream, patchStream, patchedStream, default);
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
 
             Assert.Equal(newFileData, patchedStream.ToArray());
         }

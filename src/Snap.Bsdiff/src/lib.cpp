@@ -7,7 +7,8 @@ SNAP_API int32_t SNAP_CALLING_CONVENTION snap_bsdiff_patch(snap_bsdiff_patch_ctx
       p_ctx->older_size <= 0 ||
       p_ctx->newer != nullptr ||
       p_ctx->newer_size != 0 ||
-      p_ctx->patch_filename == nullptr) {
+      p_ctx->patch == nullptr ||
+      p_ctx->patch_size <= 0) {
     return 0;
   }
 
@@ -24,8 +25,7 @@ SNAP_API int32_t SNAP_CALLING_CONVENTION snap_bsdiff_patch(snap_bsdiff_patch_ctx
     goto cleanup;
   }
 
-  // TODO: There is a bug when reading a patch from memory in the bsdiff library.
-  if ((ret = bsdiff_open_file_stream(BSDIFF_MODE_READ, p_ctx->patch_filename, &patchfile)) != BSDIFF_SUCCESS) {
+  if ((ret = bsdiff_open_memory_stream(BSDIFF_MODE_READ, p_ctx->patch, p_ctx->patch_size, &patchfile)) != BSDIFF_SUCCESS) {
     goto cleanup;
   }
 

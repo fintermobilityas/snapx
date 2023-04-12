@@ -528,7 +528,7 @@ namespace Snap.Core
                 if (newDataStream.Length > 0
                     && oldDataStream.Length > 0)
                 {
-                    _snapBinaryPatcher.Create(oldDataStream, newDataStream, patchStream);
+                    _snapBinaryPatcher.Diff(oldDataStream, newDataStream, patchStream);
                 } else if (newDataStream.Length > 0)
                 {
                     await newDataStream.CopyToAsync(patchStream, cancellationToken);
@@ -811,7 +811,7 @@ namespace Snap.Core
                             }
                         }
                         
-                        await _snapBinaryPatcher.ApplyAsync((MemoryStream)packageFileStream, patchStream, outputStream, cancellationToken);
+                        _snapBinaryPatcher.Patch((MemoryStream)packageFileStream, patchStream, outputStream, cancellationToken);
 
                         if (!skipChecksum)
                         {

@@ -138,6 +138,67 @@ namespace Snap.Tests.Core
             Assert.Null(nugetUpdateFeed.Password);
         }
 
+        [InlineData("https://www.random.org")]
+        [InlineData("https://random.org")]
+        [InlineData("https://www.nuget.org")]
+        [InlineData("https://nuget.org")]
+        [Theory]
+        [ExcludeFromCodeCoverage]
+        public void TestBuildSnapAppAssembly_Prunes_UpdateFeed_ApiKey_But_Allows_Username_And_Password_IfNot_NugetOrg(string sourceUrl)
+        {
+            var snapAppBefore = _baseFixture.BuildSnapApp();
+            snapAppBefore.Channels.Clear();
+            
+            var pushFeed = new SnapNugetFeed
+            {
+                Source = new Uri(sourceUrl),
+                ApiKey = "myapikey",
+                Password = "mypassword",
+                Username = "myusername"
+            };
+            
+            var updateFeed = new SnapNugetFeed
+            {
+                Source = new Uri(sourceUrl),
+                ApiKey = "myapikey",
+                Password = "mypassword",
+                Username = "myusername"
+            };
+            
+            snapAppBefore.Channels.Add(new SnapChannel
+            {
+                Name = "test",
+                PushFeed = pushFeed,
+                UpdateFeed = updateFeed
+            });
+
+            using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+            var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
+            Assert.NotNull(snapAppAfter);
+            
+            var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
+
+            var snapNugetPushFeed = snapAppAfterChannel.PushFeed;
+            Assert.Null(snapNugetPushFeed.ApiKey);
+            Assert.Null(snapNugetPushFeed.Username);
+            Assert.Null(snapNugetPushFeed.Password);
+
+            var isNugetOrg = sourceUrl.Contains("nuget.org", StringComparison.OrdinalIgnoreCase);
+
+            var snapNugetUpdateFeed = (SnapNugetFeed)snapAppAfterChannel.UpdateFeed;
+            Assert.Null(snapNugetUpdateFeed.ApiKey);
+            if (isNugetOrg)
+            {
+                Assert.Null(snapNugetUpdateFeed.Username);
+                Assert.Null(snapNugetUpdateFeed.Password);
+            }
+            else
+            {
+                Assert.Equal(updateFeed.Username, snapNugetUpdateFeed.Username);
+                Assert.Equal(updateFeed.Password, snapNugetUpdateFeed.Password);
+            }
+        }
+
         [Fact, ExcludeFromCodeCoverage]
         public void TestBuildSnapAppAssembly_Include_Persistent_Assets()
         {

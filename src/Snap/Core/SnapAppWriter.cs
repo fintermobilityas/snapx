@@ -76,14 +76,17 @@ internal sealed class SnapAppWriter : ISnapAppWriter
                 throw new Exception(
                     $"Update feed {nameof(channel.UpdateFeed.Source)} cannot be null. Channel: {channel.Name}. Application id: {snapApp.Id}");
             }
-
-            // Prevent publishing nuget.org credentials.
-            if (channel.UpdateFeed is SnapNugetFeed updateFeed
-                && updateFeed.Source.Host.IndexOf("nuget.org", StringComparison.OrdinalIgnoreCase) != -1)
+            
+            if (channel.UpdateFeed is SnapNugetFeed updateFeed)
             {
                 updateFeed.ApiKey = null;
-                updateFeed.Username = null;
-                updateFeed.Password = null;
+                
+                // Prevent publishing nuget.org credentials.
+                if (updateFeed.Source.Host.IndexOf("nuget.org", StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    updateFeed.Username = null;
+                    updateFeed.Password = null;
+                }
             }
         }
                                                          

@@ -11,7 +11,6 @@ using NuGet.Packaging;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Shared.Tests.Extensions;
 using Xunit;
@@ -23,19 +22,18 @@ namespace Snap.Shared.Tests
         readonly Dictionary<string, IDisposable> _nuspec;
 
         public SnapAppsReleases SnapAppsReleases { get; }
-        public ICoreRunLib CoreRunLib { get; }
+        public ILibPal LibPal { get; }
         public ISnapFilesystem SnapFilesystem { get; }
         public SnapApp SnapApp { get; }
         public ISnapCryptoProvider SnapCryptoProvider { get; }
-        public ISnapEmbeddedResources SnapEmbeddedResources { get; }
         public ISnapPack SnapPack { get; }
         public DisposableDirectory BaseDirectory { get; }
         public string SnapAppBaseDirectory { get; }
         public string SnapAppInstallDirectory { get; }
         public string SnapAppPackagesDirectory { get; }
         public string NugetPackagingDirectory { get; }
-        public string CoreRunExe => SnapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(SnapApp);
-
+        public string StubExeFileName => SnapApp.GetStubExeFilename();
+ 
         public SnapReleaseBuilder([NotNull] DisposableDirectory disposableDirectory, SnapAppsReleases snapAppsReleases, [NotNull] SnapApp snapApp, [NotNull] SnapReleaseBuilderContext builderContext)
         {
             if (builderContext == null) throw new ArgumentNullException(nameof(builderContext));
@@ -45,14 +43,13 @@ namespace Snap.Shared.Tests
             SnapFilesystem = builderContext.SnapFilesystem ?? throw new ArgumentNullException(nameof(builderContext.SnapFilesystem));
             SnapAppsReleases = snapAppsReleases ?? throw new ArgumentNullException(nameof(snapAppsReleases));
             SnapApp = snapApp ?? throw new ArgumentNullException(nameof(snapApp));
-            CoreRunLib = builderContext.CoreRunLib ?? throw new ArgumentNullException(nameof(builderContext.CoreRunLib));
+            LibPal = builderContext.LibPal ?? throw new ArgumentNullException(nameof(builderContext.LibPal));
             SnapCryptoProvider = builderContext.SnapCryptoProvider ?? throw new ArgumentNullException(nameof(builderContext.SnapCryptoProvider));
-            SnapEmbeddedResources = builderContext.SnapEmbeddedResources ?? throw new ArgumentNullException(nameof(builderContext.SnapEmbeddedResources));
             SnapPack = builderContext.SnapPack ?? throw new ArgumentNullException(nameof(builderContext.SnapPack));
 
             BaseDirectory = disposableDirectory ?? throw new ArgumentNullException(nameof(disposableDirectory));
-            NugetPackagingDirectory = SnapFilesystem.PathCombine(BaseDirectory.WorkingDirectory, "nuget", $"app-{snapApp.Version}");
-            SnapAppBaseDirectory = SnapFilesystem.PathCombine(BaseDirectory.WorkingDirectory, snapApp.Id);
+            NugetPackagingDirectory = SnapFilesystem.PathCombine(BaseDirectory, "nuget", $"app-{snapApp.Version}");
+            SnapAppBaseDirectory = SnapFilesystem.PathCombine(BaseDirectory, snapApp.Id);
             SnapAppInstallDirectory = SnapFilesystem.PathCombine(SnapAppBaseDirectory, $"app-{snapApp.Version}");
             SnapAppPackagesDirectory = SnapFilesystem.PathCombine(SnapAppBaseDirectory, "packages");
             
@@ -420,8 +417,8 @@ namespace Snap.Shared.Tests
             {
                 relativePath = relativePath[(SnapConstants.NuspecAssetsTargetPath.Length + 1)..];
                 targetPath = SnapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, relativePath);
-                var isCoreRunExe = relativePath.EndsWith(CoreRunExe);
-                diskAbsoluteFilename = SnapFilesystem.PathCombine(isCoreRunExe ? SnapAppBaseDirectory : snapAppInstallDirectory, relativePath);
+                var isStubExe = relativePath.EndsWith(StubExeFileName);
+                diskAbsoluteFilename = SnapFilesystem.PathCombine(isStubExe ? SnapAppBaseDirectory : snapAppInstallDirectory, relativePath);
             }
             else if (relativePath.StartsWith(SnapConstants.NuspecRootTargetPath))
             {
@@ -441,20 +438,18 @@ namespace Snap.Shared.Tests
 
     internal class SnapReleaseBuilderContext
     {
-        public ICoreRunLib CoreRunLib { get; }
+        public ILibPal LibPal { get; }
         public ISnapFilesystem SnapFilesystem { get; }
         public ISnapCryptoProvider SnapCryptoProvider { get; }
-        public ISnapEmbeddedResources SnapEmbeddedResources { get; }
         public ISnapPack SnapPack { get; }
 
-        public SnapReleaseBuilderContext([NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapFilesystem snapFilesystem,
-            [NotNull] ISnapCryptoProvider snapCryptoProvider, [NotNull] ISnapEmbeddedResources snapEmbeddedResources,
+        public SnapReleaseBuilderContext([NotNull] ILibPal libPal, [NotNull] ISnapFilesystem snapFilesystem,
+            [NotNull] ISnapCryptoProvider snapCryptoProvider, 
             [NotNull] ISnapPack snapPack)
         {
-            CoreRunLib = coreRunLib ?? throw new ArgumentNullException(nameof(coreRunLib));
+            LibPal = libPal ?? throw new ArgumentNullException(nameof(libPal));
             SnapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
             SnapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
-            SnapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
             SnapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         }
     }
@@ -526,14 +521,7 @@ namespace Snap.Shared.Tests
         internal async Task<BuildPackageContext> BuildPackageAsync([NotNull] SnapReleaseBuilder releaseBuilder, CancellationToken cancellationToken = default)
         {
             if (releaseBuilder == null) throw new ArgumentNullException(nameof(releaseBuilder));
-
-            var (coreRunMemoryStream, _, _) =
-                releaseBuilder.SnapEmbeddedResources.GetCoreRunForSnapApp(releaseBuilder.SnapApp, releaseBuilder.SnapFilesystem, releaseBuilder.CoreRunLib);
-            if (coreRunMemoryStream != null)
-            {
-                await coreRunMemoryStream.DisposeAsync();
-            }
-
+            
             var nuspecBaseDirectory = releaseBuilder.SnapFilesystem.PathCombine(releaseBuilder.NugetPackagingDirectory, "content");
             releaseBuilder.SnapFilesystem.DirectoryCreate(nuspecBaseDirectory);
 
@@ -568,7 +556,7 @@ namespace Snap.Shared.Tests
             }
 
             var (fullPackageMemoryStream, fullSnapApp, fullPackageSnapRelease, deltaPackageMemoryStream, deltaSnapApp, deltaSnapRelease) = await releaseBuilder.SnapPack
-                .BuildPackageAsync(snapPackDetails, releaseBuilder.CoreRunLib, cancellationToken);
+                .BuildPackageAsync(snapPackDetails, releaseBuilder.LibPal, cancellationToken);
 
             var fullPackageAbsolutePath = await releaseBuilder.WritePackageAsync(fullPackageMemoryStream, fullPackageSnapRelease, cancellationToken);
             fullPackageMemoryStream.Seek(0, SeekOrigin.Begin);

@@ -14,7 +14,6 @@ using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 using Snap.NuGet;
@@ -32,12 +31,6 @@ namespace Snap.Tests.Core
         readonly BaseFixtureNuget _baseFixtureNuget;
         readonly ITestOutputHelper _testOutputHelper;
         readonly ISnapPack _snapPack;
-        readonly ISnapEmbeddedResources _snapEmbeddedResources;
-        readonly Mock<ICoreRunLib> _coreRunLibMock;
-        readonly SnapInstaller _snapInstaller;
-        readonly ISnapExtractor _snapExtractor;
-        readonly ISnapAppWriter _snapAppWriter;
-        readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapOs _snapOs;
         readonly SnapReleaseBuilderContext _releaseBuilderContext;
@@ -50,20 +43,16 @@ namespace Snap.Tests.Core
             _baseFixturePackaging = baseFixturePackaging;
             _baseFixtureNuget = baseFixtureNuget;
             _testOutputHelper = testOutputHelper;
-            _coreRunLibMock = new Mock<ICoreRunLib>();
             _nugetServiceMock = new Mock<INugetService>();
             _snapHttpClientMock = new Mock<ISnapHttpClient>();
-            _snapCryptoProvider = new SnapCryptoProvider();
-            _snapEmbeddedResources = new SnapEmbeddedResources();
+            ISnapCryptoProvider snapCryptoProvider = new SnapCryptoProvider();
             _snapFilesystem = new SnapFilesystem();
-            _snapAppWriter = new SnapAppWriter();
+            ILibPal libPal = new LibPal();
+            IBsdiffLib bsdiffLib = new LibBsDiff();
             _snapPack = new SnapPack(_snapFilesystem, new SnapAppReader(), 
-                new SnapAppWriter(), _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
+                new SnapAppWriter(), snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
             _snapOs = new SnapOs(_snapFilesystem, new SnapOsProcessManager(), _baseFixturePackaging.WorkingDirectory, true);
-            _snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(_snapExtractor, _snapPack, _snapOs, _snapEmbeddedResources, _snapAppWriter);
-            _releaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem,
-                _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+            _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Theory]
@@ -266,14 +255,13 @@ namespace Snap.Tests.Core
         }
 
         static ISnapUpdateManager BuildUpdateManager([NotNull] string workingDirectory, [NotNull] SnapApp snapApp, INugetService nugetService = null,
-            ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null, ISnapEmbeddedResources snapEmbeddedResources = null,
+            ISnapOs snapOs = null, ISnapCryptoProvider snapCryptoProvider = null,
             ISnapAppReader snapAppReader = null, ISnapAppWriter snapAppWriter = null,
             ISnapPack snapPack = null, ISnapExtractor snapExtractor = null, ISnapInstaller snapInstaller = null,
             ISnapHttpClient snapHttpClient = null, string applicationId = null)
         {
             return new SnapUpdateManager(workingDirectory,
-                snapApp, null, nugetService, snapOs, snapCryptoProvider, 
-                snapEmbeddedResources, snapAppReader, snapAppWriter, snapPack, snapExtractor,
+                snapApp, null, nugetService, snapOs, snapCryptoProvider, snapAppReader, snapAppWriter, snapPack, snapExtractor,
                 snapInstaller, snapHttpClient: snapHttpClient)
             {
                 ApplicationId = applicationId

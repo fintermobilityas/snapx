@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Text;
 using JetBrains.Annotations;
 using MessagePack;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 using Snap.Attributes;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Core.Yaml.Emitters;
 using Snap.Core.Yaml.TypeConverters;
-using Snap.Extensions;
 using Snap.Reflection;
-using Snap.Resources;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.Converters;
 using YamlDotNet.Serialization.NamingConventions;
@@ -23,7 +18,6 @@ namespace Snap.Core;
 internal interface ISnapAppWriter
 {
     AssemblyDefinition BuildSnapAppAssembly(SnapApp snapsApp);
-    AssemblyDefinition OptimizeSnapDllForPackageArchive(AssemblyDefinition assemblyDefinition, OSPlatform osPlatform);
     string ToSnapAppYamlString(SnapApp snapApp);
     string ToSnapAppsYamlString(SnapApps snapApps);
     byte[] ToSnapAppsReleases(SnapAppsReleases snapAppsApps);
@@ -109,31 +103,6 @@ internal sealed class SnapAppWriter : ISnapAppWriter
         assemblyReflector.AddResource(new EmbeddedResource(SnapConstants.SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr)));
 
         return assembly;
-    }
-
-    public AssemblyDefinition OptimizeSnapDllForPackageArchive([NotNull] AssemblyDefinition assemblyDefinition, OSPlatform osPlatform)
-    {
-        if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-
-        if (!osPlatform.IsSupportedOsVersion())
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        var cecilReflector = new CecilAssemblyReflector(assemblyDefinition);
-        var cecilResourceReflector = cecilReflector.GetResourceReflector();
-            
-        cecilResourceReflector.RemoveAllOrThrow(typeof(SnapEmbeddedResourcesTypeRoot).Namespace);
-
-        cecilReflector.RewriteOrThrow<SnapEmbeddedResources>(x => x.IsOptimized, (typedDefinition, getterName, setterName, propertyDefinition) =>
-        {                    
-            var getIlProcessor = propertyDefinition.GetMethod.Body.GetILProcessor();
-            getIlProcessor.Body.Instructions.Clear();
-            getIlProcessor.Emit(OpCodes.Ldc_I4_1);
-            getIlProcessor.Emit(OpCodes.Ret);
-        });
-
-        return assemblyDefinition;
     }
 
     public string ToSnapAppYamlString([NotNull] SnapApp snapApp)

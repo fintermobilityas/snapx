@@ -16,8 +16,6 @@ using NLog.Config;
 using NLog.Targets;
 using Snap.AnyOS;
 using Snap.Core;
-using Snap.Core.Resources;
-using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Logging;
 using Snap.NuGet;
@@ -123,36 +121,31 @@ namespace Snap.Installer
             return (finalExitCode, finalInstallerType);
         }
 
-        static async Task<(int exitCode, SnapInstallerType installerType)> MainImplAsync([NotNull] ISnapInstallerEnvironment snapInstallerEnvironment,
+        static async Task<(int exitCode, SnapInstallerType installerType)> MainImplAsync([NotNull] ISnapInstallerEnvironment snapInstallerEnvironment, 
             [NotNull] ILog snapInstallerLogger, bool headless, string[] args)
         {
             if (snapInstallerEnvironment == null) throw new ArgumentNullException(nameof(snapInstallerEnvironment));
             if (snapInstallerLogger == null) throw new ArgumentNullException(nameof(snapInstallerLogger));
             
-            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();            
-            var snapEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapEmbeddedResources>();
+            var snapOs = snapInstallerEnvironment.Container.GetInstance<ISnapOs>();
             var snapCryptoProvider = snapInstallerEnvironment.Container.GetInstance<ISnapCryptoProvider>();
-
-            var thisExeWorkingDirectory = snapInstallerEnvironment.Io.ThisExeWorkingDirectory;
+            
             var workingDirectory = snapInstallerEnvironment.Io.WorkingDirectory;
-            TplHelper.RunSync(() => snapEmbeddedResources.ExtractCoreRunLibAsync(snapOs.Filesystem, snapCryptoProvider, thisExeWorkingDirectory, snapOs.OsPlatform));
-            var coreRunLib = new CoreRunLib(snapOs.Filesystem, snapOs.OsPlatform, thisExeWorkingDirectory);
             var snapInstaller = snapInstallerEnvironment.Container.GetInstance<ISnapInstaller>();
             var snapInstallerEmbeddedResources = snapInstallerEnvironment.Container.GetInstance<ISnapInstallerEmbeddedResources>();
-            var snapPack = snapInstallerEnvironment.Container.GetInstance<ISnapPack>();
             var snapAppReader = snapInstallerEnvironment.Container.GetInstance<ISnapAppReader>();
             var snapAppWriter = snapInstallerEnvironment.Container.GetInstance<ISnapAppWriter>();
             var snapFilesystem = snapInstallerEnvironment.Container.GetInstance<ISnapFilesystem>();
             snapFilesystem.DirectoryCreateIfNotExists(snapOs.SpecialFolders.InstallerCacheDirectory);
             var snapPackageManager = snapInstallerEnvironment.Container.GetInstance<ISnapPackageManager>();
             var snapExtractor = snapInstallerEnvironment.Container.GetInstance<ISnapExtractor>();
-            var nugetServiceCommandInstall = new NugetService(snapOs.Filesystem, new NugetLogger(snapInstallerLogger));
+            var libPal = snapInstallerEnvironment.Container.GetInstance<ILibPal>();
 
             Task<(int exitCode, SnapInstallerType installerType)> RunInstallerAsync()
             {
                 return InstallAsync(snapInstallerEnvironment, snapInstallerEmbeddedResources,
-                    snapInstaller, snapFilesystem, snapPack, snapOs, coreRunLib, snapAppReader,
-                    snapAppWriter, nugetServiceCommandInstall, snapPackageManager, snapExtractor, snapInstallerLogger,
+                    snapInstaller, snapFilesystem, snapOs, libPal, snapAppReader,
+                    snapAppWriter, snapPackageManager, snapExtractor, snapInstallerLogger,
                     headless, args);
             }
 
@@ -184,12 +177,13 @@ namespace Snap.Installer
             var thisExeWorkingDirectory = snapOs.Filesystem.PathGetDirectoryName(typeof(Program).Assembly.Location);
             var workingDirectory = Environment.CurrentDirectory;
 
+            container.Register<ILibPal>(_ => new LibPal());
+            container.Register<IBsdiffLib>(_ => new LibBsDiff());
             container.Register(c => snapOs);
             container.Register(c => snapOs.SpecialFolders);
 
             container.Register(c => snapOs.Filesystem);
             container.Register<ISnapHttpClient>(c => new SnapHttpClient(new HttpClient()));
-            container.Register<ISnapEmbeddedResources>(c => new SnapEmbeddedResources());
             container.Register<ISnapInstallerEmbeddedResources>(c => new SnapInstallerEmbeddedResources());
             container.Register<INuGetPackageSources>(c =>
                 new NuGetMachineWidePackageSources(
@@ -200,23 +194,20 @@ namespace Snap.Installer
             container.Register<ISnapCryptoProvider>(c => new SnapCryptoProvider());
             container.Register<ISnapAppReader>(c => new SnapAppReader());
             container.Register<ISnapAppWriter>(c => new SnapAppWriter());
-            container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher());
+            container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher(c.GetInstance<IBsdiffLib>()));
             container.Register<ISnapPack>(c => new SnapPack(
                 c.GetInstance<ISnapFilesystem>(), 
                 c.GetInstance<ISnapAppReader>(), 
                 c.GetInstance<ISnapAppWriter>(), 
-                c.GetInstance<ISnapCryptoProvider>(), 
-                c.GetInstance<ISnapEmbeddedResources>(),
+                c.GetInstance<ISnapCryptoProvider>(),
                 c.GetInstance<ISnapBinaryPatcher>()));
             container.Register<ISnapExtractor>(c => new SnapExtractor(
                 c.GetInstance<ISnapFilesystem>(),
-                c.GetInstance<ISnapPack>(),
-                c.GetInstance<ISnapEmbeddedResources>()));
+                c.GetInstance<ISnapPack>()));
             container.Register<ISnapInstaller>(c => new SnapInstaller(
                 c.GetInstance<ISnapExtractor>(),
                 c.GetInstance<ISnapPack>(),
                 c.GetInstance<ISnapOs>(),
-                c.GetInstance<ISnapEmbeddedResources>(),
                 c.GetInstance<ISnapAppWriter>()
             ));
             container.Register<ISnapNugetLogger>(c => new NugetLogger(logger));

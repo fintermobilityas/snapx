@@ -2,13 +2,10 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Moq;
 using NuGet.Packaging;
-using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Shared.Tests;
 using Xunit;
 
@@ -18,27 +15,23 @@ namespace Snap.Tests.Core
     {
         readonly BaseFixturePackaging _baseFixture;
         readonly ISnapCryptoProvider _snapCryptoProvider;
-        readonly SnapAppReader _snapAppReader;
-        readonly SnapAppWriter _snapAppWriter;
-        readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapPack _snapPack;
         readonly ISnapFilesystem _snapFilesystem;
-        readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _snapReleaseBuilderContext;
 
         public SnapCryptoProviderTests(BaseFixturePackaging baseFixture)
         {
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
             _baseFixture = baseFixture;
             _snapCryptoProvider = new SnapCryptoProvider();
-            _snapAppReader = new SnapAppReader();
-            _snapAppWriter = new SnapAppWriter();
-            _snapEmbeddedResources = new SnapEmbeddedResources();
+            var snapAppReader = new SnapAppReader();
+            var snapAppWriter = new SnapAppWriter();
             _snapFilesystem = new SnapFilesystem();
-            _snapPack = new SnapPack(_snapFilesystem, _snapAppReader, 
-                _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
-            _coreRunLibMock = new Mock<ICoreRunLib>();
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object,
-                _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+            _snapPack = new SnapPack(_snapFilesystem, snapAppReader, 
+                snapAppWriter, _snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(libPal,
+                _snapFilesystem, _snapCryptoProvider, _snapPack);
         }
 
         [Fact]

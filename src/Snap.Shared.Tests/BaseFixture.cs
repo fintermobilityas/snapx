@@ -121,7 +121,7 @@ namespace Snap.Shared.Tests
                 },
                 Target = new SnapTarget
                 {
-                    Framework = "netcoreapp2.1",
+                    Framework = "net7.0",
                     Shortcuts = new List<SnapShortcutLocation>
                     {
                         SnapShortcutLocation.Desktop,

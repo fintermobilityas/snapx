@@ -101,6 +101,7 @@ jobs:
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
           SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
+          SNAPX_UNIX_BSDIFF_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.Bsdiff
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
@@ -116,6 +117,9 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}/libsnap_bsdiff.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_BSDIFF_REL_DIR }}/libsnap_bsdiff.so
 
       - name: Upload artifacts
         if: success()
@@ -166,6 +170,7 @@ jobs:
           SNAPX_WINDOWS_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_WINDOWS_CORERUN_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun/${{ matrix.configuration }}
           SNAPX_WINDOWS_PAL_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal/${{ matrix.configuration }}
+          SNAPX_WINDOWS_BSDIFF_REL_DIR: build/native/Windows/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.Bsdiff/${{ matrix.configuration }}
         run: |
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
@@ -175,6 +180,9 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_PAL_REL_DIR }}/pal.dll
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}/snap_bsdiff.dll ${{ github.workspace }}/artifacts/${{ env.SNAPX_WINDOWS_BSDIFF_REL_DIR }}/snap_bsdiff.dll
 
       - name: Upload artifacts
         if: success()
@@ -229,9 +237,9 @@ jobs:
   #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
   publish:
-    if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: success() 
     runs-on: ubuntu-latest
-    name: Publish
+    name: Nupkg
     needs: [setup, windows, linux] # todo: enable me when github actions supports arm64: test-linux-arm64
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
@@ -282,6 +290,7 @@ jobs:
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release
 
       - name: Push nuget packages
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
         shell: pwsh
         run: |
           $nupkgs = Get-ChildItem ".\${{ env.GITHUB_WORKSPACE }}\nupkgs" -Filter *.nupkg | Select-Object -ExpandProperty FullName

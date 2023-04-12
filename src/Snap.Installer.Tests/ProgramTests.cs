@@ -9,7 +9,6 @@ using Snap.AnyOS;
 using Snap.Core;
 using Snap.Core.IO;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Installer.Core;
 using Snap.Logging;
@@ -27,12 +26,8 @@ namespace Snap.Installer.Tests
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapInstaller _snapInstaller;
         readonly Mock<ISnapOs> _snapOsMock;
-        readonly ISnapAppReader _snapAppReader;
         readonly ISnapAppWriter _snapAppWriter;
-        readonly ISnapEmbeddedResources _snapEmbeddedResources;
         readonly ISnapOsProcessManager _snapOsProcessManager;
-        readonly ISnapCryptoProvider _snapCryptoProvider;
-        readonly Mock<ICoreRunLib> _coreRunLibMock;
         readonly SnapReleaseBuilderContext _snapReleaseBuilderContext;
 
         public ProgramTests(BaseFixture baseFixture, BaseFixturePackaging baseFixturePackaging)
@@ -40,20 +35,20 @@ namespace Snap.Installer.Tests
             _baseFixture = baseFixture;
             _baseFixturePackaging = baseFixturePackaging;
             _snapOsMock = new Mock<ISnapOs>();
-            _coreRunLibMock = new Mock<ICoreRunLib>();
-
-            _snapCryptoProvider = new SnapCryptoProvider();
-            _snapAppReader = new SnapAppReader();
+       
+            var libPal = new LibPal();
+            var bsdiffLib = new LibBsDiff();
+            var snapCryptoProvider = new SnapCryptoProvider();
+            var snapAppReader = new SnapAppReader();
             _snapAppWriter = new SnapAppWriter();
-            _snapEmbeddedResources = new SnapEmbeddedResources();
             _snapFilesystem = new SnapFilesystem();
             _snapOsProcessManager = new SnapOsProcessManager();
             _snapPack = new SnapPack(_snapFilesystem, 
-                _snapAppReader, _snapAppWriter, _snapCryptoProvider, _snapEmbeddedResources, new SnapBinaryPatcher());
+                snapAppReader, _snapAppWriter, snapCryptoProvider, new SnapBinaryPatcher(bsdiffLib));
 
-            var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack, _snapEmbeddedResources);
-            _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapOsMock.Object, _snapEmbeddedResources, _snapAppWriter);
-            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(_coreRunLibMock.Object, _snapFilesystem, _snapCryptoProvider, _snapEmbeddedResources, _snapPack);
+            var snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
+            _snapInstaller = new SnapInstaller(snapExtractor, _snapPack, _snapOsMock.Object, _snapAppWriter);
+            _snapReleaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem, snapCryptoProvider, _snapPack);
         }
 
         [Fact]

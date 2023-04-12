@@ -13,7 +13,7 @@ namespace Snap.Tests.Core
 
         public SnapBinaryPatcherTests()
         {
-            _snapBinaryPatcher = new SnapBinaryPatcher();
+            _snapBinaryPatcher = new SnapBinaryPatcher(new LibBsDiff());
         }
 
         [Fact]
@@ -22,15 +22,17 @@ namespace Snap.Tests.Core
             var baseFileData = new byte[] { 0, 2, 3, 5 };
             var newFileData = new byte[] { 0, 1, 2, 3, 10 };
 
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
-
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
-
-            Assert.Equal(newFileData, patched.ToArray());
+            using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+            await using var patchStream = new MemoryStream();
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+            patchStream.Seek(0, SeekOrigin.Begin);
+            
+            await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            await using var patchedStream = new MemoryStream();
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
+            
+            Assert.Equal(newFileData, patchedStream.ToArray());
         }
 
         [Fact]
@@ -49,15 +51,17 @@ namespace Snap.Tests.Core
                 }
             }
 
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
-
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
-
-            Assert.Equal(newFileData, patched.ToArray());
+            using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+            await using var patchStream = new MemoryStream();
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+            patchStream.Seek(0, SeekOrigin.Begin);
+            
+            await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            await using var patchedStream = new MemoryStream(); 
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
+            
+            Assert.Equal(newFileData, patchedStream.ToArray());
         }
 
         [Fact]
@@ -66,15 +70,17 @@ namespace Snap.Tests.Core
             var baseFileData = new byte[] { 1, 1, 1, 1 };
             var newFileData = new byte[] { 2, 1, 1, 1 };
 
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
+            using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+            await using var patchStream = new MemoryStream();
+            _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+            patchStream.Seek(0, SeekOrigin.Begin);
+      
+            await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+            await using var patchedStream = new MemoryStream();
+            _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
 
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
-
-            Assert.Equal(newFileData, patched.ToArray());
+            Assert.Equal(newFileData, patchedStream.ToArray());
         }
     }
 }

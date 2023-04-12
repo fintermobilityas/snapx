@@ -23,26 +23,26 @@ internal enum BsDiffStatusType
 [StructLayout(LayoutKind.Sequential)]
 internal struct BsDiffPatchCtx
 {
-    public IntPtr log_error;
+    public nint log_error;
     public nint older;
-    public long older_size;
+    public nuint older_size;
     public readonly nint newer;
-    public readonly long newer_size;
+    public readonly nuint newer_size;
     public nint patch;
-    public long patch_size;
+    public nuint patch_size;
     public readonly BsDiffStatusType status;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct BsDiffCtx
 {
-    public IntPtr log_error;
+    public nint log_error;
     public nint older;
-    public long older_size;
+    public nuint older_size;
     public nint newer;
-    public long newer_size;
+    public nuint newer_size;
     public readonly nint patch;
-    public readonly long patch_size;
+    public readonly nuint patch_size;
     public readonly BsDiffStatusType status;
 }
 
@@ -55,7 +55,7 @@ internal interface IBsdiffLib : IDisposable
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 internal sealed class LibBsDiff : IBsdiffLib
 {
-    IntPtr _libPtr;
+    nint _libPtr;
     readonly OSPlatform _osPlatform;
     
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
@@ -110,7 +110,7 @@ internal sealed class LibBsDiff : IBsdiffLib
             _libPtr = NativeMethodsUnix.dlopen(filename, NativeMethodsUnix.libdl_RTLD_NOW | NativeMethodsUnix.libdl_RTLD_LOCAL);
         }
 
-        if (_libPtr == IntPtr.Zero)
+        if (_libPtr == 0)
         {
             throw new FileNotFoundException($"Failed to load library: {filename}. " +
                                             $"OS: {osPlatform}. " +
@@ -162,7 +162,7 @@ internal sealed class LibBsDiff : IBsdiffLib
             {
                 void LogError(void* opaque, char* message)
                 {
-                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8(new IntPtr(message));
+                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8((nint)message);
                     if (messageStr == null) return;
                     Console.WriteLine(messageStr);
                 }
@@ -172,10 +172,10 @@ internal sealed class LibBsDiff : IBsdiffLib
                 var ctx = new BsDiffCtx
                 {
                     log_error = logErrorDelegate,
-                    older = new IntPtr(olderStreamPtr),
-                    older_size = olderStream.Length,
-                    newer = new IntPtr(newerStreamPtr),
-                    newer_size = newerStream.Length
+                    older = (nint)olderStreamPtr,
+                    older_size = (nuint)olderStream.Length,
+                    newer = (nint)newerStreamPtr,
+                    newer_size = (nuint)newerStream.Length
                 };
 
                 bool success = default;
@@ -198,7 +198,7 @@ internal sealed class LibBsDiff : IBsdiffLib
                         var slice = new ReadOnlySpan<byte>((void*)(ctx.patch + offset), sliceSize);
                         patchStream.Write(slice);
                         offset += sliceSize;
-                        bytesRemaining -= sliceSize;
+                        bytesRemaining -= (nuint)sliceSize;
                     }
                 }
                 finally
@@ -251,7 +251,7 @@ internal sealed class LibBsDiff : IBsdiffLib
             {
                 void LogError(void* opaque, char* message)
                 {
-                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8(new IntPtr(message));
+                    var messageStr = message == null ? null : Marshal.PtrToStringUTF8((nint)message);
                     if (messageStr == null) return;
                     Console.WriteLine(messageStr);
                 }
@@ -261,10 +261,10 @@ internal sealed class LibBsDiff : IBsdiffLib
                 var ctx = new BsDiffPatchCtx
                 {
                     log_error = logErrorDelegate,
-                    older = new IntPtr(olderStreamPtr),
-                    older_size = olderStream.Length,
-                    patch = new IntPtr(patchStreamPtr),
-                    patch_size = patchStream.Length
+                    older = (nint)olderStreamPtr,
+                    older_size = (nuint)olderStream.Length,
+                    patch = (nint)patchStreamPtr,
+                    patch_size = (nuint)patchStream.Length
                 };
 
                 bool success = default;
@@ -286,7 +286,7 @@ internal sealed class LibBsDiff : IBsdiffLib
                         var sliceSize = bytesRemaining <= int.MaxValue ? (int) bytesRemaining : int.MaxValue;
                         outputStream.Write(new ReadOnlySpan<byte>((void*)(ctx.newer + offset), sliceSize));
                         offset += sliceSize;
-                        bytesRemaining -= sliceSize;
+                        bytesRemaining -= (nuint)sliceSize;
                     }
                 }
                 finally
@@ -303,7 +303,7 @@ internal sealed class LibBsDiff : IBsdiffLib
 
     public void Dispose()
     {
-        if (_libPtr == IntPtr.Zero)
+        if (_libPtr == 0)
         {
             return;
         }
@@ -319,7 +319,7 @@ internal sealed class LibBsDiff : IBsdiffLib
         if (_osPlatform == OSPlatform.Windows)
         {
             NativeMethodsWindows.dlclose(_libPtr);
-            _libPtr = IntPtr.Zero;
+            _libPtr = 0;
             DisposeDelegates();
             return;
         }
@@ -327,7 +327,7 @@ internal sealed class LibBsDiff : IBsdiffLib
         if (_osPlatform == OSPlatform.Linux)
         {
             _ = NativeMethodsUnix.dlclose(_libPtr);
-            _libPtr = IntPtr.Zero;
+            _libPtr = 0;
             DisposeDelegates();
             return;
         }
@@ -352,25 +352,25 @@ internal sealed class LibBsDiff : IBsdiffLib
         public const int libdl_RTLD_NOW = 2; 
         
         [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlsym", CharSet = CharSet.Ansi)]
-        public static extern IntPtr dlsym(IntPtr handle, string symbol);
+        public static extern nint dlsym(nint handle, string symbol);
         
         [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlopen", CharSet = CharSet.Ansi)]
-        public static extern IntPtr dlopen(string filename, int flags);
+        public static extern nint dlopen(string filename, int flags);
         
         [DllImport("libdl.so.2", SetLastError = true, EntryPoint = "dlclose")]
-        public static extern int dlclose(IntPtr hModule);
+        public static extern int dlclose(nint hModule);
     }
 
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
     sealed class Delegate<T> where T: Delegate
     {
         public T Invoke { get; }
-        public IntPtr Ptr { get; private set; }
+        public nint Ptr { get; private set; }
         public string Symbol { get; }
 
-        public Delegate(IntPtr instancePtr, OSPlatform osPlatform, string filename)
+        public Delegate(nint instancePtr, OSPlatform osPlatform, string filename)
         {
-            Ptr = IntPtr.Zero;
+            Ptr = 0;
             Invoke = null;
 
             Symbol = typeof(T).Name;
@@ -394,7 +394,7 @@ internal sealed class LibBsDiff : IBsdiffLib
                 Ptr = NativeMethodsUnix.dlsym(instancePtr, Symbol);
             }
 
-            if (Ptr == IntPtr.Zero)
+            if (Ptr == 0)
             {
                 throw new Exception(
                     $"Failed load function: {Symbol}. Last error: {Marshal.GetLastWin32Error()}. Filename: {filename}.");
@@ -405,7 +405,7 @@ internal sealed class LibBsDiff : IBsdiffLib
 
         public void ThrowIfDangling()
         {
-            if (Ptr == IntPtr.Zero)
+            if (Ptr == 0)
             {
                 throw new Exception($"Delegate disposed: {Symbol}.");
             }
@@ -413,7 +413,7 @@ internal sealed class LibBsDiff : IBsdiffLib
 
         public void Unref()
         {
-            Ptr = IntPtr.Zero;
+            Ptr = 0;
         }
     }
         

@@ -12,7 +12,7 @@ SNAP_API int32_t SNAP_CALLING_CONVENTION snap_bsdiff_patch(snap_bsdiff_patch_ctx
     return 0;
   }
 
-  int ret = 1;
+  int ret;
   struct bsdiff_stream oldfile = { nullptr }, newfile = { nullptr }, patchfile = { nullptr };
   struct bsdiff_ctx ctx = { nullptr };
   struct bsdiff_patch_packer packer = { nullptr };
@@ -83,7 +83,7 @@ SNAP_API int32_t SNAP_CALLING_CONVENTION snap_bsdiff_diff(snap_bsdiff_diff_ctx* 
     return 0;
   }
 
-  int ret = 1;
+  int ret;
   struct bsdiff_stream oldfile = { nullptr }, newfile = { nullptr }, patchfile = { nullptr };
   struct bsdiff_ctx ctx = { nullptr };
   struct bsdiff_patch_packer packer = { nullptr };

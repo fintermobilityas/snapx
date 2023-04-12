@@ -33,22 +33,22 @@ typedef enum _snap_bsdiff_status_type {
 typedef struct _snap_bsdiff_patch_ctx {
   snap_bsdiff_error_logger_t error_logger;
   const void *older;
-  int64_t older_size;
+  size_t older_size;
   uint8_t **newer;
-  int64_t newer_size;
+  size_t newer_size;
   const void *patch;
-  const int64_t patch_size;
+  const size_t patch_size;
   snap_bsdiff_status_type status;
 } snap_bsdiff_patch_ctx;
 
 typedef struct _snap_bsdiff_diff_ctx {
   snap_bsdiff_error_logger_t error_logger;
   const void *older;
-  int64_t older_size;
+  size_t older_size;
   const void *newer;
-  int64_t newer_size;
+  size_t newer_size;
   uint8_t **patch;
-  int64_t patch_size;
+  size_t patch_size;
   snap_bsdiff_status_type status;
 } snap_bsdiff_diff_ctx;
 

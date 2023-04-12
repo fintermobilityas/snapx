@@ -237,9 +237,9 @@ jobs:
   #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
   publish:
-    if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+    if: success() 
     runs-on: ubuntu-latest
-    name: Publish
+    name: Nupkg
     needs: [setup, windows, linux] # todo: enable me when github actions supports arm64: test-linux-arm64
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
@@ -290,6 +290,7 @@ jobs:
         run: ./build.ps1 -Target Snapx -CIBuild -Version ${{ env.SNAPX_VERSION }} -Configuration Release
 
       - name: Push nuget packages
+        if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
         shell: pwsh
         run: |
           $nupkgs = Get-ChildItem ".\${{ env.GITHUB_WORKSPACE }}\nupkgs" -Filter *.nupkg | Select-Object -ExpandProperty FullName

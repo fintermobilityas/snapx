@@ -68,7 +68,7 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             var snapAppChannelReleases = snapAppsReleases.GetReleases(genesisSnapApp, snapAppChannel);
@@ -137,10 +137,10 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
             update1ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
@@ -232,7 +232,7 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             _baseFixtureNuget.SetupDownloadAsyncWithProgressAsync(_nugetServiceMock,
@@ -336,11 +336,11 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
@@ -403,12 +403,12 @@ namespace Snap.Tests.Core
             progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                 It.Is<int>(v => v == 0),
                 It.Is<long>(v => v == 0),
-                It.Is<long>(v => v == 6)), Times.Once);
+                It.Is<long>(v => v == 8)), Times.Once);
 
             progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                 It.Is<int>(v => v == 100),
-                It.Is<long>(v => v == 6),
-                It.Is<long>(v => v == 6)), Times.Once);
+                It.Is<long>(v => v == 8),
+                It.Is<long>(v => v == 8)), Times.Once);
 
             Assert.Equal(SnapPackageManagerRestoreType.Default, restoreSummary.RestoreType);
 
@@ -497,15 +497,15 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update2ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
             using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
@@ -576,12 +576,12 @@ namespace Snap.Tests.Core
             progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                 It.Is<int>(v => v == 0),
                 It.Is<long>(v => v == 0),
-                It.Is<long>(v => v == 8)), Times.Once);
+                It.Is<long>(v => v == 10)), Times.Once);
 
             progressSourceMock.Verify(x => x.RaiseRestoreProgress(
                 It.Is<int>(v => v == 100),
-                It.Is<long>(v => v == 8),
-                It.Is<long>(v => v == 8)), Times.Once);
+                It.Is<long>(v => v == 10),
+                It.Is<long>(v => v == 10)), Times.Once);
 
             Assert.Equal(SnapPackageManagerRestoreType.Default, restoreSummary.RestoreType);
 

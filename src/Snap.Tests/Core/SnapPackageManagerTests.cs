@@ -78,15 +78,15 @@ namespace Snap.Tests.Core
 
             genesisReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
                     
             update2ReleaseBuilder
                 .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update2SnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
                     
             using (await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder))
             using (await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder))

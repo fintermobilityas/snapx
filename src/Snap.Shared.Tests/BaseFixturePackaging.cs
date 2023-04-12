@@ -92,12 +92,21 @@ namespace Snap.Shared.Tests
             return this;
         }
         
-        public SnapReleaseBuilder AddSnapDll()
+        public SnapReleaseBuilder AddSnapDlls()
         {
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(typeof(SnapPack).Assembly.Location);
             _nuspec.Add(assemblyDefinition.BuildRelativeFilename(), assemblyDefinition);
+            var libPalFilename = SnapApp.GetLibPalFilename();
+            var libBsdiffFilename = SnapApp.GetLibBsdiffFilename();
+            var targetRid = SnapApp.Target.Rid;
+            _nuspec.Add(GetLibPalRelativePath(), File.OpenRead(Path.Combine(AppContext.BaseDirectory, "runtimes", targetRid, "native", libPalFilename)));
+            _nuspec.Add(GetLibBsdiffRelativePath(), File.OpenRead(Path.Combine(AppContext.BaseDirectory, "runtimes", targetRid, "native", libBsdiffFilename)));
             return this;
         }
+
+        public string GetLibPalRelativePath() => $"runtimes/{SnapApp.Target.Rid}/native/{SnapApp.GetLibPalFilename()}";
+        
+        public string GetLibBsdiffRelativePath() => $"runtimes/{SnapApp.Target.Rid}/native/{SnapApp.GetLibBsdiffFilename()}";
         
         public Dictionary<string, IDisposable> GetNuspecItems()
         {
@@ -546,10 +555,15 @@ namespace Snap.Shared.Tests
                     case AssemblyDefinition assemblyDefinition:
                         assemblyDefinition.Write(destinationFilename);
                         break;
-                    case MemoryStream memoryStream:
-                        await releaseBuilder.SnapFilesystem.FileWriteAsync(memoryStream, destinationFilename, cancellationToken);
-                        memoryStream.Seek(0, SeekOrigin.Begin);
+                    case Stream stream:
+                    {
+                        await releaseBuilder.SnapFilesystem.FileWriteAsync(stream, destinationFilename, cancellationToken);
+                        if (stream.CanSeek)
+                        {
+                            stream.Seek(0, SeekOrigin.Begin);
+                        }
                         break;
+                    }
                     default:
                         throw new NotSupportedException($"{targetPath}: {value?.GetType().FullName}");
                 }                

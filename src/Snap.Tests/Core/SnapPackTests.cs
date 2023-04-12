@@ -130,7 +130,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
@@ -157,7 +157,7 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
@@ -187,7 +187,7 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
             Assert.Null(genesisPackageContext.DeltaPackageAbsolutePath);
@@ -203,6 +203,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "test.dll").ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "subdirectory2", "test.dll").ForwardSlashesSafe()
             );
@@ -217,6 +219,32 @@ namespace Snap.Tests.Core
         }
 
         [Fact]
+        public async Task TestBuildPackageAsync_Contains_Snap_Libraries()
+        {
+            var snapAppsReleases = new SnapAppsReleases();
+            var genesisSnapApp = _baseFixture.BuildSnapApp();
+
+            await using var testDirectory = new DisposableDirectory(_baseFixture.WorkingDirectory, _snapFilesystem);
+            using var genesisSnapReleaseBuilder = _baseFixture
+                .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
+                .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
+                .AddSnapDlls();
+            using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
+            var extractedFiles = await _snapExtractor.ExtractAsync(
+                genesisPackageContext.FullPackageAbsolutePath,
+                genesisSnapReleaseBuilder.SnapAppInstallDirectory,
+                genesisPackageContext.FullPackageSnapRelease);
+
+            var libPalFilename = _snapFilesystem.PathCombine(genesisSnapReleaseBuilder.SnapAppInstallDirectory, genesisSnapReleaseBuilder.GetLibPalRelativePath());
+            var libBsdiffFilename = _snapFilesystem.PathCombine(genesisSnapReleaseBuilder.SnapAppInstallDirectory, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath());
+
+            Assert.Contains(libPalFilename, extractedFiles);
+            Assert.Contains(libBsdiffFilename, extractedFiles);
+
+            genesisSnapReleaseBuilder.AssertChecksums(genesisPackageContext.FullPackageSnapApp, genesisPackageContext.FullPackageSnapRelease, extractedFiles);
+        }
+        
+        [Fact]
         public async Task TestBuildPackageAsync_Genesis_Contains_Empty_File()
         {
             var snapAppsReleases = new SnapAppsReleases();
@@ -227,7 +255,7 @@ namespace Snap.Tests.Core
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("emptyfile.txt", new MemoryStream())
-                .AddSnapDll();
+                .AddSnapDlls();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             var extractedFiles = await _snapExtractor.ExtractAsync(
                 genesisPackageContext.FullPackageAbsolutePath,
@@ -251,7 +279,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
             Assert.Null(genesisPackageContext.DeltaPackageAbsolutePath);
@@ -266,7 +294,9 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
             );
 
             var extractedFiles = await _snapExtractor.ExtractAsync(
@@ -293,11 +323,11 @@ namespace Snap.Tests.Core
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext);
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -306,7 +336,9 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
             };
 
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
@@ -337,7 +369,9 @@ namespace Snap.Tests.Core
                 }, unmodifiedNuspecTargetPaths: new[]
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                 });
 
             var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -365,12 +399,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("empty"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -385,7 +419,9 @@ namespace Snap.Tests.Core
                     {
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                     });
 
                 var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -417,12 +453,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -437,7 +473,9 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "empty.dll").ForwardSlashesSafe()
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "empty.dll").ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                     });
 
                 var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -465,12 +503,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -486,6 +524,8 @@ namespace Snap.Tests.Core
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update1SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                     });
 
                 var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -522,17 +562,17 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("empty"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
@@ -548,7 +588,9 @@ namespace Snap.Tests.Core
                     {
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, update2SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                         _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update2SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, update2SnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                     });
 
                 var update2ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -584,14 +626,14 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 2)
                 .AddNuspecItem("subdirectory/subdirectory3", _baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -601,6 +643,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "test.dll").ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "subdirectory2", "test.dll").ForwardSlashesSafe()
             };
@@ -634,6 +678,8 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "subdirectory2", "test.dll").ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "subdirectory", "test.dll").ForwardSlashesSafe()
                 });
@@ -662,11 +708,11 @@ namespace Snap.Tests.Core
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext);
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -674,8 +720,10 @@ namespace Snap.Tests.Core
             {
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             };
 
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
@@ -702,7 +750,9 @@ namespace Snap.Tests.Core
                 }, unmodifiedNuspecTargetPaths: new[]
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 });
 
             var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -730,12 +780,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -745,6 +795,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test.dll").ForwardSlashesSafe()
             };
 
@@ -772,7 +824,9 @@ namespace Snap.Tests.Core
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                 });
 
             var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -800,11 +854,11 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -814,6 +868,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test.dll").ForwardSlashesSafe()
             };
 
@@ -846,7 +902,9 @@ namespace Snap.Tests.Core
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 });
 
             var update1ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -877,20 +935,20 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test2"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0)
                 .AddNuspecItem(update1SnapReleaseBuilder, 1)
                 .AddNuspecItem(update1SnapReleaseBuilder, 2)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test3"))
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -901,6 +959,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test1.dll").ForwardSlashesSafe()
             };
 
@@ -937,6 +997,8 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test1.dll").ForwardSlashesSafe()
                 });
 
@@ -965,6 +1027,8 @@ namespace Snap.Tests.Core
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test1.dll").ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test2.dll").ForwardSlashesSafe()
                 });
@@ -1000,21 +1064,21 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // Modified
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0) // Deleted
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update3SnapReleaseBuilder
                 .AddNuspecItem(update2SnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -1026,6 +1090,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test1.dll").ForwardSlashesSafe()
             };
 
@@ -1055,7 +1121,9 @@ namespace Snap.Tests.Core
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                 });
 
             var update3ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -1089,21 +1157,21 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // Modified
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0) // Deleted
-                .AddSnapDll();
+                .AddSnapDlls();
 
             update3SnapReleaseBuilder
                 .AddNuspecItem(update2SnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDll();
+                .AddSnapDlls();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -1115,6 +1183,8 @@ namespace Snap.Tests.Core
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test1.dll").ForwardSlashesSafe()
             };
 
@@ -1150,7 +1220,9 @@ namespace Snap.Tests.Core
                 {
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe()
                 });
 
             var update3ExtractedFiles = await _snapExtractor.ExtractAsync(
@@ -1189,7 +1261,7 @@ namespace Snap.Tests.Core
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleasesBefore, snapApp, _snapReleaseBuilderContext)
                     .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
-                    .AddSnapDll();
+                    .AddSnapDlls();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
 
@@ -1248,7 +1320,7 @@ namespace Snap.Tests.Core
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, snapApp, _snapReleaseBuilderContext)
                             .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
-                            .AddSnapDll();
+                            .AddSnapDlls();
                 
             using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
 

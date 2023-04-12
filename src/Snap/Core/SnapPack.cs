@@ -132,7 +132,7 @@ namespace Snap.Core
         readonly SemanticVersion _snapDllVersion;
 
         static readonly Regex IsSnapDotnetRuntimesFileRegex =
-            new(@"^runtimes\/(.+?)\/native\/([libsnap|snapstub]+)$",
+            new(@"^runtimes\/([^\/]+)\/native\/((?:libsnap|snapstub)[^\/]*)",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
 
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
@@ -962,32 +962,47 @@ namespace Snap.Core
                 nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs))?.Remove();
                 
                 var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(baseDirectory).ToList();
-                var libPalFilename = snapApp.GetLibPalFilename();
-                var libBsdiffFilename = snapApp.GetLibBsdiffFilename();
+                var libBsdiffFileName = snapApp.GetLibBsdiffFilename();
+                var libPalFileName = snapApp.GetLibPalFilename();
+                var expectedDependencies = new List<string>
+                {
+                    libBsdiffFileName,
+                    libPalFileName
+                };
+                var dependencies = new List<string>();
                 foreach (var fileAbsolutePath in allFiles)
                 {
                     var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty)[1..];
 
                     var match = IsSnapDotnetRuntimesFileRegex.Match(relativePath.ForwardSlashesSafe());
-                    if (match.Success && match.Groups.Count == 5) 
+                    if (match.Success && match.Groups.Count == 3) 
                     {
                         var rid = match.Groups[1].Value;
-                        if (!string.Equals(rid, snapApp.Target.Rid, StringComparison.OrdinalIgnoreCase))
+                        if (!string.Equals(rid, snapApp.Target.Rid, StringComparison.Ordinal))
                         {
                             continue;
                         }
 
-                        var filename = match.Groups[5].Value;
-                        if (string.Equals(filename, libPalFilename, StringComparison.OrdinalIgnoreCase) || 
-                            string.Equals(filename, libBsdiffFilename, StringComparison.OrdinalIgnoreCase))
+                        var filename = match.Groups[2].Value;
+                        if (!expectedDependencies.Contains(filename, StringComparer.Ordinal))
                         {
                             continue;
                         }
+                        
+                        dependencies.Add(filename);
                     }
                     
                     packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath).ForwardSlashesSafe()));
                 }
 
+                foreach (var fileName in expectedDependencies.Where(x => !dependencies.Contains(x, StringComparer.Ordinal)))
+                {
+                    throw new Exception(
+                        $"Missing required snap dependency: {fileName}. " +
+                        $"Dependencies found: {string.Join(",", dependencies)}. " +
+                        $"Expected dependencies: {string.Join(",", expectedDependencies)}. ");
+                }
+                
                 var rewrittenNuspecStream = new MemoryStream();
                 nuspecDocument.Save(rewrittenNuspecStream);
                 rewrittenNuspecStream.Seek(0, SeekOrigin.Begin);

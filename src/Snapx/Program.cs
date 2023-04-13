@@ -699,21 +699,42 @@ namespace snapx
             };
 
             await using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
-            
-            string warpPackerArch;
+
+            bool isWarpPackerHostRidSupported;
+            string warpPackerHostRid = null;
+            string warpPackerTargetArch;
             string installerFilename;
             string setupExtension;
             string setupIcon = null;
             var chmod = false;
             var changeSubSystemToWindowsGui = false;
             var installerIconSupported = false;
-
+            
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                warpPackerHostRid = RuntimeInformation.ProcessArchitecture switch
+                {
+                    Architecture.X86 => "win-x86",
+                    Architecture.X64 => "win-x64",
+                    _ => null
+                };
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                warpPackerHostRid = RuntimeInformation.ProcessArchitecture switch
+                {
+                    Architecture.X64 => "linux-x64",
+                    Architecture.Arm64 => "linux-arm64",
+                    _ => null
+                };
+            }
+            
             switch (snapApp.Target.Rid)
             {
                 case "win-x86":
                 case "win-x64":
                     installerIconSupported = true;
-                    warpPackerArch = snapApp.Target.Rid == "win-x86" ? "windows-x86" : "windows-x64";
+                    warpPackerTargetArch = snapApp.Target.Rid == "win-x86" ? "windows-x86" : "windows-x64";
+                    isWarpPackerHostRidSupported = warpPackerHostRid is "win-x86" or "win-x64";
                     installerFilename = "Snap.Installer.exe";
                     changeSubSystemToWindowsGui = true;
                     setupExtension = ".exe";
@@ -724,24 +745,32 @@ namespace snapx
                     break;
                 case "linux-x64":
                     chmod = true;
-                    warpPackerArch = "linux-x64";
+                    warpPackerTargetArch = "linux-x64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
+                    isWarpPackerHostRidSupported = warpPackerHostRid is "linux-x64" or "linux-arm64";
                     break;
                 case "linux-arm64":
                     chmod = true;
-                    warpPackerArch = "linux-aarch64";
+                    warpPackerTargetArch = "linux-aarch64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
+                    isWarpPackerHostRidSupported = warpPackerHostRid is "linux-x64" or "linux-arm64";
                     break;
                 default:
                     throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
             }
-
+            
+            if (!isWarpPackerHostRidSupported)
+            {
+                throw new NotSupportedException(
+                    $"Host platform does not support building installers for rid: {snapApp.Target.Rid}. Host rid: {warpPackerHostRid}.");
+            }
+            
             var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
             snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
 
-            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, snapApp.GetWarpPackerFilename());
+            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, warpPackerHostRid.GetWarpPackerFilename());
             var installerRepackageAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
             async Task BuildOfflineInstallerAsync(Stream installerZipStream, Stream warpPackerStream)
@@ -835,7 +864,7 @@ namespace snapx
                 $"Setup-{snapApp.Target.Rid}-{snapApp.Id}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
 
             await using var installerZipStream = snapApp.GetInstallerZipStream(snapOs.Filesystem, AppContext.BaseDirectory);
-            await using var warpPackerStream  = snapApp.GetWarpPackerExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
+            await using var warpPackerStream = warpPackerHostRid.GetWarpPackerExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
 
             if (offline)
             {
@@ -849,7 +878,7 @@ namespace snapx
             progressSource.Raise(50);
 
             var processStartInfoBuilder = new ProcessStartInfoBuilder(rootTempDirWarpPackerAbsolutePath)
-                .Add($"--arch {warpPackerArch}")
+                .Add($"--arch {warpPackerTargetArch}")
                 .Add($"--exec {installerFilename}")
                 .Add($"--output {installerFinalAbsolutePath.ForwardSlashesSafe()}")
                 .Add($"--input_dir {repackageTempDir.ForwardSlashesSafe()}");

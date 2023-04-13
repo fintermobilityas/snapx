@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
+using Snap.AnyOS;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -50,16 +51,16 @@ internal static class SnapExtensions
         return (fileStream, snapApp.GetStubExeFilename());
     }
     
-    public static FileStream GetWarpPackerExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    public static FileStream GetWarpPackerExeStream([NotNull] this string hostRid, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
     {
-        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(hostRid);
         ArgumentNullException.ThrowIfNull(snapFilesystem);
         ArgumentNullException.ThrowIfNull(workingDirectory);
 
-        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", hostRid, "native");
         snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
 
-        var warpPackerExeFilename = snapApp.GetWarpPackerFilename();
+        var warpPackerExeFilename = hostRid.GetWarpPackerFilename();
         return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
     }
     
@@ -123,21 +124,19 @@ internal static class SnapExtensions
         throw new PlatformNotSupportedException();
     }
 
-    internal static string GetWarpPackerFilename(this SnapApp snapApp)
+    internal static string GetWarpPackerFilename(this string rid)
     {
-        ArgumentNullException.ThrowIfNull(snapApp);
-
-        if (snapApp.Target.Os == OSPlatform.Windows)
+        switch (rid)
         {
-            return $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
+            case "win-x86":
+            case "win-x64":
+                return $"SnapxWarpPacker-{rid}.exe";
+            case "linux-x64":
+            case "linux-arm64":
+                return $"SnapxWarpPacker-{rid}.bin";
+            default:
+                throw new NotSupportedException($"Unsupported warp packer rid: {rid}.");
         }
-
-        if (snapApp.Target.Os == OSPlatform.Linux)
-        {
-            return $"SnapxWarpPacker-{snapApp.Target.Rid}.bin";
-        }
-
-        throw new PlatformNotSupportedException();
     }
     
     internal static string GetLibPalFilename(this SnapApp snapApp)

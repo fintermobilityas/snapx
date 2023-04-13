@@ -50,7 +50,7 @@ internal static class SnapExtensions
         return (fileStream, snapApp.GetStubExeFilename());
     }
     
-    public static (FileStream fileStream, string filename) GetWarpPackerExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    public static FileStream GetWarpPackerExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
     {
         ArgumentNullException.ThrowIfNull(snapApp);
         ArgumentNullException.ThrowIfNull(snapFilesystem);
@@ -59,12 +59,11 @@ internal static class SnapExtensions
         var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
         snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
 
-        var warpPackerExeFilename = snapApp.GetWarpPackerExeFilename();
-        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
-        return (fileStream, warpPackerExeFilename);
+        var warpPackerExeFilename = $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
+        return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
     }
     
-    public static (FileStream fileStream, string filename) GetSetupExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    public static FileStream GetInstallerZipStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
     {
         ArgumentNullException.ThrowIfNull(snapApp);
         ArgumentNullException.ThrowIfNull(snapFilesystem);
@@ -73,9 +72,8 @@ internal static class SnapExtensions
         var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
         snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
 
-        var setupExeFilename = snapApp.GetSetupExeFilename();
-        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, setupExeFilename));
-        return (fileStream, setupExeFilename);
+        var installerZipFilename = $"SnapxInstaller-{snapApp.Target.Rid}.zip";
+        return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, installerZipFilename));
     }
     
     public static (FileStream fileStream, string filename) GetLibPalStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
@@ -125,40 +123,6 @@ internal static class SnapExtensions
         throw new PlatformNotSupportedException();
     }
 
-    internal static string GetWarpPackerExeFilename(this SnapApp snapApp)
-    {
-        ArgumentNullException.ThrowIfNull(snapApp);
-
-        if (snapApp.Target.Os == OSPlatform.Windows)
-        {
-            return $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
-        }
-
-        if (snapApp.Target.Os == OSPlatform.Linux)
-        {
-            return $"SnapxWarpPacker-{snapApp.Target.Rid}";
-        }
-
-        throw new PlatformNotSupportedException();
-    }
-    
-    internal static string GetSetupExeFilename(this SnapApp snapApp)
-    {
-        ArgumentNullException.ThrowIfNull(snapApp);
-
-        if (snapApp.Target.Os == OSPlatform.Windows)
-        {
-            return $"SnapxInstaller-{snapApp.Target.Rid}.exe";
-        }
-
-        if (snapApp.Target.Os == OSPlatform.Linux)
-        {
-            return $"SnapxInstaller-{snapApp.Target.Rid}";
-        }
-
-        throw new PlatformNotSupportedException();
-    }
-    
     internal static string GetLibPalFilename(this SnapApp snapApp)
     {
         ArgumentNullException.ThrowIfNull(snapApp);

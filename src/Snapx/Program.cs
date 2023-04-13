@@ -699,9 +699,7 @@ namespace snapx
             };
 
             await using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
-            var (installerZipStream, _) = snapApp.GetSetupExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
-            var (warpPackerStream, _)  = snapApp.GetWarpPackerExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
-
+            
             string warpPackerArch;
             string installerFilename;
             string setupExtension;
@@ -746,7 +744,7 @@ namespace snapx
             var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{snapApp.Target.Rid}.exe");
             var installerRepackageAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
-            async Task BuildOfflineInstallerAsync()
+            async Task BuildOfflineInstallerAsync(Stream installerZipStream, FileStream warpPackerStream)
             {
                 if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
 
@@ -755,98 +753,97 @@ namespace snapx
                 var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,
                     snapOs.Filesystem.PathGetFileName(releasesNupkgAbsolutePath));
 
-                await using (installerZipStream)
-                await using (warpPackerStream)
+                using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
+                await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
+                await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
+                using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
+                snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
+
+                progressSource.Raise(10);
+
+                logger.Info("Extracting installer to temp directory.");
+                zipArchive.ExtractToDirectory(repackageTempDir);
+
+                progressSource.Raise(20);
+
+                logger.Info("Copying assets to temp directory.");
+
+                await Task.WhenAll(
+                    warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken),
+                    snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath,
+                        cancellationToken),
+                    snapOs.Filesystem.FileCopyAsync(releasesNupkgAbsolutePath, repackageDirReleasesNupkgAbsolutePath,
+                        cancellationToken));
+
+                if (installerIconSupported && setupIcon != null)
                 {
-                    using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
-                    await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
-                    await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
-                    using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
-                    snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
+                    logger.Debug($"Writing installer icon: {setupIcon}.");
 
-                    progressSource.Raise(10);
+                    var zipArchiveInstallerFilename =
+                        snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
-                    logger.Info("Extracting installer to temp directory.");
-                    zipArchive.ExtractToDirectory(repackageTempDir);
-
-                    progressSource.Raise(20);
-
-                    logger.Info("Copying assets to temp directory.");
-
-                    await Task.WhenAll(
-                        warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken),
-                        snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken),
-                        snapOs.Filesystem.FileCopyAsync(releasesNupkgAbsolutePath, repackageDirReleasesNupkgAbsolutePath, cancellationToken));
-
-                    if (installerIconSupported && setupIcon != null)
+                    var rcEditOptions = new RcEditOptions
                     {
-                        logger.Debug($"Writing installer icon: {setupIcon}.");
+                        Filename = zipArchiveInstallerFilename,
+                        IconFilename = setupIcon
+                    };
 
-                        var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
-
-                        var rcEditOptions = new RcEditOptions
-                        {
-                            Filename = zipArchiveInstallerFilename,
-                            IconFilename = setupIcon
-                        };
-
-                        CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
-                    }
+                    CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
                 }
             }
 
-            async Task BuildWebInstallerAsync()
+            async Task BuildWebInstallerAsync(Stream installerZipStream, FileStream warpPackerStream)
             {
                 var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
 
-                await using (installerZipStream)
-                await using (warpPackerStream)
+                await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
+                using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
+                using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
+                await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
+                snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
+
+                progressSource.Raise(10);
+
+                logger.Info("Extracting installer to temp directory.");
+                zipArchive.ExtractToDirectory(repackageTempDir);
+
+                progressSource.Raise(20);
+
+                logger.Info("Copying assets to temp directory.");
+
+                await Task.WhenAll(
+                    warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken));
+
+                if (installerIconSupported && setupIcon != null)
                 {
-                    await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
-                    using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
-                    using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
-                    await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
-                    snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
-                        
-                    progressSource.Raise(10);
+                    logger.Debug($"Writing installer icon: {setupIcon}.");
 
-                    logger.Info("Extracting installer to temp directory.");
-                    zipArchive.ExtractToDirectory(repackageTempDir);
+                    var zipArchiveInstallerFilename =
+                        snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
-                    progressSource.Raise(20);
-
-                    logger.Info("Copying assets to temp directory.");
-
-                    await Task.WhenAll(
-                        warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken));
-
-                    if (installerIconSupported && setupIcon != null)
+                    var rcEditOptions = new RcEditOptions
                     {
-                        logger.Debug($"Writing installer icon: {setupIcon}.");
+                        Filename = zipArchiveInstallerFilename,
+                        IconFilename = setupIcon
+                    };
 
-                        var zipArchiveInstallerFilename = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
-
-                        var rcEditOptions = new RcEditOptions
-                        {
-                            Filename = zipArchiveInstallerFilename,
-                            IconFilename = setupIcon
-                        };
-
-                        CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
-                    }
+                    CommandRcEdit(rcEditOptions, libPal, snapOs.Filesystem, logger);
                 }
             }
 
             var installerFinalAbsolutePath = snapOs.Filesystem.PathCombine(installersWorkingDirectory,
                 $"Setup-{snapApp.Target.Rid}-{snapApp.Id}-{snapChannel.Name}-{installerPrefix}{setupExtension}");
 
+            await using var installerZipStream = snapApp.GetInstallerZipStream(snapOs.Filesystem, AppContext.BaseDirectory);
+            await using var warpPackerStream  = snapApp.GetWarpPackerExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
+
             if (offline)
             {
-                await BuildOfflineInstallerAsync();
+                await BuildOfflineInstallerAsync(installerZipStream, warpPackerStream);
             }
             else
             {
-                await BuildWebInstallerAsync();
+                await BuildWebInstallerAsync(installerZipStream, warpPackerStream);
             }
 
             progressSource.Raise(50);

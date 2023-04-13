@@ -33,20 +33,20 @@ internal static class SnapExtensions
         var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
         snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
 
-        string stubExeFilename;
+        string stubExeRealFilename;
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            stubExeFilename = $"SnapxStub-{snapApp.Target.Rid}.exe";
+            stubExeRealFilename = $"SnapxStub-{snapApp.Target.Rid}.exe";
         } else if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            stubExeFilename = $"SnapxStub-{snapApp.Target.Rid}";
+            stubExeRealFilename = $"SnapxStub-{snapApp.Target.Rid}.bin";
         }
         else
         {
             throw new PlatformNotSupportedException();
         }
         
-        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, stubExeFilename));
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, stubExeRealFilename));
         return (fileStream, snapApp.GetStubExeFilename());
     }
     

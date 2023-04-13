@@ -105,7 +105,7 @@
 
     <!-- Unix -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'any'">
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-x64/native/SnapxStub-linux-x64">
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-x64/native/SnapxStub-linux-x64.bin">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -123,7 +123,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'linux-x64'">
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-x64/native/SnapxStub-linux-x64">
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-x64/native/SnapxStub-linux-x64.bin">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -141,7 +141,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(OsPlatform) == 'Unix' AND $(SnapRid) == 'linux-arm64'">
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-arm64/native/SnapxStub-linux-arm64">
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="false" Link="runtimes/linux-arm64/native/SnapxStub-linux-arm64.bin">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>

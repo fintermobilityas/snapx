@@ -150,7 +150,7 @@
         <!-- linux-x64 -->
         <Content Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxInstaller-linux-x64.zip"/>
         <Content Include="../../tools/warp-packer-linux-x64.exe" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxWarpPacker-linux-x64.exe" />
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxStub-linux-x64" />
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxStub-linux-x64.bin" />
         <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxLibPal-linux-x64.so" />
         <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxLibBsdiff-linux-x64.so"/>
         <!-- /linux-x64 -->
@@ -158,7 +158,7 @@
         <!-- linux-arm64 -->
         <Content Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxInstaller-linux-arm64.zip" />
         <Content Include="../../tools/warp-packer-linux-arm64.exe" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxWarpPacker-linux-arm64.exe" />
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxStub-linux-arm64" />
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxStub-linux-arm64.bin" />
         <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxLibPal-linux-arm64.so" />
         <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxLibBsdiff-linux-arm64.so" />
         <!-- /linux-arm64 -->

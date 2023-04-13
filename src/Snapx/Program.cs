@@ -741,10 +741,10 @@ namespace snapx
             var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");
             snapOs.Filesystem.DirectoryCreateIfNotExists(repackageTempDir);
 
-            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, $"warp-packer-{snapApp.Target.Rid}.exe");
+            var rootTempDirWarpPackerAbsolutePath = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, snapApp.GetWarpPackerFilename());
             var installerRepackageAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, installerFilename);
 
-            async Task BuildOfflineInstallerAsync(Stream installerZipStream, FileStream warpPackerStream)
+            async Task BuildOfflineInstallerAsync(Stream installerZipStream, Stream warpPackerStream)
             {
                 if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
 
@@ -756,13 +756,13 @@ namespace snapx
                 using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
                 await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
                 await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
-                using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
+                using var installerZipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
                 snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
 
                 progressSource.Raise(10);
 
                 logger.Info("Extracting installer to temp directory.");
-                zipArchive.ExtractToDirectory(repackageTempDir);
+                installerZipArchive.ExtractToDirectory(repackageTempDir);
 
                 progressSource.Raise(20);
 

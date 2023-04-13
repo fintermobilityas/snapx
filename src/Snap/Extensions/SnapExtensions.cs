@@ -59,7 +59,7 @@ internal static class SnapExtensions
         var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
         snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
 
-        var warpPackerExeFilename = $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
+        var warpPackerExeFilename = snapApp.GetWarpPackerFilename();
         return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
     }
     
@@ -123,6 +123,23 @@ internal static class SnapExtensions
         throw new PlatformNotSupportedException();
     }
 
+    internal static string GetWarpPackerFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"SnapxWarpPacker-{snapApp.Target.Rid}.bin";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
     internal static string GetLibPalFilename(this SnapApp snapApp)
     {
         ArgumentNullException.ThrowIfNull(snapApp);

@@ -49,8 +49,6 @@ internal sealed class SnapExtractor : ISnapExtractor
 
         var snapApp = await _snapPack.GetSnapAppAsync(asyncPackageCoreReader, cancellationToken);                        
         var stubExeFilename = snapApp.GetStubExeFilename();
-        var libBsdiffFilename = snapApp.GetLibBsdiffFilename();
-        var libPalFilename = snapApp.GetLibPalFilename();
         var extractedFiles = new List<string>();
             
         _snapFilesystem.DirectoryCreateIfNotExists(destinationDirectoryAbsolutePath);
@@ -76,10 +74,6 @@ internal sealed class SnapExtractor : ISnapExtractor
                 {
                     dstFilename = _snapFilesystem.PathCombine(
                         _snapFilesystem.DirectoryGetParent(destinationDirectoryAbsolutePath), checksum.Filename);          
-                } else if (checksum.Filename == libPalFilename || checksum.Filename == libBsdiffFilename)
-                {
-                    var targetPath = checksum.NuspecTargetPath[(SnapConstants.NuspecAssetsTargetPath.Length + 1)..];
-                    dstFilename = _snapFilesystem.PathCombine(destinationDirectoryAbsolutePath, targetPath);
                 }
             }
             else

@@ -915,11 +915,11 @@ namespace Snap.Core
 
             // Libpal
             var (libPalStream, libPalFilename) = snapApp.GetLibPalStream(_snapFilesystem, AppContext.BaseDirectory);
-            AddPackageFile(packageBuilder, libPalStream, $"{SnapConstants.NuspecRootTargetPath}/runtimes/{snapApp.Target.Rid}/native", libPalFilename, snapRelease);
+            AddPackageFile(packageBuilder, libPalStream, $"{SnapConstants.NuspecAssetsTargetPath}/runtimes/{snapApp.Target.Rid}/native", libPalFilename, snapRelease);
 
             // Libbsdiff
             var (libBsdiffStream, libBsdiffFilename) = snapApp.GetLibBsdiffStream(_snapFilesystem, AppContext.BaseDirectory);
-            AddPackageFile(packageBuilder, libBsdiffStream, $"{SnapConstants.NuspecRootTargetPath}/runtimes/{snapApp.Target.Rid}/native", libBsdiffFilename, snapRelease);
+            AddPackageFile(packageBuilder, libBsdiffStream, $"{SnapConstants.NuspecAssetsTargetPath}/runtimes/{snapApp.Target.Rid}/native", libBsdiffFilename, snapRelease);
 
             // Stub executable
             var (stubExeFileStream, stubExeFileName) = snapApp.GetStubExeStream(_snapFilesystem, AppContext.BaseDirectory);

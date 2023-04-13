@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -87,7 +89,7 @@ internal partial class Program
         const int retriesPerTask = 5;
         const int delayInMilliseconds = 1200;
 
-        var downloadResults = new List<(bool downloadSuccess, DownloadResourceResult downloadResourceResult, string id)>();
+        var downloadResults = new List<(bool downloadSuccess, bool downloadUnauthorized, DownloadResourceResult downloadResourceResult, string id)>();
 
         var snapDatabaseIds = string.Join(", ", snapAppsesPackageSources.DistinctBy(x => x.snapApp.Id).Select(x => x.snapApp.Id));
         logger.Info('-'.Repeat(TerminalBufferWidth));
@@ -100,21 +102,22 @@ internal partial class Program
                 var downloadResult = await SnapUtility.RetryAsync(async () => 
                         await nugetService.DownloadLatestAsync(x.snapApp.BuildNugetReleasesUpstreamId(), x.packageSource, false, true, cancellationToken),
                     retriesPerTask, delayInMilliseconds);
-                downloadResults.Add((downloadResult.SuccessSafe(), downloadResult, x.snapApp.Id));
+                downloadResults.Add((downloadResult.SuccessSafe(), false, downloadResult, x.snapApp.Id));
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                downloadResults.Add((false, null, x.snapApp.Id));
+                downloadResults.Add((false, e is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized }, null, x.snapApp.Id));
             }
         }, maxConcurrentMetadataTasks);
 
         foreach (var (thisSnapApps, table) in tables)
         {
-            var (downloadSuccess, downloadResourceResult, _) = downloadResults.Single(x => x.id == thisSnapApps.Id);
+            var (downloadSuccess, downloadUnauthorized, downloadResourceResult, _) = downloadResults.SingleOrDefault(x => x.id == thisSnapApps.Id);
 
             if (!downloadSuccess)
             {
-                logger.Error($"Failed to download releases nupkg for application: {thisSnapApps.Id}. Status: {downloadResourceResult?.Status}.");
+                var downloadResourceResultStatus = downloadUnauthorized ? HttpStatusCode.Unauthorized.ToString() : downloadResourceResult?.Status.ToString() ?? "Unknown";
+                logger.Error($"Failed to download releases nupkg for application: {thisSnapApps.Id}. Status: {downloadResourceResultStatus}.");
                 continue;
             }
 

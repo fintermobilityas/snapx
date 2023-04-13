@@ -36,10 +36,10 @@ internal static class SnapExtensions
         string stubExeFilename;
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            stubExeFilename = $"snapstub-{snapApp.Target.Rid}.exe";
+            stubExeFilename = $"SnapxStub-{snapApp.Target.Rid}.exe";
         } else if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            stubExeFilename = $"snapstub-{snapApp.Target.Rid}";
+            stubExeFilename = $"SnapxStub-{snapApp.Target.Rid}";
         }
         else
         {
@@ -48,6 +48,62 @@ internal static class SnapExtensions
         
         var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, stubExeFilename));
         return (fileStream, snapApp.GetStubExeFilename());
+    }
+    
+    public static (FileStream fileStream, string filename) GetWarpPackerExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var warpPackerExeFilename = snapApp.GetWarpPackerExeFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
+        return (fileStream, warpPackerExeFilename);
+    }
+    
+    public static (FileStream fileStream, string filename) GetSetupExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var setupExeFilename = snapApp.GetSetupExeFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, setupExeFilename));
+        return (fileStream, setupExeFilename);
+    }
+    
+    public static (FileStream fileStream, string filename) GetLibPalStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var libPalFilename = snapApp.GetLibPalFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, libPalFilename));
+        return (fileStream, libPalFilename);
+    }
+    
+    public static (FileStream fileStream, string filename) GetLibBsdiffStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var libBsdiffFilename = snapApp.GetLibBsdiffFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, libBsdiffFilename));
+        return (fileStream, libBsdiffFilename);
     }
     
     internal static string GetStubExeFilename(this SnapApp snapApp)
@@ -69,18 +125,52 @@ internal static class SnapExtensions
         throw new PlatformNotSupportedException();
     }
 
+    internal static string GetWarpPackerExeFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"SnapxWarpPacker-{snapApp.Target.Rid}.exe";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"SnapxWarpPacker-{snapApp.Target.Rid}";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
+    internal static string GetSetupExeFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"SnapxInstaller-{snapApp.Target.Rid}.exe";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"SnapxInstaller-{snapApp.Target.Rid}";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
     internal static string GetLibPalFilename(this SnapApp snapApp)
     {
         ArgumentNullException.ThrowIfNull(snapApp);
 
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            return $"libsnappal-{snapApp.Target.Rid}.dll";
+            return $"SnapxLibPal-{snapApp.Target.Rid}.dll";
         }
 
         if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            return $"libsnappal-{snapApp.Target.Rid}.so";
+            return $"SnapxLibPal-{snapApp.Target.Rid}.so";
         }
 
         throw new PlatformNotSupportedException();
@@ -92,12 +182,12 @@ internal static class SnapExtensions
 
         if (snapApp.Target.Os == OSPlatform.Windows)
         {
-            return $"libsnapbsdiff-{snapApp.Target.Rid}.dll";
+            return $"SnapxLibBsdiff-{snapApp.Target.Rid}.dll";
         }
 
         if (snapApp.Target.Os == OSPlatform.Linux)
         {
-            return $"libsnapbsdiff-{snapApp.Target.Rid}.so";
+            return $"SnapxLibBsdiff-{snapApp.Target.Rid}.so";
         }
 
         throw new PlatformNotSupportedException();

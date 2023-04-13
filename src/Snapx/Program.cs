@@ -146,8 +146,7 @@ namespace snapx
             }
            
             var snapCryptoProvider = new SnapCryptoProvider();
-            var snapXEmbeddedResources = new SnapxEmbeddedResources();
-            
+         
             var libPal = new LibPal();
             var bsdiffLib = new LibBsDiff();
             var snapAppReader = new SnapAppReader();
@@ -181,7 +180,7 @@ namespace snapx
 
             return MainAsync(args, libPal, snapOs, snapExtractor, snapOs.Filesystem, 
                 snapSpecsReader, snapCryptoProvider,
-                snapPack, snapAppWriter, snapXEmbeddedResources, snapPackageRestorer,
+                snapPack, snapAppWriter, snapPackageRestorer,
                 nugetServiceCommandPack, nugetServiceCommandPromote, nugetServiceCommandDemote, nugetServiceNoopLogger, distributedMutexClient, workingDirectory, cts.Token);
         }
 
@@ -210,7 +209,6 @@ namespace snapx
             [NotNull] ISnapCryptoProvider snapCryptoProvider, 
             [NotNull] ISnapPack snapPack,
             [NotNull] ISnapAppWriter snapAppWriter,
-            [NotNull] SnapxEmbeddedResources snapXEmbeddedResources,
             [NotNull] SnapPackageManager snapPackageManager,
             [NotNull] INugetService nugetServiceCommandPack, 
             [NotNull] INugetService nugetServiceCommandPromote,
@@ -229,7 +227,6 @@ namespace snapx
             if (snapCryptoProvider == null) throw new ArgumentNullException(nameof(snapCryptoProvider));
             if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
-            if (snapXEmbeddedResources == null) throw new ArgumentNullException(nameof(snapXEmbeddedResources));
             if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
             if (nugetServiceCommandPromote == null) throw new ArgumentNullException(nameof(nugetServiceCommandPromote));
             if (nugetServiceNoopLogger == null) throw new ArgumentNullException(nameof(nugetServiceNoopLogger));
@@ -256,7 +253,7 @@ namespace snapx
 
                         return TplHelper.RunSync(() => CommandDemoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandDemote, distributedMutexClient, snapPackageManager, snapPack,
-                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, libPal,
+                            snapNetworkTimeProvider, snapExtractor, snapOs, libPal,
                             SnapDemoteLogger, workingDirectory, cancellationToken));
                     },
                     (PromoteOptions opts) =>
@@ -272,7 +269,7 @@ namespace snapx
                         return TplHelper.RunSync(() => CommandPromoteAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, nugetServiceCommandPromote, distributedMutexClient, snapPackageManager, snapPack,
                             snapOs.SpecialFolders,
-                            snapNetworkTimeProvider, snapExtractor, snapOs, snapXEmbeddedResources, libPal,
+                            snapNetworkTimeProvider, snapExtractor, snapOs, libPal,
                             SnapPromoteLogger, workingDirectory, cancellationToken));
                     },
                     (PackOptions opts) =>
@@ -286,7 +283,7 @@ namespace snapx
                         var snapNetworkTimeProvider = opts.NetworkTimeProviderConnectionString.BuildNtpProvider() ?? defaultNetworkTimeProvider;
 
                         return TplHelper.RunSync(() => CommandPackAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
-                            nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs, snapXEmbeddedResources,
+                            nuGetPackageSources, snapPack, nugetServiceCommandPack, snapOs,
                             snapExtractor, snapPackageManager, libPal,
                             snapNetworkTimeProvider, SnapPackLogger, distributedMutexClient,
                             workingDirectory, cancellationToken));
@@ -313,8 +310,7 @@ namespace snapx
                         }
                         return TplHelper.RunSync(() => CommandRestoreAsync(opts, snapFilesystem, snapAppReader, snapAppWriter,
                             nuGetPackageSources, snapPackageManager, snapOs,
-                            snapXEmbeddedResources, libPal, snapPack,
-                            SnapRestoreLogger, workingDirectory, cancellationToken));
+                            libPal, snapPack, SnapRestoreLogger, workingDirectory, cancellationToken));
                     },
                     (LockOptions opts) => TplHelper.RunSync(() => CommandLock(opts, distributedMutexClient, snapFilesystem, 
                         snapAppReader, SnapLockLogger, workingDirectory, cancellationToken)),
@@ -678,14 +674,12 @@ namespace snapx
         }
 
         static async Task<(bool success, bool canContinueIfError, string installerExeAbsolutePath)> BuildInstallerAsync([NotNull] ILog logger, [NotNull] ISnapOs snapOs,
-            [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources,
             [NotNull] ISnapAppWriter snapAppWriter, [NotNull] SnapApp snapApp, ILibPal libPal, 
             [NotNull] string installersWorkingDirectory, string fullNupkgAbsolutePath, [NotNull] string releasesNupkgAbsolutePath, bool offline, 
             CancellationToken cancellationToken)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-            if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
             if (snapAppWriter == null) throw new ArgumentNullException(nameof(snapAppWriter));
             if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
             if (installersWorkingDirectory == null) throw new ArgumentNullException(nameof(installersWorkingDirectory));
@@ -705,8 +699,8 @@ namespace snapx
             };
 
             await using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
-            MemoryStream installerZipMemoryStream;
-            MemoryStream warpPackerMemoryStream;
+            var (installerZipStream, _) = snapApp.GetSetupExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
+            var (warpPackerStream, _)  = snapApp.GetWarpPackerExeStream(snapOs.Filesystem, AppContext.BaseDirectory);
 
             string warpPackerArch;
             string installerFilename;
@@ -716,48 +710,28 @@ namespace snapx
             var changeSubSystemToWindowsGui = false;
             var installerIconSupported = false;
 
-            var rid = snapOs.OsPlatform.BuildRid();
-
-            if (snapOs.OsPlatform == OSPlatform.Windows)
-            {
-                warpPackerMemoryStream = rid == "win-x86" ? 
-                    snapxEmbeddedResources.WarpPackerWindowsX86 : snapxEmbeddedResources.WarpPackerWindowsX64;
-                installerIconSupported = true;
-            }
-            else if (snapOs.OsPlatform == OSPlatform.Linux)
-            {
-                warpPackerMemoryStream = rid == "linux-x64" ? snapxEmbeddedResources.WarpPackerLinuxX64 
-                    : snapxEmbeddedResources.WarpPackerLinuxArm64;
-                chmod = true;
-            }
-            else
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             switch (snapApp.Target.Rid)
             {
                 case "win-x86":
                 case "win-x64":
-                    installerZipMemoryStream = snapApp.Target.Rid == "win-x86" ? 
-                        snapxEmbeddedResources.SetupWindowsX86 : snapxEmbeddedResources.SetupWindowsX64;
+                    installerIconSupported = true;
                     warpPackerArch = snapApp.Target.Rid == "win-x86" ? "windows-x86" : "windows-x64";
                     installerFilename = "Snap.Installer.exe";
                     changeSubSystemToWindowsGui = true;
                     setupExtension = ".exe";
-                    if (installerIconSupported && snapApp.Target.Icon != null)
+                    if (snapApp.Target.Icon != null)
                     {
                         setupIcon = snapApp.Target.Icon;
                     }
                     break;
                 case "linux-x64":
-                    installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxX64;
+                    chmod = true;
                     warpPackerArch = "linux-x64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
                     break;
                 case "linux-arm64":
-                    installerZipMemoryStream = snapxEmbeddedResources.SetupLinuxArm64;
+                    chmod = true;
                     warpPackerArch = "linux-aarch64";
                     installerFilename = "Snap.Installer";
                     setupExtension = ".bin";
@@ -781,13 +755,13 @@ namespace snapx
                 var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,
                     snapOs.Filesystem.PathGetFileName(releasesNupkgAbsolutePath));
 
-                await using (installerZipMemoryStream)
-                await using (warpPackerMemoryStream)
+                await using (installerZipStream)
+                await using (warpPackerStream)
                 {
                     using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
                     await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
                     await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
-                    using var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read);
+                    using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
                     snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
 
                     progressSource.Raise(10);
@@ -800,7 +774,7 @@ namespace snapx
                     logger.Info("Copying assets to temp directory.");
 
                     await Task.WhenAll(
-                        warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken),
+                        warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken),
                         snapOs.Filesystem.FileCopyAsync(fullNupkgAbsolutePath, repackageDirFullNupkgAbsolutePath, cancellationToken),
                         snapOs.Filesystem.FileCopyAsync(releasesNupkgAbsolutePath, repackageDirReleasesNupkgAbsolutePath, cancellationToken));
 
@@ -825,11 +799,11 @@ namespace snapx
             {
                 var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
 
-                await using (installerZipMemoryStream)
-                await using (warpPackerMemoryStream)
+                await using (installerZipStream)
+                await using (warpPackerStream)
                 {
                     await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
-                    using var zipArchive = new ZipArchive(installerZipMemoryStream, ZipArchiveMode.Read);
+                    using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
                     using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
                     await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
                     snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
@@ -844,7 +818,7 @@ namespace snapx
                     logger.Info("Copying assets to temp directory.");
 
                     await Task.WhenAll(
-                        warpPackerMemoryStream.CopyToAsync(warpPackerDstStream, cancellationToken));
+                        warpPackerStream.CopyToAsync(warpPackerDstStream, cancellationToken));
 
                     if (installerIconSupported && setupIcon != null)
                     {

@@ -26,7 +26,7 @@ internal partial class Program
         [NotNull] INugetService nugetService, [NotNull] IDistributedMutexClient distributedMutexClient,
         [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack,
         [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
-        [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ILibPal libPal,
+        [NotNull] ILibPal libPal,
         [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
     {
         if (options == null) throw new ArgumentNullException(nameof(options));
@@ -41,7 +41,6 @@ internal partial class Program
         if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
         if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-        if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
         if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
         if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
@@ -274,7 +273,7 @@ internal partial class Program
                 Rid = anyRid ? null : anyRidSnapApp.Target.Rid,
                 BuildInstallers = true
             }, filesystem, snapAppReader, snapAppWriter,
-            nuGetPackageSources, snapPackageManager, snapOs, snapxEmbeddedResources,
+            nuGetPackageSources, snapPackageManager, snapOs,
             libPal, snapPack, logger, workingDirectory, cancellationToken);
 
         logger.Info('-'.Repeat(TerminalBufferWidth));

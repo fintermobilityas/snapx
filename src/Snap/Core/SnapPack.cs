@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -130,11 +129,7 @@ namespace Snap.Core
         readonly ISnapCryptoProvider _snapCryptoProvider;
         readonly ISnapBinaryPatcher _snapBinaryPatcher;
         readonly SemanticVersion _snapDllVersion;
-
-        static readonly Regex IsSnapDotnetRuntimesFileRegex =
-            new(@"^runtimes\/([^\/]+)\/native\/((?:libsnap|snapstub)[^\/]*)",
-                RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Singleline);
-
+        
         public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
@@ -918,6 +913,14 @@ namespace Snap.Core
             AddPackageFile(packageBuilder, await _snapFilesystem.FileReadAsync(snapDllAbsolutePath, cancellationToken),
                 SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename, snapRelease);
 
+            // Libpal
+            var (libPalStream, libPalFilename) = snapApp.GetLibPalStream(_snapFilesystem, AppContext.BaseDirectory);
+            AddPackageFile(packageBuilder, libPalStream, $"{SnapConstants.NuspecRootTargetPath}/runtimes/{snapApp.Target.Rid}/native", libPalFilename, snapRelease);
+
+            // Libbsdiff
+            var (libBsdiffStream, libBsdiffFilename) = snapApp.GetLibBsdiffStream(_snapFilesystem, AppContext.BaseDirectory);
+            AddPackageFile(packageBuilder, libBsdiffStream, $"{SnapConstants.NuspecRootTargetPath}/runtimes/{snapApp.Target.Rid}/native", libBsdiffFilename, snapRelease);
+
             // Stub executable
             var (stubExeFileStream, stubExeFileName) = snapApp.GetStubExeStream(_snapFilesystem, AppContext.BaseDirectory);
             AddPackageFile(packageBuilder, stubExeFileStream, SnapConstants.NuspecAssetsTargetPath, stubExeFileName, snapRelease);
@@ -962,47 +965,14 @@ namespace Snap.Core
                 nuspecDocument.SingleOrDefault(XName.Get("files", nuspecXmlNs))?.Remove();
                 
                 var allFiles = _snapFilesystem.DirectoryGetAllFilesRecursively(baseDirectory).ToList();
-                var libBsdiffFileName = snapApp.GetLibBsdiffFilename();
-                var libPalFileName = snapApp.GetLibPalFilename();
-                var expectedDependencies = new List<string>
-                {
-                    libBsdiffFileName,
-                    libPalFileName
-                };
-                var dependencies = new List<string>();
+                
                 foreach (var fileAbsolutePath in allFiles)
                 {
                     var relativePath = fileAbsolutePath.Replace(baseDirectory, string.Empty)[1..];
 
-                    var match = IsSnapDotnetRuntimesFileRegex.Match(relativePath.ForwardSlashesSafe());
-                    if (match.Success && match.Groups.Count == 3) 
-                    {
-                        var rid = match.Groups[1].Value;
-                        if (!string.Equals(rid, snapApp.Target.Rid, StringComparison.Ordinal))
-                        {
-                            continue;
-                        }
-
-                        var filename = match.Groups[2].Value;
-                        if (!expectedDependencies.Contains(filename, StringComparer.Ordinal))
-                        {
-                            continue;
-                        }
-                        
-                        dependencies.Add(filename);
-                    }
-                    
                     packageFiles.Add((fileAbsolutePath, targetPath: _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, relativePath).ForwardSlashesSafe()));
                 }
 
-                foreach (var fileName in expectedDependencies.Where(x => !dependencies.Contains(x, StringComparer.Ordinal)))
-                {
-                    throw new Exception(
-                        $"Missing required snap dependency: {fileName}. " +
-                        $"Dependencies found: {string.Join(",", dependencies)}. " +
-                        $"Expected dependencies: {string.Join(",", expectedDependencies)}. ");
-                }
-                
                 var rewrittenNuspecStream = new MemoryStream();
                 nuspecDocument.Save(rewrittenNuspecStream);
                 rewrittenNuspecStream.Seek(0, SeekOrigin.Begin);

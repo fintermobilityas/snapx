@@ -92,15 +92,10 @@ namespace Snap.Shared.Tests
             return this;
         }
         
-        public SnapReleaseBuilder AddSnapDlls()
+        public SnapReleaseBuilder AddSnapDll()
         {
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(typeof(SnapPack).Assembly.Location);
             _nuspec.Add(assemblyDefinition.BuildRelativeFilename(), assemblyDefinition);
-            var libPalFilename = SnapApp.GetLibPalFilename();
-            var libBsdiffFilename = SnapApp.GetLibBsdiffFilename();
-            var targetRid = SnapApp.Target.Rid;
-            _nuspec.Add(GetLibPalRelativePath(), File.OpenRead(Path.Combine(AppContext.BaseDirectory, "runtimes", targetRid, "native", libPalFilename)));
-            _nuspec.Add(GetLibBsdiffRelativePath(), File.OpenRead(Path.Combine(AppContext.BaseDirectory, "runtimes", targetRid, "native", libBsdiffFilename)));
             return this;
         }
 

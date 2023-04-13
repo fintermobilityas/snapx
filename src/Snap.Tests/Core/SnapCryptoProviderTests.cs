@@ -62,7 +62,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             Checksum(genesisPackageContext.FullPackageSnapRelease);
             Checksum(genesisPackageContext.FullPackageSnapRelease);

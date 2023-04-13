@@ -64,7 +64,7 @@ internal sealed class LibPal : ILibPal
         _osPlatform = osPlatform;
 
         var rid = _osPlatform.BuildRid();
-        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libsnappal-");
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "SnapxLibPal-");
 
 #if SNAP_BOOTSTRAP
             return;

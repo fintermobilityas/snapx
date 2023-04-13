@@ -93,7 +93,7 @@ internal sealed class LibBsDiff : IBsdiffLib
         _osPlatform = osPlatform;
 
         var rid = _osPlatform.BuildRid();
-        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "libsnapbsdiff-");
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "SnapxLibBsdiff-");
 
 #if SNAP_BOOTSTRAP
             return;

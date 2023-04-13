@@ -130,7 +130,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
@@ -157,7 +157,7 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var packageArchiveReader = new PackageArchiveReader(packageContext.FullPackageMemoryStream);
@@ -187,7 +187,7 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
             Assert.Null(genesisPackageContext.DeltaPackageAbsolutePath);
@@ -228,7 +228,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             var extractedFiles = await _snapExtractor.ExtractAsync(
                 genesisPackageContext.FullPackageAbsolutePath,
@@ -255,7 +255,7 @@ namespace Snap.Tests.Core
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("emptyfile.txt", new MemoryStream())
-                .AddSnapDlls();
+                .AddSnapDll();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             var extractedFiles = await _snapExtractor.ExtractAsync(
                 genesisPackageContext.FullPackageAbsolutePath,
@@ -279,7 +279,7 @@ namespace Snap.Tests.Core
             using var genesisSnapReleaseBuilder = _baseFixture
                 .WithSnapReleaseBuilder(testDirectory, snapAppsReleases, genesisSnapApp, _snapReleaseBuilderContext)
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             Assert.Null(genesisPackageContext.DeltaPackageSnapApp);
             Assert.Null(genesisPackageContext.DeltaPackageAbsolutePath);
@@ -323,11 +323,11 @@ namespace Snap.Tests.Core
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext);
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -399,12 +399,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("empty"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -453,12 +453,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -503,12 +503,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             {
@@ -562,17 +562,17 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("empty"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream())
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0)
                 .AddNuspecItem("empty.dll", new MemoryStream(Encoding.UTF8.GetBytes("Hello World")))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using (await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder))
             using (await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder))
@@ -626,14 +626,14 @@ namespace Snap.Tests.Core
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem("subdirectory", _baseFixture.BuildLibrary("test"))
                 .AddNuspecItem("subdirectory/subdirectory2", _baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 2)
                 .AddNuspecItem("subdirectory/subdirectory3", _baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -708,11 +708,11 @@ namespace Snap.Tests.Core
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, update1SnapApp, _snapReleaseBuilderContext);
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -780,12 +780,12 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -854,11 +854,11 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -935,20 +935,20 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(genesisSnapReleaseBuilder, 1)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test2"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0)
                 .AddNuspecItem(update1SnapReleaseBuilder, 1)
                 .AddNuspecItem(update1SnapReleaseBuilder, 2)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test3"))
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -1064,21 +1064,21 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // Modified
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0) // Deleted
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update3SnapReleaseBuilder
                 .AddNuspecItem(update2SnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -1157,21 +1157,21 @@ namespace Snap.Tests.Core
             genesisSnapReleaseBuilder
                 .AddNuspecItem(_baseFixture.BuildSnapExecutable(genesisSnapApp))
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update1SnapReleaseBuilder
                 .AddNuspecItem(genesisSnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // Modified
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update2SnapReleaseBuilder
                 .AddNuspecItem(update1SnapReleaseBuilder, 0) // Deleted
-                .AddSnapDlls();
+                .AddSnapDll();
 
             update3SnapReleaseBuilder
                 .AddNuspecItem(update2SnapReleaseBuilder, 0)
                 .AddNuspecItem(_baseFixture.BuildLibrary("test1")) // New
-                .AddSnapDlls();
+                .AddSnapDll();
 
             using var genesisPackageContext = await _baseFixture.BuildPackageAsync(genesisSnapReleaseBuilder);
             using var update1PackageContext = await _baseFixture.BuildPackageAsync(update1SnapReleaseBuilder);
@@ -1261,7 +1261,7 @@ namespace Snap.Tests.Core
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleasesBefore, snapApp, _snapReleaseBuilderContext)
                     .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
-                    .AddSnapDlls();
+                    .AddSnapDll();
 
             using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
 
@@ -1320,7 +1320,7 @@ namespace Snap.Tests.Core
             using var releaseBuilder =
                 _baseFixture.WithSnapReleaseBuilder(testDirectory, snapAppsReleases, snapApp, _snapReleaseBuilderContext)
                             .AddNuspecItem(_baseFixture.BuildSnapExecutable(snapApp))
-                            .AddSnapDlls();
+                            .AddSnapDll();
                 
             using var packageContext = await _baseFixture.BuildPackageAsync(releaseBuilder);
 

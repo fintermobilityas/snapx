@@ -30,8 +30,10 @@ $WorkingDir = Split-Path -parent $MyInvocation.MyCommand.Definition
 
 $SrcDirectory = Join-Path $WorkingDir src
 $NupkgsDir = Join-Path $WorkingDir nupkgs
+$SnapSrcDir = Join-Path $SrcDirectory Snap
 $SnapxSrcDir = Join-Path $SrcDirectory Snapx
 
+$SnapCsProjPath = Join-Path $SnapSrcDir Snap.csproj
 $SnapxCsProjPath = Join-Path $SnapxSrcDir Snapx.csproj
 
 # Environment variables

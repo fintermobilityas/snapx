@@ -21,7 +21,6 @@
     <PackageVersion Include="NLog" Version="5.1.3" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.5.0" />
     <PackageVersion Include="NuGet.Protocol" Version="6.5.0" />
-    <PackageVersion Include="ServiceStack.HttpClient" Version="6.8.0" />
     <PackageVersion Include="SharpCompress" Version="0.33.0" />
     <PackageVersion Include="System.CodeDom" Version="7.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="7.0.0" />

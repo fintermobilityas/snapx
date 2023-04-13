@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using CommandLine;
 using JetBrains.Annotations;
 using NuGet.Configuration;
-using ServiceStack;
 using snapx.Core;
 using snapx.Options;
 using Snap;
@@ -161,14 +160,13 @@ namespace snapx
             var nugetServiceCommandPack = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPackLogger));
             var nugetServiceCommandPromote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapPromoteLogger));
             var nugetServiceCommandDemote = new NugetService(snapOs.Filesystem, new NugetLogger(SnapDemoteLogger));
-            var nugetServiceCommandRestore = new NugetService(snapOs.Filesystem, new NugetLogger(SnapRestoreLogger));
             var nugetServiceNoopLogger = new NugetService(snapOs.Filesystem, new NugetLogger(new LogProvider.NoOpLogger()));
 
             var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, 
                 nugetServiceCommandPack, snapHttpClient,
                 snapCryptoProvider, snapExtractor, snapAppReader, snapPack);
 
-            var distributedMutexClient = new DistributedMutexClient(new JsonServiceClient("https://snapx.dev"));
+            var distributedMutexClient = new DistributedMutexClient(new SnapHttpClient(new HttpClient()));
 
             Console.CancelKeyPress += async (sender, eventArgs) =>
             {

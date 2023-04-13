@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Moq;
-using ServiceStack;
 using Snap.Logging;
 using snapx.Core;
 using Xunit;
@@ -77,7 +76,7 @@ namespace Snapx.Tests.Core
             {
                 if (--remainingRetries > 0)
                 {
-                    throw new WebServiceException();
+                    throw new Exception();
                 }
 
                 return expectedMutexChallenge;
@@ -113,7 +112,7 @@ namespace Snapx.Tests.Core
             var distributedMutexClientMock = new Mock<IDistributedMutexClient>();
             
             distributedMutexClientMock.Setup(x => x
-                .ReleaseLockAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>())).ThrowsAsync(new WebServiceException());
+                .ReleaseLockAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>())).ThrowsAsync(new Exception());
 
             await using var distributedMutex = new DistributedMutex(distributedMutexClientMock.Object, new LogProvider.NoOpLogger(), mutexName, CancellationToken.None);
             await distributedMutex.DisposeAsync();
@@ -165,7 +164,7 @@ namespace Snapx.Tests.Core
             var distributedMutexClientMock = new Mock<IDistributedMutexClient>();
             
             distributedMutexClientMock.Setup(x => x
-                .ReleaseLockAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>())).ThrowsAsync(new WebServiceException());
+                .ReleaseLockAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>())).ThrowsAsync(new Exception());
 
             Assert.False(await DistributedMutex.TryForceReleaseAsync(mutexName, distributedMutexClientMock.Object, new LogProvider.NoOpLogger()));
 

@@ -1,29 +1,30 @@
-﻿using ServiceStack;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace snapx.Api;
 
-[Route("/lock")]
-[Route("/lock/{Name}/{Duration}")]
-public class Lock : IReturn<string>
+public sealed record Lock
 {
+    [JsonInclude]
     public string Name { get; set; }
+    [JsonInclude]
     public TimeSpan Duration { get; set; }
 }
 
-[Route("/renewlock")]
-[Route("/renew/{Name}/{Duration}")]
-public class RenewLock : IReturn<bool>
+public sealed record RenewLock 
 {
+    [JsonInclude]
     public string Name { get; set; }
+    [JsonInclude]
     public string Challenge { get; set; }
 }
 
-[Route("/unlock")]
-[Route("/unlock/{Name}/{Challenge}")]
-public class Unlock : IReturn<bool>
+public sealed record Unlock 
 {
+    [JsonInclude]
     public string Name { get; set; }
+    [JsonInclude]
     public string Challenge { get; set; }
+    [JsonInclude]
     public TimeSpan? BreakPeriod { get; set; }
 }

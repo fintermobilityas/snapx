@@ -19,7 +19,6 @@
     
     <ItemGroup>
         <PackageReference Include="CommandLineParser" />
-        <PackageReference Include="ServiceStack.HttpClient" />
     </ItemGroup>
 
     <ItemGroup>

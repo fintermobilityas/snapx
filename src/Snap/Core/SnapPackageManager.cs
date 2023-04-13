@@ -4,10 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using NuGet.Configuration;
 using NuGet.Packaging;
 using Snap.AnyOS;
@@ -83,10 +83,15 @@ internal interface ISnapPackageManager
 
 internal class SnapPackageManagerNugetHttpFeed
 {
+    [JsonInclude]
     public Uri Source { get; set; }
+    [JsonInclude]
     public string Username { get; set; }
+    [JsonInclude]
     public string Password { get; set; }
+    [JsonInclude]
     public string ApiKey { get; set; }
+    [JsonInclude, JsonConverter(typeof(JsonStringEnumConverter))]
     public NuGetProtocolVersion ProtocolVersion { get; set; }
 }
 
@@ -182,22 +187,21 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                     await using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    var jsonStream = await stream.ReadToEndAsync();
+                    await using var jsonStream = await stream.ReadToEndAsync();
 
-                    var utf8String = Encoding.UTF8.GetString(jsonStream.ToArray());
-
-                    var packageManagerNugetHttp = JsonConvert.DeserializeObject<SnapPackageManagerNugetHttpFeed>(utf8String, new JsonSerializerSettings
+                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(jsonStream, new JsonSerializerOptions
                     {
-                        Converters = new List<JsonConverter>
-                        {
-                            new StringEnumConverter()
-                        },
-                        NullValueHandling = NullValueHandling.Ignore
+                        PropertyNameCaseInsensitive = true
                     });
 
                     if (packageManagerNugetHttp == null)
                     {
                         throw new Exception($"Unable to deserialize nuget http feed. Url: {feed.Source}. Response length: {stream.Position}");
+                    }
+
+                    if (packageManagerNugetHttp.Source == null)
+                    {
+                        throw new Exception("Nuget http feed source propery cannot be null.");
                     }
 
                     var snapNugetFeed = new SnapNugetFeed(packageManagerNugetHttp)
@@ -452,7 +456,7 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                     }
                 };
 
-                var success = await TryDownloadAsync(packagesDirectory, snapAppChannelReleases,
+                var success = await TryDownloadAsync(packagesDirectory,
                     snapRelease, packageSource, thisProgressSource, logger, cancellationToken);
 
                 restoreSummary.DownloadSummary.Add(new SnapPackageManagerReleaseStatus(snapRelease, success));
@@ -563,11 +567,10 @@ internal sealed class SnapPackageManager : ISnapPackageManager
         }
     }
 
-    async Task<bool> TryDownloadAsync([JetBrains.Annotations.NotNull] string packagesDirectory, [JetBrains.Annotations.NotNull] ISnapAppChannelReleases snapAppChannelReleases, [JetBrains.Annotations.NotNull] SnapRelease snapRelease,
+    async Task<bool> TryDownloadAsync([JetBrains.Annotations.NotNull] string packagesDirectory, [JetBrains.Annotations.NotNull] SnapRelease snapRelease,
         [JetBrains.Annotations.NotNull] PackageSource packageSource, INugetServiceProgressSource progressSource, ILog logger = null,
         CancellationToken cancellationToken = default)
     {
-        if (snapAppChannelReleases == null) throw new ArgumentNullException(nameof(snapAppChannelReleases));
         if (snapRelease == null) throw new ArgumentNullException(nameof(snapRelease));
         if (packageSource == null) throw new ArgumentNullException(nameof(packageSource));
         if (packagesDirectory == null) throw new ArgumentNullException(nameof(packagesDirectory));

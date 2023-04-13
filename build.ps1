@@ -133,6 +133,15 @@ function Invoke-Install-Snapx
     ) -IgnoreExitCode
 
     Invoke-Command-Colored dotnet @(
+        "build"
+        "/p:Version=$Version"
+        "/p:SnapRid=do-not-pack-content-files" 
+        "/p:GeneratePackageOnBuild=true"
+        "--configuration $Configuration"
+        $SnapCsProjPath
+    )
+
+    Invoke-Command-Colored dotnet @(
         "nuget add source $NupkgsDir --name snapx-local"
     ) -IgnoreExitCode
 

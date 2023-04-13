@@ -99,7 +99,6 @@ jobs:
         env:
           SNAPX_UNIX_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
           SNAPX_UNIX_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
-          SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
           SNAPX_UNIX_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
           SNAPX_UNIX_BSDIFF_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.Bsdiff
         run: |
@@ -107,13 +106,7 @@ jobs:
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun
-
-          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_demoapp ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_demoapp
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
-          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/test.ico ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/test.ico
+          cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_CORERUN_REL_DIR }}/corerun.bin
 
           mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}
           cp ${{ github.workspace }}/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so ${{ github.workspace }}/artifacts/${{ env.SNAPX_UNIX_PAL_REL_DIR }}/libpal.so
@@ -190,51 +183,6 @@ jobs:
         with:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
-
-  #test-linux-arm64:
-  #  name: Test ${{ matrix.rid }}-${{ matrix.configuration }}
-  #  runs-on: [self-hosted, linux, ARM64]
-  #  needs: [setup, linux]
-  #  strategy:
-  #    matrix:
-  #      include:
-  #        - rid: linux-arm64
-  #          configuration: Debug
-  #        - rid: linux-arm64
-  #          configuration: Release
-  #  env:
-  #      SNAPX_UNIX_CORERUN_TESTS_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Tests
-  #      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
-  #  steps:
-  #    - name: Checkout
-  #      uses: actions/checkout@v3
-  #     with:
-  #       fetch-depth: 0
-  #
-  #    - name: Download ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }} artifacts
-  #      uses: actions/download-artifact@v3
-  #      with:
-  #        name: ubuntu-latest-${{ matrix.rid }}-${{ matrix.configuration }}
-  #        path: ${{ github.workspace }}
-  #
-
-  #    - name: Setup .NET
-  #      uses: actions/setup-dotnet@v3.0.3
-  #      with:
-  #        dotnet-version: |
-  #          ${{ env.DOTNET_NET60_VERSION }}
-  #          ${{ env.DOTNET_NET70_VERSION }}
-  #          ${{ env.DOTNET_NET80_VERSION }}
-
-  #
-  #    - name: Test native
-  #      run: |
-  #        chmod +x ${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
-  #        ./${{ env.SNAPX_UNIX_CORERUN_TESTS_REL_DIR }}/corerun_tests
-  #
-  #    - name: Test .NET
-  #      shell: pwsh
-  #      run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
 
   publish:
     if: success() 

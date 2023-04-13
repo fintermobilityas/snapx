@@ -28,12 +28,12 @@
 
     <!-- Windows -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'win-x86' AND $(OsPlatform) == 'Windows'">
-        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Link="runtimes/win-x86/native/SnapxInstaller-win-x86.zip">
+        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Pack="false" Link="runtimes/win-x86/native/SnapxInstaller-win-x86.zip">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../tools/warp-packer-win-x86.exe" Link="runtimes/win-x86/native/SnapxWarpPacker-win-x86.exe">
+        <Content Include="../../tools/warp-packer-win-x86.exe" Pack="false" Link="runtimes/win-x86/native/SnapxWarpPacker-win-x86.exe">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -41,12 +41,12 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'win-x64' AND $(OsPlatform) == 'Windows'">
-        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Link="runtimes/win-x64/native/SnapxInstaller-win-x64.zip">
+        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Pack="false" Link="runtimes/win-x64/native/SnapxInstaller-win-x64.zip">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../tools/warp-packer-win-x64.exe" Link="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe">
+        <Content Include="../../tools/warp-packer-win-x64.exe" Pack="false" Link="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -54,23 +54,23 @@
     </ItemGroup>
 
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'any' AND $(OsPlatform) == 'Windows'">
-        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Link="runtimes/win-x86/native/SnapxInstaller-win-x86.zip">
+        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Pack="false" Link="runtimes/win-x86/native/SnapxInstaller-win-x86.zip">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../tools/warp-packer-win-x86.exe" Link="runtimes/win-x86/native/SnapxWarpPacker-win-x86.exe">
+        <Content Include="../../tools/warp-packer-win-x86.exe" Pack="false" Link="runtimes/win-x86/native/SnapxWarpPacker-win-x86.exe">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
 
-        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Link="runtimes/win-x64/native/SnapxInstaller-win-x64.zip">
+        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Pack="false" Link="runtimes/win-x64/native/SnapxInstaller-win-x64.zip">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
-        <Content Include="../../tools/warp-packer-win-x64.exe" Link="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe">
+        <Content Include="../../tools/warp-packer-win-x64.exe" Pack="false" Link="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
             <PackageCopyToOutput>true</PackageCopyToOutput>
@@ -132,115 +132,35 @@
     <!-- Nupkg -->
     <ItemGroup Condition="!$(SnapBootstrap) AND $(SnapRid) == 'pack'">
         <!-- win-x86 -->
-        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Link="runtimes/win-x86/native/SnapxInstaller-win-x86.zip">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../tools/warp-packer-win-x86.exe" Link="runtimes/win-x86/native/warp-packer-win-x86.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Pack="true" Link="runtimes/win-x86/native/SnapxStub-win-x86.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x86/native/SnapxLibPal-win-x86.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x86/native/SnapxLibBsdiff-win-x86.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
+        <Content Include="../../build/dotnet/win-x86/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x86.zip" Pack="true" PackagePath="runtimes/win-x86/native/SnapxInstaller-win-x86.zip"/>
+        <Content Include="../../tools/warp-packer-win-x86.exe" Pack="true" PackagePath="runtimes/win-x86/native/warp-packer-win-x86.exe"/>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Pack="true" PackagePath="runtimes/win-x86/native/SnapxStub-win-x86.exe"/>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" PackagePath="runtimes/win-x86/native/SnapxLibPal-win-x86.dll"/>
+        <Content Include="../../build/native/Windows/win-x86/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" PackagePath="runtimes/win-x86/native/SnapxLibBsdiff-win-x86.dll"/>
         <!-- /win-x86 -->
 
         <!-- win-x64 -->
-        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Link="runtimes/win-x64/native/SnapxInstaller-win-x64.zip">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../tools/warp-packer-win-x64.exe" Link="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Pack="true" Link="runtimes/win-x64/native/SnapxStub-win-x64.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" Link="runtimes/win-x64/native/SnapxLibPal-win-x64.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" Link="runtimes/win-x64/native/SnapxLibBsdiff-win-x64.dll">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
+        <Content Include="../../build/dotnet/win-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-win-x64.zip" Pack="true" PackagePath="runtimes/win-x64/native/SnapxInstaller-win-x64.zip" />
+        <Content Include="../../tools/warp-packer-win-x64.exe" Pack="true" PackagePath="runtimes/win-x64/native/SnapxWarpPacker-win-x64.exe" />
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun/$(Configuration)/corerun.exe" Pack="true" PackagePath="runtimes/win-x64/native/SnapxStub-win-x64.exe" />
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.CoreRun.Pal/$(Configuration)/pal.dll" Pack="true" PackagePath="runtimes/win-x64/native/SnapxLibPal-win-x64.dll" />
+        <Content Include="../../build/native/Windows/win-x64/$(Configuration)/Snap.Bsdiff/$(Configuration)/snap_bsdiff.dll" Pack="true" PackagePath="runtimes/win-x64/native/SnapxLibBsdiff-win-x64.dll" />
         <!-- /win-x64 -->
 
         <!-- linux-x64 -->
-        <Content Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Link="runtimes/linux-x64/native/SnapxInstaller-linux-x64.zip">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../tools/warp-packer-linux-x64.exe" Link="runtimes/linux-x64/native/SnapxWarpPacker-linux-x64.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun" Pack="true" Link="runtimes/linux-x64/native/SnapxStub-linux-x64">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-x64/native/SnapxLibPal-linux-x64.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-x64/native/SnapxLibBsdiff-linux-x64.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
+        <Content Include="../../build/dotnet/linux-x64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-x64.zip" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxInstaller-linux-x64.zip"/>
+        <Content Include="../../tools/warp-packer-linux-x64.exe" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxWarpPacker-linux-x64.exe" />
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxStub-linux-x64" />
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxLibPal-linux-x64.so" />
+        <Content Include="../../build/native/Unix/linux-x64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" PackagePath="runtimes/linux-x64/native/SnapxLibBsdiff-linux-x64.so"/>
         <!-- /linux-x64 -->
 
         <!-- linux-arm64 -->
-        <Content Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Link="runtimes/linux-arm64/native/SnapxInstaller-linux-arm64.zip">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../tools/warp-packer-linux-arm64.exe" Link="runtimes/linux-arm64/native/SnapxWarpPacker-linux-arm64.exe">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun" Pack="true" Link="runtimes/linux-arm64/native/SnapxStub-linux-arm64">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" Link="runtimes/linux-arm64/native/SnapxLibPal-linux-arm64.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
-        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" Link="runtimes/linux-arm64/native/SnapxLibBsdiff-linux-arm64.so">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-            <PackageCopyToOutput>true</PackageCopyToOutput>
-        </Content>
+        <Content Include="../../build/dotnet/linux-arm64/Snap.Installer/$(TargetFrameworkSnapInstaller)/$(Configuration)/publish/Setup-linux-arm64.zip" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxInstaller-linux-arm64.zip" />
+        <Content Include="../../tools/warp-packer-linux-arm64.exe" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxWarpPacker-linux-arm64.exe" />
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun/corerun.bin" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxStub-linux-arm64" />
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.CoreRun.Pal/libpal.so" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxLibPal-linux-arm64.so" />
+        <Content Include="../../build/native/Unix/linux-arm64/$(Configuration)/Snap.Bsdiff/libsnap_bsdiff.so" Pack="true" PackagePath="runtimes/linux-arm64/native/SnapxLibBsdiff-linux-arm64.so" />
         <!-- /linux-arm64 -->
     </ItemGroup>
     <!-- /Nupkg -->

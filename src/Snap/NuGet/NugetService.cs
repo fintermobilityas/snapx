@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -93,11 +94,11 @@ internal interface INugetService
     Task<NuGetPackageSearchMedatadata> GetLatestMetadataAsync(string packageId, PackageSource packageSource, 
         bool includePreRelease, bool noCache = false, CancellationToken cancellationToken = default);
 
-    Task PushAsync(string packagePath, INuGetPackageSources packageSources, PackageSource packageSource,
-        int timeoutInSeconds, ISnapNugetLogger nugetLogger = default,
+    Task PushAsync([NotNull] string apiKey, string packagePath, INuGetPackageSources packageSources,
+        PackageSource packageSource, int timeoutInSeconds, ISnapNugetLogger nugetLogger = default,
         CancellationToken cancellationToken = default);
 
-    Task DeleteAsync([NotNull] PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource,
+    Task DeleteAsync([NotNull] string apiKey, [NotNull] PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource,
         ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default);
         
     Task<DownloadResourceResult> DownloadLatestAsync(string packageId,
@@ -158,7 +159,8 @@ internal class NugetService : INugetService
         return await DownloadAsync(metadata.Source, metadata.Identity, cancellationToken);
     }
 
-    public async Task PushAsync([NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources,
+    public async Task PushAsync([NotNull] string apiKey,
+        [NotNull] string packagePath, [NotNull] INuGetPackageSources packageSources,
         [NotNull] PackageSource packageSource,
         int timeOutInSeconds, ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
     {
@@ -181,11 +183,11 @@ internal class NugetService : INugetService
         var sourceRepository = _packageSources.GetOrAdd(packageSource);
         var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-        await packageUpdateResource.Push(new List<string> { packagePath }, null, timeOutInSeconds, false, _ => BuildApiKey(packageSources, packageSource), _ => null,
+        await packageUpdateResource.Push(new List<string> { packagePath }, null, timeOutInSeconds, false, _ => apiKey, _ => null,
             false, false, null, nugetLogger ?? NullLogger.Instance);
     }
 
-    public async Task DeleteAsync(PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource, 
+    public async Task DeleteAsync([NotNull] string apiKey, PackageIdentity packageIdentity, INuGetPackageSources packageSources, PackageSource packageSource, 
         ISnapNugetLogger nugetLogger = default, CancellationToken cancellationToken = default)
     {
         if (packageIdentity == null) throw new ArgumentNullException(nameof(packageIdentity));
@@ -207,8 +209,7 @@ internal class NugetService : INugetService
         var sourceRepository = _packageSources.GetOrAdd(packageSource);
         var packageUpdateResource = await sourceRepository.GetResourceAsync<PackageUpdateResource>(cancellationToken);
 
-        await packageUpdateResource.Delete(packageIdentity.Id, packageIdentity.Version.ToNormalizedString(), 
-            _ => BuildApiKey(packageSources, packageSource), _ => true, false, nugetLogger ?? NullLogger.Instance);
+        await packageUpdateResource.Delete(packageIdentity.Id, packageIdentity.Version.ToNormalizedString(), _ => apiKey, _ => true, false, nugetLogger ?? NullLogger.Instance);
     }
 
     public Task<DownloadResourceResult> DownloadAsync(PackageSource packageSource, [NotNull] PackageIdentity packageIdentity, CancellationToken cancellationToken)
@@ -436,19 +437,5 @@ internal class NugetService : INugetService
             .Distinct();
 
         return new NuGetPackageSearchMedatadata(metadata.Identity, source, metadata.Published, deps);
-    }
-
-    static string BuildApiKey(INuGetPackageSources packageSources, PackageSource packageSource)
-    {
-        if (packageSources.Settings == null
-            || packageSource.Source == null)
-        {
-            return string.Empty;
-        }
-
-        var decryptedApikey = SettingsUtility.GetDecryptedValueForAddItem(
-            packageSources.Settings, ConfigurationConstants.ApiKeys, packageSource.Source);
-
-        return decryptedApikey ?? string.Empty; // NB! Has to be string.Empty
     }
 }

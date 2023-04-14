@@ -409,7 +409,7 @@ internal partial class Program
         logger.Info($"Pushing packages to default channel: {snapChannel.Name}. Feed: {snapChannel.PushFeed.Name}.");
 
         await packages.ForEachAsync(async packageAbsolutePath =>
-            await PushPackageAsync(nugetService, filesystem, distributedMutex,
+            await PushPackageAsync(packOptions.ApiKey, nugetService, filesystem, distributedMutex,
                 nugetSources, pushFeedPackageSource, snapChannel, packageAbsolutePath, logger, cancellationToken), pushDegreeOfParallelism);
 
         logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");

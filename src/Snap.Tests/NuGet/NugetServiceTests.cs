@@ -258,7 +258,7 @@ namespace Snap.Tests.NuGet
 
             var nuGetPackageSources = new NuGetInMemoryPackageSources(publishDirectory, packageSource);
 
-            await _nugetService.PushAsync(packageFilenameAbsolute, nuGetPackageSources, packageSource, default);
+            await _nugetService.PushAsync("nuget-api-key", packageFilenameAbsolute, nuGetPackageSources, packageSource, default);
 
             var dstFilename = _snapFilesystem.PathCombine(publishDirectory, _snapFilesystem.PathGetFileName(packageFilenameAbsolute));
             
@@ -292,7 +292,7 @@ namespace Snap.Tests.NuGet
 
             var packageSources = new NuGetInMemoryPackageSources(deletePackageSrcDirectory, packageSource);
 
-            await _nugetService.DeleteAsync(packageIdentity, packageSources, packageSource);
+            await _nugetService.DeleteAsync("nuget-api-key", packageIdentity, packageSources, packageSource);
 
             Assert.False(_snapFilesystem.FileExists(packageFilenameAbsolute));
             Assert.Equal(new Uri(deletePackageSrcDirectory),packageSource.SourceUri);

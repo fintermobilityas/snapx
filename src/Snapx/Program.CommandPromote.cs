@@ -291,7 +291,7 @@ internal partial class Program
         {
             logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
 
-            await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
+            await PushPackageAsync(options.ApiKey, nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
                 channel, releasesPackageAbsolutePath, logger, cancellationToken);
 
             var skipInitialBlock = packageSource.IsLocalOrUncPath();

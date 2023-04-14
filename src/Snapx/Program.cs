@@ -632,12 +632,14 @@ namespace snapx
             logger.Info('-'.Repeat(TerminalBufferWidth));
         }
 
-        static Task PushPackageAsync([NotNull] INugetService nugetService, [NotNull] ISnapFilesystem filesystem,
+        static Task PushPackageAsync([NotNull] string apiKey, [NotNull] INugetService nugetService, [NotNull] ISnapFilesystem filesystem,
             [NotNull] IDistributedMutex distributedMutex, [NotNull] INuGetPackageSources nugetSources,
             [NotNull] PackageSource packageSource, SnapChannel channel, [NotNull] string packageAbsolutePath,
             [NotNull] ILog logger,
             CancellationToken cancellationToken)
         {
+            ArgumentException.ThrowIfNullOrEmpty(apiKey);
+            
             if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
             if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
             if (distributedMutex == null) throw new ArgumentNullException(nameof(distributedMutex));
@@ -666,7 +668,7 @@ namespace snapx
                 logger.Info($"Pushing {packageName} to channel {channel.Name} using package source {packageSource.Name}");
                 var pushStopwatch = new Stopwatch();
                 pushStopwatch.Restart();
-                await nugetService.PushAsync(packageAbsolutePath, nugetSources, packageSource, timeOutInSeconds, cancellationToken: cancellationToken);
+                await nugetService.PushAsync(apiKey, packageAbsolutePath, nugetSources, packageSource, timeOutInSeconds, cancellationToken: cancellationToken);
                 logger.Info($"Pushed {packageName} to channel {channel.Name} using package source {packageSource.Name} in {pushStopwatch.Elapsed.TotalSeconds:0.0}s.");
             });
         }

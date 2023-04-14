@@ -257,7 +257,7 @@ internal partial class Program
         var nugetSources = anyRidSnapApp.BuildNugetSources(filesystem.PathGetTempPath());
         var packageSource = nugetSources.Items.Single(x => x.Name == anySnapTargetDefaultChannel.PushFeed.Name);
 
-        await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
+        await PushPackageAsync(options.ApiKey, nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
             anySnapTargetDefaultChannel, releasesNupkgAbsolutePath, logger, cancellationToken);
 
         var skipInitialBlock = packageSource.IsLocalOrUncPath();

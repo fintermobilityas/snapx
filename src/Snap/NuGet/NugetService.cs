@@ -143,7 +143,7 @@ internal class NugetService : INugetService
         bool includePreRelease = true, bool noCache = false, CancellationToken cancellationToken = default) 
     {
         var medatadatas = (await GetMetadatasAsync(packageId, packageSource, includePreRelease, noCache, cancellationToken)).ToList();
-        return medatadatas.OrderByDescending(x => x.Identity.Version).FirstOrDefault();
+        return medatadatas.MaxBy(x => x.Identity.Version);
     }
 
     public async Task<DownloadResourceResult> DownloadLatestAsync(string packageId, PackageSource packageSource, 

@@ -87,6 +87,18 @@ internal sealed class SnapAppWriter : ISnapAppWriter
                     updateFeed.Username = null;
                     updateFeed.Password = null;
                 }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(updateFeed.Username))
+                    {
+                        updateFeed.Username = null;
+                    } 
+                    
+                    if (string.IsNullOrWhiteSpace(updateFeed.Password))
+                    {
+                        updateFeed.Password = null;
+                    }
+                }
             }
         }
                                                          

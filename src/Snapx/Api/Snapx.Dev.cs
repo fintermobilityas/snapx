@@ -3,6 +3,12 @@ using System.Text.Json.Serialization;
 
 namespace snapx.Api;
 
+[JsonSerializable(typeof(Lock))]
+public partial class LockContext : JsonSerializerContext
+{
+    
+}
+
 public sealed record Lock
 {
     [JsonInclude]
@@ -11,12 +17,10 @@ public sealed record Lock
     public TimeSpan Duration { get; set; }
 }
 
-public sealed record RenewLock 
+[JsonSerializable(typeof(Unlock))]
+public partial class UnlockContext : JsonSerializerContext
 {
-    [JsonInclude]
-    public string Name { get; set; }
-    [JsonInclude]
-    public string Challenge { get; set; }
+    
 }
 
 public sealed record Unlock 

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -81,7 +80,13 @@ internal interface ISnapPackageManager
         int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
 }
 
-internal class SnapPackageManagerNugetHttpFeed
+[JsonSerializable(typeof(SnapPackageManagerNugetHttpFeed))]
+internal partial class SnapPackageManagerNugetHttpFeedContext : JsonSerializerContext
+{
+   
+}
+
+internal sealed class SnapPackageManagerNugetHttpFeed
 {
     [JsonInclude]
     public Uri Source { get; set; }
@@ -189,10 +194,10 @@ internal sealed class SnapPackageManager : ISnapPackageManager
 
                     await using var jsonStream = await stream.ReadToEndAsync();
 
-                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(jsonStream, new JsonSerializerOptions
+                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync(jsonStream, new SnapPackageManagerNugetHttpFeedContext(new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
-                    });
+                    }).SnapPackageManagerNugetHttpFeed);
 
                     if (packageManagerNugetHttp == null)
                     {

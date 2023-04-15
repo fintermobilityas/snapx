@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.Core;
-using Snap.Extensions;
 using Snap.Logging;
 using snapx.Api;
 
@@ -39,7 +38,7 @@ internal sealed class DistributedMutexClient : IDistributedMutexClient
         {
             Name = name, 
             Duration = lockDuration
-        });
+        }, LockContext.Default.Lock);
         
         using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, "https://snapx.dev/lock")
         {
@@ -58,7 +57,7 @@ internal sealed class DistributedMutexClient : IDistributedMutexClient
             Name = name, 
             Challenge = challenge,
             BreakPeriod = breakPeriod
-        });
+        }, UnlockContext.Default.Unlock);
         
         using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "https://snapx.dev/unlock")
         {

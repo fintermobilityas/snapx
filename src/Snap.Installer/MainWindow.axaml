@@ -9,7 +9,9 @@
         FontSize="14" 
         WindowStartupLocation="CenterScreen"
         SystemDecorations="BorderOnly"
-        CanResize="False">
+        CanResize="False"
+        x:DataType="viewmodels:AvaloniaMainWindowViewModel"
+        x:CompileBindings="True">
     <Design.DataContext>
         <viewmodels:AvaloniaMainWindowViewModel />
     </Design.DataContext>

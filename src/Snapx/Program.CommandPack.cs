@@ -141,16 +141,36 @@ internal partial class Program
                 return 1;
             }
 
-            snapAppsReleases = new SnapAppsReleases();
+            snapAppsReleases = new SnapAppsReleases
+            {
+                Bsdiffv2 = true
+            };
         }
         else
         {
             logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
+            
+            if (!snapAppsReleases.Bsdiffv2)
+            {
+                snapAppsReleases.Bsdiffv2 = true;
+                if (!packOptions.Gc && snapAppsReleases.HasReleases(snapApp))
+                {
+                    packOptions.Gc = true;
+                    if (!logger.Prompt("y|yes",
+                            "Bsdiff v2 activated. " +
+                            "All prior releases for this app will be removed (server nupkgs remain intact). " +
+                            "A new full release will be generated. " +
+                            "Would you like to proceed? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                    {
+                        return 1;
+                    }
+                }
+            }
 
             if (packOptions.Gc)
             {
                 var releasesRemoved = snapAppsReleases.Gc(snapApp);
-                logger.Info($"Garbage collected (removed) {releasesRemoved} releases.");
+                logger.Info($"Removed {releasesRemoved} releases through garbage collection (GC). Note: Nupkgs will not be deleted from the server.");
             }
 
             var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);

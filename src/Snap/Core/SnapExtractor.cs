@@ -68,12 +68,14 @@ internal sealed class SnapExtractor : ISnapExtractor
             string dstFilename;
             if (isSnapRootTargetItem)
             {
-                dstFilename = _snapFilesystem.PathCombine(destinationDirectoryAbsolutePath, checksum.Filename);
-
                 if (checksum.Filename == stubExeFilename)
                 {
                     dstFilename = _snapFilesystem.PathCombine(
                         _snapFilesystem.DirectoryGetParent(destinationDirectoryAbsolutePath), checksum.Filename);          
+                } else 
+                {
+                    var targetPath = checksum.NuspecTargetPath[(SnapConstants.NuspecAssetsTargetPath.Length + 1)..];
+                    dstFilename = _snapFilesystem.PathCombine(destinationDirectoryAbsolutePath, targetPath);
                 }
             }
             else

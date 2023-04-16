@@ -79,7 +79,7 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     options
             .add_options()
                     ("corerun-environment-var",
-                      "A key value pair for setting one or multiple environment variables",
+                      "To set a single variable, use the syntax MY_VAR=value. You can also set multiple variables by separating them with a space.",
                       cxxopts::value<std::vector<std::string>>(environment_variables_vec)
                         )
                     ("corerun-supervise-pid",

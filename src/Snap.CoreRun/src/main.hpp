@@ -179,7 +179,7 @@ inline int corerun_command_supervise(
     }
     return 0;
 #else
-    return snap::stubexecutable::run(arguments, cmd_show_windows);
+    return snap::stubexecutable::run(arguments, environment_variables, cmd_show_windows);
 #endif
 }
 

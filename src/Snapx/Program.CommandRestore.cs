@@ -67,7 +67,10 @@ internal partial class Program
             return 1;
         }
 
-        if (restoreOptions.BuildInstallers)
+        if (restoreOptions.BuildPackagesFile)
+        {
+            restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.CacheFile;
+        } else if(restoreOptions.BuildInstallers)
         {
             restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.Default;
         }
@@ -145,6 +148,11 @@ internal partial class Program
                     downloadConcurrency: restoreOptions.DownloadConcurrency);
 
                 if (!restoreSummary.Success || !restoreOptions.BuildInstallers)
+                {
+                    continue;
+                }
+
+                if (restoreOptions.RestoreStrategyType == SnapPackageManagerRestoreType.CacheFile)
                 {
                     continue;
                 }

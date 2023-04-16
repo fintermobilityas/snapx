@@ -156,7 +156,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
         _snapHttpClient = snapHttpClient ?? new SnapHttpClient(new HttpClient());
         _snapPackageManager = snapPackageManager ?? new SnapPackageManager(
             _snapOs.Filesystem, _snapOs.SpecialFolders, _nugetService, _snapHttpClient, _snapCryptoProvider,
-            _snapExtractor, _snapAppReader, _snapPack);
+            _snapExtractor, _snapAppReader, _snapPack, _snapOs.Filesystem);
 
         _snapOs.Filesystem.DirectoryCreateIfNotExists(_packagesDirectory);
             

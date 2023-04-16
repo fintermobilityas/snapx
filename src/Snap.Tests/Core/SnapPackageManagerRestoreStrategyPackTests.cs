@@ -44,7 +44,7 @@ public class SnapPackageManagerRestoreStrategyPackTests : IClassFixture<BaseFixt
         ISnapExtractor snapExtractor = new SnapExtractor(_snapFilesystem, _snapPack);
         _snapPackageManager = new SnapPackageManager(_snapFilesystem, new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), 
             _nugetServiceMock.Object, snapHttpClientMock.Object,
-            _snapCryptoProvider, snapExtractor, snapAppReader, _snapPack);
+            _snapCryptoProvider, snapExtractor, snapAppReader, _snapPack, _snapFilesystem);
         _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem,
             _snapCryptoProvider, _snapPack);
     }

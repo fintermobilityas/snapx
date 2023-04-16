@@ -164,7 +164,7 @@ internal partial class Program
 
         var snapPackageRestorer = new SnapPackageManager(snapOs.Filesystem, snapOs.SpecialFolders, 
             nugetServiceCommandPack, snapHttpClient,
-            snapCryptoProvider, snapExtractor, snapAppReader, snapPack);
+            snapCryptoProvider, snapExtractor, snapAppReader, snapPack, snapOs.Filesystem);
 
         var distributedMutexClient = new DistributedMutexClient(new SnapHttpClient(new HttpClient()));
 

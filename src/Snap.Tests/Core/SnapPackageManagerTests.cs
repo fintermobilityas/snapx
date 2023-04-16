@@ -51,7 +51,7 @@ public class SnapPackageManagerTests : IClassFixture<BaseFixturePackaging>, ICla
             new SnapOsSpecialFoldersUnitTest(_snapFilesystem, _baseFixturePackaging.WorkingDirectory), 
             _nugetServiceMock.Object,
             snapHttpClientMock.Object,
-            snapCryptoProvider, snapExtractor, snapAppReader, _snapPack);
+            snapCryptoProvider, snapExtractor, snapAppReader, _snapPack, _snapFilesystem);
         _releaseBuilderContext = new SnapReleaseBuilderContext(libPal, _snapFilesystem,
             snapCryptoProvider, _snapPack);
     }

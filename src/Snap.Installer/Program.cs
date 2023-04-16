@@ -223,7 +223,8 @@ internal static partial class Program
             c.GetInstance<ISnapCryptoProvider>(),
             c.GetInstance<ISnapExtractor>(),
             c.GetInstance<ISnapAppReader>(),
-            c.GetInstance<ISnapPack>()));
+            c.GetInstance<ISnapPack>(),
+            c.GetInstance<ISnapFilesystem>()));
 
         container.Register<ISnapInstallerEnvironment>(c => new SnapInstallerEnvironment(logLevel, globalCts, ApplicationName)
         {

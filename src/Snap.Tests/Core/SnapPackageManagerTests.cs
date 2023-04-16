@@ -108,12 +108,13 @@ public class SnapPackageManagerTests : IClassFixture<BaseFixturePackaging>, ICla
 
             _baseFixtureNuget.SetupReleases(_nugetServiceMock, releasesNupkgMemoryStream, nugetPackageSources, genesisSnapApp);
 
-            var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
+            var (snapAppsReleasesAfter, packageSourceAfter, releasesMemoryStream, nupkgNotFound) = await _snapPackageManager.GetSnapsReleasesAsync(genesisSnapApp);
             await using (releasesMemoryStream)
             {
                 Assert.NotNull(releasesMemoryStream);
                 Assert.Equal(0, releasesMemoryStream.Position);
                 Assert.True(releasesMemoryStream.Length > 0);
+                Assert.False(nupkgNotFound);
 
                 Assert.NotNull(snapAppsReleasesAfter);
                 Assert.NotNull(packageSourceAfter);

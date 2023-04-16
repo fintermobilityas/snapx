@@ -151,7 +151,7 @@ internal partial class Program
 
                     try
                     {
-                        var (snapAppsReleases, packageSource, releasesMemoryStream) =
+                        var (snapAppsReleases, packageSource, releasesMemoryStream, _) =
                             await snapPackageManager.GetSnapsReleasesAsync(snapApp, mainWindowLogger, cancellationToken);
                         if (releasesMemoryStream != null)
                         {

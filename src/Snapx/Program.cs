@@ -603,7 +603,7 @@ internal partial class Program
 
             logDashes = true;
 
-            var (upstreamSnapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+            var (upstreamSnapAppsReleases, _, releasesMemoryStream, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
             if (releasesMemoryStream != null)
             {
                 await releasesMemoryStream.DisposeAsync();

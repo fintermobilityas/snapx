@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,6 +13,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Configuration;
 using NuGet.Packaging;
+using NuGet.Protocol.Core.Types;
 using Snap.AnyOS;
 using Snap.Core.Models;
 using Snap.Extensions;
@@ -72,7 +75,7 @@ internal interface ISnapPackageManager
 {
     Task<PackageSource> GetPackageSourceAsync(SnapApp snapApp, ILog logger = null, string applicationId = null);
 
-    Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> GetSnapsReleasesAsync(
+    Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream, bool nupkgNotFound)> GetSnapsReleasesAsync(
         [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null);
 
     Task<SnapPackageManagerRestoreSummary> RestoreAsync([NotNull] string packagesDirectory, 
@@ -241,8 +244,7 @@ internal sealed class SnapPackageManager : ISnapPackageManager
         }
     }
 
-    public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream)> 
-        GetSnapsReleasesAsync(
+    public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream, bool nupkgNotFound)> GetSnapsReleasesAsync(
             SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null)
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
@@ -262,7 +264,7 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                     ? $"path: {_filesystem.PathGetFullPath(packageSource.SourceUri.AbsolutePath)}. Does the location exist?"
                     : packageSource.Name;
                 logger?.Error($"Unknown error while downloading releases nupkg {packageId} from {sourceLocation}. Status: {snapReleasesDownloadResult.Status}.");
-                return (null, null, null);
+                return (null, null, null, snapReleasesDownloadResult is { Status: DownloadResourceResultStatus.NotFound });
             }
 
             using var packageArchiveReader = new PackageArchiveReader(snapReleasesDownloadResult.PackageStream, true);
@@ -270,16 +272,16 @@ internal sealed class SnapPackageManager : ISnapPackageManager
             if (snapReleases != null)
             {
                 snapReleasesDownloadResult.PackageStream.Seek(0, SeekOrigin.Begin);
-                return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream);
+                return (snapReleases, packageSource, (MemoryStream) snapReleasesDownloadResult.PackageStream, snapReleasesDownloadResult is { Status: DownloadResourceResultStatus.NotFound });
             }
 
             logger?.Error($"Unknown error unpacking releases nupkg: {packageId}.");
-            return (null, null, null);
+            return (null, null, null, false);
         }
         catch (Exception e)
         {
             logger?.ErrorException($"Exception thrown while downloading releases nupkg: {packageId}.", e);
-            return (null, null, null);
+            return (null, null, null, false);
         }
     }
 

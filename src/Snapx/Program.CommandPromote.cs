@@ -109,7 +109,7 @@ internal partial class Program
         logger.Info('-'.Repeat(TerminalBufferWidth));
 
         logger.Info("Downloading releases nupkg.");
-        var (snapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+        var (snapAppsReleases, _, releasesMemoryStream, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
         if (releasesMemoryStream != null)
         {
             await releasesMemoryStream.DisposeAsync();

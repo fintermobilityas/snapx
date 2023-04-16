@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -173,7 +174,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
     /// <returns></returns>
     public async Task<ISnapAppReleases> GetSnapReleasesAsync(CancellationToken cancellationToken)
     {
-        var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager
+        var (snapAppsReleases, _, releasesMemoryStream, _) = await _snapPackageManager
             .GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken, ApplicationId);
         if (releasesMemoryStream != null)
         {
@@ -251,7 +252,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
             return null;
         }
 
-        var (snapAppsReleases, _, releasesMemoryStream) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
+        var (snapAppsReleases, _, releasesMemoryStream, _) = await _snapPackageManager.GetSnapsReleasesAsync(_snapApp, _logger, cancellationToken);
         if(releasesMemoryStream != null)
         {
             await releasesMemoryStream.DisposeAsync();

@@ -138,7 +138,7 @@ internal partial class Program
 
         logger.Info("Downloading releases nupkg.");
 
-        var (snapAppsReleases, _, currentReleasesMemoryStream) = await snapPackageManager
+        var (snapAppsReleases, _, currentReleasesMemoryStream, _) = await snapPackageManager
             .GetSnapsReleasesAsync(anyRidSnapApp, logger, cancellationToken);
         if (currentReleasesMemoryStream != null)
         {

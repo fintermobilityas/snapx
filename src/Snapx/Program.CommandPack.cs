@@ -125,7 +125,7 @@ internal partial class Program
         var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(packagesDirectory);
         filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
-        var (snapAppsReleases, _, currentReleasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+        var (snapAppsReleases, _, currentReleasesMemoryStream, nupkgNotFound) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
         if (currentReleasesMemoryStream != null)
         {
             await currentReleasesMemoryStream.DisposeAsync();
@@ -133,9 +133,14 @@ internal partial class Program
 
         if (snapAppsReleases == null)
         {
-            if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
-                                        "Is this the first time you are publishing this application? " +
-                                        "NB! The package may not yet be visible to due to upstream caching. [y/n]", infoOnly: packOptions.YesToAllPrompts)
+            if (!nupkgNotFound)
+            {
+                return 1;
+            }
+            
+            if (!logger.Prompt("y|yes", "Unable to locate a prior release in your NuGet package sources. Are you publishing this application for the first time? " +
+                                        "Note: The package might not be immediately visible due to upstream caching. " +
+                                        "Please enter 'y' for yes or 'n' for no [y|n].", infoOnly: packOptions.YesToAllPrompts)
             )
             {
                 return 1;

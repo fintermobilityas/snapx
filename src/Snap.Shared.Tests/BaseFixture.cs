@@ -131,6 +131,10 @@ public class BaseFixture
                 PersistentAssets = new List<string>
                 {
                     "application.json"
+                },
+                Environment = new Dictionary<string, string>
+                {
+                    { "TEST", "123" }
                 }
             }
         };

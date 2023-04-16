@@ -105,6 +105,7 @@ public sealed class SnapsTarget
     public List<SnapShortcutLocation> Shortcuts { get; set; }
     public List<string> PersistentAssets { get; set; }
     public List<SnapInstallerType> Installers { get; set; }
+    public Dictionary<string, string> Environment { get; set; }
 
     [UsedImplicitly]
     public SnapsTarget()
@@ -112,6 +113,7 @@ public sealed class SnapsTarget
         Shortcuts = new List<SnapShortcutLocation>();
         PersistentAssets = new List<string>();
         Installers = new List<SnapInstallerType>();
+        Environment = new Dictionary<string, string>();
     }
 
     internal SnapsTarget([NotNull] SnapTarget target)
@@ -124,6 +126,7 @@ public sealed class SnapsTarget
         Shortcuts = target.Shortcuts;
         PersistentAssets = target.PersistentAssets;
         Installers = target.Installers;
+        Environment = target.Environment;
     }
 
     public SnapsTarget([NotNull] SnapsTarget target)
@@ -136,6 +139,7 @@ public sealed class SnapsTarget
         Shortcuts = target.Shortcuts;
         PersistentAssets = target.PersistentAssets;
         Installers = target.Installers;
+        Environment = target.Environment;
     }
 }
 

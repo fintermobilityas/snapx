@@ -425,7 +425,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
 
             if (superVisorStopped || SuperVisorAlwaysStartAfterSuccessfullUpdate)
             {
-                var supervisorStarted = Snapx.StartSupervisor(superVisorRestartArguments);                               
+                var supervisorStarted = Snapx.StartSupervisor(superVisorRestartArguments, updatedSnapApp.Target.Environment);                               
                 _logger.Debug($"Supervisor started: {supervisorStarted}.");
             }
 

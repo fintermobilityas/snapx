@@ -206,6 +206,8 @@ public sealed class SnapTarget
     public List<string> PersistentAssets { get; set; }
     [Key(6)]
     public List<SnapInstallerType> Installers { get; set; }
+    [Key(7)]
+    public Dictionary<string, string> Environment { get; set; }
 
     [UsedImplicitly]
     public SnapTarget()
@@ -213,6 +215,7 @@ public sealed class SnapTarget
         Shortcuts = new List<SnapShortcutLocation>();
         PersistentAssets = new List<string>();
         Installers = new List<SnapInstallerType>();
+        Environment = new Dictionary<string, string>();
     }
 
     internal SnapTarget([NotNull] SnapTarget target)
@@ -225,6 +228,7 @@ public sealed class SnapTarget
         Shortcuts = target.Shortcuts;
         PersistentAssets = target.PersistentAssets;
         Installers = target.Installers;
+        Environment = target.Environment;
     }
 
     internal SnapTarget([NotNull] SnapsTarget snapsTarget) : this(new SnapTarget
@@ -235,7 +239,8 @@ public sealed class SnapTarget
         Icon = snapsTarget.Icon,
         Shortcuts = snapsTarget.Shortcuts,
         PersistentAssets = snapsTarget.PersistentAssets,
-        Installers = snapsTarget.Installers
+        Installers = snapsTarget.Installers,
+        Environment = snapsTarget.Environment
     })
     {
         if (snapsTarget == null) throw new ArgumentNullException(nameof(snapsTarget));

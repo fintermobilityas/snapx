@@ -113,6 +113,10 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
                 PersistentAssets = new List<string>
                 {
                     "application.json"
+                },
+                Environment = new Dictionary<string, string>
+                {
+                    { "TEST", "123" }
                 }
             }
         };
@@ -186,6 +190,9 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
         Assert.Equal(snapAppBefore.Target.Framework, snapAppAfter.Target.Framework);
         Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
         Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
+        Assert.NotNull(snapAppBefore.Target.Environment);
+        Assert.Equal(1, snapAppBefore.Target.Environment.Count);
+        Assert.Equal(snapAppBefore.Target.Environment, snapAppAfter.Target.Environment);
 
         // Channels
         Assert.Equal(snapAppBefore.Channels.Count, snapAppAfter.Channels.Count);

@@ -17,6 +17,7 @@ static std::unique_ptr<pal_semaphore_machine_wide> corerun_supervisor_semaphore;
 inline int corerun_command_supervise(
     const std::string& stub_executable_full_path,
     std::vector<std::string>& arguments,
+    std::map<std::string, std::string>& environment_variables,
     int process_id,
     const std::string& process_application_id,
     int cmd_show_windows);
@@ -74,9 +75,13 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
 
     auto supervise_process_id = 0;
     std::string supervise_id;
-
+    std::vector<std::string> environment_variables_vec;
     options
             .add_options()
+                    ("corerun-environment-var",
+                      "A key value pair for setting one or multiple environment variables",
+                      cxxopts::value<std::vector<std::string>>(environment_variables_vec)
+                        )
                     ("corerun-supervise-pid",
                      "Supervision of target process. Wait for process pid to exit and then restart it.",
                      cxxopts::value<int>(supervise_process_id)
@@ -86,23 +91,43 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
                         cxxopts::value<std::string>(supervise_id)
                         );
 
+    std::map<std::string, std::string> environment_variables;
+
     try {
-        options.parse(argc, argv);
+        options.parse_positional("corerun-environment-var");
+        const auto result = options.parse(argc, argv);
+        if (result.count("corerun-environment-var")) {
+          const auto pairs = result["corerun-environment-var"].as<std::vector<std::string>>();
+          for (const auto& kv : pairs) {
+            const auto pos = kv.find('=');
+            if (pos == std::string::npos) {
+              LOGE << "Invalid environment variable pair: " << kv;
+              return 1;
+            }
+            const std::string key = kv.substr(0, pos);
+            const std::string value = kv.substr(pos + 1);
+            environment_variables.emplace(key, value);
+          }
+        }
+
     } catch (const cxxopts::OptionException &e) {
         LOGE << "Error parsing startup argument: " << e.what();
     }
 
     if (supervise_process_id > 0) {
         return corerun_command_supervise(stub_executable_full_path, stub_executable_arguments,
+            environment_variables,
                 supervise_process_id, supervise_id, cmd_show_windows);
     }
 
-    return snap::stubexecutable::run(stub_executable_arguments, cmd_show_windows);
+    return snap::stubexecutable::run(stub_executable_arguments,
+                                     environment_variables, cmd_show_windows);
 }
 
 inline int corerun_command_supervise(
     const std::string& stub_executable_full_path,
     std::vector<std::string>& arguments,
+    std::map<std::string, std::string>& environment_variables,
     const int process_id,
     const std::string& process_application_id,
     const int cmd_show_windows)
@@ -150,7 +175,7 @@ inline int corerun_command_supervise(
     const auto child_pid = fork();
     if (child_pid == 0)
     {
-        return snap::stubexecutable::run(arguments, -1);
+        return snap::stubexecutable::run(arguments, environment_variables, -1);
     }
     return 0;
 #else

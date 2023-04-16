@@ -181,14 +181,15 @@ public static class Snapx
             return true;
         }
     }
-        
+
     /// <summary>
     /// Supervises your application and if it exits or crashes it will be automatically restarted.
     /// NB! This method _MUST_ be invoked after <see cref="ProcessEvents"/>. You can stop the supervisor
     /// process by invoking <see cref="StopSupervisor"/> before exiting the application.
     /// </summary>
     /// <param name="restartArguments"></param>
-    public static bool StartSupervisor(List<string> restartArguments = null)
+    /// <param name="environmentVariables"></param>
+    public static bool StartSupervisor(List<string> restartArguments = null, Dictionary<string, string> environmentVariables = null)
     {
         StopSupervisor();
 
@@ -201,6 +202,14 @@ public static class Snapx
         var superVisorId = Current.SuperVisorId;
 
         var runArgument = $"--corerun-supervise-pid={SnapOs.ProcessManager.Current.Id} --corerun-supervise-id={superVisorId}";
+
+        if (environmentVariables != null)
+        {
+            foreach (var (name, value) in environmentVariables)
+            {
+                runArgument += $" --corerun-environment-var {name}={value}";
+            }
+        }
 
         SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
             .AddRange(restartArguments ?? new List<string>())

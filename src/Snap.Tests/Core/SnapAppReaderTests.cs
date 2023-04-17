@@ -191,7 +191,7 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
         Assert.Equal(snapAppBefore.Target.Rid, snapAppAfter.Target.Rid);
         Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
         Assert.NotNull(snapAppBefore.Target.Environment);
-        Assert.Equal(1, snapAppBefore.Target.Environment.Count);
+        Assert.Single(snapAppBefore.Target.Environment);
         Assert.Equal(snapAppBefore.Target.Environment, snapAppAfter.Target.Environment);
 
         // Channels

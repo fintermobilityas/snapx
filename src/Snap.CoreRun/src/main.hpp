@@ -101,7 +101,7 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
           for (const auto& kv : pairs) {
             const auto pos = kv.find('=');
             if (pos == std::string::npos) {
-              LOGE << "Invalid environment variable pair: " << kv;
+              LOGE << "Invalid environment variable pair: " << kv << ". The pair must be in the form \"key=value\"";
               return 1;
             }
             const std::string key = kv.substr(0, pos);

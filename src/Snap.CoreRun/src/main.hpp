@@ -94,7 +94,7 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     std::map<std::string, std::string> environment_variables;
 
     try {
-        options.parse_positional("corerun-environment-var");
+        options.allow_unrecognised_options();
         const auto result = options.parse(argc, argv);
         if (result.count("corerun-environment-var")) {
           const auto pairs = result["corerun-environment-var"].as<std::vector<std::string>>();
@@ -107,6 +107,18 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
             const std::string key = kv.substr(0, pos);
             const std::string value = kv.substr(pos + 1);
             environment_variables.emplace(key, value);
+          }
+
+          for (auto it = stub_executable_arguments.begin(); it != stub_executable_arguments.end() - 1;) {
+            if ((*it).find("corerun-environment-var", 0) != std::string::npos) {
+              stub_executable_arguments.erase(it);
+              if(it + 1 == stub_executable_arguments.end()) {
+                break;
+              }
+              it = stub_executable_arguments.erase(it, it + 1);
+              continue;
+            }
+            ++it;
           }
         }
 

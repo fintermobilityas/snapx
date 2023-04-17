@@ -356,17 +356,6 @@ internal sealed class SnapInstaller : ISnapInstaller
             try
             {
                 logger?.Debug(x.ToString());
-                
-                logger?.Debug($"Environment variables count: {snapApp.Target.Environment?.Count}");
-                
-                if (snapApp.Target.Environment != null)
-                {
-                    foreach (var (name, value) in snapApp.Target.Environment)
-                    {
-                        logger?.Debug($"Adding environment variable: {name}={value}");
-                        Environment.SetEnvironmentVariable(name, value, EnvironmentVariableTarget.Process);
-                    }
-                }
 
                 var (exitCode, stdout) = await _snapOs.ProcessManager
                     .RunAsync(x, cancellationToken) // Two cancellation tokens is intentional because of unit tests mocks.

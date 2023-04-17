@@ -291,7 +291,8 @@ internal sealed class SnapInstaller : ISnapInstaller
                     NuspecReader = nuspecReader,
                     ShortcutLocations = shortcutLocations,
                     ExeAbsolutePath = stubExeAbsolutePath,
-                    IconAbsolutePath = iconAbsolutePath
+                    IconAbsolutePath = iconAbsolutePath,
+                    Environment = snapApp.Target.Environment ?? new Dictionary<string, string>()
                 };
 
                 await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);

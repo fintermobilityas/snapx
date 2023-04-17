@@ -323,19 +323,21 @@ internal sealed class SnapInstaller : ISnapInstaller
             }.Select(x =>
             {
                 var installOrUpdateTxt = isInitialInstall ? "--snapx-installed" : "--snapx-updated";
-                return new ProcessStartInfoBuilder(x)
+                return new ProcessStartInfoBuilder(x, environment: snapApp.Target.Environment)
                     .Add(installOrUpdateTxt)
                     .Add(currentVersion.ToNormalizedString());
             })
             .ToList();
 
-        await InvokeSnapApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
+        await InvokeSnapApps(snapApp, allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
     }
 
-    async Task InvokeSnapApps([NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
+    async Task InvokeSnapApps(SnapApp snapApp, [NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
         TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion,
         ILog logger = null, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        
         if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
         if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion));
 
@@ -353,6 +355,17 @@ internal sealed class SnapInstaller : ISnapInstaller
             try
             {
                 logger?.Debug(x.ToString());
+                
+                logger?.Debug($"Environment variables count: {snapApp.Target.Environment?.Count}");
+                
+                if (snapApp.Target.Environment != null)
+                {
+                    foreach (var (name, value) in snapApp.Target.Environment)
+                    {
+                        logger?.Debug($"Adding environment variable: {name}={value}");
+                        Environment.SetEnvironmentVariable(name, value, EnvironmentVariableTarget.Process);
+                    }
+                }
 
                 var (exitCode, stdout) = await _snapOs.ProcessManager
                     .RunAsync(x, cancellationToken) // Two cancellation tokens is intentional because of unit tests mocks.
@@ -382,7 +395,7 @@ internal sealed class SnapInstaller : ISnapInstaller
 
         firstRunApplicationFilenames.ForEach(filename =>
         {
-            var builder = new ProcessStartInfoBuilder(filename)
+            var builder = new ProcessStartInfoBuilder(filename, environment: snapApp.Target.Environment)
                 .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}");
             try
             {

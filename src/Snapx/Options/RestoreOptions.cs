@@ -21,6 +21,11 @@ internal class RestoreOptions : BaseSubOptions
         HelpText = "Build installers.")]
     public bool BuildInstallers { get; set; }
 
+    [Option("package-file",
+        HelpText =
+            "Generates UTF-8 text file with filenames, sha256 checksums (like package-lock.json), enabling CI services (e.g., GitHub Actions) to restore NuGet packages from cache.")]
+    public bool BuildPackagesFile { get; [UsedImplicitly] set; }
+
     [Option("rc|restore-concurrency",
         HelpText = "The number of concurrent restores.",
         Default = DefaultRestoreConcurrency)]

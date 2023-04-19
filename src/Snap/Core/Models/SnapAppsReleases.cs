@@ -26,6 +26,8 @@ public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
     public Guid PackId { get; set; }
     [Key(4), MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
     public SemanticVersion PackVersion { get; set; }
+    [Key(5)]
+    public bool Bsdiffv2 { get; set; }
 
     [UsedImplicitly]
     public SnapAppsReleases()
@@ -63,6 +65,12 @@ public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
         return Releases.RemoveAll(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);            
+    }
+    
+    internal bool HasReleases([NotNull] SnapApp snapApp)
+    {
+        if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+        return Releases.Any(x => x.Id == snapApp.Id && x.Target.Rid == snapApp.Target.Rid);            
     }
         
     internal ISnapAppChannelReleases GetReleases([NotNull] SnapApp snapApp, [NotNull] SnapChannel snapChannel)

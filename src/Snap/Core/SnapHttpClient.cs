@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Snap.Core;
@@ -9,6 +10,7 @@ namespace Snap.Core;
 public interface ISnapHttpClient
 {
     Task<Stream> GetStreamAsync(Uri requestUri, IDictionary<string, string> headers = null);
+    Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken);
 }
 
 public sealed class SnapHttpClient : ISnapHttpClient
@@ -32,4 +34,7 @@ public sealed class SnapHttpClient : ISnapHttpClient
         }
         return await httpResponseMessage.Content.ReadAsStreamAsync();
     }
+
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken) => 
+        _httpClient.SendAsync(httpRequestMessage, cancellationToken);
 }

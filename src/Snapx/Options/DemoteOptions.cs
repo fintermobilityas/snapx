@@ -40,6 +40,11 @@ internal class DemoteOptions : BaseSubOptions
     [Option("ntp-server", 
         HelpText = "Set network time provider server and port. Example: time.cloudflare.com:123")]
     public string NetworkTimeProviderConnectionString { get; set; }
+    
+    [Option('k', "api-key",
+        HelpText = "The nuget server api key.", 
+        Required = true)]
+    public string ApiKey { get; [UsedImplicitly] set; }
 
     [Value(0,
         HelpText = "The Application id.",

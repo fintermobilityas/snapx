@@ -14,14 +14,34 @@ internal sealed class ProcessStartInfoBuilder
     public string Filename { get; }
     public string WorkingDirectory { get; private set; }
     public string Arguments => string.Join(" ", _arguments);
-        
-    readonly List<string> _arguments;
+    public IReadOnlyDictionary<string, string> Environment => _environment;
 
-    public ProcessStartInfoBuilder([NotNull] string filename)
+    readonly List<string> _arguments;
+    readonly Dictionary<string, string> _environment;
+
+    ProcessStartInfoBuilder()
+    {
+        _arguments = new List<string>();
+        _environment = new Dictionary<string, string>();
+    }
+    
+    public ProcessStartInfoBuilder([NotNull] string filename, List<string> arguments = null, Dictionary<string, string> environment = null) : this()
     {
         if (string.IsNullOrWhiteSpace(filename)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(filename));
         Filename = filename;
-        _arguments = new List<string>();
+        
+        if (arguments != null)
+        {
+            AddRange(arguments);
+        }
+
+        if (environment != null)
+        {
+            foreach (var (name, value) in environment)
+            {
+                _environment.Add(name, value);
+            }
+        }
     }
 
     public ProcessStartInfoBuilder Add([NotNull] string value)
@@ -38,17 +58,8 @@ internal sealed class ProcessStartInfoBuilder
         return this;
     }
 
-    public ProcessStartInfoBuilder WithWorkingDirectory([NotNull] string value)
-    {
-        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(value));
-        WorkingDirectory = value;
-        return this;
-    }
-
-    public override string ToString()
-    {
-        return Arguments == string.Empty ? Filename : $"{Filename} {Arguments}";
-    }
+    public override string ToString() => 
+        Arguments == string.Empty ? Filename : $"{Filename} {Arguments}";
 }
 
 internal struct SnapOsProcess
@@ -98,6 +109,11 @@ internal sealed class SnapOsProcessManager : ISnapOsProcessManager
                 RedirectStandardError = true,
                 WorkingDirectory = builder.WorkingDirectory ?? string.Empty
             };
+
+        foreach (var (name, value) in builder.Environment)
+        {
+            processStartInfo.Environment.TryAdd(name, value);
+        }
 
         return RunAsync(processStartInfo, cancellationToken);
     }
@@ -157,6 +173,11 @@ internal sealed class SnapOsProcessManager : ISnapOsProcessManager
                 CreateNoWindow = true,
                 WorkingDirectory = builder.WorkingDirectory ?? string.Empty
             };
+        
+        foreach (var (name, value) in builder.Environment)
+        {
+            processStartInfo.Environment.TryAdd(name, value);
+        }
 
         return Process.Start(processStartInfo);
     }

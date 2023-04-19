@@ -4,77 +4,82 @@ using System.Threading.Tasks;
 using Snap.Core;
 using Xunit;
 
-namespace Snap.Tests.Core
+namespace Snap.Tests.Core;
+
+public class SnapBinaryPatcherTests
 {
-    public class SnapBinaryPatcherTests
+    static readonly Random Random = new();
+    readonly ISnapBinaryPatcher _snapBinaryPatcher;
+
+    public SnapBinaryPatcherTests()
     {
-        static readonly Random Random = new();
-        readonly ISnapBinaryPatcher _snapBinaryPatcher;
+        _snapBinaryPatcher = new SnapBinaryPatcher(new LibBsDiff());
+    }
 
-        public SnapBinaryPatcherTests()
+    [Fact]
+    public async Task TestBsDiff()
+    {
+        var baseFileData = new byte[] { 0, 2, 3, 5 };
+        var newFileData = new byte[] { 0, 1, 2, 3, 10 };
+
+        using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+        await using var patchStream = new MemoryStream();
+        _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+        patchStream.Seek(0, SeekOrigin.Begin);
+            
+        await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        await using var patchedStream = new MemoryStream();
+        _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
+            
+        Assert.Equal(newFileData, patchedStream.ToArray());
+    }
+
+    [Fact]
+    public async Task TestBsDiffRandomNoise()
+    {
+        var baseFileData = new byte[1024 * 1024];
+        Random.NextBytes(baseFileData);
+        var newFileData = new byte[1024 * 1024];
+        baseFileData.CopyTo(newFileData, 0);
+
+        for (var i = 0; i < newFileData.Length; i++)
         {
-            _snapBinaryPatcher = new SnapBinaryPatcher();
-        }
-
-        [Fact]
-        public async Task TestBsDiff()
-        {
-            var baseFileData = new byte[] { 0, 2, 3, 5 };
-            var newFileData = new byte[] { 0, 1, 2, 3, 10 };
-
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
-
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
-
-            Assert.Equal(newFileData, patched.ToArray());
-        }
-
-        [Fact]
-        public async Task TestBsDiffRandomNoise()
-        {
-            var baseFileData = new byte[1024 * 1024];
-            Random.NextBytes(baseFileData);
-            var newFileData = new byte[1024 * 1024];
-            baseFileData.CopyTo(newFileData, 0);
-
-            for (var i = 0; i < newFileData.Length; i++)
+            if (Random.NextDouble() > 0.5)
             {
-                if (Random.NextDouble() > 0.5)
-                {
-                    newFileData[i] = (byte)Random.Next();
-                }
+                newFileData[i] = (byte)Random.Next();
             }
-
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
-
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
-
-            Assert.Equal(newFileData, patched.ToArray());
         }
 
-        [Fact]
-        public async Task TestBsDiffWithoutExtraData()
-        {
-            var baseFileData = new byte[] { 1, 1, 1, 1 };
-            var newFileData = new byte[] { 2, 1, 1, 1 };
+        using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+        await using var patchStream = new MemoryStream();
+        _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+        patchStream.Seek(0, SeekOrigin.Begin);
+            
+        await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        await using var patchedStream = new MemoryStream(); 
+        _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
+            
+        Assert.Equal(newFileData, patchedStream.ToArray());
+    }
 
-            await using var patchOut = new MemoryStream();
-            await _snapBinaryPatcher.CreateAsync(baseFileData, newFileData, patchOut, default);
-            var patchData = patchOut.ToArray();
+    [Fact]
+    public async Task TestBsDiffWithoutExtraData()
+    {
+        var baseFileData = new byte[] { 1, 1, 1, 1 };
+        var newFileData = new byte[] { 2, 1, 1, 1 };
 
-            await using var toPatch = new MemoryStream(baseFileData);
-            await using var patched = new MemoryStream();
-            await _snapBinaryPatcher.ApplyAsync(toPatch, async () => await Task.FromResult(new MemoryStream(patchData)), patched, default);
+        using var baseFileStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        using var newFileStream = new MemoryStream(newFileData, 0, newFileData.Length, true, true);
+        await using var patchStream = new MemoryStream();
+        _snapBinaryPatcher.Diff(baseFileStream, newFileStream, patchStream);
+        patchStream.Seek(0, SeekOrigin.Begin);
+      
+        await using var toPatchStream = new MemoryStream(baseFileData, 0, baseFileData.Length, true, true);
+        await using var patchedStream = new MemoryStream();
+        _snapBinaryPatcher.Patch(toPatchStream, patchStream, patchedStream, default);
 
-            Assert.Equal(newFileData, patched.ToArray());
-        }
+        Assert.Equal(newFileData, patchedStream.ToArray());
     }
 }

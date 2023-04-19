@@ -1,15 +1,14 @@
 ﻿using snapx;
 using Xunit;
 
-namespace Snapx.Tests
+namespace Snapx.Tests;
+
+public class ProgramTests
 {
-    public class ProgramTests
+    [Fact]
+    public void TestMain()
     {
-        [Fact]
-        public void TestMain()
-        {
-            var exitCode = Program.Main(new[] {"--version"});
-            Assert.Equal(0, exitCode);
-        }
+        var exitCode = Program.Main(new[] {"--version"});
+        Assert.Equal(0, exitCode);
     }
 }

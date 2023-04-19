@@ -259,7 +259,15 @@ internal sealed class SnapOsUnix : ISnapOsImpl
         if (shortcutDescription == null) throw new ArgumentNullException(nameof(shortcutDescription));
             
         var workingDirectory = Filesystem.PathGetDirectoryName(shortcutDescription.ExeAbsolutePath);
+        var ldLibraryPath = shortcutDescription.Environment.TryGetValue("LD_LIBRARY_PATH", out var path) ?
+            $"LD_LIBRARY_PATH={path}" : "LD_LIBRARY_PATH=.";
+        var environmentVariables = new List<string>();
 
+        foreach (var (name, value) in shortcutDescription.Environment)
+        {
+            environmentVariables.Add(@$"--corerun-environment-var {name}=""{value}""");
+        }
+        
         return DistroType switch
         {
             SnapOsDistroType.Ubuntu or SnapOsDistroType.RaspberryPi => $@"[Desktop Entry]
@@ -267,7 +275,7 @@ Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
-Exec=bash -c 'cd ""{workingDirectory}"" && LD_LIBRARY_PATH=. {shortcutDescription.ExeAbsolutePath}'
+Exec=bash -c 'cd ""{workingDirectory}"" && {ldLibraryPath} {shortcutDescription.ExeAbsolutePath} {string.Join(" ", environmentVariables)}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
 Comment={description}",

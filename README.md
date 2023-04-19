@@ -11,6 +11,17 @@
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. Updates can delivered via NuGet or network share (UNC).
 
+## Sponsors
+
+[![Finter As](https://static.wixstatic.com/media/c40fc8_f72c1de227614b2cbd30085f7c31abe7~mv2.png/v1/crop/x_0,y_34,w_1020,h_470/fill/w_162,h_71,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Finter%20AS%20Logo.png)](https://finter.no)
+
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=for-the-badge)](https://cloudsmith.com)
+
+Package repository hosting is graciously provided by  [Cloudsmith](https://cloudsmith.com).
+Cloudsmith is the only fully hosted, cloud-native, universal package management solution, that
+enables your organization to create, store and share packages in any format, to any place, with total
+confidence.
+
 ## 🚀 Getting Started Guide
 
 Checkout our sample application, [snapx demoapp](https://github.com/fintermobilityas/snapx.demoapp). It features an xplat application (Windows and Ubuntu) that supports automatic release deployment using GitHub Actions.
@@ -100,12 +111,6 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 This project has adopted the code of conduct defined by the Contributor Covenant to clarify expected behavior in our community.
 For more information see the [Code of Conduct](https://github.com/fintermobilityas/snapx/blob/develop/CODE_OF_CONDUCT.md).
-
-## Sponsors
-
-<p align="center">
-<a href="https://www.finterjobs.com" target="_blank"><img src="https://static.wixstatic.com/media/49c5ac_e5c089f7be224d6e92eb3f2f5edc3535~mv2.png/v1/crop/x_173,y_545,w_938,h_425/fill/w_189,h_87,al_c,q_85,usm_0.66_1.00_0.01/Finter%20Mobility%20AS%20gjennomsiktig%20bakgrun.webp"></a>
-</p>
 
 ## License
 

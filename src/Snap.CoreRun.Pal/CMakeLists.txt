@@ -43,7 +43,7 @@ if(WIN32)
             )
 endif()
 
-add_library(pal_static
+add_library(pal_static STATIC
         ${pal_SOURCES}
         )
 
@@ -94,6 +94,7 @@ foreach(cmake_target IN ITEMS pal pal_static)
     target_link_libraries(${cmake_target} PUBLIC ${pal_LIBS})
     set_property(TARGET ${cmake_target} PROPERTY CXX_STANDARD 17)
     set_property(TARGET ${cmake_target} PROPERTY CXX_STANDARD_REQUIRED ON)
+    set_property(TARGET ${cmake_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endforeach(cmake_target)
 
 target_link_libraries(pal_static PUBLIC ${pal_static_LIBS})

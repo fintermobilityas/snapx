@@ -23,7 +23,7 @@ internal partial class Program
     static async Task<int> CommandRestoreAsync([NotNull] RestoreOptions restoreOptions,
         [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader, ISnapAppWriter snapAppWriter,
         [NotNull] INuGetPackageSources nuGetPackageSources, [NotNull] ISnapPackageManager snapPackageManager,
-        [NotNull] ISnapOs snapOs, [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
+        [NotNull] ISnapOs snapOs, [NotNull] ILibPal libPal,
         [NotNull] ISnapPack snapPack, [NotNull] ILog logger,
         [NotNull] string workingDirectory, CancellationToken cancellationToken)
     {
@@ -33,8 +33,7 @@ internal partial class Program
         if (nuGetPackageSources == null) throw new ArgumentNullException(nameof(nuGetPackageSources));
         if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-        if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
 
@@ -68,7 +67,10 @@ internal partial class Program
             return 1;
         }
 
-        if (restoreOptions.BuildInstallers)
+        if (restoreOptions.BuildPackagesFile)
+        {
+            restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.CacheFile;
+        } else if(restoreOptions.BuildInstallers)
         {
             restoreOptions.RestoreStrategyType = SnapPackageManagerRestoreType.Default;
         }
@@ -150,6 +152,11 @@ internal partial class Program
                     continue;
                 }
 
+                if (restoreOptions.RestoreStrategyType == SnapPackageManagerRestoreType.CacheFile)
+                {
+                    continue;
+                }
+
                 var mostRecentSnapRelease = snapAppReleases.GetMostRecentRelease();
                     
                 var snapAppInstaller = new SnapApp(snapAppReleases.App)
@@ -164,7 +171,7 @@ internal partial class Program
                 {
                     logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                    await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                    await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, null, releasesNupkgAbsolutePath, false, cancellationToken);
                 }
                     
@@ -175,7 +182,7 @@ internal partial class Program
 
                     var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, mostRecentSnapRelease.BuildNugetFullFilename());
  
-                    await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                    await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath, true, cancellationToken);
                 }
 

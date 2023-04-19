@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using ServiceStack;
+using Snap.Core;
 using Snap.Logging;
 using snapx.Api;
 
@@ -20,31 +23,48 @@ internal interface IDistributedMutexClient
 {
     Task<string> AcquireAsync(string name, TimeSpan lockDuration);
     Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod = null);
-    Task RenewAsync(string name, string challenge);
 }
 
 internal sealed class DistributedMutexClient : IDistributedMutexClient
 {
-    readonly IHttpRestClientAsync _httpRestClientAsync;
+    readonly ISnapHttpClient _httpClient;
 
-    public DistributedMutexClient([NotNull] IHttpRestClientAsync httpRestClientAsync)
+    public DistributedMutexClient([NotNull] ISnapHttpClient httpClient) => 
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+
+    public async Task<string> AcquireAsync(string name, TimeSpan lockDuration)
     {
-        _httpRestClientAsync = httpRestClientAsync ?? throw new ArgumentNullException(nameof(httpRestClientAsync));
+        var json = JsonSerializer.Serialize(new Lock
+        {
+            Name = name, 
+            Duration = lockDuration
+        }, LockContext.Default.Lock);
+        
+        using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, "https://snapx.dev/lock")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        }, default);
+
+        httpResponse.EnsureSuccessStatusCode();
+
+        return await httpResponse.Content.ReadAsStringAsync();
     }
 
-    public Task<string> AcquireAsync(string name, TimeSpan lockDuration)
+    public async Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod)
     {
-        return _httpRestClientAsync.PostAsync(new Lock { Name = name, Duration = lockDuration });
-    }
+        var json = JsonSerializer.Serialize(new Unlock
+        {
+            Name = name, 
+            Challenge = challenge,
+            BreakPeriod = breakPeriod
+        }, UnlockContext.Default.Unlock);
+        
+        using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "https://snapx.dev/unlock")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        }, default);
 
-    public Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod)
-    {
-        return _httpRestClientAsync.DeleteAsync(new Unlock { Name = name, Challenge = challenge, BreakPeriod = breakPeriod });
-    }
-
-    public Task RenewAsync(string name, string challenge)
-    {
-        return _httpRestClientAsync.PutAsync(new RenewLock { Name = name, Challenge = challenge });
+        httpResponse.EnsureSuccessStatusCode();
     }
 }
 
@@ -146,7 +166,7 @@ internal sealed class DistributedMutex : IDistributedMutex
             _logger.Info($"Successfully released mutex: {Name}.");
             return true;
         }
-        catch (WebServiceException exception)
+        catch (Exception exception)
         {
             _logger.InfoException($"Failed to force release mutex with name: {Name}.", exception);
             return false;
@@ -167,7 +187,7 @@ internal sealed class DistributedMutex : IDistributedMutex
             logger.Info($"Successfully released mutex: {name}.");
             return true;
         }
-        catch (WebServiceException exception)
+        catch (Exception exception)
         {
             logger.InfoException($"Failed to force release mutex with name: {name}.", exception);
             return false;

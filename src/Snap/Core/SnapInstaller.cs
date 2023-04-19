@@ -10,7 +10,6 @@ using NuGet.Versioning;
 using Snap.AnyOS;
 using Snap.AnyOS.Windows;
 using Snap.Core.Models;
-using Snap.Core.Resources;
 using Snap.Extensions;
 using Snap.Logging;
 
@@ -49,16 +48,14 @@ internal sealed class SnapInstaller : ISnapInstaller
     readonly ISnapExtractor _snapExtractor;
     readonly ISnapPack _snapPack;
     readonly ISnapOs _snapOs;
-    readonly ISnapEmbeddedResources _snapEmbeddedResources;
     readonly ISnapAppWriter _snapAppWriter;
 
     public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack,
-        [NotNull] ISnapOs snapOs, [NotNull] ISnapEmbeddedResources snapEmbeddedResources, [NotNull] ISnapAppWriter snapAppWriter)
+        [NotNull] ISnapOs snapOs, [NotNull] ISnapAppWriter snapAppWriter)
     {
         _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
         _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
         _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
-        _snapEmbeddedResources = snapEmbeddedResources ?? throw new ArgumentNullException(nameof(snapEmbeddedResources));
         _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
     }
 
@@ -248,15 +245,15 @@ internal sealed class SnapInstaller : ISnapInstaller
     {
         var chmod = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
-        var coreRunExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(baseDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
+        var stubExeAbsolutePath = _snapOs.Filesystem
+            .PathCombine(baseDirectory, snapApp.GetStubExeFilename());
         var mainExeAbsolutePath = _snapOs.Filesystem
-            .PathCombine(appDirectory, _snapEmbeddedResources.GetCoreRunExeFilenameForSnapApp(snapApp));
+            .PathCombine(appDirectory, snapApp.GetStubExeFilename());
         var iconAbsolutePath = !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && snapApp.Target.Icon != null ?
             _snapOs.Filesystem.PathCombine(appDirectory, snapApp.Target.Icon) : null;
         var snapChannel = snapApp.GetCurrentChannelOrThrow();
 
-        logger?.Debug($"{nameof(coreRunExeAbsolutePath)}: {coreRunExeAbsolutePath}");
+        logger?.Debug($"{nameof(stubExeAbsolutePath)}: {stubExeAbsolutePath}");
         logger?.Debug($"{nameof(mainExeAbsolutePath)}: {mainExeAbsolutePath}");
         logger?.Debug($"{nameof(iconAbsolutePath)}: {iconAbsolutePath}");
 
@@ -270,11 +267,11 @@ internal sealed class SnapInstaller : ISnapInstaller
 
         if (chmod)
         {
-            await ChmodAsync(coreRunExeAbsolutePath);
+            await ChmodAsync(stubExeAbsolutePath);
             await ChmodAsync(mainExeAbsolutePath);
         }
 
-        var coreRunExeFilename = _snapOs.Filesystem.PathGetFileName(coreRunExeAbsolutePath);
+        var stubExeFileName = _snapOs.Filesystem.PathGetFileName(stubExeAbsolutePath);
 
         if (!snapApp.Target.Shortcuts.Any())
         {
@@ -293,15 +290,16 @@ internal sealed class SnapInstaller : ISnapInstaller
                     UpdateOnly = isInitialInstall == false,
                     NuspecReader = nuspecReader,
                     ShortcutLocations = shortcutLocations,
-                    ExeAbsolutePath = coreRunExeAbsolutePath,
-                    IconAbsolutePath = iconAbsolutePath
+                    ExeAbsolutePath = stubExeAbsolutePath,
+                    IconAbsolutePath = iconAbsolutePath,
+                    Environment = snapApp.Target.Environment ?? new Dictionary<string, string>()
                 };
 
                 await _snapOs.CreateShortcutsForExecutableAsync(shortcutDescription, logger, cancellationToken);
             }
             catch (Exception e)
             {
-                logger?.ErrorException($"Exception thrown while creating shortcut for exe: {coreRunExeFilename}", e);
+                logger?.ErrorException($"Exception thrown while creating shortcut for exe: {stubExeFileName}", e);
             }
         }
 
@@ -326,19 +324,21 @@ internal sealed class SnapInstaller : ISnapInstaller
             }.Select(x =>
             {
                 var installOrUpdateTxt = isInitialInstall ? "--snapx-installed" : "--snapx-updated";
-                return new ProcessStartInfoBuilder(x)
+                return new ProcessStartInfoBuilder(x, environment: snapApp.Target.Environment)
                     .Add(installOrUpdateTxt)
                     .Add(currentVersion.ToNormalizedString());
             })
             .ToList();
 
-        await InvokeSnapApps(allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
+        await InvokeSnapApps(snapApp, allSnapAwareApps, TimeSpan.FromSeconds(15), isInitialInstall, currentVersion, logger, cancellationToken);
     }
 
-    async Task InvokeSnapApps([NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
+    async Task InvokeSnapApps(SnapApp snapApp, [NotNull] List<ProcessStartInfoBuilder> allSnapAwareApps,
         TimeSpan cancelInvokeProcessesAfterTs, bool isInitialInstall, [NotNull] SemanticVersion semanticVersion,
         ILog logger = null, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        
         if (allSnapAwareApps == null) throw new ArgumentNullException(nameof(allSnapAwareApps));
         if (semanticVersion == null) throw new ArgumentNullException(nameof(semanticVersion));
 
@@ -385,7 +385,7 @@ internal sealed class SnapInstaller : ISnapInstaller
 
         firstRunApplicationFilenames.ForEach(filename =>
         {
-            var builder = new ProcessStartInfoBuilder(filename)
+            var builder = new ProcessStartInfoBuilder(filename, environment: snapApp.Target.Environment)
                 .Add($"--snapx-first-run {semanticVersion.ToNormalizedString()}");
             try
             {

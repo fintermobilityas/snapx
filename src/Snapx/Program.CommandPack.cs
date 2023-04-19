@@ -24,8 +24,8 @@ internal partial class Program
     static async Task<int> CommandPackAsync([NotNull] PackOptions packOptions, [NotNull] ISnapFilesystem filesystem,
         [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources,
         [NotNull] ISnapPack snapPack, [NotNull] INugetService nugetService, [NotNull] ISnapOs snapOs,
-        [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ISnapExtractor snapExtractor,
-        [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ICoreRunLib coreRunLib, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
+        [NotNull] ISnapExtractor snapExtractor,
+        [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ILibPal libPal, [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider,
         [NotNull] ILog logger, [NotNull] IDistributedMutexClient distributedMutexClient, [NotNull] string workingDirectory, CancellationToken cancellationToken)
     {
         if (packOptions == null) throw new ArgumentNullException(nameof(packOptions));
@@ -36,10 +36,9 @@ internal partial class Program
         if (snapPack == null) throw new ArgumentNullException(nameof(snapPack));
         if (nugetService == null) throw new ArgumentNullException(nameof(nugetService));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-        if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
         if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
         if (snapPackageManager == null) throw new ArgumentNullException(nameof(snapPackageManager));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
         if (distributedMutexClient == null) throw new ArgumentNullException(nameof(distributedMutexClient));
@@ -126,7 +125,7 @@ internal partial class Program
         var snapReleasesPackageDirectory = filesystem.DirectoryGetParent(packagesDirectory);
         filesystem.DirectoryCreateIfNotExists(snapReleasesPackageDirectory);
 
-        var (snapAppsReleases, _, currentReleasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+        var (snapAppsReleases, _, currentReleasesMemoryStream, nupkgNotFound) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
         if (currentReleasesMemoryStream != null)
         {
             await currentReleasesMemoryStream.DisposeAsync();
@@ -134,24 +133,49 @@ internal partial class Program
 
         if (snapAppsReleases == null)
         {
-            if (!logger.Prompt("y|yes", "Unable to find a previous release in any of your NuGet package sources. " +
-                                        "Is this the first time you are publishing this application? " +
-                                        "NB! The package may not yet be visible to due to upstream caching. [y/n]", infoOnly: packOptions.YesToAllPrompts)
+            if (!nupkgNotFound)
+            {
+                return 1;
+            }
+            
+            if (!logger.Prompt("y|yes", "Unable to locate a prior release in your NuGet package sources. Are you publishing this application for the first time? " +
+                                        "Note: The package might not be immediately visible due to upstream caching. " +
+                                        "Please enter 'y' for yes or 'n' for no [y|n].", infoOnly: packOptions.YesToAllPrompts)
             )
             {
                 return 1;
             }
 
-            snapAppsReleases = new SnapAppsReleases();
+            snapAppsReleases = new SnapAppsReleases
+            {
+                Bsdiffv2 = true
+            };
         }
         else
         {
             logger.Info($"Downloaded releases nupkg. Current version: {snapAppsReleases.Version}.");
+            
+            if (!snapAppsReleases.Bsdiffv2)
+            {
+                snapAppsReleases.Bsdiffv2 = true;
+                if (!packOptions.Gc && snapAppsReleases.HasReleases(snapApp))
+                {
+                    packOptions.Gc = true;
+                    if (!logger.Prompt("y|yes",
+                            "Bsdiff v2 activated. " +
+                            "All prior releases for this app will be removed (server nupkgs remain intact). " +
+                            "A new full release will be generated. " +
+                            "Would you like to proceed? (y|n)", infoOnly: packOptions.YesToAllPrompts))
+                    {
+                        return 1;
+                    }
+                }
+            }
 
             if (packOptions.Gc)
             {
                 var releasesRemoved = snapAppsReleases.Gc(snapApp);
-                logger.Info($"Garbage collected (removed) {releasesRemoved} releases.");
+                logger.Info($"Removed {releasesRemoved} releases through garbage collection (GC). Note: Nupkgs will not be deleted from the server.");
             }
 
             var snapAppChannelReleases = snapAppsReleases.GetReleases(snapApp, snapAppChannel);
@@ -185,7 +209,7 @@ internal partial class Program
         var pushPackages = new List<string>();
 
         var (fullNupkgMemoryStream, fullSnapApp, fullSnapRelease, deltaNupkgMemorystream, deltaSnapApp, deltaSnapRelease) =
-            await snapPack.BuildPackageAsync(snapPackageDetails, coreRunLib, cancellationToken);
+            await snapPack.BuildPackageAsync(snapPackageDetails, libPal, cancellationToken);
 
         var fullNupkgAbsolutePath = filesystem.PathCombine(packagesDirectory, fullSnapRelease.Filename);
 
@@ -283,7 +307,7 @@ internal partial class Program
                     {
                         logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                        var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib, 
+                        var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal, 
                             installersDirectory, fullNupkgAbsolutePath, releasesNupkgAbsolutePath,
                             true, cancellationToken);
 
@@ -310,7 +334,7 @@ internal partial class Program
                     {
                         logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                        var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib, 
+                        var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal, 
                             installersDirectory, null, releasesNupkgAbsolutePath,
                             false, cancellationToken);
 
@@ -410,7 +434,7 @@ internal partial class Program
         logger.Info($"Pushing packages to default channel: {snapChannel.Name}. Feed: {snapChannel.PushFeed.Name}.");
 
         await packages.ForEachAsync(async packageAbsolutePath =>
-            await PushPackageAsync(nugetService, filesystem, distributedMutex,
+            await PushPackageAsync(packOptions.ApiKey, nugetService, filesystem, distributedMutex,
                 nugetSources, pushFeedPackageSource, snapChannel, packageAbsolutePath, logger, cancellationToken), pushDegreeOfParallelism);
 
         logger.Info($"Successfully pushed {packages.Count} packages in {stopwatch.Elapsed.TotalSeconds:F1}s.");

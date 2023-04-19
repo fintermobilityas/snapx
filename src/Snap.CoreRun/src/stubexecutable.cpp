@@ -2,9 +2,8 @@
 #include "vendor/semver/semver200.h"
 
 #include <string>
-#include <iostream>
 
-int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_show)
+int snap::stubexecutable::run(std::vector<std::string> arguments, const std::map<std::string, std::string>& environment_variables, const int cmd_show)
 {
     auto exit_code = 1;
     std::string executable_full_path;
@@ -38,6 +37,14 @@ int snap::stubexecutable::run(std::vector<std::string> arguments, const int cmd_
          << ". Arguments(" << std::to_string(argc) << "): "
          << this_exe::build_argv_str(argc, argv);
 
+    for(const auto &[name, value] : environment_variables) {
+        if(!pal_env_set(name.c_str(), value.c_str())) {
+          LOGE << "Failed to set environment variable: " << name << "=" << value;
+        } else {
+          LOGI << "Set environment variable: " << name << "=" << value;
+        }
+    }
+
     pal_pid_t process_pid;
     if (pal_process_daemonize(executable_full_path.c_str(), app_dir_str.c_str(), static_cast<int>(argc), argv, cmd_show, &process_pid))
     {
@@ -57,7 +64,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     if (!pal_process_get_cwd(cwd.get()))
     {
         LOGE << "Failed to get current working directory";
-        return std::string();
+        return {};
     }
 
     std::string app_dir(*cwd);
@@ -67,7 +74,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     if (!pal_fs_list_directories(app_dir.c_str(), nullptr, nullptr, paths_out.get(), &paths_out_len))
     {
         LOGE << "Failed to list directories inside app dir: " << app_dir;
-        return std::string();
+        return {};
     }
 
     std::vector<char*> paths(*paths_out, *paths_out + paths_out_len);
@@ -75,7 +82,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     if (paths.empty())
     {
         LOGE << "Could not find any directories in: " << app_dir;
-        return std::string();
+        return {};
     }
 
     std::string most_recent_semver_str("0.0.0");
@@ -122,7 +129,7 @@ std::string snap::stubexecutable::find_current_app_dir()
 
     if(!app_dir_found)
     {
-        return std::string();
+        return {};
     }
 
     const auto app_dir_version_str = "app-" + most_recent_semver_str;
@@ -131,7 +138,7 @@ std::string snap::stubexecutable::find_current_app_dir()
     if (!pal_path_combine(app_dir.c_str(), app_dir_version_str.c_str(), final_dir.get()))
     {
         LOGE << "Error! Unable to build final dir. App dir: " << app_dir << ". App dir version: " << app_dir_version_str;
-        return std::string();
+        return {};
     }
 
     std::string final_dir_str(*final_dir);

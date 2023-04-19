@@ -1,12 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
-using Snap.Core;
 using Snap.Extensions;
 
 namespace Snap;
 
-internal interface ICoreRunLib : IDisposable
+internal interface ILibPal : IDisposable
 {
     bool Chmod(string filename, int mode);
     bool IsElevated();
@@ -14,11 +14,12 @@ internal interface ICoreRunLib : IDisposable
     bool FileExists(string filename);
 }
 
-internal sealed class CoreRunLib : ICoreRunLib
+[SuppressMessage("ReSharper", "InconsistentNaming")]
+internal sealed class LibPal : ILibPal
 {
     IntPtr _libPtr;
     readonly OSPlatform _osPlatform;
-
+    
     // generic
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, SetLastError = true, CharSet = CharSet.Unicode)]
     delegate int pal_is_elevated_delegate();
@@ -44,11 +45,17 @@ internal sealed class CoreRunLib : ICoreRunLib
     );
     readonly Delegate<pal_fs_file_exists_delegate> pal_fs_file_exists;
 
-    public CoreRunLib([JetBrains.Annotations.NotNull] ISnapFilesystem filesystem, OSPlatform osPlatform, [JetBrains.Annotations.NotNull] string workingDirectory)
+    public LibPal() 
     {
-        if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
-        if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
-
+        OSPlatform osPlatform = default;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            osPlatform = OSPlatform.Linux;
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            osPlatform = OSPlatform.Windows;
+        }
+        
         if (!osPlatform.IsSupportedOsVersion())
         {
             throw new PlatformNotSupportedException();
@@ -56,13 +63,13 @@ internal sealed class CoreRunLib : ICoreRunLib
 
         _osPlatform = osPlatform;
 
-        var filename = filesystem.PathCombine(workingDirectory, "libcorerun-");
+        var rid = _osPlatform.BuildRid();
+        var filename = Path.Combine(AppContext.BaseDirectory, "runtimes", rid, "native", "SnapxLibPal-");
 
 #if SNAP_BOOTSTRAP
             return;
 #endif
 
-        var rid = osPlatform.BuildRid();
         if (osPlatform == OSPlatform.Windows)
         {
             filename += $"{rid}.dll";
@@ -76,7 +83,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
         if (_libPtr == IntPtr.Zero)
         {
-            throw new FileNotFoundException($"Failed to load corerun: {filename}. " +
+            throw new FileNotFoundException($"Failed to load: {filename}. " +
                                             $"OS: {osPlatform}. " +
                                             $"64-bit OS: {Environment.Is64BitOperatingSystem}. " +
                                             $"Last error: {Marshal.GetLastWin32Error()}.");
@@ -93,7 +100,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
     public bool Chmod([JetBrains.Annotations.NotNull] string filename, int mode)
     {
-        if (filename == null) throw new ArgumentNullException(nameof(filename));
+        ArgumentNullException.ThrowIfNull(filename);
         pal_fs_chmod.ThrowIfDangling();
         return pal_fs_chmod.Invoke(filename, mode) == 1;
     }
@@ -106,8 +113,8 @@ internal sealed class CoreRunLib : ICoreRunLib
 
     public bool SetIcon([JetBrains.Annotations.NotNull] string exeAbsolutePath, [JetBrains.Annotations.NotNull] string iconAbsolutePath)
     {
-        if (exeAbsolutePath == null) throw new ArgumentNullException(nameof(exeAbsolutePath));
-        if (iconAbsolutePath == null) throw new ArgumentNullException(nameof(iconAbsolutePath));
+        ArgumentNullException.ThrowIfNull(exeAbsolutePath);
+        ArgumentNullException.ThrowIfNull(iconAbsolutePath);
         pal_set_icon.ThrowIfDangling();
         if (!FileExists(exeAbsolutePath))
         {
@@ -122,11 +129,11 @@ internal sealed class CoreRunLib : ICoreRunLib
 
     public bool FileExists([JetBrains.Annotations.NotNull] string filename)
     {
-        if (filename == null) throw new ArgumentNullException(nameof(filename));
+        ArgumentNullException.ThrowIfNull(filename);
         pal_fs_file_exists.ThrowIfDangling();
         return pal_fs_file_exists.Invoke(filename) == 1;
     }
-
+    
     public void Dispose()
     {
         if (_libPtr == IntPtr.Zero)
@@ -174,15 +181,17 @@ internal sealed class CoreRunLib : ICoreRunLib
         public static extern bool dlclose(IntPtr hModule);
     }
 
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
     internal static class NativeMethodsUnix
     {
         public const int libdl_RTLD_LOCAL = 1; 
         public const int libdl_RTLD_NOW = 2; 
 
         // https://github.com/tmds/Tmds.LibC/blob/f336956facd8f6a0f8dcfa1c652828237dc032fb/src/Sources/linux.common/types.cs#L162
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
         public readonly struct pid_t : IEquatable<pid_t>
         {
-            internal int Value { get; }
+            int Value { get; }
 
             pid_t(int value) => Value = value;
 
@@ -195,7 +204,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
             public override bool Equals(object obj)
             {
-                if (obj != null && obj is pid_t v)
+                if (obj is pid_t v)
                 {
                     return this == v;
                 }
@@ -220,6 +229,7 @@ internal sealed class CoreRunLib : ICoreRunLib
         public static extern int kill (pid_t pid, int sig);
     }
 
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
     sealed class Delegate<T> where T: Delegate
     {
         public T Invoke { get; }
@@ -236,7 +246,7 @@ internal sealed class CoreRunLib : ICoreRunLib
 
             if (Symbol.EndsWith(delegatePrefix, StringComparison.OrdinalIgnoreCase))
             {
-                Symbol = Symbol.Substring(0, Symbol.Length - delegatePrefix.Length);
+                Symbol = Symbol[..^delegatePrefix.Length];
             }
 
             if (!osPlatform.IsSupportedOsVersion())

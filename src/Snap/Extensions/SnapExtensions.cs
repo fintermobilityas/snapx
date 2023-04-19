@@ -9,6 +9,7 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
+using Snap.AnyOS;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -24,6 +25,154 @@ internal static class SnapExtensions
     static readonly Regex NetAppRegex = new("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
     static readonly Regex ExpansionRegex = new("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
+    public static (FileStream fileStream, string filename) GetStubExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        string stubExeRealFilename;
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            stubExeRealFilename = $"SnapxStub-{snapApp.Target.Rid}.exe";
+        } else if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            stubExeRealFilename = $"SnapxStub-{snapApp.Target.Rid}.bin";
+        }
+        else
+        {
+            throw new PlatformNotSupportedException();
+        }
+        
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, stubExeRealFilename));
+        return (fileStream, snapApp.GetStubExeFilename());
+    }
+    
+    public static FileStream GetWarpPackerExeStream([NotNull] this string hostRid, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(hostRid);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", hostRid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var warpPackerExeFilename = hostRid.GetWarpPackerFilename();
+        return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, warpPackerExeFilename));
+    }
+    
+    public static FileStream GetInstallerZipStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var installerZipFilename = $"SnapxInstaller-{snapApp.Target.Rid}.zip";
+        return File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, installerZipFilename));
+    }
+    
+    public static (FileStream fileStream, string filename) GetLibPalStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var libPalFilename = snapApp.GetLibPalFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, libPalFilename));
+        return (fileStream, libPalFilename);
+    }
+    
+    public static (FileStream fileStream, string filename) GetLibBsdiffStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        ArgumentNullException.ThrowIfNull(snapFilesystem);
+        ArgumentNullException.ThrowIfNull(workingDirectory);
+
+        var nativeDirectory = snapFilesystem.PathCombine(workingDirectory, "runtimes", snapApp.Target.Rid, "native");
+        snapFilesystem.DirectoryExistsThrowIfNotExists(nativeDirectory);
+
+        var libBsdiffFilename = snapApp.GetLibBsdiffFilename();
+        var fileStream = File.OpenRead(snapFilesystem.PathCombine(nativeDirectory, libBsdiffFilename));
+        return (fileStream, libBsdiffFilename);
+    }
+    
+    internal static string GetStubExeFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+        
+        var assemblyName = snapApp.MainExe ?? snapApp.Id;
+        
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"{assemblyName}.exe";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"{assemblyName}";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+
+    internal static string GetWarpPackerFilename(this string rid)
+    {
+        switch (rid)
+        {
+            case "win-x86":
+            case "win-x64":
+                return $"SnapxWarpPacker-{rid}.exe";
+            case "linux-x64":
+            case "linux-arm64":
+                return $"SnapxWarpPacker-{rid}.bin";
+            default:
+                throw new NotSupportedException($"Unsupported warp packer rid: {rid}.");
+        }
+    }
+    
+    internal static string GetLibPalFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"SnapxLibPal-{snapApp.Target.Rid}.dll";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"SnapxLibPal-{snapApp.Target.Rid}.so";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
+    internal static string GetLibBsdiffFilename(this SnapApp snapApp)
+    {
+        ArgumentNullException.ThrowIfNull(snapApp);
+
+        if (snapApp.Target.Os == OSPlatform.Windows)
+        {
+            return $"SnapxLibBsdiff-{snapApp.Target.Rid}.dll";
+        }
+
+        if (snapApp.Target.Os == OSPlatform.Linux)
+        {
+            return $"SnapxLibBsdiff-{snapApp.Target.Rid}.so";
+        }
+
+        throw new PlatformNotSupportedException();
+    }
+    
     internal static string BuildRid(this OSPlatform osPlatform)
     {
 #if SNAPX_ALLOW_RID_OVERRIDE
@@ -688,7 +837,7 @@ internal static class SnapExtensions
         return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
     }
 
-    internal static void GetCoreRunExecutableFullPath([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string baseDirectory, out string coreRunFullPath)
+    internal static void GetStubExeFullPath([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string baseDirectory, out string stubExeFullPath)
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
         if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
@@ -700,11 +849,11 @@ internal static class SnapExtensions
             exeName += ".exe";
         }
             
-        coreRunFullPath = snapFilesystem.PathCombine(baseDirectory, exeName);
+        stubExeFullPath = snapFilesystem.PathCombine(baseDirectory, exeName);
     }
     
-    internal static void GetCoreRunExecutableFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem,
-        [NotNull] ISnapAppReader snapAppReader, out string coreRunFullPath)
+    internal static void GetStubExeFullPath([NotNull] this Assembly assembly, [NotNull] ISnapFilesystem snapFilesystem,
+        [NotNull] ISnapAppReader snapAppReader, out string stubExeFullPath)
     {
         if (assembly == null) throw new ArgumentNullException(nameof(assembly));
         if (snapFilesystem == null) throw new ArgumentNullException(nameof(snapFilesystem));
@@ -714,7 +863,7 @@ internal static class SnapExtensions
         var snapApp = assemblyLocationDirectory.GetSnapAppFromDirectory(snapFilesystem, snapAppReader);
         var parentDirectory = snapFilesystem.DirectoryGetParent(assemblyLocationDirectory);
 
-        snapApp.GetCoreRunExecutableFullPath(snapFilesystem, parentDirectory, out coreRunFullPath);
+        snapApp.GetStubExeFullPath(snapFilesystem, parentDirectory, out stubExeFullPath);
     }
 
     internal static bool IsSupportedOsVersion(this OSPlatform oSPlatform)

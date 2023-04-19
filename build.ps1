@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "21.0",
+	[string] $DockerVersion = "22.0",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]
@@ -137,7 +137,7 @@ function Invoke-Install-Snapx
     Invoke-Command-Colored dotnet @(
         "build"
         "/p:Version=$Version"
-        "/p:SnapRid=pack"
+        "/p:SnapRid=do-not-pack-content-files" 
         "/p:GeneratePackageOnBuild=true"
         "--configuration $Configuration"
         $SnapCsProjPath

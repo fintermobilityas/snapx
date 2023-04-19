@@ -81,13 +81,13 @@ internal interface ISnapOsWindows : ISnapOsImpl
 
 internal sealed class SnapOsShortcutDescription
 {
-    public SnapApp SnapApp { get; set; }
-    public NuspecReader NuspecReader { get; set; }
-    public string ExeAbsolutePath { get; set; }
-    public string ExeProgramArguments { get; set; }
-    public string IconAbsolutePath { get; set; }
-    public SnapShortcutLocation ShortcutLocations { get; set; }
-    public bool UpdateOnly { get; set; }
+    public SnapApp SnapApp { get; init; }
+    public NuspecReader NuspecReader { get; init; }
+    public string ExeAbsolutePath { get; init; }
+    public string IconAbsolutePath { get; init; }
+    public SnapShortcutLocation ShortcutLocations { get; init; }
+    public bool UpdateOnly { get; init; }
+    public Dictionary<string, string> Environment { get; init; } = new();
 }
 
 internal sealed class SnapOsWindows : ISnapOsWindows
@@ -203,9 +203,13 @@ internal sealed class SnapOsWindows : ISnapOsWindows
                     Description = packageDescription
                 };
 
-                if (!string.IsNullOrWhiteSpace(shortcutDescription.ExeProgramArguments))
+                var arguments = shortcutDescription.Environment
+                    .Select((name, value) => @$"--corerun-environment-var {name}=^""{value}^""")
+                    .ToList();
+
+                if (arguments.Count > 0)
                 {
-                    shellLink.Arguments += $" -a \"{shortcutDescription.ExeProgramArguments}\"";
+                    shellLink.Arguments += $" -a \"{string.Join(" ", arguments)}\"";
                 }
 
                 var appUserModelId = $"com.snap.{packageId.Replace(" ", "")}.{exeName.Replace(".exe", string.Empty).Replace(" ", string.Empty)}";

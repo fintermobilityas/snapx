@@ -24,8 +24,8 @@ internal partial class Program
         [NotNull] ISnapAppReader snapAppReader, [NotNull] ISnapAppWriter snapAppWriter, [NotNull] INuGetPackageSources nuGetPackageSources, 
         [NotNull] INugetService nugetService, [NotNull] IDistributedMutexClient distributedMutexClient,
         [NotNull] ISnapPackageManager snapPackageManager, [NotNull] ISnapPack snapPack, [NotNull] ISnapOsSpecialFolders specialFolders,
-        [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs,
-        [NotNull] ISnapxEmbeddedResources snapxEmbeddedResources, [NotNull] ICoreRunLib coreRunLib,
+        [NotNull] ISnapNetworkTimeProvider snapNetworkTimeProvider, [NotNull] ISnapExtractor snapExtractor, [NotNull] ISnapOs snapOs, 
+        [NotNull] ILibPal libPal,
         [NotNull] ILog logger, [NotNull] string workingDirectory, CancellationToken cancellationToken)
     {
         if (options == null) throw new ArgumentNullException(nameof(options));
@@ -41,8 +41,7 @@ internal partial class Program
         if (snapNetworkTimeProvider == null) throw new ArgumentNullException(nameof(snapNetworkTimeProvider));
         if (snapExtractor == null) throw new ArgumentNullException(nameof(snapExtractor));
         if (snapOs == null) throw new ArgumentNullException(nameof(snapOs));
-        if (snapxEmbeddedResources == null) throw new ArgumentNullException(nameof(snapxEmbeddedResources));
-        if (coreRunLib == null) throw new ArgumentNullException(nameof(coreRunLib));
+        if (libPal == null) throw new ArgumentNullException(nameof(libPal));
         if (logger == null) throw new ArgumentNullException(nameof(logger));
         if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
         if (options == null) throw new ArgumentNullException(nameof(options));
@@ -110,7 +109,7 @@ internal partial class Program
         logger.Info('-'.Repeat(TerminalBufferWidth));
 
         logger.Info("Downloading releases nupkg.");
-        var (snapAppsReleases, _, releasesMemoryStream) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
+        var (snapAppsReleases, _, releasesMemoryStream, _) = await snapPackageManager.GetSnapsReleasesAsync(snapApp, logger, cancellationToken);
         if (releasesMemoryStream != null)
         {
             await releasesMemoryStream.DisposeAsync();
@@ -208,7 +207,7 @@ internal partial class Program
             
         var restoreSuccess = 0 == await CommandRestoreAsync(
             restoreOptions, filesystem, snapAppReader, snapAppWriter, nuGetPackageSources,
-            snapPackageManager, snapOs, snapxEmbeddedResources, coreRunLib, snapPack,
+            snapPackageManager, snapOs, libPal, snapPack,
             logger, workingDirectory, cancellationToken
         );
 
@@ -235,8 +234,7 @@ internal partial class Program
                 {
                     logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                    var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs,
-                        snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                    var (installerOfflineSuccess, canContinueIfError, installerOfflineExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, fullNupkgAbsolutePath, releasesPackageAbsolutePath,
                         true, cancellationToken);
 
@@ -260,7 +258,7 @@ internal partial class Program
                 {
                     logger.Info('-'.Repeat(TerminalBufferWidth));
 
-                    var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapxEmbeddedResources, snapAppWriter, snapAppInstaller, coreRunLib,
+                    var (installerWebSuccess, canContinueIfError, installerWebExeAbsolutePath) = await BuildInstallerAsync(logger, snapOs, snapAppWriter, snapAppInstaller, libPal,
                         installersDirectory, null, releasesPackageAbsolutePath,
                         false, cancellationToken);
 
@@ -293,7 +291,7 @@ internal partial class Program
         {
             logger.Info($"Uploading releases nupkg to feed: {packageSource.Name}.");
 
-            await PushPackageAsync(nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
+            await PushPackageAsync(options.ApiKey, nugetService, filesystem, distributedMutex, nuGetPackageSources, packageSource,
                 channel, releasesPackageAbsolutePath, logger, cancellationToken);
 
             var skipInitialBlock = packageSource.IsLocalOrUncPath();

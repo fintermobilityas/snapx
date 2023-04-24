@@ -221,7 +221,7 @@ public sealed class SnapUpdateManager : ISnapUpdateManager
         var sw = new Stopwatch();
         sw.Restart();
 
-        var packageSource = await _snapPackageManager.GetPackageSourceAsync(_snapApp, _logger, ApplicationId);
+        var packageSource = await _snapPackageManager.GetPackageSourceAsync(_snapApp, _logger, ApplicationId, cancellationToken);
         if (packageSource == null)
         {
             _logger.Error("Unknown error resolving update feed.");

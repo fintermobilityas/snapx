@@ -118,7 +118,7 @@ internal partial class Program
 
         logger.Info('-'.Repeat(TerminalBufferWidth));
 
-        var updateFeedPackageSource = await snapPackageManager.GetPackageSourceAsync(snapApp);
+        var updateFeedPackageSource = await snapPackageManager.GetPackageSourceAsync(snapApp, cancellationToken: cancellationToken);
 
         logger.Info("Downloading releases nupkg.");
 

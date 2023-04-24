@@ -73,7 +73,8 @@ public enum SnapPackageManagerRestoreType
 
 internal interface ISnapPackageManager
 {
-    Task<PackageSource> GetPackageSourceAsync(SnapApp snapApp, ILog logger = null, string applicationId = null);
+    Task<PackageSource> GetPackageSourceAsync(SnapApp snapApp, ILog logger = null, string applicationId = null,
+        CancellationToken cancellationToken = default);
 
     Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream, bool nupkgNotFound)> GetSnapsReleasesAsync(
         [NotNull] SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null);
@@ -175,12 +176,11 @@ internal sealed class SnapPackageManager : ISnapPackageManager
         _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
     }
 
-    public async Task<PackageSource> GetPackageSourceAsync(
-        [NotNull] SnapApp snapApp, 
-        ILog logger = null, 
-        string applicationId = null)
+    public async Task<PackageSource> GetPackageSourceAsync([NotNull] SnapApp snapApp,
+        ILog logger = null,
+        string applicationId = null, CancellationToken cancellationToken = default)
     {
-        if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+        ArgumentNullException.ThrowIfNull(snapApp);
 
         try
         {
@@ -198,15 +198,15 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                         { "X-Snapx-Application-Version", snapApp.Version?.ToNormalizedString() }
                     };
 
-                    await using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers);
+                    await using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers, cancellationToken);
                     stream.Seek(0, SeekOrigin.Begin);
 
-                    await using var jsonStream = await stream.ReadToEndAsync();
+                    await using var jsonStream = await stream.ReadToEndAsync(cancellationToken: cancellationToken);
 
                     var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync(jsonStream, new SnapPackageManagerNugetHttpFeedContext(new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
-                    }).SnapPackageManagerNugetHttpFeed);
+                    }).SnapPackageManagerNugetHttpFeed, cancellationToken);
 
                     if (packageManagerNugetHttp == null)
                     {
@@ -247,13 +247,13 @@ internal sealed class SnapPackageManager : ISnapPackageManager
     public async Task<(SnapAppsReleases snapAppsReleases, PackageSource packageSource, MemoryStream releasesMemoryStream, bool nupkgNotFound)> GetSnapsReleasesAsync(
             SnapApp snapApp, ILog logger = null, CancellationToken cancellationToken = default, string applicationId = null)
     {
-        if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
+        ArgumentNullException.ThrowIfNull(snapApp);
 
         var packageId = snapApp.BuildNugetReleasesUpstreamId();
 
         try
         {
-            var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId);
+            var packageSource = await GetPackageSourceAsync(snapApp, logger, applicationId, cancellationToken);
 
             var snapReleasesDownloadResult =
                 await _nugetService.DownloadLatestAsync(packageId, packageSource, false, true, cancellationToken);

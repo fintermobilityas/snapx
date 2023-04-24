@@ -32,7 +32,7 @@ public sealed class SnapHttpClient : ISnapHttpClient
                 httpRequestMessage.Headers.Add(pair.Key, pair.Value);
             }
         }
-        var httpResponseMessage = await SendAsync(httpRequestMessage, cancellationToken);
+        using var httpResponseMessage = await SendAsync(httpRequestMessage, cancellationToken);
         return await httpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
     }
 

@@ -69,7 +69,7 @@ internal partial class Program
                 continue;
             }
 
-            var packageSource = await packageManager.GetPackageSourceAsync(snapApp, logger);
+            var packageSource = await packageManager.GetPackageSourceAsync(snapApp, logger, cancellationToken: cancellationToken);
             snapAppsesPackageSources.Add((snapApp, snapApp.BuildNugetUpstreamId(), packageSource));
 
             var table = tables.SingleOrDefault(x => x.snapApp.Id == snapApp.Id);

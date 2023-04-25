@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Moq;
-using Newtonsoft.Json;
 using NuGet.Configuration;
 using NuGet.Versioning;
 using Snap.AnyOS;
@@ -24,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Snap.Tests.Core;
 
-public class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
+public sealed class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixturePackaging>, IClassFixture<BaseFixtureNuget>
 {
     readonly BaseFixture _baseFixture;
     readonly BaseFixturePackaging _baseFixturePackaging;
@@ -80,26 +82,29 @@ public class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassFixture<
 
         const string applicationId = "my-application-id";
 
-        _snapHttpClientMock.Setup(x => x.GetStreamAsync(It.IsAny<Uri>(), It.IsAny<Dictionary<string, string>>())).ReturnsAsync(() =>
+        _snapHttpClientMock.Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>())).ReturnsAsync(() =>
         {
-            var jsonStr = JsonConvert.SerializeObject(snapPackageManagerHttpFeed);
+            var jsonStr = JsonSerializer.Serialize(snapPackageManagerHttpFeed);
             var jsonBytes = Encoding.UTF8.GetBytes(jsonStr);
-            return new MemoryStream(jsonBytes);
-        }).Callback((Uri uri, IDictionary<string, string> headers) =>
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new MemoryStream(jsonBytes))
+            };
+        }).Callback((HttpRequestMessage httpRequestMessage, CancellationToken _) =>
         {
-            Assert.Equal(uri, snapPackageManagerHttpFeed.Source);
-            Assert.NotNull(headers);
-            Assert.Equal(4, headers.Count);
-            Assert.Collection(headers, pair => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
-            Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
-            Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Id", applicationId));
+            Assert.Equal(snapPackageManagerHttpFeed.Source, httpRequestMessage.RequestUri);
+            Assert.NotNull(httpRequestMessage.Headers);
+            Assert.Equal(4, httpRequestMessage.Headers.Count());
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Application-Id", applicationId));
             if (versionIsNull)
             {
-                Assert.Collection(headers, pair => Assert.Null("X-Snapx-Application-Version"));
+                Assert.Collection(httpRequestMessage.Headers, _ => Assert.Null("X-Snapx-Application-Version"));
             }
             else
             {
-                Assert.Collection(headers, pair => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
+                Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
             }
         });
 
@@ -110,9 +115,9 @@ public class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassFixture<
         Assert.Null(snapReleases);
             
         _snapHttpClientMock.Verify(x => 
-            x.GetStreamAsync(
-                It.Is<Uri>(v => v == snapChannel.UpdateFeed.Source), 
-                It.Is<Dictionary<string, string>>(v => v.Count == 4)), Times.Once);
+            x.SendAsync(
+                It.Is<HttpRequestMessage>(v => v.RequestUri == snapChannel.UpdateFeed.Source && v.Headers.Count() == 4), 
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [InlineData("1.0.0")]

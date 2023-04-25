@@ -4,7 +4,7 @@ using Avalonia.Input;
 
 namespace Snap.Installer.Windows;
 
-internal sealed class CustomChromeWindow : Window
+internal class CustomChromeWindow : Window
 {
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

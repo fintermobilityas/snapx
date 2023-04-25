@@ -198,7 +198,10 @@ internal sealed class SnapPackageManager : ISnapPackageManager
                     
                     await using var stream = await httpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 
-                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream, cancellationToken: cancellationToken);
+                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }, cancellationToken: cancellationToken);
 
                     if (packageManagerNugetHttp == null)
                     {

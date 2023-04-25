@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -80,26 +82,29 @@ public sealed class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassF
 
         const string applicationId = "my-application-id";
 
-        _snapHttpClientMock.Setup(x => x.GetStreamAsync(It.IsAny<Uri>(), It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>())).ReturnsAsync(() =>
+        _snapHttpClientMock.Setup(x => x.SendAsync(It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>())).ReturnsAsync(() =>
         {
             var jsonStr = JsonSerializer.Serialize(snapPackageManagerHttpFeed);
             var jsonBytes = Encoding.UTF8.GetBytes(jsonStr);
-            return new MemoryStream(jsonBytes);
-        }).Callback((Uri uri, IDictionary<string, string> headers, CancellationToken _) =>
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new MemoryStream(jsonBytes))
+            };
+        }).Callback((HttpRequestMessage httpRequestMessage, CancellationToken _) =>
         {
-            Assert.Equal(snapPackageManagerHttpFeed.Source, uri);
-            Assert.NotNull(headers);
-            Assert.Equal(4, headers.Count);
-            Assert.Collection(headers, _ => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
-            Assert.Collection(headers, _ => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
-            Assert.Collection(headers, _ => Assert.Equal("X-Snapx-Application-Id", applicationId));
+            Assert.Equal(snapPackageManagerHttpFeed.Source, httpRequestMessage.RequestUri);
+            Assert.NotNull(httpRequestMessage.Headers);
+            Assert.Equal(4, httpRequestMessage.Headers.Count());
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-App-Id", snapApp.Id));
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Channel", snapChannel.Name));
+            Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Application-Id", applicationId));
             if (versionIsNull)
             {
-                Assert.Collection(headers, _ => Assert.Null("X-Snapx-Application-Version"));
+                Assert.Collection(httpRequestMessage.Headers, _ => Assert.Null("X-Snapx-Application-Version"));
             }
             else
             {
-                Assert.Collection(headers, _ => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
+                Assert.Collection(httpRequestMessage.Headers, _ => Assert.Equal("X-Snapx-Application-Version", snapApp.Version.ToNormalizedString()));
             }
         });
 
@@ -110,9 +115,8 @@ public sealed class SnapUpdateManagerTests : IClassFixture<BaseFixture>, IClassF
         Assert.Null(snapReleases);
             
         _snapHttpClientMock.Verify(x => 
-            x.GetStreamAsync(
-                It.Is<Uri>(v => v == snapChannel.UpdateFeed.Source), 
-                It.Is<Dictionary<string, string>>(v => v.Count == 4), 
+            x.SendAsync(
+                It.Is<HttpRequestMessage>(v => v.RequestUri == snapChannel.UpdateFeed.Source && v.Headers.Count() == 4), 
                 It.IsAny<CancellationToken>()), Times.Once);
     }
 

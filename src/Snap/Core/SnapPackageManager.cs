@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -85,12 +84,6 @@ internal interface ISnapPackageManager
         ISnapPackageManagerProgressSource progressSource = null, 
         ILog logger = null, CancellationToken cancellationToken = default, 
         int checksumConcurrency = 1, int downloadConcurrency = 2, int restoreConcurrency = 1);
-}
-
-[JsonSerializable(typeof(SnapPackageManagerNugetHttpFeed))]
-internal partial class SnapPackageManagerNugetHttpFeedContext : JsonSerializerContext
-{
-   
 }
 
 internal sealed class SnapPackageManagerNugetHttpFeed
@@ -190,27 +183,26 @@ internal sealed class SnapPackageManager : ISnapPackageManager
             {
                 case SnapHttpFeed feed:
                 {
-                    var headers = new Dictionary<string, string>
+                    using var httpResponseMessage = await _snapHttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Get, feed.Source)
                     {
-                        { "X-Snapx-App-Id", snapApp.Id},
-                        { "X-Snapx-Channel", channel.Name },
-                        { "X-Snapx-Application-Id", applicationId },
-                        { "X-Snapx-Application-Version", snapApp.Version?.ToNormalizedString() }
-                    };
+                        Headers =
+                        {
+                            { "X-Snapx-App-Id", snapApp.Id},
+                            { "X-Snapx-Channel", channel.Name },
+                            { "X-Snapx-Application-Id", applicationId },
+                            { "X-Snapx-Application-Version", snapApp.Version?.ToNormalizedString() }
+                        }
+                    }, cancellationToken);
 
-                    await using var stream = await _snapHttpClient.GetStreamAsync(feed.Source, headers, cancellationToken);
-                    stream.Seek(0, SeekOrigin.Begin);
+                    httpResponseMessage.EnsureSuccessStatusCode();
+                    
+                    await using var stream = await httpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 
-                    await using var jsonStream = await stream.ReadToEndAsync(cancellationToken: cancellationToken);
-
-                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync(jsonStream, new SnapPackageManagerNugetHttpFeedContext(new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    }).SnapPackageManagerNugetHttpFeed, cancellationToken);
+                    var packageManagerNugetHttp = await JsonSerializer.DeserializeAsync<SnapPackageManagerNugetHttpFeed>(stream, cancellationToken: cancellationToken);
 
                     if (packageManagerNugetHttp == null)
                     {
-                        throw new Exception($"Unable to deserialize nuget http feed. Url: {feed.Source}. Response length: {stream.Position}");
+                        throw new Exception($"Unable to deserialize nuget http feed. Url: {feed.Source}.");
                     }
 
                     if (packageManagerNugetHttp.Source == null)

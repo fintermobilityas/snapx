@@ -75,7 +75,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
 
     public Task SetStatusTextAsync(string text)
     {
-        return Dispatcher.UIThread.InvokeAsync(() => StatusText = text);
+        return Dispatcher.UIThread.InvokeAsync(() => StatusText = text).GetTask();
     }
 
     public Task SetErrorAsync()
@@ -83,7 +83,7 @@ internal sealed class AvaloniaMainWindowViewModel : ViewModelBase, IMainWindowVi
         return Dispatcher.UIThread.InvokeAsync(() =>
         {
             StatusTextBrush = (IImmutableBrush)Brush.Parse("#B80F0A");
-        });
+        }).GetTask();
     }
 
     public void OnInitialized()

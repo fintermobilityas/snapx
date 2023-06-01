@@ -17,6 +17,4 @@ internal class CustomChromeWindow : Window
         BeginMoveDrag(e);
         base.OnPointerPressed(e);
     }
-        
-    protected override void HandleWindowStateChanged(WindowState state) => WindowState = WindowState.Normal;
 }

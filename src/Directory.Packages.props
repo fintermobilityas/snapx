@@ -14,7 +14,7 @@
     <PackageVersion Include="Jetbrains.Annotations" Version="2022.3.1" />
     <PackageVersion Include="LibLog" Version="5.0.8" />
     <PackageVersion Include="LightInject" Version="6.6.4" />
-    <PackageVersion Include="MessagePack" Version="2.5.108" />
+    <PackageVersion Include="MessagePack" Version="2.5.124" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.5" />
     <PackageVersion Include="Moq" Version="4.18.4" />

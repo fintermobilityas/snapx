@@ -46,7 +46,7 @@ jobs:
         run: |
           dotnet tool update GitVersion.Tool --global --version ${{ env.GITVERSION_VERSION }}
           $SNAPX_VERSION = (dotnet gitversion /showVariable NugetVersionv2) | out-string
-          echo "::set-output name=SNAPX_VERSION::$SNAPX_VERSION"
+          echo "SNAPX_VERSION=$SNAPX_VERSION" >> $env:GITHUB_OUTPUT
 
   linux:
     runs-on: ${{ matrix.os }}

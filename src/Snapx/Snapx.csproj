@@ -11,7 +11,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>snapx</ToolCommandName>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <IsPackable>true</IsPackable>
         <IsTestProject>false</IsTestProject>
         <SnapxPackagePathPrefix>tools/$(TargetFramework)/any</SnapxPackagePathPrefix>

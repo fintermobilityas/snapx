@@ -16,7 +16,7 @@ param(
     [Parameter(Position = 6, ValueFromPipelineByPropertyName = $true)]
     [switch] $CIBuild,
     [Parameter(Position = 7, ValueFromPipelineByPropertyName = $true)]
-    [string] $NetCoreAppVersion = "net7.0",
+    [string] $NetCoreAppVersion = "net8.0",
     [Parameter(Position = 8, ValueFromPipelineByPropertyName = $true)]
     [string] $Version = "0.0.0",
     [Parameter(Position = 9, ValueFromPipelineByPropertyName = $true)]

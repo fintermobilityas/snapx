@@ -700,8 +700,7 @@ internal partial class Program
 
         await using var rootTempDir = snapOs.Filesystem.WithDisposableTempDirectory(installersWorkingDirectory);
 
-        bool isWarpPackerHostRidSupported;
-        string warpPackerHostRid = null;
+        string warpPackerHostRid;
         string warpPackerTargetArch;
         string installerFilename;
         string setupExtension;
@@ -727,6 +726,10 @@ internal partial class Program
                 _ => null
             };
         }
+        else
+        {
+            throw new PlatformNotSupportedException();
+        }
             
         switch (snapApp.Target.Rid)
         {
@@ -734,7 +737,6 @@ internal partial class Program
             case "win-x64":
                 installerIconSupported = true;
                 warpPackerTargetArch = snapApp.Target.Rid == "win-x86" ? "windows-x86" : "windows-x64";
-                isWarpPackerHostRidSupported = warpPackerHostRid is "win-x86" or "win-x64";
                 installerFilename = "Snap.Installer.exe";
                 changeSubSystemToWindowsGui = true;
                 setupExtension = ".exe";
@@ -748,23 +750,15 @@ internal partial class Program
                 warpPackerTargetArch = "linux-x64";
                 installerFilename = "Snap.Installer";
                 setupExtension = ".bin";
-                isWarpPackerHostRidSupported = warpPackerHostRid is "linux-x64" or "linux-arm64";
                 break;
             case "linux-arm64":
                 chmod = true;
                 warpPackerTargetArch = "linux-aarch64";
                 installerFilename = "Snap.Installer";
                 setupExtension = ".bin";
-                isWarpPackerHostRidSupported = warpPackerHostRid is "linux-x64" or "linux-arm64";
                 break;
             default:
                 throw new PlatformNotSupportedException($"Unsupported rid: {snapApp.Target.Rid}");
-        }
-            
-        if (!isWarpPackerHostRidSupported)
-        {
-            throw new NotSupportedException(
-                $"Host platform does not support building installers for rid: {snapApp.Target.Rid}. Host rid: {warpPackerHostRid}.");
         }
             
         var repackageTempDir = snapOs.Filesystem.PathCombine(rootTempDir.WorkingDirectory, "repackage");

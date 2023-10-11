@@ -14,19 +14,19 @@
     <PackageVersion Include="Jetbrains.Annotations" Version="2023.2.0" />
     <PackageVersion Include="LibLog" Version="5.0.8" />
     <PackageVersion Include="LightInject" Version="6.6.4" />
-    <PackageVersion Include="MessagePack" Version="2.5.124" />
+    <PackageVersion Include="MessagePack" Version="2.5.129" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.5" />
     <PackageVersion Include="Moq" Version="4.20.69" />
     <PackageVersion Include="NLog" Version="5.2.4" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.7.0" />
     <PackageVersion Include="NuGet.Protocol" Version="6.7.0" />
-    <PackageVersion Include="SharpCompress" Version="0.33.0" />
+    <PackageVersion Include="SharpCompress" Version="0.34.1" />
     <PackageVersion Include="System.CodeDom" Version="7.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="7.0.0" />
-    <PackageVersion Include="xunit" Version="2.5.0" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.0" />
-    <PackageVersion Include="XunitXml.TestLogger" Version="3.1.11" />
-    <PackageVersion Include="YamlDotNet" Version="13.3.1" />
+    <PackageVersion Include="xunit" Version="2.5.1" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.1" />
+    <PackageVersion Include="XunitXml.TestLogger" Version="3.1.17" />
+    <PackageVersion Include="YamlDotNet" Version="13.7.0" />
   </ItemGroup>
 </Project>

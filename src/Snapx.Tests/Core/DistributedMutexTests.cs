@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Snapx.Tests.Core;
 
-public class DistributedMutexTests 
+public sealed class DistributedMutexTests 
 {
     [Fact]
     public async Task TestAcquireAsync()
@@ -52,7 +52,7 @@ public class DistributedMutexTests
 
         await using var distributedMutex = new DistributedMutex(distributedMutexClientMock.Object, new LogProvider.NoOpLogger(), mutexName, CancellationToken.None);
 
-        var ex = await Assert.ThrowsAsync<DistributedMutexUnknownException>(async () => await distributedMutex.TryAquireAsync());
+        var ex = await Assert.ThrowsAsync<DistributedMutexUnknownException>(() => distributedMutex.TryAquireAsync());
         Assert.Equal($"Challenge should not be null or empty. Mutex: {mutexName}. Challenge: {expectedChallenge}", ex.Message);
 
         Assert.False(distributedMutex.Acquired);

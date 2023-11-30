@@ -4,10 +4,7 @@ using System.Text.Json.Serialization;
 namespace snapx.Api;
 
 [JsonSerializable(typeof(Lock))]
-public partial class LockContext : JsonSerializerContext
-{
-    
-}
+public partial class LockContext : JsonSerializerContext;
 
 public sealed record Lock
 {
@@ -18,10 +15,7 @@ public sealed record Lock
 }
 
 [JsonSerializable(typeof(Unlock))]
-public partial class UnlockContext : JsonSerializerContext
-{
-    
-}
+public partial class UnlockContext : JsonSerializerContext;
 
 public sealed record Unlock 
 {

@@ -74,10 +74,7 @@ internal class SnapOsWindowsExitSignal : ISnapOsExitSignal
 
 }
 
-internal interface ISnapOsWindows : ISnapOsImpl
-{
-
-}
+internal interface ISnapOsWindows : ISnapOsImpl;
 
 internal sealed class SnapOsShortcutDescription
 {

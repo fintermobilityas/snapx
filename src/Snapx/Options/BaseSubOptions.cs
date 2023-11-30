@@ -1,6 +1,3 @@
 ﻿namespace snapx.Options;
 
-internal abstract class BaseSubOptions
-{
-
-}
+internal abstract class BaseSubOptions;

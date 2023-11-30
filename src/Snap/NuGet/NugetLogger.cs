@@ -6,10 +6,7 @@ using LogLevel = NuGet.Common.LogLevel;
 
 namespace Snap.NuGet;
 
-internal interface ISnapNugetLogger : ILogger
-{
-
-}
+internal interface ISnapNugetLogger : ILogger;
 
 internal class NugetLogger : LoggerBase, ISnapNugetLogger
 {

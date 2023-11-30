@@ -7,9 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models;
 
-public abstract class SnapsFeed
-{
-}
+public abstract class SnapsFeed;
 
 public sealed class SnapsNugetFeed : SnapsFeed
 {

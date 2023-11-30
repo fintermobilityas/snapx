@@ -7,9 +7,7 @@ using Snap.Logging;
 
 namespace Snap.NuGet;
 
-internal interface INugetConfigFileReader
-{
-}
+internal interface INugetConfigFileReader;
 
 internal class NuGetConfigFileReader : INugetConfigFileReader
 {        

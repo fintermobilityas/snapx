@@ -230,7 +230,7 @@ internal sealed class SnapPack : ISnapPack
         {
             Id = snapAppMetadataOnly.Id,
             Version = snapAppMetadataOnly.Version,
-            Channels = new List<string> { snapAppChannelReleases.Channel.Name },
+            Channels = [snapAppChannelReleases.Channel.Name],
             Target = new SnapTarget(snapAppMetadataOnly.Target)
         };            
 

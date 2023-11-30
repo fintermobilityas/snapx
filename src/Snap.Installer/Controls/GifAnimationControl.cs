@@ -21,7 +21,7 @@ public class GifAnimationControl : Control
 
     public GifAnimationControl()
     {
-        _bitmaps = new List<Bitmap>();
+        _bitmaps = [];
     }
 
     public void AddImages([NotNull] IEnumerable<Bitmap> bitmaps)

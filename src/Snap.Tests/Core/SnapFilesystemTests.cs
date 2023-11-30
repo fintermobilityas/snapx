@@ -63,11 +63,10 @@ public class SnapFilesystemTests : IClassFixture<BaseFixture>
         var deleteThisFile = _snapFilesystem.PathCombine(rootDirectory, "deleteThisFile.txt");
         await _snapFilesystem.FileWriteUtf8StringAsync("yolo2", excludeFile, default);
 
-        await _snapFilesystem.DirectoryDeleteAsync(rootDirectory, new List<string>
-        {
+        await _snapFilesystem.DirectoryDeleteAsync(rootDirectory, [
             excludeDirectory,
             excludeFile
-        });
+        ]);
                 
         Assert.True(_snapFilesystem.DirectoryExists(rootDirectory));
         Assert.True(_snapFilesystem.DirectoryExists(excludeDirectory));

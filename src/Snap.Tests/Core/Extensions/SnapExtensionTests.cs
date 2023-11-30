@@ -106,10 +106,7 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
         var snapApp = new SnapApp
         {
             Id = channelName,
-            Channels = new List<SnapChannel>
-            {
-                channel
-            }
+            Channels = [channel]
         };
             
         Assert.Equal(isValid, snapApp.IsValidChannelName());
@@ -481,7 +478,7 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
 
         var snapApp = new SnapApp
         {
-            Channels = new List<SnapChannel> { snapChannel }
+            Channels = [snapChannel]
         };
 
         var nuGetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
@@ -540,7 +537,7 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
 
         var snapApp = new SnapApp
         {
-            Channels = new List<SnapChannel> { snapChannel }
+            Channels = [snapChannel]
         };
 
         var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
@@ -580,7 +577,7 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
 
         var snapApp = new SnapApp
         {
-            Channels = new List<SnapChannel> { snapChannel }
+            Channels = [snapChannel]
         };
 
         var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
@@ -693,27 +690,27 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
             InstallDirectoryName = "demoapp",
             SuperVisorId = Guid.NewGuid().ToString(),
             Version = new SemanticVersion(1, 0, 0),
-            Channels = new List<SnapChannel>
-            {
+            Channels =
+            [
                 testChannel,
                 stagingChannel,
                 productionChannel
-            },
+            ],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
                 Framework = "netcoreapp2.1",
                 Rid = "win-x64",
-                Shortcuts = new List<SnapShortcutLocation>
-                {
+                Shortcuts =
+                [
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.Startup
-                },
-                PersistentAssets = new List<string>
-                {
+                ],
+                PersistentAssets =
+                [
                     "subdirectory",
                     "myjsonfile.json"
-                }
+                ]
             }
         };
 
@@ -867,27 +864,27 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
             Id = "demoapp",
             SuperVisorId = Guid.NewGuid().ToString(),
             Version = new SemanticVersion(1, 0, 0),
-            Channels = new List<SnapChannel>
-            {
+            Channels =
+            [
                 testChannel,
                 stagingChannel,
                 productionChannel
-            },
+            ],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
                 Framework = "netcoreapp2.1",
                 Rid = "win-x64",
-                Shortcuts = new List<SnapShortcutLocation>
-                {
+                Shortcuts =
+                [
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.Startup
-                },
-                PersistentAssets = new List<string>
-                {
+                ],
+                PersistentAssets =
+                [
                     "subdirectory",
                     "myjsonfile.json"
-                }
+                ]
             }
         };
 
@@ -916,20 +913,17 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
             Id = "demoapp",
             SuperVisorId = Guid.NewGuid().ToString(),
             Version = new SemanticVersion(1, 0, 0),
-            Channels = new List<SnapChannel>
-            {
-                testChannel
-            },
+            Channels = [testChannel],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
                 Framework = "netcoreapp2.1",
                 Rid = "win-x64",
-                PersistentAssets = new List<string>
-                {
+                PersistentAssets =
+                [
                     "subdirectory",
                     "myjsonfile.json"
-                }
+                ]
             }
         };
 
@@ -957,11 +951,11 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
 
         var snapApp = new SnapApp
         {
-            Channels = new List<SnapChannel>
-            {
-                new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
-                new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"}
-            }
+            Channels =
+            [
+                new() { UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test" },
+                new() { UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging" }
+            ]
         };
 
         var nugetPackageSources = snapApp.BuildNugetSources(nugetTempDirectory);
@@ -992,12 +986,12 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
         {
             Id = "demoapp",
             Version = new SemanticVersion(1, 0, 0),                
-            Channels = new List<SnapChannel>
-            {
-                new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test"},
-                new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging"},
-                new() {UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgMirrorFeed, Name = "production"}
-            },
+            Channels =
+            [
+                new() { UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "test" },
+                new() { UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgFeed, Name = "staging" },
+                new() { UpdateFeed = nugetOrgFeed, PushFeed = nugetOrgMirrorFeed, Name = "production" }
+            ],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
@@ -1010,7 +1004,7 @@ public class SnapExtensionTests : IClassFixture<BaseFixture>
         {
             Schema = 1,
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-            Apps = new List<SnapsApp> { new(snapApp) },
+            Apps = [new(snapApp)],
             Generic = new SnapAppsGeneric
             {
                 Packages = "./packages"

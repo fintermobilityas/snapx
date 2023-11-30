@@ -296,7 +296,7 @@ internal partial class Program
         {
             if (!packOptions.SkipInstallers && fullOrDeltaSnapApp.Target.Installers.Any())
             {
-                var channels = fullOrDeltaSnapApp.IsGenesis ? fullOrDeltaSnapApp.Channels : new List<SnapChannel> { snapAppChannel };
+                var channels = fullOrDeltaSnapApp.IsGenesis ? fullOrDeltaSnapApp.Channels : [snapAppChannel];
 
                 foreach (var channel in channels)
                 {

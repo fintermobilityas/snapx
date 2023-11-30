@@ -110,9 +110,9 @@ public sealed class SnapsTarget
     [UsedImplicitly]
     public SnapsTarget()
     {
-        Shortcuts = new List<SnapShortcutLocation>();
-        PersistentAssets = new List<string>();
-        Installers = new List<SnapInstallerType>();
+        Shortcuts = [];
+        PersistentAssets = [];
+        Installers = [];
         Environment = new Dictionary<string, string>();
     }
 
@@ -191,7 +191,7 @@ public sealed class SnapsApp
     [UsedImplicitly]
     public SnapsApp()
     {
-        Channels = new List<string>();
+        Channels = [];
         Nuspec = new SnapsAppNuspec();
         Target = new SnapsTarget();
     }
@@ -262,8 +262,8 @@ public sealed class SnapApps
 
     public SnapApps()
     {
-        Channels = new List<SnapsChannel>();
-        Apps = new List<SnapsApp>();
+        Channels = [];
+        Apps = [];
         Generic = new SnapAppsGeneric();
     }
 
@@ -271,7 +271,7 @@ public sealed class SnapApps
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
         Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
-        Apps = new List<SnapsApp> { new(snapApp) };
+        Apps = [new(snapApp)];
         Generic = new SnapAppsGeneric();            
     }
 

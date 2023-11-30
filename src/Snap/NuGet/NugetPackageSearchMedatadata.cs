@@ -22,6 +22,6 @@ internal class NuGetPackageSearchMedatadata
         Identity = identity ?? throw new ArgumentNullException(nameof(identity));
         Source = source ?? throw new ArgumentNullException(nameof(source));
         Published = published;
-        Dependencies = dependencies?.ToList() ?? new List<PackageDependency>();
+        Dependencies = dependencies?.ToList() ?? [];
     }
 }

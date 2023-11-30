@@ -123,9 +123,9 @@ internal sealed class SnapPackageManagerRestoreSummary
     public SnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
     {
         RestoreType = restoreType;
-        ChecksumSummary = new List<SnapPackageManagerReleaseStatus>();
-        DownloadSummary = new List<SnapPackageManagerReleaseStatus>();
-        ReassembleSummary = new List<SnapPackageManagerReleaseStatus>();
+        ChecksumSummary = [];
+        DownloadSummary = [];
+        ReassembleSummary = [];
     }
 
     public void Sort()

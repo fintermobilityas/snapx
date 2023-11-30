@@ -58,7 +58,7 @@ public sealed class SnapApp
     [UsedImplicitly]
     public SnapApp()
     {
-        Channels = new List<SnapChannel>();
+        Channels = [];
     }
 
     internal SnapApp([NotNull] SnapApp app)
@@ -212,9 +212,9 @@ public sealed class SnapTarget
     [UsedImplicitly]
     public SnapTarget()
     {
-        Shortcuts = new List<SnapShortcutLocation>();
-        PersistentAssets = new List<string>();
-        Installers = new List<SnapInstallerType>();
+        Shortcuts = [];
+        PersistentAssets = [];
+        Installers = [];
         Environment = new Dictionary<string, string>();
     }
 

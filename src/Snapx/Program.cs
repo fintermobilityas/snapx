@@ -36,7 +36,7 @@ internal partial class Program
     static readonly ILog SnapRestoreLogger = LogProvider.GetLogger("Snapx.Restore");
     static readonly ILog SnapListLogger = LogProvider.GetLogger("Snapx.List");
     static readonly ILog SnapLockLogger = LogProvider.GetLogger("Snapx.Lock");
-    static readonly List<IDistributedMutex> DistributedMutexes = new();
+    static readonly List<IDistributedMutex> DistributedMutexes = [];
 
     internal static int TerminalBufferWidth
     {
@@ -382,8 +382,8 @@ internal partial class Program
             }
 
             snapApps.Generic ??= new SnapAppsGeneric();
-            snapApps.Apps ??= new List<SnapsApp>();
-            snapApps.Channels ??=new List<SnapsChannel>(); 
+            snapApps.Apps ??= [];
+            snapApps.Channels ??= []; 
 
             return snapApps;
         }
@@ -489,7 +489,7 @@ internal partial class Program
         }
 
         error:
-        return (new SnapApps(), new List<SnapApp>(), true, snapsFilename);
+        return (new SnapApps(), [], true, snapsFilename);
     }
 
     static string BuildArtifactsDirectory([NotNull] ISnapFilesystem filesystem, [NotNull] string workingDirectory, [NotNull] SnapAppsGeneric snapAppsGeneric,

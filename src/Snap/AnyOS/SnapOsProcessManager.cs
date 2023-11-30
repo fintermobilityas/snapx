@@ -21,7 +21,7 @@ internal sealed class ProcessStartInfoBuilder
 
     ProcessStartInfoBuilder()
     {
-        _arguments = new List<string>();
+        _arguments = [];
         _environment = new Dictionary<string, string>();
     }
     

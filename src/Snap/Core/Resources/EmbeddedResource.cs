@@ -50,7 +50,7 @@ internal abstract class EmbeddedResources : IEmbedResources
 
     protected internal EmbeddedResources()
     {
-        _resources = new List<EmbeddedResource>();
+        _resources = [];
     }
 
     public EmbeddedResource Find(Type typeRoot, string filename)

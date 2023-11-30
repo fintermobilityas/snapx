@@ -113,25 +113,22 @@ public class BaseFixture
             Version = new SemanticVersion(1, 0, 0),
             IsGenesis = isGenesis,
             IsFull = isGenesis,
-            Channels = new List<SnapChannel>
-            {
+            Channels =
+            [
                 testChannel,
                 stagingChannel,
                 productionChannel
-            },
+            ],
             Target = new SnapTarget
             {
                 Framework = "net8.0",
-                Shortcuts = new List<SnapShortcutLocation>
-                {
+                Shortcuts =
+                [
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.Startup,
                     SnapShortcutLocation.StartMenu
-                },
-                PersistentAssets = new List<string>
-                {
-                    "application.json"
-                },
+                ],
+                PersistentAssets = ["application.json"],
                 Environment = new Dictionary<string, string>
                 {
                     { "TEST", "123" }
@@ -152,7 +149,7 @@ public class BaseFixture
         {
             Schema = 1,
             Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList(),
-            Apps = new List<SnapsApp> { new(snapApp) },
+            Apps = [new(snapApp)],
             Generic = new SnapAppsGeneric
             {
                 Nuspecs = "snap/nuspecs",
@@ -277,7 +274,7 @@ public class BaseFixture
 
         AddVersioningAttributes(assemblyDefinition, semanticVersion);
                         
-        assemblyReferencesDefinitions ??= new List<AssemblyDefinition>();
+        assemblyReferencesDefinitions ??= [];
 
         foreach (var assemblyReferenceDefinition in assemblyReferencesDefinitions)
         {

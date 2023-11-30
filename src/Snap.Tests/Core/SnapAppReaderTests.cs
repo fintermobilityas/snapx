@@ -93,27 +93,24 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
         {
             Id = "demoapp",
             Version = new SemanticVersion(1, 0, 0),
-            Channels = new List<SnapChannel>
-            {
+            Channels =
+            [
                 testChannel,
                 stagingChannel,
                 productionChannel
-            },
+            ],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
                 Framework = "netcoreapp2.1",
                 Rid = "win7-x64",
-                Shortcuts = new List<SnapShortcutLocation>
-                {
+                Shortcuts =
+                [
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.StartMenu
-                },
-                PersistentAssets = new List<string>
-                {
-                    "application.json"
-                },
+                ],
+                PersistentAssets = ["application.json"],
                 Environment = new Dictionary<string, string>
                 {
                     { "TEST", "123" }

@@ -32,7 +32,7 @@ public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
     [UsedImplicitly]
     public SnapAppsReleases()
     {
-        Releases = new List<SnapRelease>();
+        Releases = [];
         DbVersion = 0;
     }
 

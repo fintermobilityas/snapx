@@ -204,11 +204,11 @@ public class SnapAppWriterTests : IClassFixture<BaseFixture>
     {
         var snapAppBefore = _baseFixture.BuildSnapApp();
 
-        snapAppBefore.Target.PersistentAssets = new List<string>
-        {
+        snapAppBefore.Target.PersistentAssets =
+        [
             "subdirectory/",
             "somefile.json"
-        };
+        ];
 
         using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
         var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
@@ -222,11 +222,11 @@ public class SnapAppWriterTests : IClassFixture<BaseFixture>
     {
         var snapAppBefore = _baseFixture.BuildSnapApp();
 
-        snapAppBefore.Target.Shortcuts = new List<SnapShortcutLocation>
-        {
+        snapAppBefore.Target.Shortcuts =
+        [
             SnapShortcutLocation.Desktop,
             SnapShortcutLocation.StartMenu
-        };
+        ];
 
         using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
         var snapAppAfter = assembly.GetSnapApp(_snapAppReader);

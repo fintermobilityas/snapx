@@ -60,12 +60,12 @@ public class SnapRelease
     [UsedImplicitly]
     public SnapRelease()
     {
-        Channels = new List<string>();
-        New = new List<SnapReleaseChecksum>();
-        Modified = new List<SnapReleaseChecksum>();
-        Unmodified = new List<string>();
-        Deleted = new List<string>();
-        Files = new List<SnapReleaseChecksum>();
+        Channels = [];
+        New = [];
+        Modified = [];
+        Unmodified = [];
+        Deleted = [];
+        Files = [];
     }
 
     public SnapRelease([NotNull] SnapRelease release) : this()

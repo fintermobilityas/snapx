@@ -19,7 +19,7 @@ internal sealed class SnapInstallerEmbeddedResources : EmbeddedResources, ISnapI
     {
         AddFromTypeRoot(typeof(AssetsTypeRoot), x => x.StartsWith("Snap.Installer.Assets"));
 
-        GifAnimation = new List<byte[]>();
+        GifAnimation = [];
 
         const string animatedGifNs = "AnimatedGif.";
         foreach (var image in Resources.Where(x => x.Filename.StartsWith(animatedGifNs)).OrderBy(x => x.Filename[animatedGifNs.Length..].ToIntSafe()))

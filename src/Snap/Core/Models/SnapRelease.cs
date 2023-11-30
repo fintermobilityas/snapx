@@ -14,7 +14,7 @@ namespace Snap.Core.Models;
 public class SnapRelease()
 {
     [Key(0)]
-    public string Id { get; set; }
+    public string Id { get; init; }
     [Key(1)]
     public string UpstreamId { get; set; }
     [Key(2)]
@@ -24,9 +24,9 @@ public class SnapRelease()
     public List<string> Channels { get; set; } = [];
 
     [Key(4)]
-    public SnapTarget Target { get; set; }
+    public SnapTarget Target { get; init; }
     [Key(5)]
-    public bool IsGenesis { get; set; }
+    public bool IsGenesis { get; init; }
     [Key(6)]
     public bool IsFull { get; set; }
     [YamlIgnore]

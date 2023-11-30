@@ -155,6 +155,6 @@ internal sealed class ConsoleTable
 
 public class ConsoleTableOptions
 {
-    public IEnumerable<string> Columns { get; set; } = new List<string>();
+    public IEnumerable<string> Columns { get; init; } = new List<string>();
     public bool EnableCount { get; [UsedImplicitly] set; } = false;
 }

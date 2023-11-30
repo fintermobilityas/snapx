@@ -18,11 +18,11 @@ internal class DemoteOptions : BaseSubOptions
     [Option("from-version", 
         HelpText = "Remove all releases newer than this version."
     )]
-    public string FromVersion { get; set; }
+    public string FromVersion { get; init; }
 
     [Option("remove-all",
         HelpText = "Remove all matching releases.")]
-    public bool RemoveAll { get; set; }
+    public bool RemoveAll { get; init; }
 
     [Option("lock-retries",
         Default = DefaultLockRetries,

@@ -47,9 +47,9 @@ internal sealed class FindLocalPackagesResource(IEnumerable<LocalPackageInfo> lo
 
 internal sealed class DownloadContext
 {
-    public PackageIdentity PackageIdentity { get; set; }
-    public long PackageFileSize { get; set; }
-    public int MaxTries { get; set; }
+    public PackageIdentity PackageIdentity { get; init; }
+    public long PackageFileSize { get; init; }
+    public int MaxTries { get; init; }
         
     public DownloadContext()
     {

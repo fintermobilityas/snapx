@@ -34,8 +34,8 @@ internal class SnapInstallerEnvironment(
     readonly string _loggerName = loggerName ?? throw new ArgumentNullException(nameof(loggerName));
     public CancellationToken CancellationToken => _cancellationTokenSource.Token;
     public LogLevel LogLevel { get; set; } = logLevel;
-    public IServiceContainer Container { get; set; }
-    public ISnapInstallerIoEnvironment Io { get; set; }
+    public IServiceContainer Container { get; init; }
+    public ISnapInstallerIoEnvironment Io { get; init; }
 
     public ILog BuildLogger<T>()
     {
@@ -50,7 +50,7 @@ internal class SnapInstallerEnvironment(
 
 internal class SnapInstallerIoEnvironment : ISnapInstallerIoEnvironment
 {
-    public ISnapOsSpecialFolders SpecialFolders { get; set; }
+    public ISnapOsSpecialFolders SpecialFolders { get; init; }
     public string WorkingDirectory { get; set; }
     public string ThisExeWorkingDirectory { get; set; }
 }

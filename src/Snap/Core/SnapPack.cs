@@ -65,11 +65,11 @@ internal interface ISnapPackageDetails : ISnapNuspecDetails
 
 internal sealed class SnapPackageDetails : ISnapPackageDetails
 {
-    public SnapAppsReleases SnapAppsReleases { get; set; }
-    public SnapApp SnapApp { get; set; }
-    public string NuspecBaseDirectory { get; set; }
+    public SnapAppsReleases SnapAppsReleases { get; init; }
+    public SnapApp SnapApp { get; init; }
+    public string NuspecBaseDirectory { get; init; }
     public IReadOnlyDictionary<string, string> NuspecProperties { get; [UsedImplicitly] set; } = new Dictionary<string, string>();
-    public string PackagesDirectory { get; set; }
+    public string PackagesDirectory { get; init; }
 }
 
 internal interface IRebuildPackageProgressSource

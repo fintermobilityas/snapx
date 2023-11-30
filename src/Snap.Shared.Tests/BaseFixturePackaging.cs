@@ -454,14 +454,14 @@ internal class SnapReleaseBuilderContext(
 
 internal class BuildPackageContext : IDisposable
 {
-    public MemoryStream FullPackageMemoryStream { get; set; }
-    public SnapApp FullPackageSnapApp { get; set; }
-    public SnapRelease FullPackageSnapRelease { get; set; }
-    public MemoryStream DeltaPackageMemoryStream { get; set; }
-    public SnapApp DeltaPackageSnapApp { get; set; }
-    public SnapRelease DeltaPackageSnapRelease { get; set; }
-    public string FullPackageAbsolutePath { get; set; }
-    public string DeltaPackageAbsolutePath { get; set; }
+    public MemoryStream FullPackageMemoryStream { get; init; }
+    public SnapApp FullPackageSnapApp { get; init; }
+    public SnapRelease FullPackageSnapRelease { get; init; }
+    public MemoryStream DeltaPackageMemoryStream { get; init; }
+    public SnapApp DeltaPackageSnapApp { get; init; }
+    public SnapRelease DeltaPackageSnapRelease { get; init; }
+    public string FullPackageAbsolutePath { get; init; }
+    public string DeltaPackageAbsolutePath { get; init; }
 
     public void Dispose()
     {

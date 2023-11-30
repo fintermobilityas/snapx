@@ -9,7 +9,7 @@ namespace Snap.Core.Models;
 public sealed class SnapReleaseChecksum
 {
     [Key(0)]
-    public string NuspecTargetPath { get; set; }
+    public string NuspecTargetPath { get; init; }
     [YamlIgnore, IgnoreMember]
     public string Filename
     {
@@ -21,9 +21,9 @@ public sealed class SnapReleaseChecksum
         }
     }
     [Key(1)]
-    public string FullSha256Checksum { get; set; }
+    public string FullSha256Checksum { get; init; }
     [Key(2)]
-    public long FullFilesize { get; set; }
+    public long FullFilesize { get; init; }
     [Key(3)]
     public string DeltaSha256Checksum { get; set; }
     [Key(4)]

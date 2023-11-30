@@ -19,7 +19,7 @@ internal class RestoreOptions : BaseSubOptions
 
     [Option('i', "build-installers", 
         HelpText = "Build installers.")]
-    public bool BuildInstallers { get; set; }
+    public bool BuildInstallers { get; init; }
 
     [Option("package-file",
         HelpText =

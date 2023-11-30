@@ -54,7 +54,7 @@ internal class PackOptions : BaseSubOptions
 
     [Option("release-notes", 
         HelpText = "Overwrite release notes defined in YML manifest.")]
-    public string ReleasesNotes { get; set; }
+    public string ReleasesNotes { get; init; }
 
     [Option("ntp-server", 
         HelpText = "Set network time provider server and port. Example: time.cloudflare.com:123")]

@@ -37,15 +37,15 @@ public sealed class SnapAppNuspec
 
 public sealed class SnapApp
 {
-    public string Id { get; set; }
+    public string Id { get; init; }
     public string InstallDirectoryName { get; set; }
     public string MainExe { get; set; }
-    public string SuperVisorId { get; set; }
+    public string SuperVisorId { get; init; }
     public SemanticVersion Version { get; set; }
-    public SnapTarget Target { get; set; }
-    public List<SnapChannel> Channels { get; set; }
-    public bool IsGenesis { get; set; }
-    public bool IsFull { get; set; }
+    public SnapTarget Target { get; init; }
+    public List<SnapChannel> Channels { get; init; }
+    public bool IsGenesis { get; init; }
+    public bool IsFull { get; init; }
     [YamlIgnore] public bool IsDelta => !IsGenesis && !IsFull;
 
     // Nuspec
@@ -112,10 +112,10 @@ public abstract class SnapFeed
 
 public sealed class SnapNugetFeed : SnapFeed
 {
-    public string Name { get; set; }
+    public string Name { get; init; }
     public string Username { get; set; }
     public string Password { get; set; }
-    public NuGetProtocolVersion ProtocolVersion { get; set; }
+    public NuGetProtocolVersion ProtocolVersion { get; init; }
     public string ApiKey { get; set; }
 
     [UsedImplicitly]
@@ -195,7 +195,7 @@ public sealed class SnapTarget
     [MessagePackFormatter(typeof(OsPlatformMessagePackFormatter))]
     public OSPlatform Os { get; set; }
     [Key(1)]
-    public string Framework { get; set; }
+    public string Framework { get; init; }
     [Key(2)]
     public string Rid { get; set; }
     [Key(3)]
@@ -205,9 +205,9 @@ public sealed class SnapTarget
     [Key(5)]
     public List<string> PersistentAssets { get; set; }
     [Key(6)]
-    public List<SnapInstallerType> Installers { get; set; }
+    public List<SnapInstallerType> Installers { get; init; }
     [Key(7)]
-    public Dictionary<string, string> Environment { get; set; }
+    public Dictionary<string, string> Environment { get; init; }
 
     [UsedImplicitly]
     public SnapTarget()
@@ -249,10 +249,10 @@ public sealed class SnapTarget
 
 public sealed class SnapChannel
 {
-    public string Name { get; set; }
+    public string Name { get; init; }
     public bool Current { get; set; }
-    public SnapNugetFeed PushFeed { get; set; }
-    public SnapFeed UpdateFeed { get; set; }
+    public SnapNugetFeed PushFeed { get; init; }
+    public SnapFeed UpdateFeed { get; init; }
 
     [UsedImplicitly]
     public SnapChannel()

@@ -108,8 +108,8 @@ internal interface INuGetPackageSources : IEnumerable<PackageSource>
 internal class NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
     : INuGetPackageSources
 {
-    public ISettings Settings { get; protected set; } = settings ?? throw new ArgumentNullException(nameof(settings));
-    public IReadOnlyCollection<PackageSource> Items { get; protected set; } = sources ?? throw new ArgumentNullException(nameof(sources));
+    public ISettings Settings { get; protected init; } = settings ?? throw new ArgumentNullException(nameof(settings));
+    public IReadOnlyCollection<PackageSource> Items { get; protected init; } = sources ?? throw new ArgumentNullException(nameof(sources));
 
     public static NuGetPackageSources Empty => new();
 

@@ -89,15 +89,15 @@ internal interface ISnapPackageManager
 internal sealed class SnapPackageManagerNugetHttpFeed
 {
     [JsonInclude]
-    public Uri Source { get; set; }
+    public Uri Source { get; init; }
     [JsonInclude]
-    public string Username { get; set; }
+    public string Username { get; init; }
     [JsonInclude]
-    public string Password { get; set; }
+    public string Password { get; init; }
     [JsonInclude]
-    public string ApiKey { get; set; }
+    public string ApiKey { get; init; }
     [JsonInclude, JsonConverter(typeof(JsonStringEnumConverter))]
-    public NuGetProtocolVersion ProtocolVersion { get; set; }
+    public NuGetProtocolVersion ProtocolVersion { get; init; }
 }
 
 internal class SnapPackageManagerReleaseStatus([NotNull] SnapRelease snapRelease, bool ok)

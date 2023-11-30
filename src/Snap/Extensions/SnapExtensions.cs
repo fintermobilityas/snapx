@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
-using Snap.AnyOS;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;

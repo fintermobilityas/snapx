@@ -49,7 +49,6 @@ internal class SnapOsWindowsExitSignal : ISnapOsExitSignal
         _handlerRoutine = ConsoleCtrlCheck;
 
         SetConsoleCtrlHandler(_handlerRoutine, true);
-
     }
 
     /// <summary>

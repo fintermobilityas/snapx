@@ -13,7 +13,7 @@ internal static class SnapUtility
     static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
 
     // Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
-    static void SwapByteOrder(byte[] guid)
+    static void SwapByteOrder(Span<byte> guid)
     {
         SwapBytes(guid, 0, 3);
         SwapBytes(guid, 1, 2);
@@ -21,24 +21,13 @@ internal static class SnapUtility
         SwapBytes(guid, 6, 7);
     }
 
-    static void SwapBytes(byte[] guid, int left, int right)
-    {
-        var temp = guid[left];
-        guid[left] = guid[right];
-        guid[right] = temp;
-    }
+    static void SwapBytes(Span<byte> guid, int left, int right) => (guid[left], guid[right]) = (guid[right], guid[left]);
 
-    public static Guid CreateGuidFromHash(string text)
-    {
-        return CreateGuidFromHash(text, IsoOidNamespace);
-    }
+    public static Guid CreateGuidFromHash(string text) => CreateGuidFromHash(text, IsoOidNamespace);
 
-    public static Guid CreateGuidFromHash(string text, Guid namespaceId)
-    {
-        return CreateGuidFromHash(Encoding.UTF8.GetBytes(text), namespaceId);
-    }
+    static Guid CreateGuidFromHash(string text, Guid namespaceId) => CreateGuidFromHash(Encoding.UTF8.GetBytes(text), namespaceId);
 
-    public static Guid CreateGuidFromHash(byte[] nameBytes, Guid namespaceId)
+    static Guid CreateGuidFromHash(byte[] nameBytes, Guid namespaceId)
     {
         // convert the namespace UUID to network order (step 3)
         var namespaceBytes = namespaceId.ToByteArray();

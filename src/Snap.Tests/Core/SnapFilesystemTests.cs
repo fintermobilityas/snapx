@@ -6,21 +6,14 @@ using Xunit;
 
 namespace Snap.Tests.Core;
 
-public class SnapFilesystemTests : IClassFixture<BaseFixture>
+public class SnapFilesystemTests(BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-    readonly ISnapFilesystem _snapFilesystem;
+    readonly ISnapFilesystem _snapFilesystem = new SnapFilesystem();
 
-    public SnapFilesystemTests(BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture;
-        _snapFilesystem = new SnapFilesystem();
-    }
-        
     [Fact]
     public async Task TestDirectoryDeleteAsync()
     {
-        await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+        await using var tmpDir = baseFixture.WithDisposableTempDirectory(_snapFilesystem);
         var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
         _snapFilesystem.DirectoryCreate(rootDirectory);
 
@@ -38,7 +31,7 @@ public class SnapFilesystemTests : IClassFixture<BaseFixture>
     [Fact]
     public async Task TestDirectoryDeleteAsync_Non_Existant_Directory()
     {
-        await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+        await using var tmpDir = baseFixture.WithDisposableTempDirectory(_snapFilesystem);
         var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");                
         await _snapFilesystem.DirectoryDeleteAsync(rootDirectory);                
         Assert.False(_snapFilesystem.DirectoryExists(rootDirectory));
@@ -47,7 +40,7 @@ public class SnapFilesystemTests : IClassFixture<BaseFixture>
     [Fact]
     public async Task TestDirectoryDeleteAsync_ExcludePaths()
     {
-        await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_snapFilesystem);
+        await using var tmpDir = baseFixture.WithDisposableTempDirectory(_snapFilesystem);
         var rootDirectory = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "rootDirectory");
         _snapFilesystem.DirectoryCreate(rootDirectory);
 
@@ -80,14 +73,14 @@ public class SnapFilesystemTests : IClassFixture<BaseFixture>
     [Fact]
     public async Task TestDirectoryGetParent()
     {
-        await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
-        Assert.Equal(_baseFixture.WorkingDirectory, _snapFilesystem.DirectoryGetParent(tmpDir.WorkingDirectory));
+        await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(baseFixture.WorkingDirectory);
+        Assert.Equal(baseFixture.WorkingDirectory, _snapFilesystem.DirectoryGetParent(tmpDir.WorkingDirectory));
     }
 
     [Fact]
     public async Task TestTryMoveFile()
     {
-        await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(_baseFixture.WorkingDirectory);
+        await using var tmpDir = _snapFilesystem.WithDisposableTempDirectory(baseFixture.WorkingDirectory);
         var srcFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test.txt");
         var dstFilenameAbsolutePath = _snapFilesystem.PathCombine(tmpDir.WorkingDirectory, "test2.txt");
         await _snapFilesystem.FileWriteUtf8StringAsync("test", srcFilenameAbsolutePath, default);

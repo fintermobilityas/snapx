@@ -24,22 +24,19 @@ internal interface ISnapInstallerEnvironment
     void Shutdown();
 }
 
-internal class SnapInstallerEnvironment : ISnapInstallerEnvironment
+internal class SnapInstallerEnvironment(
+    LogLevel logLevel,
+    [NotNull] CancellationTokenSource cancellationTokenSource,
+    [NotNull] string loggerName)
+    : ISnapInstallerEnvironment
 {
-    readonly CancellationTokenSource _cancellationTokenSource;
-    readonly string _loggerName;
+    readonly CancellationTokenSource _cancellationTokenSource = cancellationTokenSource ?? throw new ArgumentNullException(nameof(cancellationTokenSource));
+    readonly string _loggerName = loggerName ?? throw new ArgumentNullException(nameof(loggerName));
     public CancellationToken CancellationToken => _cancellationTokenSource.Token;
-    public LogLevel LogLevel { get; set; }
+    public LogLevel LogLevel { get; set; } = logLevel;
     public IServiceContainer Container { get; set; }
     public ISnapInstallerIoEnvironment Io { get; set; }
 
-    public SnapInstallerEnvironment(LogLevel logLevel, [NotNull] CancellationTokenSource cancellationTokenSource, [NotNull] string loggerName)
-    {
-        LogLevel = logLevel;
-        _cancellationTokenSource = cancellationTokenSource ?? throw new ArgumentNullException(nameof(cancellationTokenSource));
-        _loggerName = loggerName ?? throw new ArgumentNullException(nameof(loggerName));
-    }
-        
     public ILog BuildLogger<T>()
     {
         return LogProvider.GetLogger($"{_loggerName}.{typeof(T).Name}");

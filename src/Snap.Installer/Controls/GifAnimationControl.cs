@@ -12,17 +12,12 @@ namespace Snap.Installer.Controls;
 
 public class GifAnimationControl : Control
 {
-    readonly List<Bitmap> _bitmaps;
+    readonly List<Bitmap> _bitmaps = [];
     DispatcherTimer _dispatcherTimer;
     TimeSpan _delayTimespan;
     int _bitmapindex;
     Action _onFirstDrawAction;
     bool _isFirstDraw;
-
-    public GifAnimationControl()
-    {
-        _bitmaps = [];
-    }
 
     public void AddImages([NotNull] IEnumerable<Bitmap> bitmaps)
     {

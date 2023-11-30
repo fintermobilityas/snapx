@@ -440,22 +440,16 @@ internal class SnapReleaseBuilder : IDisposable, IEnumerable<string>
 
 }
 
-internal class SnapReleaseBuilderContext
+internal class SnapReleaseBuilderContext(
+    [NotNull] ILibPal libPal,
+    [NotNull] ISnapFilesystem snapFilesystem,
+    [NotNull] ISnapCryptoProvider snapCryptoProvider,
+    [NotNull] ISnapPack snapPack)
 {
-    public ILibPal LibPal { get; }
-    public ISnapFilesystem SnapFilesystem { get; }
-    public ISnapCryptoProvider SnapCryptoProvider { get; }
-    public ISnapPack SnapPack { get; }
-
-    public SnapReleaseBuilderContext([NotNull] ILibPal libPal, [NotNull] ISnapFilesystem snapFilesystem,
-        [NotNull] ISnapCryptoProvider snapCryptoProvider, 
-        [NotNull] ISnapPack snapPack)
-    {
-        LibPal = libPal ?? throw new ArgumentNullException(nameof(libPal));
-        SnapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        SnapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
-        SnapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-    }
+    public ILibPal LibPal { get; } = libPal ?? throw new ArgumentNullException(nameof(libPal));
+    public ISnapFilesystem SnapFilesystem { get; } = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+    public ISnapCryptoProvider SnapCryptoProvider { get; } = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
+    public ISnapPack SnapPack { get; } = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
 }
 
 internal class BuildPackageContext : IDisposable

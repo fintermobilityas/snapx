@@ -8,10 +8,8 @@ using Snap.Logging.LogProviders;
 
 namespace Snap.Core.Logging;
 
-internal class ColoredConsoleLogProvider : LogProviderBase
+internal class ColoredConsoleLogProvider(LogLevel level) : LogProviderBase
 {
-    readonly LogLevel _logLevel;
-
     static readonly Dictionary<LogLevel, ConsoleColor> Colors = new()
     {
         {LogLevel.Fatal, ConsoleColor.Red},
@@ -21,11 +19,6 @@ internal class ColoredConsoleLogProvider : LogProviderBase
         {LogLevel.Debug, ConsoleColor.Gray},
         {LogLevel.Trace, ConsoleColor.DarkGray}
     };
-
-    public ColoredConsoleLogProvider(LogLevel logLevel)
-    {
-        _logLevel = logLevel;
-    }
 
     public override Logger GetLogger(string name)
     {
@@ -65,7 +58,7 @@ internal class ColoredConsoleLogProvider : LogProviderBase
         object[] formatParameters,
         Exception exception)
     {
-        if (logLevel < _logLevel)
+        if (logLevel < level)
         {
             return;
         }

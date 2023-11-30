@@ -12,29 +12,25 @@ using Snap.Extensions;
 namespace Snap.Core.Models;
 
 [MessagePackObject]
-public sealed class SnapAppsReleases : IEnumerable<SnapRelease>
+[method: UsedImplicitly]
+public sealed class SnapAppsReleases() : IEnumerable<SnapRelease>
 {
     [Key(0)]
-    public List<SnapRelease> Releases { get; [UsedImplicitly] set; }
+    public List<SnapRelease> Releases { get; [UsedImplicitly] set; } = [];
+
     [IgnoreDataMember]
     public SemanticVersion Version => SemanticVersion.Parse($"{DbVersion}.0.0");
     [Key(1)]
     public DateTime LastWriteAccessUtc { get; set; }
     [Key(2)]
-    public int DbVersion { get; set; }
+    public int DbVersion { get; set; } = 0;
+
     [Key(3)]
     public Guid PackId { get; set; }
     [Key(4), MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
     public SemanticVersion PackVersion { get; set; }
     [Key(5)]
     public bool Bsdiffv2 { get; set; }
-
-    [UsedImplicitly]
-    public SnapAppsReleases()
-    {
-        Releases = [];
-        DbVersion = 0;
-    }
 
     public void Bump(int? overrideDbVersion = null)
     {

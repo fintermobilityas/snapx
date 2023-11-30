@@ -11,15 +11,10 @@ internal interface IAttributeReflector
     IDictionary<string, string> Values { get; }
 }
 
-internal class CecilAttributeReflector : IAttributeReflector
+internal class CecilAttributeReflector([NotNull] CustomAttribute attribute) : IAttributeReflector
 {
-    readonly CustomAttribute _attribute;
+    readonly CustomAttribute _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
     IDictionary<string, string> _values;
-
-    public CecilAttributeReflector([NotNull] CustomAttribute attribute)
-    {
-        _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-    }
 
     public IDictionary<string, string> Values
     {

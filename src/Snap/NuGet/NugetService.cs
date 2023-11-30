@@ -21,15 +21,9 @@ using Snap.Logging.LogProviders;
 
 namespace Snap.NuGet;
 
-internal sealed class FindLocalPackagesResource : global::NuGet.Protocol.FindLocalPackagesResource
+internal sealed class FindLocalPackagesResource(IEnumerable<LocalPackageInfo> localPackageInfos)
+    : global::NuGet.Protocol.FindLocalPackagesResource
 {
-    readonly IEnumerable<LocalPackageInfo> _localPackageInfos;
-
-    public FindLocalPackagesResource(IEnumerable<LocalPackageInfo> localPackageInfos)
-    {
-        _localPackageInfos = localPackageInfos;
-    }
-
     public override LocalPackageInfo GetPackage(Uri path, ILogger logger, CancellationToken token)
     {
         throw new NotSupportedException();
@@ -42,12 +36,12 @@ internal sealed class FindLocalPackagesResource : global::NuGet.Protocol.FindLoc
 
     public override IEnumerable<LocalPackageInfo> FindPackagesById(string id, ILogger logger, CancellationToken token)
     {
-        return _localPackageInfos.Where(x => !token.IsCancellationRequested && x.Identity.Id.Equals(id, StringComparison.Ordinal));
+        return localPackageInfos.Where(x => !token.IsCancellationRequested && x.Identity.Id.Equals(id, StringComparison.Ordinal));
     }
 
     public override IEnumerable<LocalPackageInfo> GetPackages(ILogger logger, CancellationToken token)
     {
-        return _localPackageInfos.TakeWhile(_ => !token.IsCancellationRequested);
+        return localPackageInfos.TakeWhile(_ => !token.IsCancellationRequested);
     }
 }
 
@@ -110,19 +104,14 @@ internal interface INugetService
         INugetServiceProgressSource progressSource, CancellationToken cancellationToken);
 }
 
-internal class NugetService : INugetService
+internal class NugetService([NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapNugetLogger snapNugetLogger)
+    : INugetService
 {
     readonly ILog _logger = LogProvider.For<INugetService>();
-    readonly ISnapNugetLogger _nugetLogger;
-    readonly ISnapFilesystem _snapFilesystem;
+    readonly ISnapNugetLogger _nugetLogger = snapNugetLogger ?? throw new ArgumentNullException(nameof(snapNugetLogger));
+    readonly ISnapFilesystem _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
 
     readonly NugetConcurrentSourceRepositoryCache _packageSources = new();
-
-    public NugetService([NotNull] ISnapFilesystem snapFilesystem, [NotNull] ISnapNugetLogger snapNugetLogger)
-    {
-        _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        _nugetLogger = snapNugetLogger ?? throw new ArgumentNullException(nameof(snapNugetLogger));
-    }
 
     public async Task<IReadOnlyCollection<NuGetPackageSearchMedatadata>> GetMetadatasAsync([NotNull] string packageId, 
         [NotNull] INuGetPackageSources packageSources, bool includePrerelease, bool noCache = false, CancellationToken cancellationToken = default)

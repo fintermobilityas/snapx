@@ -5,14 +5,9 @@ using Xunit;
 
 namespace Snap.Tests.Core.Extensions;
 
-public class NuGetExtensionsTests : IClassFixture<BaseFixture>
+public class NuGetExtensionsTests(BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-
-    public NuGetExtensionsTests(BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture;
-    }
+    readonly BaseFixture _baseFixture = baseFixture;
 
     [Theory]
     [InlineData(@"\\?\C:\my_dir", false)]

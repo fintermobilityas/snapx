@@ -13,20 +13,11 @@ using Xunit;
 
 namespace Snap.Tests.Core;
 
-public class SnapAppReaderTests : IClassFixture<BaseFixture>
+public class SnapAppReaderTests(BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-    readonly ISnapAppReader _snapAppReader;
-    readonly ISnapAppWriter _snapAppWriter;
-    readonly ISnapFilesystem _snapFilesystem;
-
-    public SnapAppReaderTests(BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture;
-        _snapAppReader = new SnapAppReader();
-        _snapAppWriter = new SnapAppWriter();
-        _snapFilesystem = new SnapFilesystem();
-    }
+    readonly ISnapAppReader _snapAppReader = new SnapAppReader();
+    readonly ISnapAppWriter _snapAppWriter = new SnapAppWriter();
+    readonly ISnapFilesystem _snapFilesystem = new SnapFilesystem();
 
     [Fact]
     public void TestBuildSnapAppFromYamlString()
@@ -41,7 +32,7 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
     [Fact]
     public void TestBuildSnapAppsFromYamlString()
     {
-        var snapAppsBefore = _baseFixture.BuildSnapApps();
+        var snapAppsBefore = baseFixture.BuildSnapApps();
         Assert.Single(snapAppsBefore.Apps);
         var snapAppsYamlString  = _snapAppWriter.ToSnapAppsYamlString(snapAppsBefore);
 

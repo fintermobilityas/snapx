@@ -18,20 +18,12 @@ using Xunit;
 
 namespace Snap.Tests.Core.Extensions;
 
-public class SnapExtensionTests : IClassFixture<BaseFixture>
+public class SnapExtensionTests([NotNull] BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-    readonly ISnapAppWriter _appWriter;
-    readonly ISnapFilesystem _fileSystem;
-    readonly ISnapAppReader _appReader;
-
-    public SnapExtensionTests([NotNull] BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
-        _appReader = new SnapAppReader();
-        _appWriter = new SnapAppWriter();
-        _fileSystem = new SnapFilesystem();
-    }
+    readonly BaseFixture _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
+    readonly ISnapAppWriter _appWriter = new SnapAppWriter();
+    readonly ISnapFilesystem _fileSystem = new SnapFilesystem();
+    readonly ISnapAppReader _appReader = new SnapAppReader();
 
     [Theory]
     [InlineData("artifacts", "id=demoapp;rid=linux-x64;version=1.0.0", "artifacts")]

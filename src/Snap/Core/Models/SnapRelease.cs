@@ -10,7 +10,8 @@ using Snap.Core.MessagePack.Formatters;
 namespace Snap.Core.Models;
 
 [MessagePackObject]
-public class SnapRelease
+[method: UsedImplicitly]
+public class SnapRelease()
 {
     [Key(0)]
     public string Id { get; set; }
@@ -20,7 +21,8 @@ public class SnapRelease
     [MessagePackFormatter(typeof(SemanticVersionMessagePackFormatter))]
     public SemanticVersion Version { get; set; }
     [Key(3)]
-    public List<string> Channels { get; set; }
+    public List<string> Channels { get; set; } = [];
+
     [Key(4)]
     public SnapTarget Target { get; set; }
     [Key(5)]
@@ -41,32 +43,26 @@ public class SnapRelease
     [Key(12)]
     public string DeltaSha256Checksum { get; set; }
     [Key(13)]
-    public List<SnapReleaseChecksum> New { get; set; }
+    public List<SnapReleaseChecksum> New { get; set; } = [];
+
     [Key(14)]
-    public List<SnapReleaseChecksum> Modified { get; set; }
+    public List<SnapReleaseChecksum> Modified { get; set; } = [];
+
     [Key(15)]
-    public List<string> Unmodified { get; set; }
+    public List<string> Unmodified { get; set; } = [];
+
     [Key(16)]
-    public List<string> Deleted { get; set; }
+    public List<string> Deleted { get; set; } = [];
+
     [Key(17)]
-    public List<SnapReleaseChecksum> Files { get; set; }
+    public List<SnapReleaseChecksum> Files { get; set; } = [];
+
     [Key(18)]
     public DateTime CreatedDateUtc { get; set; }
     [Key(19)]
     public string ReleaseNotes { get; set; }
     [Key(20)]
     public bool Gc { get; set; }
-
-    [UsedImplicitly]
-    public SnapRelease()
-    {
-        Channels = [];
-        New = [];
-        Modified = [];
-        Unmodified = [];
-        Deleted = [];
-        Files = [];
-    }
 
     public SnapRelease([NotNull] SnapRelease release) : this()
     {

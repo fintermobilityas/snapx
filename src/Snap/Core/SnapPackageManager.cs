@@ -100,33 +100,19 @@ internal sealed class SnapPackageManagerNugetHttpFeed
     public NuGetProtocolVersion ProtocolVersion { get; set; }
 }
 
-internal class SnapPackageManagerReleaseStatus
+internal class SnapPackageManagerReleaseStatus([NotNull] SnapRelease snapRelease, bool ok)
 {
-    public SnapRelease SnapRelease { get; }
-    public bool Ok { get; }
-
-    public SnapPackageManagerReleaseStatus([NotNull] SnapRelease snapRelease, bool ok)
-    {
-        SnapRelease = snapRelease ?? throw new ArgumentNullException(nameof(snapRelease));
-        Ok = ok;
-    }
+    public SnapRelease SnapRelease { get; } = snapRelease ?? throw new ArgumentNullException(nameof(snapRelease));
+    public bool Ok { get; } = ok;
 }
 
-internal sealed class SnapPackageManagerRestoreSummary
+internal sealed class SnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
 {
-    public SnapPackageManagerRestoreType RestoreType { get; }
-    public List<SnapPackageManagerReleaseStatus> ChecksumSummary { get; private set; }
-    public List<SnapPackageManagerReleaseStatus> DownloadSummary { get; private set; }
-    public List<SnapPackageManagerReleaseStatus> ReassembleSummary { get; private set; }
+    public SnapPackageManagerRestoreType RestoreType { get; } = restoreType;
+    public List<SnapPackageManagerReleaseStatus> ChecksumSummary { get; private set; } = [];
+    public List<SnapPackageManagerReleaseStatus> DownloadSummary { get; private set; } = [];
+    public List<SnapPackageManagerReleaseStatus> ReassembleSummary { get; private set; } = [];
     public bool Success { get; set; }
-
-    public SnapPackageManagerRestoreSummary(SnapPackageManagerRestoreType restoreType)
-    {
-        RestoreType = restoreType;
-        ChecksumSummary = [];
-        DownloadSummary = [];
-        ReassembleSummary = [];
-    }
 
     public void Sort()
     {
@@ -136,38 +122,27 @@ internal sealed class SnapPackageManagerRestoreSummary
     }
 }
 
-internal sealed class SnapPackageManager : ISnapPackageManager
+internal sealed class SnapPackageManager(
+    [NotNull] ISnapFilesystem filesystem,
+    [NotNull] ISnapOsSpecialFolders specialFolders,
+    [NotNull] INugetService nugetService,
+    [NotNull] ISnapHttpClient snapHttpClient,
+    [NotNull] ISnapCryptoProvider snapCryptoProvider,
+    [NotNull] ISnapExtractor snapExtractor,
+    [NotNull] ISnapAppReader snapAppReader,
+    [NotNull] ISnapPack snapPack,
+    [NotNull] ISnapFilesystem snapFilesystem)
+    : ISnapPackageManager
 {
-    readonly ISnapFilesystem _filesystem;
-    readonly ISnapOsSpecialFolders _specialFolders;
-    readonly INugetService _nugetService;
-    [NotNull] readonly ISnapHttpClient _snapHttpClient;
-    readonly ISnapCryptoProvider _snapCryptoProvider;
-    readonly ISnapExtractor _snapExtractor;
-    readonly ISnapAppReader _snapAppReader;
-    readonly ISnapPack _snapPack;
-    [NotNull] readonly ISnapFilesystem _snapFilesystem;
-
-    public SnapPackageManager([NotNull] ISnapFilesystem filesystem, 
-        [NotNull] ISnapOsSpecialFolders specialFolders,
-        [NotNull] INugetService nugetService, 
-        [NotNull] ISnapHttpClient snapHttpClient,
-        [NotNull] ISnapCryptoProvider snapCryptoProvider, 
-        [NotNull] ISnapExtractor snapExtractor,
-        [NotNull] ISnapAppReader snapAppReader, 
-        [NotNull] ISnapPack snapPack,
-        [NotNull] ISnapFilesystem snapFilesystem)
-    {
-        _filesystem = filesystem ?? throw new ArgumentNullException(nameof(filesystem));
-        _specialFolders = specialFolders ?? throw new ArgumentNullException(nameof(specialFolders));
-        _nugetService = nugetService ?? throw new ArgumentNullException(nameof(nugetService));
-        _snapHttpClient = snapHttpClient ?? throw new ArgumentNullException(nameof(snapHttpClient));
-        _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
-        _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
-        _snapAppReader = snapAppReader ?? throw new ArgumentNullException(nameof(snapAppReader));
-        _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-        _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-    }
+    readonly ISnapFilesystem _filesystem = filesystem ?? throw new ArgumentNullException(nameof(filesystem));
+    readonly ISnapOsSpecialFolders _specialFolders = specialFolders ?? throw new ArgumentNullException(nameof(specialFolders));
+    readonly INugetService _nugetService = nugetService ?? throw new ArgumentNullException(nameof(nugetService));
+    [NotNull] readonly ISnapHttpClient _snapHttpClient = snapHttpClient ?? throw new ArgumentNullException(nameof(snapHttpClient));
+    readonly ISnapCryptoProvider _snapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
+    readonly ISnapExtractor _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
+    readonly ISnapAppReader _snapAppReader = snapAppReader ?? throw new ArgumentNullException(nameof(snapAppReader));
+    readonly ISnapPack _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
+    [NotNull] readonly ISnapFilesystem _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
 
     public async Task<PackageSource> GetPackageSourceAsync([NotNull] SnapApp snapApp,
         ILog logger = null,

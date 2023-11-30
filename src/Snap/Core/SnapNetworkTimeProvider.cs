@@ -61,7 +61,7 @@ internal sealed class SnapNetworkTimeProvider : ISnapNetworkTimeProvider
             timeout = TimeSpan.FromSeconds(10);
         }
         var tsc = new TaskCompletionSource<DateTime?>();
-        ThreadPool.QueueUserWorkItem(state =>
+        ThreadPool.QueueUserWorkItem(_ =>
         {
             try
             {

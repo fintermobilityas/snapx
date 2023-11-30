@@ -37,7 +37,7 @@ public class GifAnimationControl : Control
         _onFirstDrawAction = onFirstDrawAction ?? throw new ArgumentNullException(nameof(onFirstDrawAction));
 
         _dispatcherTimer = new DispatcherTimer(_delayTimespan, DispatcherPriority.Render,
-            (sender, args) => InvalidateVisual());
+            (_, _) => InvalidateVisual());
         _dispatcherTimer.Start();
     }
 

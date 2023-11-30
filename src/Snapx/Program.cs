@@ -168,7 +168,7 @@ internal partial class Program
 
         var distributedMutexClient = new DistributedMutexClient(new SnapHttpClient(new HttpClient()));
 
-        Console.CancelKeyPress += async (sender, eventArgs) =>
+        Console.CancelKeyPress += async (_, eventArgs) =>
         {
             eventArgs.Cancel = !cts.IsCancellationRequested;
             cts.Cancel();
@@ -312,7 +312,7 @@ internal partial class Program
                 },
                 (LockOptions opts) => TplHelper.RunSync(() => CommandLock(opts, distributedMutexClient, snapFilesystem, 
                     snapAppReader, SnapLockLogger, workingDirectory, cancellationToken)),
-                errs =>
+                _ =>
                 {
                     snapOs.EnsureConsole();
                     return 0;

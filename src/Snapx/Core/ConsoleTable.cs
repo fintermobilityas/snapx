@@ -88,7 +88,7 @@ internal sealed class ConsoleTable
     List<int> ColumnLengths()
     {
         var columnLengths = Columns
-            .Select((t, i) => Rows.Select(x => x[i])
+            .Select((_, i) => Rows.Select(x => x[i])
                 .Union(new[] { Columns[i] })
                 .Where(x => x != null)
                 .Select(x =>

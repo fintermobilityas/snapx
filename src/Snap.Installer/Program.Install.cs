@@ -69,7 +69,7 @@ internal partial class Program
                 diskLogger.Info("Main window should now be visible.");
             }
 
-            var mainWindowLogger = new LogForwarder(LogLevel.Info, diskLogger, (level, func, exception, parameters) =>
+            var mainWindowLogger = new LogForwarder(LogLevel.Info, diskLogger, (_, func, _, _) =>
             {
                 var message = func?.Invoke();
                 if (message == null)
@@ -419,7 +419,7 @@ internal partial class Program
         }
 
         var avaloniaApp = BuildAvaloniaApp<App>()
-            .AfterSetup(builder =>
+            .AfterSetup(_ =>
             {
                 MainWindow.Environment = environment;
                 MainWindow.ViewModel = new AvaloniaMainWindowViewModel(snapInstallerEmbeddedResources,

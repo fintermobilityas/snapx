@@ -11,6 +11,7 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using SharpCompress.Readers;
 using Snap.AnyOS;
+using Snap.Core.Json;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.Logging;
@@ -20,7 +21,7 @@ namespace Snap.Core;
 
 public sealed record SnapReleaseDetails
 {
-    [JsonInclude]
+    [JsonInclude, JsonConverter(typeof(SemanticVersionSystemTextJsonConverter))]
     public SemanticVersion Version { get; init; }
     [JsonInclude]
     public string Channel { get; init; }

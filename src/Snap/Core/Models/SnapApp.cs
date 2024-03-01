@@ -126,7 +126,7 @@ public sealed class SnapNugetFeed : SnapFeed
 
     internal SnapNugetFeed([NotNull] SnapNugetFeed snapFeed)
     {
-        if (snapFeed == null) throw new ArgumentNullException(nameof(snapFeed));
+        ArgumentNullException.ThrowIfNull(snapFeed);
         Name = snapFeed.Name;
         Source = snapFeed.Source;
         Username = snapFeed.Username;
@@ -142,15 +142,10 @@ public sealed class SnapNugetFeed : SnapFeed
         Username = httpFeed.Username,
         Password = httpFeed.Password,
         Source = httpFeed.Source
-    })
-    {
-        if (httpFeed == null) throw new ArgumentNullException(nameof(httpFeed));
-    }
+    }) =>
+        ArgumentNullException.ThrowIfNull(httpFeed);
 
-    internal override bool HasCredentials()
-    {
-        return Username != null || Password != null || ApiKey != null;
-    }
+    internal override bool HasCredentials() => Username != null || Password != null || ApiKey != null;
 }
 
 public sealed class SnapHttpFeed : SnapFeed

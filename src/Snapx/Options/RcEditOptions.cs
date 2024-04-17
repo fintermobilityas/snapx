@@ -11,7 +11,7 @@ internal class RcEditOptions : BaseSubOptions
 {
     [Option("gui-app",
         HelpText = "Change Windows Subsystem from Console to WindowsGui")]
-    public bool ConvertSubSystemToWindowsGui { get; set; }
+    public bool ConvertSubSystemToWindowsGui { get; init; }
 
     [Option("icon",
         HelpText = "Set icon for a windows executable")]
@@ -20,7 +20,7 @@ internal class RcEditOptions : BaseSubOptions
     [Value(0,
         HelpText = "The input filename.",
         Required = true)]
-    public string Filename { get; set; }
+    public string Filename { get; init; }
 
     [Usage(ApplicationAlias = "snapx")]
     [UsedImplicitly]

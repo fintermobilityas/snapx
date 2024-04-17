@@ -6,18 +6,17 @@ using LogLevel = NuGet.Common.LogLevel;
 
 namespace Snap.NuGet;
 
-internal interface ISnapNugetLogger : ILogger
-{
+public interface ISnapNugetLogger : ILogger;
 
-}
-
-internal class NugetLogger : LoggerBase, ISnapNugetLogger
+public class NugetLogger : LoggerBase, ISnapNugetLogger
 {
     static ILog _logger;
 
-    public NugetLogger(ILog logger)
+    internal NugetLogger(ILog logger) => _logger = logger ?? LogProvider.For<NugetLogger>();
+
+    public NugetLogger() : this(LogProvider.For<NugetLogger>())
     {
-        _logger = logger ?? LogProvider.For<NugetLogger>();
+        
     }
 
     public override void Log(ILogMessage message)

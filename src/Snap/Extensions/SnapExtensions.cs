@@ -9,7 +9,6 @@ using JetBrains.Annotations;
 using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
-using Snap.AnyOS;
 using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
@@ -753,6 +752,15 @@ internal static class SnapExtensions
             .ToList();
 
         return new NuGetPackageSources(inMemorySettings, nugetFeeds);
+    }
+    
+    internal static INuGetPackageSources BuildNugetSources([NotNull] this SnapNugetFeed nugetFeed, [NotNull] string tempDirectory)
+    {
+        if (nugetFeed == null) throw new ArgumentNullException(nameof(nugetFeed));
+        if (tempDirectory == null) throw new ArgumentNullException(nameof(tempDirectory));
+        var inMemorySettings = new NugetInMemorySettings(tempDirectory);
+        var packageSource = nugetFeed.BuildPackageSource(inMemorySettings);
+        return new NuGetPackageSources(inMemorySettings, [packageSource]);
     }
 
     internal static INuGetPackageSources BuildNugetSources([NotNull] this SnapApps snapApps, INuGetPackageSources nuGetPackageSources)

@@ -171,6 +171,6 @@ internal sealed class SnapOs : ISnapOs
     {
         if (onExit == null) throw new ArgumentNullException(nameof(onExit));
         var exitSignalHandler = OsImpl.InstallExitSignalHandler();
-        exitSignalHandler.Exit += (sender, args) => { onExit(); };
+        exitSignalHandler.Exit += (_, _) => { onExit(); };
     }
 }

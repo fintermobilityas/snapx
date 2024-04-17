@@ -163,7 +163,7 @@ public class SnapxTests : IClassFixture<BaseFixture>
         {
             "--snapx-installed",
             "..."
-        }, onInstalled: version =>
+        }, onInstalled: _ =>
         {
             wasInvoked = true;
         });
@@ -215,7 +215,7 @@ public class SnapxTests : IClassFixture<BaseFixture>
         {
             "--snapx-updated",
             "..."
-        }, onInstalled: version =>
+        }, onInstalled: _ =>
         {
             wasInvoked = true;
         });

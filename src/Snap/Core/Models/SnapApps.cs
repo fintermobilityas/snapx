@@ -7,13 +7,11 @@ using YamlDotNet.Serialization;
 
 namespace Snap.Core.Models;
 
-public abstract class SnapsFeed
-{
-}
+public abstract class SnapsFeed;
 
 public sealed class SnapsNugetFeed : SnapsFeed
 {
-    public string Name { get; set; }
+    public string Name { get; init; }
 
     [UsedImplicitly]
     public SnapsNugetFeed()
@@ -38,7 +36,7 @@ public sealed class SnapsNugetFeed : SnapsFeed
 
 public sealed class SnapsHttpFeed : SnapsFeed
 {
-    public Uri Source { get; set; }
+    public Uri Source { get; init; }
 
     [UsedImplicitly]
     public SnapsHttpFeed()
@@ -110,9 +108,9 @@ public sealed class SnapsTarget
     [UsedImplicitly]
     public SnapsTarget()
     {
-        Shortcuts = new List<SnapShortcutLocation>();
-        PersistentAssets = new List<string>();
-        Installers = new List<SnapInstallerType>();
+        Shortcuts = [];
+        PersistentAssets = [];
+        Installers = [];
         Environment = new Dictionary<string, string>();
     }
 
@@ -179,9 +177,9 @@ public sealed class SnapsApp
 {
     public string Id { get; set; }
     [YamlMember(Alias = "installDirectory")]
-    public string InstallDirectoryName { get; set; }
+    public string InstallDirectoryName { get; init; }
     [YamlMember(Alias = "main")]
-    public string MainExe { get; set; }
+    public string MainExe { get; init; }
     [YamlMember(Alias = "supervisorid")]
     public string SuperVisorId { get; set; }
     public List<string> Channels { get; set; }
@@ -191,7 +189,7 @@ public sealed class SnapsApp
     [UsedImplicitly]
     public SnapsApp()
     {
-        Channels = new List<string>();
+        Channels = [];
         Nuspec = new SnapsAppNuspec();
         Target = new SnapsTarget();
     }
@@ -231,8 +229,8 @@ public sealed class SnapAppsGeneric
 {
     public string Token { get; set; }
     public string Artifacts { get; set; }
-    public string Packages { get; set; }
-    public string Nuspecs { get; set; }
+    public string Packages { get; init; }
+    public string Nuspecs { get; init; }
     public string Installers { get; set; }
     public SnapAppsPackStrategy PackStrategy { get; set; } = SnapAppsPackStrategy.push;
 
@@ -255,15 +253,15 @@ public sealed class SnapAppsGeneric
 
 public sealed class SnapApps
 {
-    public int Schema { get; set; }
+    public int Schema { get; init; }
     public SnapAppsGeneric Generic { get; set; }
     public List<SnapsChannel> Channels { get; set; }
     public List<SnapsApp> Apps { get; set; }
 
     public SnapApps()
     {
-        Channels = new List<SnapsChannel>();
-        Apps = new List<SnapsApp>();
+        Channels = [];
+        Apps = [];
         Generic = new SnapAppsGeneric();
     }
 
@@ -271,7 +269,7 @@ public sealed class SnapApps
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
         Channels = snapApp.Channels.Select(x => new SnapsChannel(x)).ToList();
-        Apps = new List<SnapsApp> { new(snapApp) };
+        Apps = [new(snapApp)];
         Generic = new SnapAppsGeneric();            
     }
 

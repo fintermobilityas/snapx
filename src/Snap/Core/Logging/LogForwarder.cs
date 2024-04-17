@@ -5,25 +5,21 @@ using LogLevel = Snap.Logging.LogLevel;
 
 namespace Snap.Core.Logging;
 
-internal sealed class LogForwarder : ILog
+internal sealed class LogForwarder(
+    LogLevel level,
+    [NotNull] ILog logger,
+    [NotNull] LogForwarder.LogDelegate logDelegate)
+    : ILog
 {
-    readonly LogLevel _logLevel;
-    readonly ILog _logger;
-    readonly LogDelegate _logDelegate;
+    readonly ILog _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    readonly LogDelegate _logDelegate = logDelegate ?? throw new ArgumentNullException(nameof(logDelegate));
 
     internal delegate void LogDelegate(LogLevel logLevel,
         Func<string> messageFunc, Exception exception = null, params object[] formatParameters);
 
-    public LogForwarder(LogLevel logLevel, [NotNull] ILog logger, [NotNull] LogDelegate logDelegate)
-    {
-        _logLevel = logLevel;
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _logDelegate = logDelegate ?? throw new ArgumentNullException(nameof(logDelegate));
-    }
-
     public bool Log(LogLevel logLevel, Func<string> messageFunc, Exception exception = null, params object[] formatParameters)
     {
-        if (logLevel < _logLevel)
+        if (logLevel < level)
         {
             return _logger.Log(logLevel, messageFunc, exception, formatParameters);
         }

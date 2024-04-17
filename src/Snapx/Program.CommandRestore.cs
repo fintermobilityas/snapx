@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NuGet.Configuration;
-using snapx.Core;
 using snapx.Options;
 using Snap;
 using Snap.AnyOS;

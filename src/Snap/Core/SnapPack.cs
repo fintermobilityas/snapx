@@ -23,42 +23,31 @@ using Snap.Reflection;
 
 namespace Snap.Core;
 
-public sealed class SnapReleaseFileChecksumMismatchException : Exception
+public sealed class SnapReleaseFileChecksumMismatchException(
+    [NotNull] SnapReleaseChecksum checksum,
+    [NotNull] SnapRelease release)
+    : Exception(
+        $"Checksum mismatch for filename: {checksum.Filename}. Nupkg: {release.Filename}. Nupkg file size: {release.FullFilesize}.")
 {
-    public SnapReleaseChecksum Checksum { get; }
-    public SnapRelease Release { get; }
-
-    public SnapReleaseFileChecksumMismatchException([NotNull] SnapReleaseChecksum checksum, [NotNull] SnapRelease release) :
-        base($"Checksum mismatch for filename: {checksum.Filename}. Nupkg: {release.Filename}. Nupkg file size: {release.FullFilesize}.")
-    {
-        Checksum = checksum ?? throw new ArgumentNullException(nameof(checksum));
-        Release = release ?? throw new ArgumentNullException(nameof(release));
-    }
+    public SnapReleaseChecksum Checksum { get; } = checksum ?? throw new ArgumentNullException(nameof(checksum));
+    public SnapRelease Release { get; } = release ?? throw new ArgumentNullException(nameof(release));
 }
 
-public sealed class SnapReleaseFileChecksumDeltaMismatchException : Exception
+public sealed class SnapReleaseFileChecksumDeltaMismatchException(
+    [NotNull] SnapReleaseChecksum checksum,
+    [NotNull] SnapRelease release,
+    long patchStreamFilesize)
+    : Exception($"Checksum mismatch for filename: {checksum.Filename}. Original file size: {checksum.FullFilesize}. " +
+                $"Delta file size: {checksum.DeltaFilesize}. Patch file size: {patchStreamFilesize}. Nupkg: {release.Filename}. Nupkg file size: {release.FullFilesize}.")
 {
-    public SnapReleaseChecksum Checksum { get; }
-    public SnapRelease Release { get; }
-
-    public SnapReleaseFileChecksumDeltaMismatchException([NotNull] SnapReleaseChecksum checksum, [NotNull] SnapRelease release, long patchStreamFilesize) :
-        base($"Checksum mismatch for filename: {checksum.Filename}. Original file size: {checksum.FullFilesize}. " +
-             $"Delta file size: {checksum.DeltaFilesize}. Patch file size: {patchStreamFilesize}. Nupkg: {release.Filename}. Nupkg file size: {release.FullFilesize}.")
-    {
-        Checksum = checksum ?? throw new ArgumentNullException(nameof(checksum));
-        Release = release ?? throw new ArgumentNullException(nameof(release));
-    }
+    public SnapReleaseChecksum Checksum { get; } = checksum ?? throw new ArgumentNullException(nameof(checksum));
+    public SnapRelease Release { get; } = release ?? throw new ArgumentNullException(nameof(release));
 }
 
-public sealed class SnapReleaseChecksumMismatchException : Exception
+public sealed class SnapReleaseChecksumMismatchException([NotNull] SnapRelease release)
+    : Exception($"Checksum mismatch for nupkg: {release.Filename}. File size: {release.FullFilesize}.")
 {
-    public SnapRelease Release { get; }
-
-    public SnapReleaseChecksumMismatchException([NotNull] SnapRelease release) :
-        base($"Checksum mismatch for nupkg: {release.Filename}. File size: {release.FullFilesize}.")
-    {
-        Release = release ?? throw new ArgumentNullException(nameof(release));
-    }
+    public SnapRelease Release { get; } = release ?? throw new ArgumentNullException(nameof(release));
 }
 
 internal interface ISnapNuspecDetails
@@ -76,16 +65,11 @@ internal interface ISnapPackageDetails : ISnapNuspecDetails
 
 internal sealed class SnapPackageDetails : ISnapPackageDetails
 {
-    public SnapAppsReleases SnapAppsReleases { get; set; }
-    public SnapApp SnapApp { get; set; }
-    public string NuspecBaseDirectory { get; set; }
-    public IReadOnlyDictionary<string, string> NuspecProperties { get; [UsedImplicitly] set; }
-    public string PackagesDirectory { get; set; }
-
-    public SnapPackageDetails()
-    {
-        NuspecProperties = new Dictionary<string, string>();
-    }
+    public SnapAppsReleases SnapAppsReleases { get; init; }
+    public SnapApp SnapApp { get; init; }
+    public string NuspecBaseDirectory { get; init; }
+    public IReadOnlyDictionary<string, string> NuspecProperties { get; [UsedImplicitly] set; } = new Dictionary<string, string>();
+    public string PackagesDirectory { get; init; }
 }
 
 internal interface IRebuildPackageProgressSource
@@ -230,7 +214,7 @@ internal sealed class SnapPack : ISnapPack
         {
             Id = snapAppMetadataOnly.Id,
             Version = snapAppMetadataOnly.Version,
-            Channels = new List<string> { snapAppChannelReleases.Channel.Name },
+            Channels = [snapAppChannelReleases.Channel.Name],
             Target = new SnapTarget(snapAppMetadataOnly.Target)
         };            
 

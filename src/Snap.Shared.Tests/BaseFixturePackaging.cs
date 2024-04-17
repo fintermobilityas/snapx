@@ -440,34 +440,28 @@ internal class SnapReleaseBuilder : IDisposable, IEnumerable<string>
 
 }
 
-internal class SnapReleaseBuilderContext
+internal class SnapReleaseBuilderContext(
+    [NotNull] ILibPal libPal,
+    [NotNull] ISnapFilesystem snapFilesystem,
+    [NotNull] ISnapCryptoProvider snapCryptoProvider,
+    [NotNull] ISnapPack snapPack)
 {
-    public ILibPal LibPal { get; }
-    public ISnapFilesystem SnapFilesystem { get; }
-    public ISnapCryptoProvider SnapCryptoProvider { get; }
-    public ISnapPack SnapPack { get; }
-
-    public SnapReleaseBuilderContext([NotNull] ILibPal libPal, [NotNull] ISnapFilesystem snapFilesystem,
-        [NotNull] ISnapCryptoProvider snapCryptoProvider, 
-        [NotNull] ISnapPack snapPack)
-    {
-        LibPal = libPal ?? throw new ArgumentNullException(nameof(libPal));
-        SnapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        SnapCryptoProvider = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
-        SnapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-    }
+    public ILibPal LibPal { get; } = libPal ?? throw new ArgumentNullException(nameof(libPal));
+    public ISnapFilesystem SnapFilesystem { get; } = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+    public ISnapCryptoProvider SnapCryptoProvider { get; } = snapCryptoProvider ?? throw new ArgumentNullException(nameof(snapCryptoProvider));
+    public ISnapPack SnapPack { get; } = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
 }
 
 internal class BuildPackageContext : IDisposable
 {
-    public MemoryStream FullPackageMemoryStream { get; set; }
-    public SnapApp FullPackageSnapApp { get; set; }
-    public SnapRelease FullPackageSnapRelease { get; set; }
-    public MemoryStream DeltaPackageMemoryStream { get; set; }
-    public SnapApp DeltaPackageSnapApp { get; set; }
-    public SnapRelease DeltaPackageSnapRelease { get; set; }
-    public string FullPackageAbsolutePath { get; set; }
-    public string DeltaPackageAbsolutePath { get; set; }
+    public MemoryStream FullPackageMemoryStream { get; init; }
+    public SnapApp FullPackageSnapApp { get; init; }
+    public SnapRelease FullPackageSnapRelease { get; init; }
+    public MemoryStream DeltaPackageMemoryStream { get; init; }
+    public SnapApp DeltaPackageSnapApp { get; init; }
+    public SnapRelease DeltaPackageSnapRelease { get; init; }
+    public string FullPackageAbsolutePath { get; init; }
+    public string DeltaPackageAbsolutePath { get; init; }
 
     public void Dispose()
     {

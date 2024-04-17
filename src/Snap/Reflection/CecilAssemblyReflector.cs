@@ -24,19 +24,14 @@ internal interface IAssemblyReflector
     void RewriteOrThrow<TSource>(Expression<Func<TSource, object>> selector, Action<TypeDefinition, string, string, PropertyDefinition> rewriter);
 }
 
-internal class CecilAssemblyReflector : IAssemblyReflector
+internal class CecilAssemblyReflector([NotNull] AssemblyDefinition assemblyDefinition) : IAssemblyReflector
 {
-    readonly AssemblyDefinition _assemblyDefinition;
+    readonly AssemblyDefinition _assemblyDefinition = assemblyDefinition ?? throw new ArgumentNullException(nameof(assemblyDefinition));
         
     public string Location => _assemblyDefinition.MainModule.FileName;
     public string FileName => _assemblyDefinition.MainModule.Name;
     public string FullName => _assemblyDefinition.FullName;
     public ModuleDefinition MainModule => _assemblyDefinition.MainModule;
-
-    public CecilAssemblyReflector([NotNull] AssemblyDefinition assemblyDefinition)
-    {
-        _assemblyDefinition = assemblyDefinition ?? throw new ArgumentNullException(nameof(assemblyDefinition));
-    }
 
     public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
     {

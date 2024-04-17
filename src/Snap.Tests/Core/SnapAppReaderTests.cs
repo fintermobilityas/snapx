@@ -13,20 +13,11 @@ using Xunit;
 
 namespace Snap.Tests.Core;
 
-public class SnapAppReaderTests : IClassFixture<BaseFixture>
+public class SnapAppReaderTests(BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-    readonly ISnapAppReader _snapAppReader;
-    readonly ISnapAppWriter _snapAppWriter;
-    readonly ISnapFilesystem _snapFilesystem;
-
-    public SnapAppReaderTests(BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture;
-        _snapAppReader = new SnapAppReader();
-        _snapAppWriter = new SnapAppWriter();
-        _snapFilesystem = new SnapFilesystem();
-    }
+    readonly ISnapAppReader _snapAppReader = new SnapAppReader();
+    readonly ISnapAppWriter _snapAppWriter = new SnapAppWriter();
+    readonly ISnapFilesystem _snapFilesystem = new SnapFilesystem();
 
     [Fact]
     public void TestBuildSnapAppFromYamlString()
@@ -41,7 +32,7 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
     [Fact]
     public void TestBuildSnapAppsFromYamlString()
     {
-        var snapAppsBefore = _baseFixture.BuildSnapApps();
+        var snapAppsBefore = baseFixture.BuildSnapApps();
         Assert.Single(snapAppsBefore.Apps);
         var snapAppsYamlString  = _snapAppWriter.ToSnapAppsYamlString(snapAppsBefore);
 
@@ -93,27 +84,24 @@ public class SnapAppReaderTests : IClassFixture<BaseFixture>
         {
             Id = "demoapp",
             Version = new SemanticVersion(1, 0, 0),
-            Channels = new List<SnapChannel>
-            {
+            Channels =
+            [
                 testChannel,
                 stagingChannel,
                 productionChannel
-            },
+            ],
             Target = new SnapTarget
             {
                 Os = OSPlatform.Windows,
                 Framework = "netcoreapp2.1",
                 Rid = "win7-x64",
-                Shortcuts = new List<SnapShortcutLocation>
-                {
+                Shortcuts =
+                [
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.Desktop,
                     SnapShortcutLocation.StartMenu
-                },
-                PersistentAssets = new List<string>
-                {
-                    "application.json"
-                },
+                ],
+                PersistentAssets = ["application.json"],
                 Environment = new Dictionary<string, string>
                 {
                     { "TEST", "123" }

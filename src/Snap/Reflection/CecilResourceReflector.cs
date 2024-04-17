@@ -14,14 +14,9 @@ internal interface IResourceReflector
     void RemoveAllOrThrow(string @namespace);
 }
 
-internal class CecilResourceReflector : IResourceReflector
+internal class CecilResourceReflector([NotNull] AssemblyDefinition assemblyDefinition) : IResourceReflector
 {
-    readonly AssemblyDefinition _assemblyDefinition;
-
-    public CecilResourceReflector([NotNull] AssemblyDefinition assemblyDefinition)
-    {
-        _assemblyDefinition = assemblyDefinition ?? throw new ArgumentNullException(nameof(assemblyDefinition));
-    }
+    readonly AssemblyDefinition _assemblyDefinition = assemblyDefinition ?? throw new ArgumentNullException(nameof(assemblyDefinition));
 
     public IEnumerable<Resource> GetResources()
     {

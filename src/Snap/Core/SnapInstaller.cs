@@ -43,21 +43,17 @@ internal interface ISnapInstaller
     string GetApplicationDirectory(string baseDirectory, SnapRelease release);
 }
 
-internal sealed class SnapInstaller : ISnapInstaller
+internal sealed class SnapInstaller(
+    ISnapExtractor snapExtractor,
+    [NotNull] ISnapPack snapPack,
+    [NotNull] ISnapOs snapOs,
+    [NotNull] ISnapAppWriter snapAppWriter)
+    : ISnapInstaller
 {
-    readonly ISnapExtractor _snapExtractor;
-    readonly ISnapPack _snapPack;
-    readonly ISnapOs _snapOs;
-    readonly ISnapAppWriter _snapAppWriter;
-
-    public SnapInstaller(ISnapExtractor snapExtractor, [NotNull] ISnapPack snapPack,
-        [NotNull] ISnapOs snapOs, [NotNull] ISnapAppWriter snapAppWriter)
-    {
-        _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
-        _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-        _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
-        _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
-    }
+    readonly ISnapExtractor _snapExtractor = snapExtractor ?? throw new ArgumentNullException(nameof(snapExtractor));
+    readonly ISnapPack _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
+    readonly ISnapOs _snapOs = snapOs ?? throw new ArgumentNullException(nameof(snapOs));
+    readonly ISnapAppWriter _snapAppWriter = snapAppWriter ?? throw new ArgumentNullException(nameof(snapAppWriter));
 
     public async Task<SnapApp> UpdateAsync(string baseDirectory, SnapRelease snapRelease,  SnapChannel snapChannel,
         ISnapProgressSource snapProgressSource = null, ILog logger = null, CancellationToken cancellationToken = default)

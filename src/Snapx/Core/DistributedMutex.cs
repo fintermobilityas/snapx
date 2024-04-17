@@ -11,13 +11,7 @@ using snapx.Api;
 
 namespace snapx.Core;
 
-internal sealed class DistributedMutexUnknownException : Exception
-{
-    public DistributedMutexUnknownException(string message) : base(message, null)
-    {
-            
-    }
-}
+internal sealed class DistributedMutexUnknownException(string message) : Exception(message, null);
 
 internal interface IDistributedMutexClient
 {
@@ -25,12 +19,9 @@ internal interface IDistributedMutexClient
     Task ReleaseLockAsync(string name, string challenge, TimeSpan? breakPeriod = null);
 }
 
-internal sealed class DistributedMutexClient : IDistributedMutexClient
+internal sealed class DistributedMutexClient([NotNull] ISnapHttpClient httpClient) : IDistributedMutexClient
 {
-    readonly ISnapHttpClient _httpClient;
-
-    public DistributedMutexClient([NotNull] ISnapHttpClient httpClient) => 
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+    readonly ISnapHttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
     public async Task<string> AcquireAsync(string name, TimeSpan lockDuration)
     {
@@ -77,32 +68,25 @@ internal interface IDistributedMutex : IAsyncDisposable
     Task<bool> TryReleaseAsync();
 }
 
-internal sealed class DistributedMutex : IDistributedMutex
+internal sealed class DistributedMutex(
+    [NotNull] IDistributedMutexClient distributedMutexClient,
+    [NotNull] ILog logger,
+    [NotNull] string name,
+    CancellationToken cancellationToken,
+    bool releaseOnDispose = true)
+    : IDistributedMutex
 {
     long _acquired;
     long _disposed;
 
-    readonly IDistributedMutexClient _distributedMutexClient;
-    readonly ILog _logger;
-    readonly CancellationToken _cancellationToken;
-    readonly bool _releaseOnDispose;
-    readonly SemaphoreSlim _semaphore;
+    readonly IDistributedMutexClient _distributedMutexClient = distributedMutexClient ?? throw new ArgumentNullException(nameof(distributedMutexClient));
+    readonly ILog _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    readonly SemaphoreSlim _semaphore = new(1, 1);
     string _challenge;
 
-    public string Name { get; }
+    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
     public bool Acquired => Interlocked.Read(ref _acquired) == 1;
     public bool Disposed => Interlocked.Read(ref _disposed) == 1;
-
-    public DistributedMutex([NotNull] IDistributedMutexClient distributedMutexClient,
-        [NotNull] ILog logger, [NotNull] string name, CancellationToken cancellationToken, bool releaseOnDispose = true)
-    {
-        _distributedMutexClient = distributedMutexClient ?? throw new ArgumentNullException(nameof(distributedMutexClient));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        _cancellationToken = cancellationToken;
-        _releaseOnDispose = releaseOnDispose;
-        _semaphore = new SemaphoreSlim(1, 1);
-    }
 
     public async Task<bool> TryAquireAsync(TimeSpan retryDelayTs = default, int retries = 0)
     {
@@ -116,13 +100,13 @@ internal sealed class DistributedMutex : IDistributedMutex
             throw new SynchronizationLockException($"Mutex is already acquired: {Name}");
         }
 
-        await _semaphore.WaitAsync(_cancellationToken);
+        await _semaphore.WaitAsync(cancellationToken);
 
         retries = Math.Max(0, retries);
 
         return await RetryAsync(async () =>
         {
-            if (_cancellationToken.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
                 return false;
             }
@@ -205,7 +189,7 @@ internal sealed class DistributedMutex : IDistributedMutex
 
         _semaphore.Dispose();
 
-        if (acquired && _releaseOnDispose)
+        if (acquired && releaseOnDispose)
         {
             var success = await RetryAsync(async () =>
             {
@@ -241,14 +225,14 @@ internal sealed class DistributedMutex : IDistributedMutex
                 {
                     try
                     {
-                        await Task.Delay(delayTs, _cancellationToken);
+                        await Task.Delay(delayTs, cancellationToken);
                     }
                     catch (OperationCanceledException)
                     {
                         break;
                     }
 
-                    if (_cancellationToken.IsCancellationRequested)
+                    if (cancellationToken.IsCancellationRequested)
                     {
                         break;
                     }

@@ -144,7 +144,7 @@ public class NugetServiceTests : IClassFixture<BaseFixture>
                 It.IsAny<long>(), 
                 It.IsAny<long>(), 
                 It.IsAny<long>()))
-            .Callback((int percentage, long bytesRead, long totalBytesSoFar, long totalBytesDownloaded) =>
+            .Callback((int percentage, long _, long _, long _) =>
             {
                 percentages.Add(percentage);
             });

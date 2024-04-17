@@ -8,7 +8,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
 	[string] $DockerImageName = "snapx",
 	[Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-	[string] $DockerVersion = "29.0",
+	[string] $DockerVersion = "32.0",
 	[Parameter(Position = 4, ValueFromPipelineByPropertyName = $true)]
     [switch] $DockerLocal,
     [Parameter(Position = 5, ValueFromPipelineByPropertyName = $true)]

@@ -20,16 +20,11 @@ internal interface ISnapExtractor
     Task<SnapAppsReleases> GetSnapAppsReleasesAsync(IAsyncPackageCoreReader asyncPackageCoreReader, [NotNull] ISnapAppReader snapAppReader, CancellationToken cancellationToken = default);
 }
 
-internal sealed class SnapExtractor : ISnapExtractor
+internal sealed class SnapExtractor(ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack)
+    : ISnapExtractor
 {   
-    readonly ISnapFilesystem _snapFilesystem;
-    readonly ISnapPack _snapPack;
-
-    public SnapExtractor(ISnapFilesystem snapFilesystem, [NotNull] ISnapPack snapPack)
-    {
-        _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
-    }
+    readonly ISnapFilesystem _snapFilesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+    readonly ISnapPack _snapPack = snapPack ?? throw new ArgumentNullException(nameof(snapPack));
 
     public async Task<List<string>> ExtractAsync(string nupkgAbsolutePath, string destinationDirectoryAbsolutePath, SnapRelease snapRelease, CancellationToken cancellationToken = default)
     {

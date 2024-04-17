@@ -13,17 +13,12 @@ internal interface ITypeReflector
     string Name { get; }
 }
 
-internal class CecilTypeReflector : ITypeReflector
+internal class CecilTypeReflector([NotNull] TypeDefinition type) : ITypeReflector
 {
-    readonly TypeDefinition _type;
+    readonly TypeDefinition _type = type ?? throw new ArgumentNullException(nameof(type));
 
     public string FullName => _type.FullName;
     public string Name => _type.Name;
-
-    public CecilTypeReflector([NotNull] TypeDefinition type)
-    {
-        _type = type ?? throw new ArgumentNullException(nameof(type));
-    }
 
     public IEnumerable<IAttributeReflector> GetAttributes<T>() where T : Attribute
     {

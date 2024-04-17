@@ -49,7 +49,6 @@ internal class SnapOsWindowsExitSignal : ISnapOsExitSignal
         _handlerRoutine = ConsoleCtrlCheck;
 
         SetConsoleCtrlHandler(_handlerRoutine, true);
-
     }
 
     /// <summary>
@@ -74,10 +73,7 @@ internal class SnapOsWindowsExitSignal : ISnapOsExitSignal
 
 }
 
-internal interface ISnapOsWindows : ISnapOsImpl
-{
-
-}
+internal interface ISnapOsWindows : ISnapOsImpl;
 
 internal sealed class SnapOsShortcutDescription
 {
@@ -90,27 +86,21 @@ internal sealed class SnapOsShortcutDescription
     public Dictionary<string, string> Environment { get; init; } = new();
 }
 
-internal sealed class SnapOsWindows : ISnapOsWindows
+internal sealed class SnapOsWindows(
+    ISnapFilesystem snapFilesystem,
+    [JetBrains.Annotations.NotNull] ISnapOsProcessManager snapOsProcessManager,
+    [JetBrains.Annotations.NotNull] ISnapOsSpecialFolders snapOsSpecialFolders,
+    bool isUnitTest = false)
+    : ISnapOsWindows
 {
     static long _consoleCreated;
 
-    readonly bool _isUnitTest;
-
     public ISnapOsTaskbar Taskbar => throw new PlatformNotSupportedException("Todo: Implement taskbar progressbar");
     public OSPlatform OsPlatform => OSPlatform.Windows;
-    public ISnapFilesystem Filesystem { get; }
-    public ISnapOsProcessManager OsProcessManager { get; }
+    public ISnapFilesystem Filesystem { get; } = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
+    public ISnapOsProcessManager OsProcessManager { get; } = snapOsProcessManager ?? throw new ArgumentNullException(nameof(snapOsProcessManager));
     public SnapOsDistroType DistroType => SnapOsDistroType.Windows;
-    public ISnapOsSpecialFolders SpecialFolders { get; }
-
-    public SnapOsWindows(ISnapFilesystem snapFilesystem, [JetBrains.Annotations.NotNull] ISnapOsProcessManager snapOsProcessManager,
-        [JetBrains.Annotations.NotNull] ISnapOsSpecialFolders snapOsSpecialFolders, bool isUnitTest = false)
-    {
-        Filesystem = snapFilesystem ?? throw new ArgumentNullException(nameof(snapFilesystem));
-        OsProcessManager = snapOsProcessManager ?? throw new ArgumentNullException(nameof(snapOsProcessManager));
-        SpecialFolders = snapOsSpecialFolders ?? throw new ArgumentNullException(nameof(snapOsSpecialFolders));
-        _isUnitTest = isUnitTest;
-    }
+    public ISnapOsSpecialFolders SpecialFolders { get; } = snapOsSpecialFolders ?? throw new ArgumentNullException(nameof(snapOsSpecialFolders));
 
     public Task CreateShortcutsForExecutableAsync(SnapOsShortcutDescription shortcutDescription, ILog logger = null, CancellationToken cancellationToken = default)
     {
@@ -224,7 +214,7 @@ internal sealed class SnapOsWindows : ISnapOsWindows
                             $"Arguments: {shellLink.Arguments}. " +
                             $"ToastActivatorCSLID: {toastActivatorClsid}.");
 
-                if (_isUnitTest == false)
+                if (isUnitTest == false)
                 {
                     shellLink.Save(file);
                 }

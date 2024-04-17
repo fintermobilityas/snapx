@@ -44,7 +44,8 @@ internal class NuGetMachineWideSettings : IMachineWideSettings
     }
 }
 
-internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
+internal sealed class NugetOrgOfficialV2PackageSources()
+    : NuGetPackageSources(new NullSettings(), new List<PackageSource> { PackageSourceV2 })
 {
     static readonly PackageSource PackageSourceV2 =
         new(NuGetConstants.V2FeedUrl, "nuget.org", true, true, false)
@@ -52,13 +53,10 @@ internal sealed class NugetOrgOfficialV2PackageSources : NuGetPackageSources
             ProtocolVersion = (int) NuGetProtocolVersion.V2,
             IsMachineWide = true
         };
-
-    public NugetOrgOfficialV2PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV2})
-    {
-    }
 }
 
-internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
+internal sealed class NugetOrgOfficialV3PackageSources()
+    : NuGetPackageSources(new NullSettings(), new List<PackageSource> { PackageSourceV3 })
 {
     static readonly PackageSource PackageSourceV3 =
         new(NuGetConstants.V3FeedUrl, "nuget.org", true, true, false)
@@ -66,10 +64,6 @@ internal sealed class NugetOrgOfficialV3PackageSources : NuGetPackageSources
             ProtocolVersion = (int) NuGetProtocolVersion.V3,
             IsMachineWide = true
         };
-
-    public NugetOrgOfficialV3PackageSources() : base(new NullSettings(), new List<PackageSource> {PackageSourceV3})
-    {
-    }
 }
 
 internal class NuGetMachineWidePackageSources : NuGetPackageSources
@@ -96,14 +90,9 @@ internal class NuGetMachineWidePackageSources : NuGetPackageSources
     }
 }
 
-internal class NuGetInMemoryPackageSources : NuGetPackageSources
+internal class NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources)
+    : NuGetPackageSources(new NugetInMemorySettings(tempDirectory), packageSources)
 {
-    public NuGetInMemoryPackageSources(string tempDirectory, IReadOnlyCollection<PackageSource> packageSources) : base(
-        new NugetInMemorySettings(tempDirectory), packageSources)
-    {
-
-    }
-
     public NuGetInMemoryPackageSources(string tempDirectory, PackageSource packageSource) : this(tempDirectory, new List<PackageSource> { packageSource })
     {
             
@@ -116,17 +105,16 @@ internal interface INuGetPackageSources : IEnumerable<PackageSource>
     IReadOnlyCollection<PackageSource> Items { get; }
 }
 
-internal class NuGetPackageSources : INuGetPackageSources
+internal class NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
+    : INuGetPackageSources
 {
-    public ISettings Settings { get; protected set; }
-    public IReadOnlyCollection<PackageSource> Items { get; protected set; }
+    public ISettings Settings { get; protected init; } = settings ?? throw new ArgumentNullException(nameof(settings));
+    public IReadOnlyCollection<PackageSource> Items { get; protected init; } = sources ?? throw new ArgumentNullException(nameof(sources));
 
     public static NuGetPackageSources Empty => new();
 
-    protected NuGetPackageSources()
+    protected NuGetPackageSources() : this(new NullSettings(), new List<PackageSource>())
     {
-        Items = new List<PackageSource>();
-        Settings = new NullSettings();
     }
 
     [UsedImplicitly]
@@ -134,12 +122,6 @@ internal class NuGetPackageSources : INuGetPackageSources
         settings.GetConfigFilePaths().Select(x => new PackageSource(x)).ToList())
     {
         if (settings == null) throw new ArgumentNullException(nameof(settings));
-    }
-
-    public NuGetPackageSources([NotNull] ISettings settings, [NotNull] IReadOnlyCollection<PackageSource> sources)
-    {
-        Items = sources ?? throw new ArgumentNullException(nameof(sources));
-        Settings = settings ?? throw new ArgumentNullException(nameof(settings));
     }
 
     public IEnumerator<PackageSource> GetEnumerator()

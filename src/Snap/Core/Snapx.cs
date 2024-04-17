@@ -212,11 +212,11 @@ public static class Snapx
         }
 
         SuperVisorProcess = SnapOs.ProcessManager.StartNonBlocking(new ProcessStartInfoBuilder(SuperVisorProcessExeDirectory)
-            .AddRange(restartArguments ?? new List<string>())
+            .AddRange(restartArguments ?? [])
             .Add(runArgument)
         );
 
-        SupervisorProcessRestartArguments = restartArguments ?? new List<string>();
+        SupervisorProcessRestartArguments = restartArguments ?? [];
 
         Logger.Debug($"Enabled supervision of process with id: {SnapOs.ProcessManager.Current.Id}. Supervisor id: {superVisorId}. " +
                      $"Restart arguments({SupervisorProcessRestartArguments.Count}): {string.Join(",", SupervisorProcessRestartArguments)}. ");

@@ -411,7 +411,7 @@ internal sealed class SnapFilesystem : ISnapFilesystem
             return;
         }
 
-        excludePaths = excludePaths?.Where(x => x != null).Select(x => PathCombine(directory, x)).ToList() ?? new List<string>();
+        excludePaths = excludePaths?.Where(x => x != null).Select(x => PathCombine(directory, x)).ToList() ?? [];
             
         // From http://stackoverflow.com/questions/329355/cannot-delete-directory-with-directory-deletepath-true/329502#329502
         var files = Array.Empty<string>();

@@ -9,12 +9,7 @@ namespace Snap.Tests.Core;
 public class SnapBinaryPatcherTests
 {
     static readonly Random Random = new();
-    readonly ISnapBinaryPatcher _snapBinaryPatcher;
-
-    public SnapBinaryPatcherTests()
-    {
-        _snapBinaryPatcher = new SnapBinaryPatcher(new LibBsDiff());
-    }
+    readonly ISnapBinaryPatcher _snapBinaryPatcher = new SnapBinaryPatcher(new LibBsDiff());
 
     [Fact]
     public async Task TestBsDiff()

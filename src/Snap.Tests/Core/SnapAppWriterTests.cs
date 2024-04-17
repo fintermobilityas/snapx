@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Snap.Core;
 using Snap.Core.Models;
@@ -9,20 +8,12 @@ using Xunit;
 
 namespace Snap.Tests.Core;
 
-public class SnapAppWriterTests : IClassFixture<BaseFixture>
+public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFixture>
 {
-    readonly BaseFixture _baseFixture;
-    readonly ISnapAppWriter _snapAppWriter;
-    readonly ISnapAppReader _snapAppReader;
-    readonly ISnapFilesystem _snapFilesystem;
-
-    public SnapAppWriterTests(BaseFixture baseFixture)
-    {
-        _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
-        _snapFilesystem = new SnapFilesystem();
-        _snapAppWriter = new SnapAppWriter();
-        _snapAppReader = new SnapAppReader();
-    }
+    readonly BaseFixture _baseFixture = baseFixture ?? throw new ArgumentNullException(nameof(baseFixture));
+    readonly ISnapAppWriter _snapAppWriter = new SnapAppWriter();
+    readonly ISnapAppReader _snapAppReader = new SnapAppReader();
+    readonly ISnapFilesystem _snapFilesystem = new SnapFilesystem();
 
     [Fact]
     public void TestToSnapAppYamlString()
@@ -204,11 +195,11 @@ public class SnapAppWriterTests : IClassFixture<BaseFixture>
     {
         var snapAppBefore = _baseFixture.BuildSnapApp();
 
-        snapAppBefore.Target.PersistentAssets = new List<string>
-        {
+        snapAppBefore.Target.PersistentAssets =
+        [
             "subdirectory/",
             "somefile.json"
-        };
+        ];
 
         using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
         var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
@@ -222,11 +213,11 @@ public class SnapAppWriterTests : IClassFixture<BaseFixture>
     {
         var snapAppBefore = _baseFixture.BuildSnapApp();
 
-        snapAppBefore.Target.Shortcuts = new List<SnapShortcutLocation>
-        {
+        snapAppBefore.Target.Shortcuts =
+        [
             SnapShortcutLocation.Desktop,
             SnapShortcutLocation.StartMenu
-        };
+        ];
 
         using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
         var snapAppAfter = assembly.GetSnapApp(_snapAppReader);

@@ -91,7 +91,7 @@ public class NugetServiceV2Tests : IClassFixture<BaseFixture>
         var progressSourceMock = new Mock<INugetServiceProgressSource>();
         progressSourceMock
             .Setup(x => x.Raise(It.IsAny<int>(), It.IsAny<long>(), It.IsAny<long>(), It.IsAny<long>()))
-            .Callback((int percentage, long bytesRead, long totalBytesDownloadedSoFar, long totalBytesToDownload) =>
+            .Callback((int percentage, long _, long _, long _) =>
             {
                 percentages.Add(percentage);
             });
@@ -151,7 +151,7 @@ public class NugetServiceV2Tests : IClassFixture<BaseFixture>
         var progressSourceMock = new Mock<INugetServiceProgressSource>();
         progressSourceMock
             .Setup(x => x.Raise(It.IsAny<int>(), It.IsAny<long>(),It.IsAny<long>(), It.IsAny<long>()))
-            .Callback((int percentage, long bytesRead, long totalBytesDownloadedSoFar, long totalBytesToDownload) =>
+            .Callback((int percentage, long _, long _, long _) =>
             {
                 percentages.Add(percentage);
             });

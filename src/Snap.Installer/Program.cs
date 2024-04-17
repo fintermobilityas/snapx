@@ -179,21 +179,21 @@ internal static partial class Program
 
         container.Register<ILibPal>(_ => new LibPal());
         container.Register<IBsdiffLib>(_ => new LibBsDiff());
-        container.Register(c => snapOs);
-        container.Register(c => snapOs.SpecialFolders);
+        container.Register(_ => snapOs);
+        container.Register(_ => snapOs.SpecialFolders);
 
-        container.Register(c => snapOs.Filesystem);
-        container.Register<ISnapHttpClient>(c => new SnapHttpClient(new HttpClient()));
-        container.Register<ISnapInstallerEmbeddedResources>(c => new SnapInstallerEmbeddedResources());
+        container.Register(_ => snapOs.Filesystem);
+        container.Register<ISnapHttpClient>(_ => new SnapHttpClient(new HttpClient()));
+        container.Register<ISnapInstallerEmbeddedResources>(_ => new SnapInstallerEmbeddedResources());
         container.Register<INuGetPackageSources>(c =>
             new NuGetMachineWidePackageSources(
                 c.GetInstance<ISnapFilesystem>(),
                 workingDirectory
             )
         );
-        container.Register<ISnapCryptoProvider>(c => new SnapCryptoProvider());
-        container.Register<ISnapAppReader>(c => new SnapAppReader());
-        container.Register<ISnapAppWriter>(c => new SnapAppWriter());
+        container.Register<ISnapCryptoProvider>(_ => new SnapCryptoProvider());
+        container.Register<ISnapAppReader>(_ => new SnapAppReader());
+        container.Register<ISnapAppWriter>(_ => new SnapAppWriter());
         container.Register<ISnapBinaryPatcher>(c => new SnapBinaryPatcher(c.GetInstance<IBsdiffLib>()));
         container.Register<ISnapPack>(c => new SnapPack(
             c.GetInstance<ISnapFilesystem>(), 
@@ -210,7 +210,7 @@ internal static partial class Program
             c.GetInstance<ISnapOs>(),
             c.GetInstance<ISnapAppWriter>()
         ));
-        container.Register<ISnapNugetLogger>(c => new NugetLogger(logger));
+        container.Register<ISnapNugetLogger>(_ => new NugetLogger(logger));
         container.Register<INugetService>(c => new NugetService(
             c.GetInstance<ISnapFilesystem>(), 
             c.GetInstance<ISnapNugetLogger>())

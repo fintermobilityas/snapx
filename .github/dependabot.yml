@@ -5,7 +5,16 @@ updates:
   schedule:
     interval: daily
     time: "04:00"
-  open-pull-requests-limit: 10
+  groups: 
+    xunit:
+        patterns:
+          - "xunit"
+          - "xunit.runner.visualstudio"
+    nuget:
+        patterns:
+          - "NuGet.Packaging.Core"
+          - "NuGet.Protocol"
+  open-pull-requests-limit: 25
 - package-ecosystem: "github-actions"
   directory: "/"
   schedule:

@@ -82,29 +82,35 @@ Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
   - Windows Server 2012 R2
   - Windows Server 2016 R2
   - Windows Server 2019 R2
-
+  - Windows Server 2022 R2
+ 
 - Ubuntu Desktop x64
 
   - 18.04
   - 20.04
   - 22.04
+  - 24.04
 
 - Ubuntu Server x64
 
   - 18.04
   - 20.04
   - 22.04
+  - 24.04
 
 - Ubuntu Desktop arm64
 
   - 18.04
   - 20.04
   - 22.04
+  - 24.04
 
 - Ubuntu Server arm64
   - 18.04
   - 20.04
   - 22.04
+  - 24.04
+  
 - Raspberry Pi OS arm64
 
 ## Code of Conduct

@@ -256,6 +256,9 @@ jobs:
       - name: Create github release tag
         id: create-release
         uses: "actions/github-script@v7"
+        needs: [setup]
+        env:
+          VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |

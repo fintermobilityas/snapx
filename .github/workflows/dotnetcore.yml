@@ -252,12 +252,25 @@ jobs:
           }
 
       - name: Create github release tag
-        if: github.ref == 'refs/heads/master'
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: create-release
+        uses: "actions/github-script@v7"
+        permissions:
+          contents: write
         with:
-          tag_name: v${{ env.SNAPX_VERSION }}
-          release_name: Release v${{ env.SNAPX_VERSION }}
-          draft: true
-          prerelease: false
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          script: |
+            try {
+              $response = await github.rest.repos.createRelease({
+                draft: false,
+                generate_release_notes: true,
+                name: "Release " + process.env.VERSION,
+                owner: context.repo.owner,
+                prerelease: false,
+                repo: context.repo.repo,
+                tag_name: "v" + process.env.VERSION,
+              });
+              return $response['data']['body'];
+            } catch (error) {
+              core.setFailed(error.message);
+            }
+          result-encoding: string

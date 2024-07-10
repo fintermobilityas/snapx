@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Net.Http;
-using System.Text;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +8,7 @@ using JetBrains.Annotations;
 using Snap.Core;
 using Snap.Logging;
 using snapx.Api;
+using Lock = snapx.Api.Lock;
 
 namespace snapx.Core;
 
@@ -33,7 +34,7 @@ internal sealed class DistributedMutexClient([NotNull] ISnapHttpClient httpClien
         
         using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, "https://snapx.dev/lock")
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            Content = new StringContent(json, new MediaTypeHeaderValue("application/json", "utf-8"))
         }, default);
 
         httpResponse.EnsureSuccessStatusCode();
@@ -52,7 +53,7 @@ internal sealed class DistributedMutexClient([NotNull] ISnapHttpClient httpClien
         
         using var httpResponse = await _httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "https://snapx.dev/unlock")
         {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
+            Content = new StringContent(json, new MediaTypeHeaderValue("application/json", "utf-8"))
         }, default);
 
         httpResponse.EnsureSuccessStatusCode();

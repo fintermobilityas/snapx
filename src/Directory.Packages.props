@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AvaloniaVersion>11.0.10</AvaloniaVersion>
+    <AvaloniaVersion>11.0.11</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
@@ -15,18 +15,18 @@
     <PackageVersion Include="LibLog" Version="5.0.8" />
     <PackageVersion Include="LightInject" Version="6.6.4" />
     <PackageVersion Include="MessagePack" Version="2.5.140" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.5" />
     <PackageVersion Include="Moq" Version="4.20.70" />
     <PackageVersion Include="NLog" Version="5.3.2" />
     <PackageVersion Include="NuGet.Packaging.Core" Version="6.9.1" />
-    <PackageVersion Include="NuGet.Protocol" Version="6.9.1" />
+    <PackageVersion Include="NuGet.Protocol" Version="6.10.0" />
     <PackageVersion Include="SharpCompress" Version="0.37.2" />
     <PackageVersion Include="System.CodeDom" Version="8.0.0" />
     <PackageVersion Include="System.Security.Permissions" Version="8.0.0" />
     <PackageVersion Include="xunit" Version="2.8.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.0" />
     <PackageVersion Include="XunitXml.TestLogger" Version="3.1.20" />
-    <PackageVersion Include="YamlDotNet" Version="15.1.2" />
+    <PackageVersion Include="YamlDotNet" Version="15.1.4" />
   </ItemGroup>
 </Project>

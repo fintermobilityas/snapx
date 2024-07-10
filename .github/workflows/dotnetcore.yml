@@ -15,9 +15,9 @@ env:
   GITVERSION_VERSION: 5.12.0
   MSVS_TOOLSET_VERSION: 16
   SNAPX_DOTNET_FRAMEWORK_VERSION: net8.0
-  DOTNET_NET60_VERSION: 6.0.421
-  DOTNET_NET70_VERSION: 7.0.408
-  DOTNET_NET80_VERSION: 8.0.204
+  DOTNET_NET60_VERSION: 6.0.424
+  DOTNET_NET70_VERSION: 7.0.410
+  DOTNET_NET80_VERSION: 8.0.303
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: 1
@@ -66,15 +66,15 @@ jobs:
           lfs: true
           submodules: true
 
-      - uses: azure/docker-login@v1
+      - uses: docker/login-action@v3.2.0
         name: Docker login github packages
         with:
-          login-server: ghcr.io
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.SNAPX_DOCKER_READ_PAT }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.0.0
+        uses: actions/setup-dotnet@v4.0.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET60_VERSION }}
@@ -140,7 +140,7 @@ jobs:
           submodules: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.0.0
+        uses: actions/setup-dotnet@v4.0.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET60_VERSION }}
@@ -222,7 +222,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.0.0
+        uses: actions/setup-dotnet@v4.0.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET60_VERSION }}

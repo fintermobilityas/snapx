@@ -63,6 +63,8 @@ internal sealed class SnapNetworkTimeProvider : ISnapNetworkTimeProvider
         var tsc = new TaskCompletionSource<DateTime?>();
         ThreadPool.QueueUserWorkItem(_ =>
         {
+            var remainingRetries = 3;
+            retry:
             try
             {
                 var ntpData = new byte[48];
@@ -90,6 +92,11 @@ internal sealed class SnapNetworkTimeProvider : ISnapNetworkTimeProvider
             }
             catch
             {
+                if(--remainingRetries > 0)
+                {
+                    goto retry;
+                }
+                
                 tsc.TrySetResult(null);
             }
         });

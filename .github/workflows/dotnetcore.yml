@@ -187,6 +187,8 @@ jobs:
   publish:
     if: success()
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     name: Nupkg
     needs: [setup, windows, linux] # todo: enable me when github actions supports arm64: test-linux-arm64
     env:
@@ -254,8 +256,6 @@ jobs:
       - name: Create github release tag
         id: create-release
         uses: "actions/github-script@v7"
-        permissions:
-          contents: write
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           script: |

@@ -31,5 +31,7 @@
     </PackageVersion>
     <PackageVersion Include="XunitXml.TestLogger" Version="4.0.254" />
     <PackageVersion Include="YamlDotNet" Version="16.0.0" />
+    <!-- Transitive dependencies -->
+    <PackageVersion Include="System.Formats.Asn1" Version="[8.0.1,)" />
   </ItemGroup>
 </Project>

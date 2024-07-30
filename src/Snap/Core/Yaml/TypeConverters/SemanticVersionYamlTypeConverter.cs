@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using NuGet.Versioning;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -13,7 +13,7 @@ internal sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
         return type == typeof(SemanticVersion);
     }
 
-    public object ReadYaml(IParser parser, Type type)
+    public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var semanticVersionStr = ((Scalar)parser.Current)?.Value;
         parser.MoveNext();
@@ -21,7 +21,7 @@ internal sealed class SemanticVersionYamlTypeConverter : IYamlTypeConverter
         return semanticVersion;
     }
 
-    public void WriteYaml(IEmitter emitter, object value, Type type)
+    public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
     {
         var semanticVersionStr = ((SemanticVersion)value)?.ToNormalizedString() ?? string.Empty;
         emitter.Emit(new Scalar(semanticVersionStr));

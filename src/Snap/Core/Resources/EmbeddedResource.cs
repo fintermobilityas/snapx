@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 
 namespace Snap.Core.Resources;
 
@@ -16,7 +15,6 @@ internal interface IEmbedResources : IDisposable
 internal interface IEmbeddedResource : IDisposable
 {
     Type TypeRoot { get; }
-    Assembly Assembly { get; }
     MemoryStream Stream { get; }
     string Filename { get; set; }
 }
@@ -24,7 +22,6 @@ internal interface IEmbeddedResource : IDisposable
 internal sealed class EmbeddedResource : IEmbeddedResource
 {
     public Type TypeRoot { get; }
-    public Assembly Assembly => TypeRoot.Assembly;
     public MemoryStream Stream { get; }
     public string Filename { get; set; }
 
@@ -55,7 +52,7 @@ internal abstract class EmbeddedResources : IEmbedResources
 
     public EmbeddedResource Find(Type typeRoot, string filename)
     {
-        if (typeRoot == null) throw new ArgumentNullException(nameof(typeRoot));
+        ArgumentNullException.ThrowIfNull(typeRoot);
         return _resources.SingleOrDefault(x => x.TypeRoot == typeRoot && string.Equals(filename, x.Filename));
     }
 

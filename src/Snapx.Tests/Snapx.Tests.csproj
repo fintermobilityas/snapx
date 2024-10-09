@@ -20,8 +20,6 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
         <PackageReference Include="Moq" />
-        <PackageReference Include="System.CodeDom" />
-        <PackageReference Include="System.Security.Permissions" />
         <PackageReference Include="xunit" />
         <PackageReference Include="xunit.runner.visualstudio">
             <PrivateAssets>all</PrivateAssets>

@@ -3,9 +3,8 @@ FROM ubuntu:20.04 as env-build
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SNAPX_DOCKER_WORKING_DIR /build/snapx
 
-ARG DOTNET_60_SDK_VERSION=6.0.427
-ARG DOTNET_80_SDK_VERSION=8.0.403
-ARG DOTNET_90_SDK_VERSION=9.0.100-rc.2.24474.11
+ARG DOTNET_80_SDK_VERSION=8.0.404
+ARG DOTNET_90_SDK_VERSION=9.0.100
 ARG DOTNET_RID=linux-x64
 
 
@@ -33,12 +32,6 @@ RUN \
   wget https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${DOTNET_80_SDK_VERSION}/dotnet-sdk-${DOTNET_80_SDK_VERSION}-${DOTNET_RID}.tar.gz && \
   mkdir -p /root/dotnet && tar zxf dotnet-sdk-${DOTNET_80_SDK_VERSION}-${DOTNET_RID}.tar.gz -C /root/dotnet && \
   rm dotnet-sdk-${DOTNET_80_SDK_VERSION}-${DOTNET_RID}.tar.gz	
-
-RUN \
-  wget https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${DOTNET_60_SDK_VERSION}/dotnet-sdk-${DOTNET_60_SDK_VERSION}-${DOTNET_RID}.tar.gz && \
-  mkdir -p /root/dotnet && tar zxf dotnet-sdk-${DOTNET_60_SDK_VERSION}-${DOTNET_RID}.tar.gz -C /root/dotnet && \
-  rm dotnet-sdk-${DOTNET_60_SDK_VERSION}-${DOTNET_RID}.tar.gz
-
 RUN \
   /root/dotnet/dotnet tool update powershell -g
 

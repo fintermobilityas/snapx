@@ -14,10 +14,9 @@ on:
 env:
   GITVERSION_VERSION: 5.12.0
   MSVS_TOOLSET_VERSION: 16
-  SNAPX_DOTNET_FRAMEWORK_VERSION: net8.0
-  DOTNET_NET60_VERSION: 6.0.425
-  DOTNET_NET80_VERSION: 8.0.401
-  DOTNET_NET90_VERSION: 9.0.100-preview.7.24407.12
+  SNAPX_DOTNET_FRAMEWORK_VERSION: net9.0
+  DOTNET_NET80_VERSION: 8.0.404
+  DOTNET_NET90_VERSION: 9.0.100
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: 1
@@ -77,7 +76,6 @@ jobs:
         uses: actions/setup-dotnet@v4.1.0
         with:
           dotnet-version: |
-            ${{ env.DOTNET_NET60_VERSION }}
             ${{ env.DOTNET_NET90_VERSION }}
             ${{ env.DOTNET_NET80_VERSION }}
 
@@ -143,7 +141,6 @@ jobs:
         uses: actions/setup-dotnet@v4.1.0
         with:
           dotnet-version: |
-            ${{ env.DOTNET_NET60_VERSION }}
             ${{ env.DOTNET_NET90_VERSION }}
             ${{ env.DOTNET_NET80_VERSION }}
 
@@ -225,7 +222,6 @@ jobs:
         uses: actions/setup-dotnet@v4.1.0
         with:
           dotnet-version: |
-            ${{ env.DOTNET_NET60_VERSION }}
             ${{ env.DOTNET_NET90_VERSION }}
             ${{ env.DOTNET_NET80_VERSION }}
 

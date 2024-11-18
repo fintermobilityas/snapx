@@ -121,7 +121,7 @@ public class BaseFixture
             ],
             Target = new SnapTarget
             {
-                Framework = "net8.0",
+                Framework = "net9.0",
                 Shortcuts =
                 [
                     SnapShortcutLocation.Desktop,

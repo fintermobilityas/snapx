@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AvaloniaVersion>11.2.3</AvaloniaVersion>
+    <AvaloniaVersion>11.2.5</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
@@ -18,8 +18,8 @@
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="NLog" Version="5.4.0" />
-    <PackageVersion Include="NuGet.Packaging" Version="6.13.1" />
-    <PackageVersion Include="NuGet.Protocol" Version="6.13.1" />
+    <PackageVersion Include="NuGet.Packaging" Version="6.13.2" />
+    <PackageVersion Include="NuGet.Protocol" Version="6.13.2" />
     <PackageVersion Include="SharpCompress" Version="0.39.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="Mono.Cecil" Version="0.11.6" />

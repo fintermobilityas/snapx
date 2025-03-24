@@ -65,7 +65,7 @@ jobs:
           lfs: true
           submodules: true
 
-      - uses: docker/login-action@v3.3.0
+      - uses: docker/login-action@v3.4.0
         name: Docker login github packages
         with:
           registry: ghcr.io
@@ -73,7 +73,7 @@ jobs:
           password: ${{ secrets.SNAPX_DOCKER_READ_PAT }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.0
+        uses: actions/setup-dotnet@v4.3.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}
@@ -138,7 +138,7 @@ jobs:
           submodules: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.0
+        uses: actions/setup-dotnet@v4.3.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}
@@ -219,7 +219,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.0
+        uses: actions/setup-dotnet@v4.3.1
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}

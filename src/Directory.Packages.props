@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AvaloniaVersion>11.2.5</AvaloniaVersion>
+    <AvaloniaVersion>11.2.6</AvaloniaVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
@@ -27,7 +27,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="XunitXml.TestLogger" Version="5.0.0" />
+    <PackageVersion Include="XunitXml.TestLogger" Version="6.1.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
     <!-- Transitive dependencies -->
     <PackageVersion Include="System.Formats.Asn1" Version="[9.0.0,)" />

@@ -66,7 +66,7 @@ namespace Snap.Logging
         /// </summary>
         /// <typeparam name="T">The type whose name will be used for the logger.</typeparam>
         /// <returns>An instance of <see cref="ILog"/></returns>
-        internal static ILog For<T>() 
+        public static ILog For<T>() 
         {
             return GetLogger(typeof(T));
         }
@@ -99,7 +99,7 @@ namespace Snap.Logging
         /// </summary>
         /// <param name="name">The name.</param>
         /// <returns>An instance of <see cref="ILog"/></returns>
-        internal static ILog GetLogger(string name)
+        public static ILog GetLogger(string name)
         {
             var logProvider = CurrentLogProvider ?? ResolveLogProvider();
             return logProvider == null

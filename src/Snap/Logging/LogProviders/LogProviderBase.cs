@@ -8,7 +8,7 @@ namespace Snap.Logging.LogProviders
     /// <summary>
     /// Base class for log providers.
     /// </summary>
-    internal abstract class LogProviderBase : ILogProvider
+    public abstract class LogProviderBase : ILogProvider
     {
         public abstract Logger GetLogger(string name);
 

@@ -8,7 +8,7 @@ namespace Snap.Logging
     /// <summary>
     /// Extension methods for the <see cref="ILog"/> interface.
     /// </summary>
-    internal static class LogExtensions
+    public static class LogExtensions
     {
         internal static readonly object[] EmptyParams = new object[0];
 

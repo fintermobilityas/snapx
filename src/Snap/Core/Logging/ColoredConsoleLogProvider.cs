@@ -8,7 +8,7 @@ using Snap.Logging.LogProviders;
 
 namespace Snap.Core.Logging;
 
-internal class ColoredConsoleLogProvider(LogLevel level) : LogProviderBase
+public class ColoredConsoleLogProvider(LogLevel level) : LogProviderBase
 {
     static readonly Dictionary<LogLevel, ConsoleColor> Colors = new()
     {

@@ -1,6 +1,7 @@
 #include "stubexecutable.hpp"
 #include "vendor/semver/semver200.h"
 
+#include <memory>
 #include <string>
 
 int snap::stubexecutable::run(std::vector<std::string> arguments, const std::map<std::string, std::string>& environment_variables, const int cmd_show)

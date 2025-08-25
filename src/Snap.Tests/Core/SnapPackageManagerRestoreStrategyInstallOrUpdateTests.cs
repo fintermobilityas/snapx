@@ -670,5 +670,82 @@ public class SnapPackageManagerRestoreStrategyInstallOrUpdateTests : IClassFixtu
         }
     }
 
+    [Fact]
+    public async Task TestRestoreAsync_Default_Cleans_Up_Unused_Packages()
+    {
+        var snapAppsReleases = new SnapAppsReleases();
+        var genesisSnapApp = _baseFixturePackaging.BuildSnapApp();
+        var update1SnapApp = _baseFixturePackaging.Bump(genesisSnapApp);
+        var snapAppChannel = genesisSnapApp.GetDefaultChannelOrThrow();
+
+        await using var rootDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
+        await using var restoreDirectory = new DisposableDirectory(_baseFixturePackaging.WorkingDirectory, _snapFilesystem);
+        await using var nugetPackageSourcesDirectory = _snapFilesystem.WithDisposableTempDirectory(_baseFixturePackaging.WorkingDirectory);
+        using var genesisReleaseBuilder =
+            _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, genesisSnapApp, _releaseBuilderContext);
+        using var update1ReleaseBuilder =
+            _baseFixturePackaging.WithSnapReleaseBuilder(rootDirectory, snapAppsReleases, update1SnapApp, _releaseBuilderContext);
+        var packagesDirectory = _snapFilesystem.PathCombine(restoreDirectory.WorkingDirectory, "packages");
+        _snapFilesystem.DirectoryCreate(packagesDirectory);
+
+        var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
+        var packageSource = nugetPackageSources.Items.Single();
+
+        genesisReleaseBuilder
+            .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(genesisSnapApp))
+            .AddSnapDll();
+
+        update1ReleaseBuilder
+            .AddNuspecItem(_baseFixturePackaging.BuildSnapExecutable(update1SnapApp))
+            .AddSnapDll();
+
+        using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisReleaseBuilder);
+        using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1ReleaseBuilder);
+        var snapAppChannelReleases = snapAppsReleases.GetReleases(genesisSnapApp, snapAppChannel);
+
+        // Copy required packages to packages directory
+        var genesisPackageAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, genesisPackageContext.FullPackageSnapRelease.Filename);
+        var update1DeltaPackageAbsolutePath = _snapFilesystem.PathCombine(packagesDirectory, update1PackageContext.DeltaPackageSnapRelease.Filename);
+        await _snapFilesystem.FileCopyAsync(genesisPackageContext.FullPackageAbsolutePath, genesisPackageAbsolutePath, default);
+        await _snapFilesystem.FileCopyAsync(update1PackageContext.DeltaPackageAbsolutePath, update1DeltaPackageAbsolutePath, default);
+
+        // Add extra "unused" packages that should be cleaned up
+        var unusedPackage1Path = _snapFilesystem.PathCombine(packagesDirectory, "unused-package-1.0.0.nupkg");
+        var unusedPackage2Path = _snapFilesystem.PathCombine(packagesDirectory, "another-unused-2.0.0.nupkg");
+        
+        // Create fake nupkg files - we'll create minimal ZIP files that look like nupkgs
+        _snapFilesystem.DirectoryCreate(_snapFilesystem.DirectoryGetParent(unusedPackage1Path));
+        await _snapFilesystem.FileWriteUtf8StringAsync(unusedPackage1Path, "PK\x03\x04fake package content 1", default);
+        await _snapFilesystem.FileWriteUtf8StringAsync(unusedPackage2Path, "PK\x03\x04fake package content 2", default);
+
+        // Add a non-nupkg file that should not be touched
+        var nonNupkgFilePath = _snapFilesystem.PathCombine(packagesDirectory, "some-other-file.txt");
+        await _snapFilesystem.FileWriteUtf8StringAsync(nonNupkgFilePath, "this should remain", default);
+
+        // Verify all files exist before restore
+        Assert.True(_snapFilesystem.FileExists(genesisPackageAbsolutePath));
+        Assert.True(_snapFilesystem.FileExists(update1DeltaPackageAbsolutePath));
+        Assert.True(_snapFilesystem.FileExists(unusedPackage1Path));
+        Assert.True(_snapFilesystem.FileExists(unusedPackage2Path));
+        Assert.True(_snapFilesystem.FileExists(nonNupkgFilePath));
+
+        // Run restore with Default type (this should clean up unused packages)
+        var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases,
+            packageSource, SnapPackageManagerRestoreType.Default);
+
+        Assert.True(restoreSummary.Success);
+
+        // Verify required packages still exist
+        Assert.True(_snapFilesystem.FileExists(genesisPackageAbsolutePath));
+        Assert.True(_snapFilesystem.FileExists(update1DeltaPackageAbsolutePath));
+
+        // Verify unused packages were cleaned up
+        Assert.False(_snapFilesystem.FileExists(unusedPackage1Path));
+        Assert.False(_snapFilesystem.FileExists(unusedPackage2Path));
+
+        // Verify non-nupkg file was not touched
+        Assert.True(_snapFilesystem.FileExists(nonNupkgFilePath));
+    }
+
         
 }

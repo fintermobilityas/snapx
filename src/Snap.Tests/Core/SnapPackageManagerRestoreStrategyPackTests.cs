@@ -572,12 +572,8 @@ public class SnapPackageManagerRestoreStrategyPackTests : IClassFixture<BaseFixt
                 _snapCryptoProvider.Sha256(genesisPackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
         }
 
-        using (var packageArchiveReader = new PackageArchiveReader(update1FullPackageAbsolutePath))
-        {
-            Assert.Equal(update1PackageContext.FullPackageSnapRelease.BuildPackageIdentity(), packageArchiveReader.GetIdentity());
-            Assert.Equal(update1PackageContext.FullPackageSnapRelease.FullSha256Checksum,
-                _snapCryptoProvider.Sha256(update1PackageContext.FullPackageSnapRelease, packageArchiveReader, _snapPack));
-        }
+        // The update1 full package should have been cleaned up since it's not needed for Pack operations
+        Assert.False(_snapFilesystem.FileExists(update1FullPackageAbsolutePath));
 
         using (var packageArchiveReader = new PackageArchiveReader(update1DeltaPackageAbsolutePath))
         {

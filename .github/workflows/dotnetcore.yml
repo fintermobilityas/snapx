@@ -43,7 +43,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet tool update GitVersion.Tool --global --version ${{ env.GITVERSION_VERSION }}
-          $SNAPX_VERSION = (dotnet gitversion /showVariable SemVer) | out-string
+          $SNAPX_VERSION = (dotnet gitversion /showVariable SemVer).Trim().ToLowerInvariant()
           echo "SNAPX_VERSION=$SNAPX_VERSION" >> $env:GITHUB_OUTPUT
 
   linux:

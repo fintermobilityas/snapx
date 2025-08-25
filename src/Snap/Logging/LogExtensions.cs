@@ -521,12 +521,7 @@ namespace Snap.Logging
         // Allow passing callsite-logger-type to LogProviderBase using messageFunc
         private static Func<string> WrapLogInternal(Func<string> messageFunc)
         {
-            var WrappedMessageFunc = new Func<string>(() =>
-            {
-                return messageFunc();
-            });
-
-            return WrappedMessageFunc;
+            return messageFunc;
         }
     }
 }

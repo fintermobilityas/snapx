@@ -1,20 +1,23 @@
 ﻿using System;
-using System.IO;
 using System.Text;
 using JetBrains.Annotations;
 using MessagePack;
+using Mono.Cecil;
+using Snap.Attributes;
 using Snap.Core.Models;
 using Snap.Core.Yaml.Emitters;
 using Snap.Core.Yaml.TypeConverters;
+using Snap.Reflection;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.Converters;
 using YamlDotNet.Serialization.NamingConventions;
+using EmbeddedResource = Mono.Cecil.EmbeddedResource;
 
 namespace Snap.Core;
 
 internal interface ISnapAppWriter
 {
-    MemoryStream BuildSnapApp(SnapApp snapsApp);
+    AssemblyDefinition BuildSnapAppAssembly(SnapApp snapsApp);
     string ToSnapAppYamlString(SnapApp snapApp);
     string ToSnapAppsYamlString(SnapApps snapApps);
     byte[] ToSnapAppsReleases(SnapAppsReleases snapAppsApps);
@@ -46,7 +49,7 @@ internal sealed class SnapAppWriter : ISnapAppWriter
             .Build();
     }
 
-    public MemoryStream BuildSnapApp([NotNull] SnapApp snapApp)
+    public AssemblyDefinition BuildSnapAppAssembly([NotNull] SnapApp snapApp)
     {
         if (snapApp == null) throw new ArgumentNullException(nameof(snapApp));
 
@@ -99,11 +102,22 @@ internal sealed class SnapAppWriter : ISnapAppWriter
             }
         }
                                                          
-        var yaml = ToSnapAppYamlString(snapApp);
-        var memoryStream = new MemoryStream();
-        memoryStream.Write(Encoding.UTF8.GetBytes(yaml));
-        memoryStream.Seek(0, SeekOrigin.Begin);
-        return memoryStream;
+        var snapAppYamlStr = ToSnapAppYamlString(snapApp);
+        var currentVersion = snapApp.Version;
+
+        var assembly = AssemblyDefinition.CreateAssembly(
+            new AssemblyNameDefinition(SnapConstants.SnapAppLibraryName, new Version(currentVersion.Major,
+                currentVersion.Minor, currentVersion.Patch)), SnapConstants.SnapAppLibraryName, ModuleKind.Dll);
+
+        var assemblyReflector = new CecilAssemblyReflector(assembly);
+
+        var snapAppReleaseDetailsAttributeMethodDefinition = assemblyReflector.MainModule.ImportReference(
+            typeof(SnapAppReleaseDetailsAttribute).GetConstructor(Type.EmptyTypes));
+
+        assemblyReflector.AddCustomAttribute(new CustomAttribute(snapAppReleaseDetailsAttributeMethodDefinition));
+        assemblyReflector.AddResource(new EmbeddedResource(SnapConstants.SnapAppLibraryName, ManifestResourceAttributes.Public, Encoding.UTF8.GetBytes(snapAppYamlStr)));
+
+        return assembly;
     }
 
     public string ToSnapAppYamlString([NotNull] SnapApp snapApp)

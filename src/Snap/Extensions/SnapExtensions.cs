@@ -6,11 +6,14 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using NuGet.Configuration;
 using NuGet.Packaging.Core;
+using Snap.Attributes;
 using Snap.Core;
 using Snap.Core.Models;
 using Snap.NuGet;
+using Snap.Reflection;
 
 namespace Snap.Extensions;
 
@@ -798,20 +801,48 @@ internal static class SnapExtensions
         return snapFeeds;
     }
 
+    internal static SnapApp GetSnapApp([NotNull] this AssemblyDefinition assemblyDefinition, [NotNull] ISnapAppReader snapAppReader)
+    {
+        if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
+        if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
+
+        var assemblyReflector = new CecilAssemblyReflector(assemblyDefinition);
+
+        var snapReleaseDetailsAttribute = assemblyReflector.GetAttribute<SnapAppReleaseDetailsAttribute>();
+        if (snapReleaseDetailsAttribute == null)
+        {
+            throw new Exception($"Unable to find {nameof(SnapAppReleaseDetailsAttribute)} in assembly {assemblyReflector.FullName}");
+        }
+
+        var snapSpecResource = assemblyReflector.MainModule.Resources.SingleOrDefault(x => x.Name == SnapConstants.SnapAppLibraryName);
+        if (!(snapSpecResource is EmbeddedResource snapSpecEmbeddedResource))
+        {
+            throw new Exception($"Unable to find resource {SnapConstants.SnapAppLibraryName} in assembly {assemblyReflector.FullName}");
+        }
+
+        using var resourceStream = snapSpecEmbeddedResource.GetResourceStream();
+        using var snapAppMemoryStream = new MemoryStream();
+        resourceStream.CopyTo(snapAppMemoryStream);
+        snapAppMemoryStream.Seek(0, SeekOrigin.Begin);
+
+        return snapAppReader.BuildSnapAppFromStream(snapAppMemoryStream);
+    }
+
     internal static SnapApp GetSnapAppFromDirectory([NotNull] this string workingDirectory, [NotNull] ISnapFilesystem filesystem, [NotNull] ISnapAppReader snapAppReader)
     {
-        ArgumentNullException.ThrowIfNull(workingDirectory);
-        ArgumentNullException.ThrowIfNull(filesystem);
-        ArgumentNullException.ThrowIfNull(snapAppReader);
+        if (workingDirectory == null) throw new ArgumentNullException(nameof(workingDirectory));
+        if (filesystem == null) throw new ArgumentNullException(nameof(filesystem));
+        if (snapAppReader == null) throw new ArgumentNullException(nameof(snapAppReader));
 
-        var snapAppDll = filesystem.PathCombine(workingDirectory, SnapConstants.SnapAppYamlFilename);
+        var snapAppDll = filesystem.PathCombine(workingDirectory, SnapConstants.SnapAppDllFilename);
         if (!filesystem.FileExists(snapAppDll))
         {
             throw new FileNotFoundException(snapAppDll);
         }
-        
-        var yaml = filesystem.FileReadAllText(snapAppDll);
-        return snapAppReader.BuildSnapAppFromYamlString(yaml);
+
+        using var snapAppDllFileStream = new FileStream(snapAppDll, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var snapAppDllAssemblyDefinition = AssemblyDefinition.ReadAssembly(snapAppDllFileStream);
+        return snapAppDllAssemblyDefinition.GetSnapApp(snapAppReader);
     }
 
     internal static void GetStubExeFullPath([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string baseDirectory, out string stubExeFullPath)

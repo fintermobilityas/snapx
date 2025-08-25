@@ -26,7 +26,14 @@ internal class ColoredConsoleLogProvider(LogLevel level) : LogProviderBase
         {
             if (messageFunc == null)
             {
-                return true; // All log levels are enabled
+                // Check if log level is enabled
+                return logLevel >= level;
+            }
+
+            // Check if this log level should be logged
+            if (logLevel < level)
+            {
+                return false;
             }
 
             if (Colors.TryGetValue(logLevel, out var consoleColor))
@@ -58,15 +65,22 @@ internal class ColoredConsoleLogProvider(LogLevel level) : LogProviderBase
         object[] formatParameters,
         Exception exception)
     {
-        if (logLevel < level)
-        {
-            return;
-        }
-
         var exceptionsEnabled = Debugger.IsAttached 
                                 || Environment.GetEnvironmentVariable("SNAPX_LOG_EXCEPTIONS").IsTrue();
 
-        var message = string.Format(CultureInfo.InvariantCulture, messageFunc(), formatParameters);
+        // Use LogMessageFormatter for structured logging support
+        string message;
+        if (formatParameters != null && formatParameters.Length > 0)
+        {
+            var messageTemplate = messageFunc();
+            IEnumerable<string> _;
+            message = LogMessageFormatter.FormatStructuredMessage(messageTemplate, formatParameters, out _);
+        }
+        else
+        {
+            message = messageFunc();
+        }
+
         if (exception != null)
         {
             if (exceptionsEnabled)

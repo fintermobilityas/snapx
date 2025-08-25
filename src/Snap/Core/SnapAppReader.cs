@@ -18,9 +18,9 @@ namespace Snap.Core;
 internal interface ISnapAppReader
 {
     SnapApps BuildSnapAppsFromYamlString(string yamlString);
-    SnapApp BuildSnapAppFromStream(Stream stream);
+    SnapApp BuildSnapAppFromStream(MemoryStream stream);
     SnapApp BuildSnapAppFromYamlString(string yamlString);
-    ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync(Stream stream);
+    ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync(MemoryStream stream);
 }
 
 internal sealed class SnapAppReader : ISnapAppReader
@@ -61,11 +61,16 @@ internal sealed class SnapAppReader : ISnapAppReader
             .Build();
     }
 
-    public SnapApp BuildSnapAppFromStream([NotNull] Stream stream)
+    public SnapApps BuildSnapAppsFromStream([NotNull] MemoryStream stream)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        var textReader = new StreamReader(stream, Encoding.UTF8);
-        return BuildSnapAppFromYamlString(textReader.ReadToEnd());
+        if (stream == null) throw new ArgumentNullException(nameof(stream));
+        return BuildSnapAppsFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
+    }
+
+    public SnapApp BuildSnapAppFromStream([NotNull] MemoryStream stream)
+    {
+        if (stream == null) throw new ArgumentNullException(nameof(stream));
+        return BuildSnapAppFromYamlString(Encoding.UTF8.GetString(stream.ToArray()));
     }
 
     public SnapApp BuildSnapAppFromYamlString(string yamlString)
@@ -74,7 +79,7 @@ internal sealed class SnapAppReader : ISnapAppReader
         return DeserializerSnapApp.Deserialize<SnapApp>(yamlString);
     }
 
-    public ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync([NotNull] Stream stream)
+    public ValueTask<SnapAppsReleases> BuildSnapAppsReleasesFromStreamAsync([NotNull] MemoryStream stream)
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
         return MessagePackSerializer.DeserializeAsync<SnapAppsReleases>(stream, MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray));

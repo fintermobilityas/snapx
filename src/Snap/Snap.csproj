@@ -19,10 +19,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="LibLog">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-        </PackageReference>
     </ItemGroup>
 
     <!-- Windows-->

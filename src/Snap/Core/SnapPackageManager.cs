@@ -329,8 +329,8 @@ internal sealed class SnapPackageManager(
         restoreSummary.Success = restoreSummary.Success && await ReassembleAsync();
         restoreSummary.Sort();
         
-        // Cleanup unused packages (only for Pack operations)
-        if (restoreSummary.Success && restoreType == SnapPackageManagerRestoreType.Pack)
+        // Cleanup unused packages (for Pack and Default operations)
+        if (restoreSummary.Success && (restoreType == SnapPackageManagerRestoreType.Pack || restoreType == SnapPackageManagerRestoreType.Default))
         {
             CleanupUnusedPackages();
         }

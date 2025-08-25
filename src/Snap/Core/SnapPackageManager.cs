@@ -328,6 +328,12 @@ internal sealed class SnapPackageManager(
         stopwatch.Restart();
         restoreSummary.Success = restoreSummary.Success && await ReassembleAsync();
         restoreSummary.Sort();
+        
+        // Cleanup unused packages (only for Pack operations)
+        if (restoreSummary.Success && restoreType == SnapPackageManagerRestoreType.Pack)
+        {
+            CleanupUnusedPackages();
+        }
             
         return restoreSummary;
 
@@ -563,6 +569,60 @@ internal sealed class SnapPackageManager(
             logger?.Info($"Reassembled {releasesToReassemble.Count()} packages in {stopwatch.Elapsed.TotalSeconds:0.0}s.");
 
             return success;
+        }
+
+        void CleanupUnusedPackages()
+        {
+            try
+            {
+                // Get all required package filenames based on the releases that were processed
+                var requiredPackageFilenames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                
+                // Add all packages from snapReleasesToChecksum (the packages we actually needed for this operation)
+                foreach (var snapRelease in snapReleasesToChecksum)
+                {
+                    requiredPackageFilenames.Add(snapRelease.Filename);
+                }
+                
+                // Get all .nupkg files in the packages directory
+                var allNupkgFiles = _filesystem
+                    .DirectoryGetAllFiles(packagesDirectory)
+                    .Where(filePath => filePath.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                
+                // Identify packages to remove (not in required list)
+                var packagesToRemove = allNupkgFiles
+                    .Where(filePath => !requiredPackageFilenames.Contains(_filesystem.PathGetFileName(filePath)))
+                    .ToList();
+                    
+                if (packagesToRemove.Count > 0)
+                {
+                    logger?.Info($"Cleaning up {packagesToRemove.Count} unused packages from local packages directory.");
+                    
+                    foreach (var packagePath in packagesToRemove)
+                    {
+                        try
+                        {
+                            _filesystem.FileDelete(packagePath);
+                            logger?.Debug($"Deleted unused package: {_filesystem.PathGetFileName(packagePath)}");
+                        }
+                        catch (Exception e)
+                        {
+                            logger?.Warn($"Failed to delete unused package {_filesystem.PathGetFileName(packagePath)}: {e.Message}");
+                        }
+                    }
+                    
+                    logger?.Info($"Completed cleanup of unused packages. Removed {packagesToRemove.Count} packages.");
+                }
+                else
+                {
+                    logger?.Debug("No unused packages found for cleanup.");
+                }
+            }
+            catch (Exception e)
+            {
+                logger?.ErrorException("Error during package cleanup. This is not fatal and operation will continue.", e);
+            }
         }
     }
 

@@ -40,7 +40,7 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
         snapAppBefore.Channels.ForEach(x => { x.UpdateFeed.Source = null; });
         Assert.True(snapAppBefore.Channels.Count > 0);
 
-        var ex = Assert.Throws<Exception>(() => _snapAppWriter.BuildSnapApp(snapAppBefore));
+        var ex = Assert.Throws<Exception>(() => _snapAppWriter.BuildSnapAppAssembly(snapAppBefore));
         Assert.StartsWith("Update feed Source cannot be null", ex.Message);
     }
 
@@ -49,8 +49,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
     {
         var snapAppBefore = _baseFixture.BuildSnapApp();
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
     }
 
@@ -75,8 +75,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
             }
         });
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
 
         var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
@@ -112,8 +112,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
             },
         });
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
 
         var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
@@ -163,8 +163,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
             UpdateFeed = updateFeed
         });
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
             
         var snapAppAfterChannel = snapAppAfter.GetDefaultChannelOrThrow();
@@ -201,8 +201,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
             "somefile.json"
         ];
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
 
         Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);
@@ -219,8 +219,8 @@ public class SnapAppWriterTests(BaseFixture baseFixture) : IClassFixture<BaseFix
             SnapShortcutLocation.StartMenu
         ];
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapAppBefore);
-        var snapAppAfter = _snapAppReader.BuildSnapAppFromStream(snapAppYamlStream);
+        using var assembly = _snapAppWriter.BuildSnapAppAssembly(snapAppBefore);
+        var snapAppAfter = assembly.GetSnapApp(_snapAppReader);
         Assert.NotNull(snapAppAfter);
 
         Assert.Equal(snapAppBefore.Target.PersistentAssets, snapAppAfter.Target.PersistentAssets);

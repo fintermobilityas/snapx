@@ -771,16 +771,16 @@ internal partial class Program
         {
             if (fullNupkgAbsolutePath == null) throw new ArgumentNullException(nameof(fullNupkgAbsolutePath));
 
-            var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppYamlFilename);
+            var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
             var repackageDirFullNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, "Setup.nupkg");
             var repackageDirReleasesNupkgAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir,
                 snapOs.Filesystem.PathGetFileName(releasesNupkgAbsolutePath));
 
-            using var snapAppYamlStream = snapAppWriter.BuildSnapApp(snapApp);
+            using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
             await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
             await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
             using var installerZipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
-            await snapAppYamlStream.CopyToAsync(snapAppDllDstMemoryStream, cancellationToken);
+            snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
 
             progressSource.Raise(10);
 
@@ -817,13 +817,13 @@ internal partial class Program
 
         async Task BuildWebInstallerAsync(Stream installerZipStream, FileStream warpPackerStream)
         {
-            var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppYamlFilename);
+            var repackageDirSnapAppDllAbsolutePath = snapOs.Filesystem.PathCombine(repackageTempDir, SnapConstants.SnapAppDllFilename);
 
             await using var warpPackerDstStream = snapOs.Filesystem.FileWrite(rootTempDirWarpPackerAbsolutePath);
             using var zipArchive = new ZipArchive(installerZipStream, ZipArchiveMode.Read);
-            using var snapAppYamlStream = snapAppWriter.BuildSnapApp(snapApp);
+            using var snapAppAssemblyDefinition = snapAppWriter.BuildSnapAppAssembly(snapApp);
             await using var snapAppDllDstMemoryStream = snapOs.Filesystem.FileWrite(repackageDirSnapAppDllAbsolutePath);
-            await snapAppYamlStream.CopyToAsync(snapAppDllDstMemoryStream, cancellationToken);
+            snapAppAssemblyDefinition.Write(snapAppDllDstMemoryStream);
 
             progressSource.Raise(10);
 

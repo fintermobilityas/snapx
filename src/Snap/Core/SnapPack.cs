@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using JetBrains.Annotations;
+using Mono.Cecil;
 using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
@@ -18,6 +19,7 @@ using SharpCompress.Writers;
 using Snap.Core.Models;
 using Snap.Extensions;
 using Snap.NuGet;
+using Snap.Reflection;
 
 namespace Snap.Core;
 
@@ -115,12 +117,12 @@ internal sealed class SnapPack : ISnapPack
     public IReadOnlyCollection<string> AlwaysRemoveTheseAssemblies => new List<string>
     {
         _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+        _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
     };
 
     public IReadOnlyCollection<string> NeverGenerateBsDiffsTheseAssemblies => new List<string>
     {
-        _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+        _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
     };
 
     public SnapPack(ISnapFilesystem snapFilesystem,
@@ -364,6 +366,33 @@ internal sealed class SnapPack : ISnapPack
                 }
 
                 fullSnapRelease.Files.Remove(removeThisAssembly);
+
+                if (!targetPath.EndsWith(SnapConstants.SnapDllFilename)) return;
+
+                using var snapAssemblyDefinition = AssemblyDefinition.ReadAssembly(packageFile.GetStream());
+                var cecil = new CecilAssemblyReflector(snapAssemblyDefinition);
+                var snapAssemblyInformationalVersionAttribute = cecil
+                    .GetAttribute<AssemblyInformationalVersionAttribute>();
+
+                if (snapAssemblyInformationalVersionAttribute == null)
+                {
+                    throw new Exception($"Failed to get assembly version from {targetPath}.");
+                }
+
+                var snapAssemblyInformationVersionValue = snapAssemblyInformationalVersionAttribute.Values.First().Value;
+                        
+                if (!SemanticVersion.TryParse(snapAssemblyInformationVersionValue, out var snapAssemblyVersion))
+                {
+                    throw new Exception($"Failed to parse assembly version: {snapAssemblyInformationVersionValue}. Target path: {targetPath}");
+                }
+
+                if (snapAssemblyVersion != _snapDllVersion)
+                {
+                    throw new Exception(
+                        $"Invalid {SnapConstants.SnapDllFilename} version. " +
+                        $"Expected: {Snapx.Version} but was {snapAssemblyInformationVersionValue}. " +
+                        "You must either upgrade snapx dotnet cli tool or the Snapx.Core nuget package in your csproj.");
+                }
             });
 
             await AddSnapAssetsAsync(snapPackageDetails, packageBuilder, fullSnapApp, fullSnapRelease, cancellationToken);
@@ -808,7 +837,7 @@ internal sealed class SnapPack : ISnapPack
         var snapApp = await GetSnapAppAsync(packageArchiveReader, cancellationToken);
         if (snapApp == null)
         {
-            throw new FileNotFoundException(SnapConstants.SnapAppYamlFilename);
+            throw new FileNotFoundException(SnapConstants.SnapAppDllFilename);
         }
 
         var packageBuilder = new PackageBuilder();
@@ -880,12 +909,12 @@ internal sealed class SnapPack : ISnapPack
         var (stubExeFileStream, stubExeFileName) = snapApp.GetStubExeStream(_snapFilesystem, AppContext.BaseDirectory);
         AddPackageFile(packageBuilder, stubExeFileStream, SnapConstants.NuspecAssetsTargetPath, stubExeFileName, snapRelease);
             
-        // Snap.App.yaml
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(snapApp);
+        // Snap.App.dll
+        using var snapAppDllAssembly = _snapAppWriter.BuildSnapAppAssembly(snapApp);
         var snapAppMemoryStream = new MemoryStream();
-        await snapAppYamlStream.CopyToAsync(snapAppMemoryStream, cancellationToken);
+        snapAppDllAssembly.Write(snapAppMemoryStream);
 
-        AddPackageFile(packageBuilder, snapAppMemoryStream, SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename, snapRelease);
+        AddPackageFile(packageBuilder, snapAppMemoryStream, SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename, snapRelease);
     }
 
     (MemoryStream nuspecStream, List<(string filename, string targetPath)> packageFiles) BuildNuspec([NotNull] MemoryStream nuspecStream, SnapApp snapApp, [NotNull] Func<string, string> propertyProvider, [NotNull] string baseDirectory)
@@ -1120,9 +1149,10 @@ internal sealed class SnapPack : ISnapPack
 
     public async Task<SnapApp> GetSnapAppAsync(IAsyncPackageCoreReader asyncPackageCoreReader, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(asyncPackageCoreReader);
-        await using var assemblyStream = await GetSnapAssetAsync(asyncPackageCoreReader, SnapConstants.SnapAppYamlFilename, cancellationToken);
-        var snapApp = _snapAppReader.BuildSnapAppFromStream(assemblyStream);
+        if (asyncPackageCoreReader == null) throw new ArgumentNullException(nameof(asyncPackageCoreReader));
+        await using var assemblyStream = await GetSnapAssetAsync(asyncPackageCoreReader, SnapConstants.SnapAppDllFilename, cancellationToken);
+        using var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyStream, new ReaderParameters(ReadingMode.Immediate));
+        var snapApp = assemblyDefinition.GetSnapApp(_snapAppReader);
         return snapApp;
     }
 

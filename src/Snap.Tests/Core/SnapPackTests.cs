@@ -70,7 +70,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var assemblies = new List<string>
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapDllFilename),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapAppYamlFilename)
+            _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, SnapConstants.SnapAppDllFilename)
         }.Select(x => x.ForwardSlashesSafe()).ToList();
 
         Assert.Equal(assemblies, _snapPack.AlwaysRemoveTheseAssemblies);
@@ -81,7 +81,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
     {
         var assemblies = new List<string>
         {
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename)
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename)
         }.Select(x => x.ForwardSlashesSafe()).ToList();
 
         Assert.Equal(assemblies, _snapPack.NeverGenerateBsDiffsTheseAssemblies);
@@ -200,7 +200,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         genesisSnapReleaseBuilder.AssertSnapReleaseIsGenesis(genesisPackageContext.FullPackageSnapRelease);
         genesisSnapReleaseBuilder.AssertSnapReleaseFiles(genesisPackageContext.FullPackageSnapRelease,
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -292,7 +292,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         genesisSnapReleaseBuilder.AssertSnapReleaseIsGenesis(genesisPackageContext.FullPackageSnapRelease);
         genesisSnapReleaseBuilder.AssertSnapReleaseFiles(genesisPackageContext.FullPackageSnapRelease,
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -334,7 +334,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -364,7 +364,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
             ], unmodifiedNuspecTargetPaths:
             [
@@ -412,7 +412,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
                 modifiedNuspecTargetPaths:
                 [
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "empty.dll").ForwardSlashesSafe()
                 ],
                 unmodifiedNuspecTargetPaths:
@@ -466,7 +466,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
                 modifiedNuspecTargetPaths:
                 [
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
                 ],
                 unmodifiedNuspecTargetPaths:
                 [
@@ -516,7 +516,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
                 modifiedNuspecTargetPaths:
                 [
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "empty.dll").ForwardSlashesSafe()
                 ],
                 unmodifiedNuspecTargetPaths:
@@ -581,7 +581,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             update2SnapReleaseBuilder.AssertDeltaChangeset(update2PackageContext.DeltaPackageSnapRelease,
                 modifiedNuspecTargetPaths:
                 [
-                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                    _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                     _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "empty.dll").ForwardSlashesSafe()
                 ],
                 unmodifiedNuspecTargetPaths:
@@ -640,7 +640,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -669,7 +669,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             ],
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [
@@ -717,7 +717,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibPalRelativePath()).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
@@ -743,7 +743,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe()
             ], unmodifiedNuspecTargetPaths:
             [
@@ -790,7 +790,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -815,7 +815,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         update1SnapReleaseBuilder.AssertDeltaChangeset(update1PackageContext.DeltaPackageSnapRelease,
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
                 _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, "test.dll").ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
@@ -863,7 +863,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -894,7 +894,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             ],
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [
@@ -954,7 +954,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var genesisFiles = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -986,7 +986,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             ],
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [
@@ -1014,7 +1014,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             ],
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [
@@ -1081,7 +1081,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var update3Files = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -1110,7 +1110,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
 
         update3SnapReleaseBuilder.AssertDeltaChangeset(update3PackageContext.DeltaPackageSnapRelease,
             [update3Files.Last()],
-            modifiedNuspecTargetPaths: [_snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+            modifiedNuspecTargetPaths: [_snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [
@@ -1175,7 +1175,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
         var update3Files = new[]
         {
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapDllFilename).ForwardSlashesSafe(),
-            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe(),
+            _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.StubExeFileName).ForwardSlashesSafe(),
             _snapFilesystem.PathCombine(SnapConstants.NuspecRootTargetPath, genesisSnapReleaseBuilder.GetLibBsdiffRelativePath()).ForwardSlashesSafe(),
@@ -1208,7 +1208,7 @@ public class SnapPackTests : IClassFixture<BaseFixturePackaging>
             ],
             modifiedNuspecTargetPaths:
             [
-                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppYamlFilename).ForwardSlashesSafe()
+                _snapFilesystem.PathCombine(SnapConstants.NuspecAssetsTargetPath, SnapConstants.SnapAppDllFilename).ForwardSlashesSafe()
             ],
             unmodifiedNuspecTargetPaths:
             [

@@ -14,7 +14,6 @@
         <PackageReference Include="xunit.runner.visualstudio" />
         <PackageReference Include="Moq" />
         <PackageReference Include="XunitXml.TestLogger" />
-        <PackageReference Include="Mono.Cecil" />
     </ItemGroup>
 
     <ItemGroup>

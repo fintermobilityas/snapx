@@ -106,7 +106,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         using var genesisPackageContext = await _baseFixturePackaging.BuildPackageAsync(genesisSnapReleaseBuilder, cts.Token);
 
         var releasesFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, genesisPackageContext.FullPackageSnapApp.BuildNugetReleasesFilename());
-        var snapAppDllFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, SnapConstants.SnapAppYamlFilename);
+        var snapAppDllFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
         var setupNupkgFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, SnapConstants.SetupNupkgFilename);
 
         await using var releasePackageMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
@@ -114,8 +114,8 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         await _snapFilesystem.FileWriteAsync(genesisPackageContext.FullPackageMemoryStream, setupNupkgFilename, cts.Token);
         await _snapFilesystem.FileWriteAsync(releasePackageMemoryStream, releasesFilename, cts.Token);
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(genesisSnapApp);
-        await _snapFilesystem.FileWriteAsync(snapAppYamlStream, snapAppDllFilename, default);
+        using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp);
+        snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
 
         var (exitCode, installerType) = await Program.MainImplAsync(["--headless"], LogLevel.Info, cts, _snapOsMock.Object, x =>
         {
@@ -142,7 +142,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         {
             throw new PlatformNotSupportedException();
         }
-        Assert.EndsWith(SnapConstants.SnapAppYamlFilename, files[1]);
+        Assert.EndsWith(SnapConstants.SnapAppDllFilename, files[1]);
         Assert.EndsWith(SnapConstants.SnapDllFilename, files[2]);
     }
 
@@ -202,12 +202,12 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         using var update1PackageContext = await _baseFixturePackaging.BuildPackageAsync(update1SnapReleaseBuilder, cts.Token);
         using var update2PackageContext = await _baseFixturePackaging.BuildPackageAsync(update2SnapReleaseBuilder, cts.Token);
 
-        var snapAppDllFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, SnapConstants.SnapAppYamlFilename);
+        var snapAppDllFilename = _snapFilesystem.PathCombine(snapInstallerIoEnvironment.ThisExeWorkingDirectory, SnapConstants.SnapAppDllFilename);
 
         await using var releasePackageMemoryStream = _snapPack.BuildReleasesPackage(genesisSnapApp, snapAppsReleases);
 
-        using var snapAppYamlStream = _snapAppWriter.BuildSnapApp(genesisSnapApp);
-        await _snapFilesystem.FileWriteAsync(snapAppYamlStream, snapAppDllFilename, cts.Token);
+        using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp);
+        snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
 
         await genesisPackageContext.WriteToAsync(packagesDirectory, _snapFilesystem, cts.Token, writeDeltaNupkg: false);
         await update1PackageContext.WriteToAsync(packagesDirectory, _snapFilesystem, cts.Token, writeFullNupkg: false);
@@ -243,7 +243,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
             throw new PlatformNotSupportedException();
         }
         Assert.EndsWith(mainExecutable.BuildRuntimeConfigFilename(_snapFilesystem), files[1]);
-        Assert.EndsWith(SnapConstants.SnapAppYamlFilename, files[2]);
+        Assert.EndsWith(SnapConstants.SnapAppDllFilename, files[2]);
         Assert.EndsWith(SnapConstants.SnapDllFilename, files[3]);
         Assert.EndsWith("test1.dll", files[4]);
         Assert.EndsWith("test2.dll", files[5]);

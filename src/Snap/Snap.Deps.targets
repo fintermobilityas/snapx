@@ -1,6 +1,7 @@
 <Project>
     <ItemGroup>
         <PackageReference Include="Jetbrains.Annotations" PrivateAssets="All" />
+        <PackageReference Include="Mono.Cecil" />
         <PackageReference Include="YamlDotNet" />
         <PackageReference Include="SharpCompress" />
         <PackageReference Include="MessagePack" />

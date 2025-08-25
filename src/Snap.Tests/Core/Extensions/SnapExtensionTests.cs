@@ -606,9 +606,9 @@ public class SnapExtensionTests([NotNull] BaseFixture baseFixture) : IClassFixtu
         var snapApp = _baseFixture.BuildSnapApp();
 
         await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
-        using var snapAppYamlStream = _appWriter.BuildSnapApp(snapApp);
-        var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, SnapConstants.SnapAppYamlFilename);
-        _fileSystem.FileWrite(snapAppYamlStream, snapAppDllAbsolutePath);
+        using var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp);
+        var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
+        assemblyDefinition.Write(snapAppDllAbsolutePath); 
                                
         var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
         Assert.NotNull(appSpecAfter);
@@ -622,9 +622,9 @@ public class SnapExtensionTests([NotNull] BaseFixture baseFixture) : IClassFixtu
         snapApp.InstallDirectoryName = "mydirectory";
 
         await using var tmpDir = _baseFixture.WithDisposableTempDirectory(_fileSystem);
-        using var snapAppYamlStream = _appWriter.BuildSnapApp(snapApp);
-        var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, SnapConstants.SnapAppYamlFilename);
-        _fileSystem.FileWrite(snapAppYamlStream, snapAppDllAbsolutePath);
+        using var assemblyDefinition = _appWriter.BuildSnapAppAssembly(snapApp);
+        var snapAppDllAbsolutePath = _fileSystem.PathCombine(tmpDir.WorkingDirectory, assemblyDefinition.BuildRelativeFilename());
+        assemblyDefinition.Write(snapAppDllAbsolutePath); 
                                
         var appSpecAfter = tmpDir.WorkingDirectory.GetSnapAppFromDirectory(_fileSystem, _appReader);
         Assert.NotNull(appSpecAfter);

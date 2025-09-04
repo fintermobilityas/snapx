@@ -72,7 +72,7 @@ jobs:
           password: ${{ secrets.SNAPX_DOCKER_READ_PAT }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.1
+        uses: actions/setup-dotnet@v5.0.0
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}
@@ -137,7 +137,7 @@ jobs:
           submodules: true
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.1
+        uses: actions/setup-dotnet@v5.0.0
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}
@@ -218,7 +218,7 @@ jobs:
           path: ${{ github.workspace }}
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4.3.1
+        uses: actions/setup-dotnet@v5.0.0
         with:
           dotnet-version: |
             ${{ env.DOTNET_NET90_VERSION }}

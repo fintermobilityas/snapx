@@ -23,11 +23,7 @@
         <AvaloniaBuildTasksLocation>$(NuGetPackageRoot)avalonia\$(AvaloniaVersion)\build\Avalonia.Build.Tasks.dll</AvaloniaBuildTasksLocation>
         <UsingAvaloniaNet10Workaround>true</UsingAvaloniaNet10Workaround>
     </PropertyGroup>
-
-    <Target Name="DetectAvaloniaOfficialSupport" BeforeTargets="CoreCompile" Condition="'$(UsingAvaloniaNet10Workaround)' != 'true'">
-        <Error Text="🎉 Avalonia now officially supports .NET 10.0! Please remove the workaround in Snap.Installer.csproj and use official support." />
-    </Target>
-
+    
     <ItemGroup>
         <EmbeddedResource Include="Assets\**\*" />
         <EmbeddedResource Remove="Assets\AssetsTypeRoot.cs" />

@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="current">
 
     <Import Project="..\Snap\Snap.Deps.targets" />
 
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
-        <TargetFrameworks>net9.0</TargetFrameworks>
+        <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>

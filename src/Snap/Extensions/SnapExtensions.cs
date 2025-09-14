@@ -21,7 +21,7 @@ internal static class SnapExtensions
 {
     static readonly Regex AppIdRegex = new(@"^\w+([._-]\w+)*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
     static readonly Regex ChannelNameRegex = new(@"^[a-zA-Z0-9]+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
-    static readonly Regex NetAppRegex = new("^(netcoreapp|net)\\d{1}.\\d{1}$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
+    static readonly Regex NetAppRegex = new("^(netcoreapp|net)\\d+\\.\\d+$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
     static readonly Regex ExpansionRegex = new("((\\$[0-9A-Za-z\\\\_]*)\\$)", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 
     public static (FileStream fileStream, string filename) GetStubExeStream([NotNull] this SnapApp snapApp, [NotNull] ISnapFilesystem snapFilesystem, [NotNull] string workingDirectory)

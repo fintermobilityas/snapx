@@ -7,7 +7,7 @@
         <OutputType>Exe</OutputType>
         <RootNamespace>Snap.Installer</RootNamespace>
         <AssemblyName>Snap.Installer</AssemblyName>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <IsPackable>false</IsPackable>
         <IsTestProject>false</IsTestProject>
     </PropertyGroup>
@@ -19,7 +19,7 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     </PropertyGroup>
     
-    <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0' And '$(AvaloniaBuildTasksLocation)' == ''">
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0' And '$(AvaloniaBuildTasksLocation)' == ''">
         <AvaloniaBuildTasksLocation>$(NuGetPackageRoot)avalonia\$(AvaloniaVersion)\build\Avalonia.Build.Tasks.dll</AvaloniaBuildTasksLocation>
         <UsingAvaloniaNet10Workaround>true</UsingAvaloniaNet10Workaround>
     </PropertyGroup>

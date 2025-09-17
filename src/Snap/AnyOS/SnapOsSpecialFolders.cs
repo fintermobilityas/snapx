@@ -42,6 +42,11 @@ internal abstract class SnapOsSpecialFolders : ISnapOsSpecialFolders
                 return new SnapOsSpecialFoldersUnix();
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return new SnapOsSpecialFoldersMacOS();
+            }
+
             throw new PlatformNotSupportedException();
         }
     }
@@ -65,6 +70,17 @@ internal sealed class SnapOsSpecialFoldersUnix : SnapOsSpecialFolders
     public override string DesktopDirectory { get; } = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
     public override string StartupDirectory => DesktopDirectory;
     public override string StartMenu => DesktopDirectory;
+    public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
+    public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
+}
+
+internal sealed class SnapOsSpecialFoldersMacOS : SnapOsSpecialFolders
+{
+    public override string ApplicationData { get; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    public override string LocalApplicationData { get; } = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    public override string DesktopDirectory { get; } = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+    public override string StartupDirectory => $"{Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)}/Library/LaunchAgents";
+    public override string StartMenu => "/Applications";
     public override string InstallerCacheDirectory => $"{ApplicationData}/snapx";
     public override string NugetCacheDirectory => $"{InstallerCacheDirectory}/temp/nuget";
 }

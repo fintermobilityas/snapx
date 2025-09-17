@@ -7,7 +7,7 @@ param(
     [Parameter(Position = 2, ValueFromPipelineByPropertyName = $true)]
     [switch] $Lto,
     [Parameter(Position = 3, ValueFromPipelineByPropertyName = $true)]
-    [ValidateSet("win-x86", "win-x64", "linux-x64", "linux-arm64")]
+    [ValidateSet("win-x86", "win-x64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64")]
     [string] $Rid = $null,
     [Parameter(Position = 4, ValueFromPipelineByPropertyName = $true, Mandatory = $true)]
     [string] $NetCoreAppVersion,
@@ -209,6 +209,12 @@ function Invoke-Build-Snap-Installer {
             $SnapInstallerExeName = "Snap.Installer"
         }
         "linux-arm64" {
+            $SnapInstallerExeName = "Snap.Installer"
+        }
+        "osx-x64" {
+            $SnapInstallerExeName = "Snap.Installer"
+        }
+        "osx-arm64" {
             $SnapInstallerExeName = "Snap.Installer"
         }
         default {

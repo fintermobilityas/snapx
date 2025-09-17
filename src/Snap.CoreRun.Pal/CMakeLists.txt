@@ -82,9 +82,15 @@ elseif(UNIX)
             libstdc++.a
             )
 
-    list(APPEND pal_DEFINES
-            PAL_PLATFORM_LINUX
-            )
+    if(APPLE)
+        list(APPEND pal_DEFINES
+                PAL_PLATFORM_MACOS
+                )
+    else()
+        list(APPEND pal_DEFINES
+                PAL_PLATFORM_LINUX
+                )
+    endif()
 
 endif()
 

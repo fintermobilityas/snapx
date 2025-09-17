@@ -20,6 +20,17 @@
 #include <csignal> // kill
 #include <ctime> // nanosleep
 static const char* symlink_entrypoint_executable = "/proc/self/exe";
+#elif defined(PAL_PLATFORM_MACOS)
+#include <sys/wait.h> // wait
+#include <unistd.h> // getcwd
+#include <fcntl.h> // open
+#include <dirent.h> // opendir
+#include <libgen.h> // dirname
+#include <dlfcn.h> // dlopen
+#include <csignal> // kill
+#include <ctime> // nanosleep
+#include <mach-o/dyld.h> // _NSGetExecutablePath
+static const char* symlink_entrypoint_executable = nullptr; // macOS uses different approach
 #endif
 
 #include <regex>
@@ -676,7 +687,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_sleep_ms(const uint32_t milliseconds)
 #if defined(PAL_PLATFORM_WINDOWS)
     Sleep(milliseconds);
     return TRUE;
-#elif defined(PAL_PLATFORM_LINUX)
+#elif defined(PAL_PLATFORM_LINUX) || defined(PAL_PLATFORM_MACOS)
     struct timespec ts = { 0 };
     ts.tv_sec = milliseconds / 1000;
     ts.tv_nsec = (milliseconds % 1000) * 1000000;
@@ -723,10 +734,20 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux()
 #endif
 }
 
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_macos()
+{
+#if defined(PAL_PLATFORM_MACOS)
+    return TRUE;
+#else
+    return FALSE;
+#endif
+}
+
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os()
 {
     return pal_is_linux()
-        || pal_is_windows() ? FALSE : TRUE;
+        || pal_is_windows() 
+        || pal_is_macos() ? FALSE : TRUE;
 }
 
 // - Environment

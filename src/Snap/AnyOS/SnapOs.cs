@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Snap.AnyOS.Unix;
 using Snap.AnyOS.Windows;
+using Snap.AnyOS.MacOS;
 using Snap.Core;
 using Snap.Logging;
 
@@ -23,7 +24,8 @@ public enum SnapOsDistroType
     Unknown,
     Windows,
     Ubuntu,
-    RaspberryPi
+    RaspberryPi,
+    MacOS
 }
 
 internal interface ISnapOs
@@ -81,6 +83,11 @@ internal sealed class SnapOs : ISnapOs
                 return new SnapOs(new SnapOsUnix(snapFilesystem, snapProcess, snapSpecialFolders));
             }
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return new SnapOs(new SnapOsMacOS(snapFilesystem, snapProcess, snapSpecialFolders));
+            }
+
             throw new PlatformNotSupportedException();
         }
     }
@@ -109,6 +116,10 @@ internal sealed class SnapOs : ISnapOs
         {
             OsImpl = new SnapOsUnix(snapFilesystem, snapOsProcessManager, isUnitTest ?
                 (ISnapOsSpecialFolders) new SnapOsSpecialFoldersUnitTest(snapFilesystem, workingDirectory) : new SnapOsSpecialFoldersUnix());
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            OsImpl = new SnapOsMacOS(snapFilesystem, snapOsProcessManager, isUnitTest ?
+                (ISnapOsSpecialFolders) new SnapOsSpecialFoldersUnitTest(snapFilesystem, workingDirectory) : new SnapOsSpecialFoldersMacOS());
         }
         else
         {

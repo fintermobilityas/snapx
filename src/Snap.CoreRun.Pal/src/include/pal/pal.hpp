@@ -52,6 +52,24 @@
 #define PAL_API 
 #define PAL_CALLING_CONVENTION
 #endif
+#elif PAL_PLATFORM_MACOS
+#include <climits>
+#include <cstdio>
+#include <cstdint>
+#include <sys/wait.h>
+#include <sys/stat.h> // mode_t
+#define PAL_MAX_PATH PATH_MAX
+#define PAL_DIRECTORY_SEPARATOR_STR "/"
+#define PAL_DIRECTORY_SEPARATOR_C '/'
+#define PAL_CORECLR_TPA_SEPARATOR_STR ":"
+#define PAL_CORECLR_TPA_SEPARATOR_C ':'
+#if defined(__GNUC__)
+#define PAL_API __attribute__((visibility("default")))
+#define PAL_CALLING_CONVENTION 
+#else
+#define PAL_API 
+#define PAL_CALLING_CONVENTION
+#endif
 #else
 #error Unsupported platform
 #endif
@@ -75,6 +93,10 @@ typedef DWORD pal_pid_t;
 typedef int pal_mode_t;
 typedef DWORD pal_exit_code_t;
 #elif defined(PAL_PLATFORM_LINUX)
+typedef pid_t pal_pid_t;
+typedef mode_t pal_mode_t;
+typedef int pal_exit_code_t;
+#elif defined(PAL_PLATFORM_MACOS)
 typedef pid_t pal_pid_t;
 typedef mode_t pal_mode_t;
 typedef int pal_exit_code_t;
@@ -112,6 +134,7 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_8_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_7_or_greater();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
+PAL_API BOOL PAL_CALLING_CONVENTION pal_is_macos();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os();
 
 // - Environment

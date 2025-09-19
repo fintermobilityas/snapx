@@ -1,44 +1,35 @@
 #include "pal/pal.hpp"
 #include "pal/pal_module.hpp"
 
-pal_module::pal_module(const std::string& filename) :
-    m_module(nullptr),
-    m_filename(filename)
-{
+pal_module::pal_module(const std::string &filename) : m_module(nullptr),
+                                                      m_filename(filename) {
     pal_load_library(filename.c_str(), FALSE, &m_module);
 }
 
-pal_module::~pal_module()
-{
+pal_module::~pal_module() {
     const auto ptr = m_module;
-    if (ptr != nullptr)
-    {
+    if (ptr != nullptr) {
         pal_free_library(ptr);
         m_module = nullptr;
     }
 }
 
-bool pal_module::is_loaded() const
-{
+bool pal_module::is_loaded() const {
     return m_module != nullptr;
 }
 
-const std::string& pal_module::get_filename() const
-{
+const std::string &pal_module::get_filename() const {
     return m_filename;
 }
 
-void* pal_module::_bind(const std::string& fn) const
-{
-    if (!this->is_loaded())
-    {
+void *pal_module::_bind(const std::string &fn) const {
+    if (!this->is_loaded()) {
         LOGE << "Failed to load method because module is not loaded. Method: " << fn << ". Module: " << get_filename();
         return nullptr;
     }
 
-    void* ptr_fn = nullptr;
-    if (!pal_getprocaddress(m_module, fn.c_str(), &ptr_fn))
-    {
+    void *ptr_fn = nullptr;
+    if (!pal_getprocaddress(m_module, fn.c_str(), &ptr_fn)) {
         LOGE << "Failed to load method: " << fn << ". Module: " << get_filename();
         return nullptr;
     }

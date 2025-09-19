@@ -12,13 +12,11 @@
 #include <string>
 #include <vector>
 
-class this_exe
-{
+class this_exe {
 public:
     static inline pal_mode_t default_permissions = 0777;
 
-    static void plog_init()
-    {
+    static void plog_init() {
         const auto filename = get_logger_relative_filename();
 
         static plog::RollingFileAppender<plog::TxtFormatter> file_appender(filename.c_str(), 1000000, 1);
@@ -28,28 +26,24 @@ public:
 #endif
 
         plog::init(plog::Severity::verbose, &file_appender)
-            .addAppender(&console_appender)
+                .addAppender(&console_appender)
 #if defined(PAL_PLATFORM_WINDOWS)
             .addAppender(&debug_output_appender)
 #endif
-            ;
+                ;
     }
 
-    static std::string get_logger_relative_filename()
-    {
+    static std::string get_logger_relative_filename() {
         const auto process_name = get_process_name();
-        if (process_name.empty())
-        {
+        if (process_name.empty()) {
             return std::string("corerun.log");
         }
         return std::string(process_name + ".log");
     }
 
-    static std::string get_process_name()
-    {
-        char* app_name = nullptr;
-        if (!pal_process_get_name(&app_name))
-        {
+    static std::string get_process_name() {
+        char *app_name = nullptr;
+        if (!pal_process_get_name(&app_name)) {
             return std::string();
         }
 
@@ -59,25 +53,20 @@ public:
         return app_name_str;
     }
 
-    static std::string build_argv_str(const std::vector<std::string>& strings, const std::string& delimiter = " ")
-    {
+    static std::string build_argv_str(const std::vector<std::string> &strings, const std::string &delimiter = " ") {
         auto ss = std::string();
-        for (auto const& string : strings)
-        {
+        for (auto const &string: strings) {
             ss += string + delimiter;
         }
         return ss;
     }
 
-    static std::string build_argv_str(const uint32_t argc, char** argv)
-    {
-        if (argv == nullptr)
-        {
+    static std::string build_argv_str(const uint32_t argc, char **argv) {
+        if (argv == nullptr) {
             return std::string();
         }
 
         const std::vector<std::string> arguments(argv, argv + argc);
         return build_argv_str(arguments);
     }
-
 };

@@ -74,6 +74,27 @@ $DockerGithubRegistryUrl = "ghcr.io/fintermobilityas"
 $SummaryStopwatch = $Stopwatch::StartNew()
 $SummaryStopwatch.Restart()
 
+function Get-DotNetVersionsFromDirectoryBuildProps {
+    $DirectoryBuildPropsPath = Join-Path $SrcDirectory "Directory.Build.props"
+    
+    if (!(Test-Path $DirectoryBuildPropsPath)) {
+        Write-Error "Directory.Build.props not found at: $DirectoryBuildPropsPath"
+        exit 1
+    }
+    
+    [xml] $xml = Get-Content $DirectoryBuildPropsPath
+    
+    $versions = @{
+        GitVersionToolVersion = ($xml.SelectSingleNode("//GitVersionToolVersion")).InnerText
+        SnapxDotNetFrameworkVersion = ($xml.SelectSingleNode("//SnapxDotNetFrameworkVersion")).InnerText
+        DotNetNet80Version = ($xml.SelectSingleNode("//DotNetNet80Version")).InnerText
+        DotNetNet90Version = ($xml.SelectSingleNode("//DotNetNet90Version")).InnerText
+        DotNetNet100Version = ($xml.SelectSingleNode("//DotNetNet100Version")).InnerText
+    }
+    
+    return $versions
+}
+
 function Invoke-Build-Rids-Array {
     param(
         [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
@@ -374,9 +395,14 @@ function Invoke-Docker
             "pull $DockerImageSrc"
         )
     } else {
+        $versions = Get-DotNetVersionsFromDirectoryBuildProps
         $DockerImageSrc = $DockerImageName
         Invoke-Command-Colored $CommandDocker @(
-            "build -f ""${DockerFilenamePath}"" -t $DockerImageName docker"
+            "build -f ""${DockerFilenamePath}""",
+            "--build-arg DOTNET_80_SDK_VERSION=$($versions.DotNetNet80Version)",
+            "--build-arg DOTNET_90_SDK_VERSION=$($versions.DotNetNet90Version)",
+            "--build-arg DOTNET_100_SDK_VERSION=$($versions.DotNetNet100Version)",
+            "-t $DockerImageName docker"
         )
     }
 
@@ -526,8 +552,19 @@ switch ($Target) {
         }
     }
     "Publish-Docker-Image" {
+        $versions = Get-DotNetVersionsFromDirectoryBuildProps
+        
+        Write-Host "Building Docker image with versions from Directory.Build.props:"
+        Write-Host "  .NET 8.0: $($versions.DotNetNet80Version)"
+        Write-Host "  .NET 9.0: $($versions.DotNetNet90Version)"
+        Write-Host "  .NET 10.0: $($versions.DotNetNet100Version)"
+        
 		Invoke-Command-Colored $CommandDocker @(
-			"build --no-cache -f ""$DockerFilenamePath"" -t ${DockerGithubRegistryUrl}/${DockerImageName}:${DockerVersion} docker"
+			"build --no-cache -f ""$DockerFilenamePath""",
+            "--build-arg DOTNET_80_SDK_VERSION=$($versions.DotNetNet80Version)",
+            "--build-arg DOTNET_90_SDK_VERSION=$($versions.DotNetNet90Version)",
+            "--build-arg DOTNET_100_SDK_VERSION=$($versions.DotNetNet100Version)",
+            "-t ${DockerGithubRegistryUrl}/${DockerImageName}:${DockerVersion} docker"
         )
 
 		Invoke-Command-Colored $CommandDocker @(

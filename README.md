@@ -62,7 +62,7 @@ Checkout our sample application, [snapx demoapp](https://github.com/fintermobili
 
 #### Bootstrap snapx
 
-Before you can open `src\Snapx.sln` in Visual Studio you must bootstrap dependencies.
+Before you can open `src\Snapx.slnx` in Visual Studio you must bootstrap dependencies.
 Run `init.ps1` and all dependencies will be built in `Debug` and `Release` mode.
 
 ## .NET frameworks supported

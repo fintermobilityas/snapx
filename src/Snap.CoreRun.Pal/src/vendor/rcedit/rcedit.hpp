@@ -15,9 +15,7 @@
 
 #include <Windows.h>
 
-namespace snap::rcedit
-{
-
+namespace snap::rcedit {
     struct IconsValue {
         typedef struct _ICONENTRY {
             BYTE width;
@@ -38,13 +36,13 @@ namespace snap::rcedit
         } ICONHEADER;
 
         ICONHEADER header;
-        std::vector<std::vector<BYTE>> images;
+        std::vector<std::vector<BYTE> > images;
         std::vector<BYTE> grpHeader;
     };
 
     class ResourceUpdater {
     public:
-        typedef std::map<UINT, std::unique_ptr<IconsValue>> IconTable;
+        typedef std::map<UINT, std::unique_ptr<IconsValue> > IconTable;
 
         struct IconResInfo {
             UINT maxIconId = 0;
@@ -54,17 +52,25 @@ namespace snap::rcedit
         typedef std::map<LANGID, IconResInfo> IconTableMap;
 
         ResourceUpdater();
+
         ~ResourceUpdater();
 
-        bool Load(const WCHAR* filename);
-        bool SetIcon(const WCHAR* path, const LANGID& langId, UINT iconBundle);
-        bool SetIcon(const WCHAR* path, const LANGID& langId);
-        bool SetIcon(const WCHAR* path);
+        bool Load(const WCHAR *filename);
+
+        bool SetIcon(const WCHAR *path, const LANGID &langId, UINT iconBundle);
+
+        bool SetIcon(const WCHAR *path, const LANGID &langId);
+
+        bool SetIcon(const WCHAR *path);
+
         bool HasIcon() const;
+
         bool Commit();
 
         static BOOL CALLBACK OnEnumResourceName(HMODULE hModule, LPCWSTR lpszType, LPWSTR lpszName, LONG_PTR lParam);
-        static BOOL CALLBACK OnEnumResourceLanguage(HANDLE hModule, LPCWSTR lpszType, LPCWSTR lpszName, WORD wIDLanguage, LONG_PTR lParam);
+
+        static BOOL CALLBACK OnEnumResourceLanguage(HANDLE hModule, LPCWSTR lpszType, LPCWSTR lpszName,
+                                                    WORD wIDLanguage, LONG_PTR lParam);
 
         HMODULE module_;
         std::wstring filename_;
@@ -73,10 +79,12 @@ namespace snap::rcedit
 
     class ScopedResourceUpdater {
     public:
-        ScopedResourceUpdater(const WCHAR* filename, bool deleteOld);
+        ScopedResourceUpdater(const WCHAR *filename, bool deleteOld);
+
         ~ScopedResourceUpdater();
 
         HANDLE Get() const;
+
         bool Commit();
 
     private:
@@ -85,6 +93,5 @@ namespace snap::rcedit
         HANDLE handle_;
         bool commited_ = false;
     };
-
 }
 #endif

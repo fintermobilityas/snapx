@@ -68,7 +68,7 @@
 #define PAL_API __attribute__((visibility("default")))
 #define PAL_CALLING_CONVENTION 
 #else
-#define PAL_API 
+#define PAL_API
 #define PAL_CALLING_CONVENTION
 #endif
 #else
@@ -158,7 +158,6 @@ PAL_API BOOL PAL_CALLING_CONVENTION pal_is_windows_7_or_greater();
 
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_linux();
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_macos();
-
 PAL_API BOOL PAL_CALLING_CONVENTION pal_is_unknown_os();
 
 // - Environment

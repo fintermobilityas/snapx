@@ -92,4 +92,12 @@
         <DotNetNet100Version>10.0.100-rc.1.25451.107</DotNetNet100Version>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <GitVersionToolVersion>6.4.0</GitVersionToolVersion>
+        <SnapxDotNetFrameworkVersion>net10.0</SnapxDotNetFrameworkVersion>
+        <DotNetNet80Version>8.0.414</DotNetNet80Version>
+        <DotNetNet90Version>9.0.305</DotNetNet90Version>
+        <DotNetNet100Version>10.0.100-rc.1.25451.107</DotNetNet100Version>
+    </PropertyGroup>
+
 </Project>

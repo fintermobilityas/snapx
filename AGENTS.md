@@ -4,7 +4,7 @@
 - `src/Snap`, `src/Snapx`, `src/Snap.Installer`: primary .NET projects (library, CLI, and installer).
 - Native C++ runtime: `src/Snap.CoreRun` (+ tests in `src/Snap.CoreRun.Tests`).
 - Managed tests: `src/Snap.Tests`, `src/Snapx.Tests`, `src/Snap.Installer.Tests`, shared fixtures in `src/Snap.Shared.Tests`.
-- Solution: `src/Snapx.sln`. Build outputs land under `build/` (e.g., `build/dotnet`, `build/native`).
+- Solution: `src/Snapx.slnx` (.NET 10 XML format). Build outputs land under `build/` (e.g., `build/dotnet`, `build/native`).
 - Docs and tooling: `docs/`, `docker/`, PowerShell scripts in repo root.
 
 ## Build, Test, and Development Commands

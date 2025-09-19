@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pal/pal.hpp"
-#include "nanoid/nanoid.h"
+#include "tests/support/unique_id.hpp"
 #include <string>
 
 namespace corerun

@@ -4,8 +4,6 @@ project(corerun_tests CXX)
 
 set(corerun_tests_SOURCES 
     ${GTEST_ALL_CPP_FILENAME}
-    ../Vendor/nanoid_cpp/src/nanoid/crypto_random.cpp
-    ../Vendor/nanoid_cpp/src/nanoid/nanoid.cpp
     ../Snap.CoreRun.Pal/test/anyos.cpp
     ../Snap.CoreRun/test/anyos.cpp
     src/main.cpp

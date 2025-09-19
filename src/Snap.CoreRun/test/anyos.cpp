@@ -2,7 +2,7 @@
 #include "main.hpp"
 #include "nlohmann/json.hpp"
 #include "vendor/semver/semver200.h"
-#include "nanoid/nanoid.h"
+#include "tests/support/unique_id.hpp"
 #include "tests/support/utils.hpp"
 
 #include <string>

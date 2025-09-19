@@ -213,11 +213,86 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
 
+  macos:
+    runs-on: ${{ matrix.os }}
+    name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
+    needs: [setup]
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        rid: [osx-x64, osx-arm64]
+        os: [macos-latest]
+    env:
+      SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
+      SNAPX_DOTNET_FRAMEWORK_VERSION: ${{ needs.setup.outputs.SNAPX_DOTNET_FRAMEWORK_VERSION }}
+      DOTNET_NET100_VERSION: ${{ needs.setup.outputs.DOTNET_NET100_VERSION }}
+      DOTNET_NET90_VERSION: ${{ needs.setup.outputs.DOTNET_NET90_VERSION }}
+      DOTNET_NET80_VERSION: ${{ needs.setup.outputs.DOTNET_NET80_VERSION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          lfs: true
+          submodules: true
+
+      - name: Install .NET 8.0
+        uses: actions/setup-dotnet@v4.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_NET80_VERSION }}
+
+      - name: Install .NET 9.0
+        uses: actions/setup-dotnet@v4.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_NET90_VERSION }}
+
+      - name: Install .NET 10.0
+        uses: actions/setup-dotnet@v4.2.0
+        with:
+          dotnet-version: ${{ env.DOTNET_NET100_VERSION }}
+
+      - name: Bootstrap ${{ matrix.rid }}-${{ matrix.configuration }}
+        shell: pwsh
+        run: ./build.ps1 Bootstrap-Unix -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+
+      - name: Test native
+        shell: pwsh
+        run: ./build.ps1 Run-Native-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+
+      - name: Test .NET
+        shell: pwsh
+        run: ./build.ps1 Run-Dotnet-UnitTests -Version ${{ env.SNAPX_VERSION }} -Configuration ${{ matrix.configuration }} -CIBuild -NetCoreAppVersion ${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }} -Rid ${{ matrix.rid }}
+
+      - name: Collect artifacts
+        env:
+          SNAPX_MACOS_SETUP_ZIP_REL_DIR: build/dotnet/${{ matrix.rid }}/Snap.Installer/${{ env.SNAPX_DOTNET_FRAMEWORK_VERSION }}/${{ matrix.configuration }}/publish
+          SNAPX_MACOS_CORERUN_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun
+          SNAPX_MACOS_PAL_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.CoreRun.Pal
+          SNAPX_MACOS_BSDIFF_REL_DIR: build/native/Unix/${{ matrix.rid }}/${{ matrix.configuration }}/Snap.Bsdiff
+        run: |
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_SETUP_ZIP_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MACOS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_SETUP_ZIP_REL_DIR }}/Setup-${{ matrix.rid }}.zip
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_CORERUN_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MACOS_CORERUN_REL_DIR }}/corerun ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_CORERUN_REL_DIR }}/corerun.bin
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_PAL_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MACOS_PAL_REL_DIR }}/libpal.dylib ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_PAL_REL_DIR }}/libpal.dylib
+
+          mkdir -p ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_BSDIFF_REL_DIR }}
+          cp ${{ github.workspace }}/${{ env.SNAPX_MACOS_BSDIFF_REL_DIR }}/libsnap_bsdiff.dylib ${{ github.workspace }}/artifacts/${{ env.SNAPX_MACOS_BSDIFF_REL_DIR }}/libsnap_bsdiff.dylib
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
+          path: ${{ github.workspace }}/artifacts/**/*
+
   publish:
     if: success()
     runs-on: ubuntu-latest
     name: Nupkg
-    needs: [setup, windows, linux] # todo: enable me when github actions supports arm64: test-linux-arm64
+    needs: [setup, windows, linux, macos] # todo: enable me when github actions supports arm64: test-linux-arm64
     env:
       SNAPX_VERSION: ${{ needs.setup.outputs.SNAPX_VERSION }}
       DOTNET_NET100_VERSION: ${{ needs.setup.outputs.DOTNET_NET100_VERSION }}

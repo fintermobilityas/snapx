@@ -5,10 +5,10 @@ using Snap.Core;
 using Snap.Shared.Tests;
 using Xunit;
 
-namespace Snap.Tests.AnyOS.MacOS
+namespace Snap.Tests.AnyOS.MacOS;
+
+public class SnapOsMacOSTests : IClassFixture<BaseFixture>
 {
-    public class SnapOsMacOSTests : IClassFixture<BaseFixture>
-    {
         readonly BaseFixture _baseFixture;
         readonly ISnapFilesystem _snapFilesystem;
         readonly ISnapOs _snapOs;
@@ -74,5 +74,4 @@ namespace Snap.Tests.AnyOS.MacOS
             Assert.NotNull(exitSignalHandler);
         }
     }
-}
 #endif

@@ -3,10 +3,10 @@ using Snap.AnyOS;
 using Snap.Shared.Tests;
 using Xunit;
 
-namespace Snap.Tests.AnyOS.MacOS
+namespace Snap.Tests.AnyOS.MacOS;
+
+public class SnapOsSpecialFoldersMacOSTests : IClassFixture<BaseFixture>
 {
-    public class SnapOsSpecialFoldersMacOSTests : IClassFixture<BaseFixture>
-    {
         readonly BaseFixture _baseFixture;
 
         public SnapOsSpecialFoldersMacOSTests(BaseFixture baseFixture)
@@ -44,5 +44,4 @@ namespace Snap.Tests.AnyOS.MacOS
             }
         }
     }
-}
 #endif

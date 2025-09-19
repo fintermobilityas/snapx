@@ -63,6 +63,7 @@ jobs:
         name: Setup GitVersion and set build version
         run: |
           dotnet tool install GitVersion.Tool --global --version ${{ env.GITVERSION_VERSION }}
+          dotnet tool restore
           echo "Testing GitVersion command availability..."
           SNAPX_VERSION=$(dotnet gitversion /showVariable SemVer | tr '[:upper:]' '[:lower:]' | xargs)
           echo "GitVersion output: '$SNAPX_VERSION'"

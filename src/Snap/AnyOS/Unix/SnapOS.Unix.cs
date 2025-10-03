@@ -267,10 +267,7 @@ internal sealed class SnapOsUnix : ISnapOsImpl
         {
             environmentVariables.Add(@$"--corerun-environment-var {name}=""{value}""");
         }
-
-        var exeFilename = Filesystem.PathGetFileNameWithoutExtension(shortcutDescription.ExeAbsolutePath);
-        var logFilePath = Filesystem.PathCombine(workingDirectory, $"{exeFilename}-stdinout.log");
-
+        
         return DistroType switch
         {
             SnapOsDistroType.Ubuntu or SnapOsDistroType.RaspberryPi => $@"[Desktop Entry]
@@ -278,7 +275,7 @@ Encoding=UTF-8
 Version={shortcutDescription.SnapApp.Version}
 Type=Application
 Terminal=false
-Exec=bash -c 'cd ""{workingDirectory}"" && {ldLibraryPath} {shortcutDescription.ExeAbsolutePath} {string.Join(" ", environmentVariables)} >> ""{logFilePath}"" 2>&1'
+Exec=bash -c 'cd ""{workingDirectory}"" && {ldLibraryPath} {shortcutDescription.ExeAbsolutePath} {string.Join(" ", environmentVariables)}'
 Icon={shortcutDescription.IconAbsolutePath}
 Name={shortcutDescription.SnapApp.Id}
 Comment={description}",

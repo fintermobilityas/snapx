@@ -141,7 +141,7 @@ jobs:
 
       - name: Upload artifacts
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload artifacts
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.os }}-${{ matrix.rid }}-${{ matrix.configuration }}
           path: ${{ github.workspace }}/artifacts/**/*
@@ -230,25 +230,25 @@ jobs:
           lfs: true
 
       - name: Download ubuntu-latest-linux-arm64-Release artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ubuntu-latest-linux-arm64-Release
           path: ${{ github.workspace }}
 
       - name: Download ubuntu-latest-linux-x64-Release artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: ubuntu-latest-linux-x64-Release
           path: ${{ github.workspace }}
 
       - name: Download windows-latest-win-x86-Release artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: windows-latest-win-x86-Release
           path: ${{ github.workspace }}
 
       - name: Download windows-latest-win-x64-Release artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: windows-latest-win-x64-Release
           path: ${{ github.workspace }}

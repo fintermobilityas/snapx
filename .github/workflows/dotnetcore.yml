@@ -29,7 +29,7 @@ jobs:
       DOTNET_NET100_VERSION: ${{ steps.read-versions.outputs.DOTNET_NET100_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -86,7 +86,7 @@ jobs:
       DOTNET_NET80_VERSION: ${{ needs.setup.outputs.DOTNET_NET80_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -163,7 +163,7 @@ jobs:
       DOTNET_NET80_VERSION: ${{ needs.setup.outputs.DOTNET_NET80_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -225,7 +225,7 @@ jobs:
       DOTNET_NET80_VERSION: ${{ needs.setup.outputs.DOTNET_NET80_VERSION }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           lfs: true
 

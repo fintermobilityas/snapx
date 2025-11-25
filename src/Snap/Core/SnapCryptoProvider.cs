@@ -6,7 +6,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using JetBrains.Annotations;
-using Mono.Cecil;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using Snap.Core.Models;
@@ -19,7 +18,6 @@ internal interface ISnapCryptoProvider
     string Sha256(byte[] content);
     string Sha256(Stream content);
     string Sha256(StringBuilder content, Encoding encoding);
-    string Sha256(AssemblyDefinition assemblyDefinition);
     string Sha256(SnapRelease snapRelease, IPackageCoreReader packageCoreReader, ISnapPack snapPack);
     string Sha256(SnapRelease snapRelease, PackageBuilder packageBuilder);
 }
@@ -60,15 +58,6 @@ internal sealed class SnapCryptoProvider : ISnapCryptoProvider
         if (content == null) throw new ArgumentNullException(nameof(content));
         if (encoding == null) throw new ArgumentNullException(nameof(encoding));
         return Sha256(encoding.GetBytes(content.ToString()));
-    }
-
-    public string Sha256([NotNull] AssemblyDefinition assemblyDefinition)
-    {
-        if (assemblyDefinition == null) throw new ArgumentNullException(nameof(assemblyDefinition));
-        using var outputStream = new MemoryStream();
-        assemblyDefinition.Write(outputStream);
-        outputStream.Seek(0, SeekOrigin.Begin);
-        return Sha256(outputStream);
     }
 
     public string Sha256(SnapRelease snapRelease, [NotNull] IPackageCoreReader packageCoreReader, [NotNull] ISnapPack snapPack)

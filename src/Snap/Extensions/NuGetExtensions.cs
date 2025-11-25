@@ -94,7 +94,7 @@ internal static class NuGetExtensions
             throw new MissingMethodException(getDownloadUrlMethodName);
         }
 
-        var getDownloadUrlTask = (dynamic) getDownloadUrlMethod.Invoke(downloadResourceV3, new object[] {identity, logger, token});
+        var getDownloadUrlTask = (dynamic) getDownloadUrlMethod.Invoke(downloadResourceV3, [identity, logger, token]);
         if (getDownloadUrlTask != null)
         {
             var downloadUri = await getDownloadUrlTask;

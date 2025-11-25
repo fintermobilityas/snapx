@@ -1,35 +1,46 @@
 #pragma once
 
-#include "corerun.hpp"
-#include "stubexecutable.hpp"
-#include "cxxopts/include/cxxopts.hpp"
-#include <plog/Log.h>
+// Standard library includes
+#include <memory>
+#include <map>
+#include <string>
+#include <vector>
 
+// Platform-specific includes
 #if PAL_PLATFORM_LINUX
-#include "unistd.h" // fork
 #include <csignal>
+#include <unistd.h>  // fork
 #endif
 
-#include <memory>
+// Third-party includes
+#include <plog/Log.h>
+#include "cxxopts/include/cxxopts.hpp"
+
+// Project includes
+#include "corerun.hpp"
+#include "stubexecutable.hpp"
 
 static std::unique_ptr<pal_semaphore_machine_wide> corerun_supervisor_semaphore;
 
 inline int corerun_command_supervise(
-    const std::string& stub_executable_full_path,
-    std::vector<std::string>& arguments,
-    std::map<std::string, std::string>& environment_variables,
+    const std::string &stub_executable_full_path,
+    std::vector<std::string> &arguments,
+    std::map<std::string, std::string> &environment_variables,
     int process_id,
-    const std::string& process_application_id,
+    const std::string &process_application_id,
     int cmd_show_windows);
+
 inline void main_wait_for_pid(pal_pid_t pid);
+
 inline void snapx_maybe_wait_for_debugger();
 
 #if PAL_PLATFORM_LINUX
 void corerun_main_signal_handler(int signum) {
     LOGD << "Interrupt signal: " << signum;
 
-    if(corerun_supervisor_semaphore != nullptr) {
-        LOGD << "Supervisor semaphore released: " << (corerun_supervisor_semaphore->release() ? "true" : "false");
+    if (corerun_supervisor_semaphore != nullptr) {
+        LOGD << "Supervisor semaphore released: "
+                << (corerun_supervisor_semaphore->release() ? "true" : "false");
     }
 
     LOGD << "Supervisor will now exit.";
@@ -41,26 +52,22 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
 #if PAL_PLATFORM_LINUX
     std::signal(SIGTERM, corerun_main_signal_handler);
 #endif
-    
-    LOGD << "Process started. "
-         << "Startup arguments(" << std::to_string(argc) << "): "
-         << this_exe::build_argv_str(argc, argv);
 
-    const auto snapx_corerun_allow_elevated_context = []
-    {
-        const auto value = std::make_unique<char*>(new char);
+    LOGD << "Process started. "
+            << "Startup arguments(" << std::to_string(argc) << "): "
+            << this_exe::build_argv_str(argc, argv);
+
+    const auto snapx_corerun_allow_elevated_context = [] {
+        const auto value = std::make_unique<char *>(new char);
         pal_env_get("SNAPX_CORERUN_ALLOW_ELEVATED_CONTEXT", value.get());
         const auto allow = pal_str_iequals(*value, "1") || pal_str_iequals(*value, "true");
-        if(allow)
-        {
+        if (allow) {
             LOGW << "Allowing corerun to run in an elevated context.";
         }
         return allow;
     };
 
-    if (pal_is_elevated() 
-        && !snapx_corerun_allow_elevated_context()) 
-    {        
+    if (pal_is_elevated() && !snapx_corerun_allow_elevated_context()) {
         LOGE << "Current user account is elevated to either root / Administrator, exiting..";
         return 1;
     }
@@ -76,20 +83,16 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
     auto supervise_process_id = 0;
     std::string supervise_id;
     std::vector<std::string> environment_variables_vec;
-    options
-            .add_options()
-                    ("corerun-environment-var",
-                      "To set a single variable, use the syntax MY_VAR=value. You can also set multiple variables by separating them with a space.",
-                      cxxopts::value<std::vector<std::string>>(environment_variables_vec)
-                        )
-                    ("corerun-supervise-pid",
-                     "Supervision of target process. Wait for process pid to exit and then restart it.",
-                     cxxopts::value<int>(supervise_process_id)
-                        )
-                    ("corerun-supervise-id",
-                        "A unique id that identifies current application.",
-                        cxxopts::value<std::string>(supervise_id)
-                        );
+    options.add_options()
+    ("corerun-environment-var",
+     "To set a single variable, use the syntax MY_VAR=value. You can also set multiple variables by separating them with a space.",
+     cxxopts::value<std::vector<std::string> >(environment_variables_vec))
+    ("corerun-supervise-pid",
+     "Supervision of target process. Wait for process pid to exit and then restart it.",
+     cxxopts::value<int>(supervise_process_id))
+    ("corerun-supervise-id",
+     "A unique id that identifies current application.",
+     cxxopts::value<std::string>(supervise_id));
 
     std::map<std::string, std::string> environment_variables;
 
@@ -97,39 +100,39 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
         options.allow_unrecognised_options();
         const auto result = options.parse(argc, argv);
         if (result.count("corerun-environment-var")) {
-          const auto pairs = result["corerun-environment-var"].as<std::vector<std::string>>();
-          for (const auto& kv : pairs) {
-            const auto pos = kv.find('=');
-            if (pos == std::string::npos) {
-              LOGE << "Invalid environment variable pair: " << kv << ". The pair must be in the form \"key=value\"";
-              return 1;
+            const auto pairs = result["corerun-environment-var"].as<std::vector<std::string> >();
+            for (const auto &kv: pairs) {
+                const auto pos = kv.find('=');
+                if (pos == std::string::npos) {
+                    LOGE << "Invalid environment variable pair: " << kv
+                            << ". The pair must be in the form \"key=value\"";
+                    return 1;
+                }
+                const std::string key = kv.substr(0, pos);
+                const std::string value = kv.substr(pos + 1);
+                environment_variables.emplace(key, value);
             }
-            const std::string key = kv.substr(0, pos);
-            const std::string value = kv.substr(pos + 1);
-            environment_variables.emplace(key, value);
-          }
 
-          for (auto it = stub_executable_arguments.begin(); it != stub_executable_arguments.end() - 1;) {
-            if ((*it).find("corerun-environment-var", 0) != std::string::npos) {
-              stub_executable_arguments.erase(it);
-              if(it + 1 == stub_executable_arguments.end()) {
-                break;
-              }
-              it = stub_executable_arguments.erase(it, it + 1);
-              continue;
+            for (auto it = stub_executable_arguments.begin(); it != stub_executable_arguments.end() - 1;) {
+                if ((*it).find("corerun-environment-var", 0) != std::string::npos) {
+                    stub_executable_arguments.erase(it);
+                    if (it + 1 == stub_executable_arguments.end()) {
+                        break;
+                    }
+                    it = stub_executable_arguments.erase(it, it + 1);
+                    continue;
+                }
+                ++it;
             }
-            ++it;
-          }
         }
-
     } catch (const cxxopts::OptionException &e) {
         LOGE << "Error parsing startup argument: " << e.what();
     }
 
     if (supervise_process_id > 0) {
         return corerun_command_supervise(stub_executable_full_path, stub_executable_arguments,
-            environment_variables,
-                supervise_process_id, supervise_id, cmd_show_windows);
+                                         environment_variables,
+                                         supervise_process_id, supervise_id, cmd_show_windows);
     }
 
     return snap::stubexecutable::run(stub_executable_arguments,
@@ -137,36 +140,37 @@ inline int corerun_main_impl(int argc, char **argv, const int cmd_show_windows) 
 }
 
 inline int corerun_command_supervise(
-    const std::string& stub_executable_full_path,
-    std::vector<std::string>& arguments,
-    std::map<std::string, std::string>& environment_variables,
+    const std::string &stub_executable_full_path,
+    std::vector<std::string> &arguments,
+    std::map<std::string, std::string> &environment_variables,
     const int process_id,
-    const std::string& process_application_id,
-    const int cmd_show_windows)
-{
-    if(!pal_process_is_running(process_id))  
-    {
-        LOGE << "Supervision of target process with id " << std::to_string(process_id) << " cancelled because the program is not running.";
+    const std::string &process_application_id,
+    const int cmd_show_windows) {
+    if (!pal_process_is_running(process_id)) {
+        LOGE << "Supervision of target process with id " << std::to_string(process_id) <<
+                " cancelled because the program is not running.";
         return 1;
     }
 
     auto semaphore_name("corerun-" + process_application_id);
 
     if (semaphore_name.size() > PAL_MAX_PATH) {
-        LOGW << "Semaphore name exceeds PAL_MAX_PATH length (" << std::to_string(PAL_MAX_PATH) << "). Name: " << semaphore_name;
+        LOGW << "Semaphore name exceeds PAL_MAX_PATH length (" << std::to_string(PAL_MAX_PATH) << "). Name: " <<
+                semaphore_name;
         return 1;
     }
 
     corerun_supervisor_semaphore = std::make_unique<pal_semaphore_machine_wide>(semaphore_name);
-    if(!corerun_supervisor_semaphore->try_create()) {
-        LOGE << "Aborting supervision of target process with id " << std::to_string(process_id) << " because a supervisor is already running. Process application id: " << process_application_id;
+    if (!corerun_supervisor_semaphore->try_create()) {
+        LOGE << "Aborting supervision of target process with id " << std::to_string(process_id) <<
+                " because a supervisor is already running. Process application id: " << process_application_id;
         return 1;
     }
 
-    const auto* const corerun_dash_dash = "--corerun-";
+    const auto *const corerun_dash_dash = "--corerun-";
 
     auto index = 0;
-    for (const auto &value : arguments) {
+    for (const auto &value: arguments) {
         if (pal_str_startswith(value.c_str(), corerun_dash_dash)) {
             arguments.erase(arguments.begin() + index);
         }
@@ -178,15 +182,14 @@ inline int corerun_command_supervise(
     main_wait_for_pid(process_id);
 
     LOGD << "Process exited: " << std::to_string(process_id) << ". "
-         << "Semaphore released: " <<  corerun_supervisor_semaphore->release() << ". "
-         << "Startup arguments("<< std::to_string(arguments.size()) << "): "
-         << this_exe::build_argv_str(arguments);
+            << "Semaphore released: " << corerun_supervisor_semaphore->release() << ". "
+            << "Startup arguments(" << std::to_string(arguments.size()) << "): "
+            << this_exe::build_argv_str(arguments);
 
 #if defined(PAL_PLATFORM_LINUX)
     PAL_UNUSED(cmd_show_windows);
     const auto child_pid = fork();
-    if (child_pid == 0)
-    {
+    if (child_pid == 0) {
         return snap::stubexecutable::run(arguments, environment_variables, -1);
     }
     return 0;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
@@ -12,7 +12,7 @@ internal sealed class UriYamlTypeConverter : IYamlTypeConverter
         return type == typeof(Uri);
     }
 
-    public object ReadYaml(IParser parser, Type type)
+    public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
     {
         var uriStr = ((Scalar)parser.Current)?.Value;
         parser.MoveNext();
@@ -20,7 +20,7 @@ internal sealed class UriYamlTypeConverter : IYamlTypeConverter
         return uri;
     }
 
-    public void WriteYaml(IEmitter emitter, object value, Type type)
+    public void WriteYaml(IEmitter emitter, object value, Type type, ObjectSerializer serializer)
     {
         var uriStr = ((Uri)value)?.ToString() ?? string.Empty;
         emitter.Emit(new Scalar(uriStr));

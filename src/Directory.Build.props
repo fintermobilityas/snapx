@@ -2,6 +2,15 @@
 
     <PropertyGroup>
         <LangVersion>12.0</LangVersion>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <AnalysisLevel>latest</AnalysisLevel>
+        <WarningsAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <NuGetAudit>true</NuGetAudit>
+        <NuGetAuditMode>all</NuGetAuditMode>
+        <NuGetAuditLevel>low</NuGetAuditLevel>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -65,6 +74,14 @@
 
     <PropertyGroup Condition="$(OsPlatform) == 'MACOSX'">
         <DefineConstants>$(DefineConstants);PLATFORM_MAXOSX;</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <GitVersionToolVersion>6.4.0</GitVersionToolVersion>
+        <SnapxDotNetFrameworkVersion>net10.0</SnapxDotNetFrameworkVersion>
+        <DotNetNet80Version>8.0.416</DotNetNet80Version>
+        <DotNetNet90Version>9.0.307</DotNetNet90Version>
+        <DotNetNet100Version>10.0.100</DotNetNet100Version>
     </PropertyGroup>
 
 </Project>

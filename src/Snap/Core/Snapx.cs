@@ -36,16 +36,27 @@ public static class Snapx
             try
             {     
                 Logger = LogProvider.GetLogger(nameof(Snapx));
-                var informationalVersion = typeof(Snapx).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-                Version = !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
 
+                var snapxAssembly = typeof(Snapx).Assembly;
+                
+                Logger.Debug("Assembly location: {0}.", snapxAssembly.Location);
+                
+                var informationalVersion = snapxAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                Version = informationalVersion == null ? null : !SemanticVersion.TryParse(informationalVersion, out var currentVersion) ? null : currentVersion;
+
+                Logger.Debug("Assembly version: {0}.", Version);
+                
                 SnapOs = AnyOS.SnapOs.AnyOs;
-                WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(typeof(Snapx).Assembly.Location);
+                WorkingDirectory = SnapOs.Filesystem.PathGetDirectoryName(snapxAssembly.Location);
+                
+                Logger.Debug("Assembly working directory: {0}.", WorkingDirectory);
                     
                 _current = WorkingDirectory.GetSnapAppFromDirectory(SnapOs.Filesystem, new SnapAppReader());
 
-                typeof(Snapx).Assembly
+                snapxAssembly
                     .GetStubExeFullPath(SnapOs.Filesystem, new SnapAppReader(), out var supervisorExecutableAbsolutePath);
+                
+                Logger.Debug("Supervisor executable path: {0}.", supervisorExecutableAbsolutePath);
 
                 SuperVisorProcessExeDirectory = supervisorExecutableAbsolutePath;
             }

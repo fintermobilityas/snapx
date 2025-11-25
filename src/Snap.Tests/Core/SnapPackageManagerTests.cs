@@ -154,7 +154,7 @@ public class SnapPackageManagerTests : IClassFixture<BaseFixturePackaging>, ICla
         var nugetPackageSources = genesisSnapApp.BuildNugetSources(nugetPackageSourcesDirectory.WorkingDirectory);
         var packageSource = nugetPackageSources.Items.Single();
 
-        var snapAppChannelReleases = new SnapAppChannelReleases(genesisSnapApp, snapAppChannel, Enumerable.Empty<SnapRelease>());
+        var snapAppChannelReleases = new SnapAppChannelReleases(genesisSnapApp, snapAppChannel, []);
         var restoreSummary = await _snapPackageManager.RestoreAsync(packagesDirectory, snapAppChannelReleases, packageSource, restoreType);
         Assert.Empty(restoreSummary.ChecksumSummary);
         Assert.Empty(restoreSummary.DownloadSummary);

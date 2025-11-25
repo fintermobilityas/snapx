@@ -193,13 +193,12 @@ internal partial class Program
         {
             var channels = releases.SelectMany(x => x.Channels).Distinct().ToList();
             var releaseVersion = options.RemoveAll ? "All versions" : releases.First().Version.ToString(); 
-            consoleTable.AddRow(new object[]
-            {
+            consoleTable.AddRow([
                 rid, 
                 string.Join(", ", channels),
                 releaseVersion,
                 releases.Count.ToString()
-            });
+            ]);
         }
 
         consoleTable.Write(logger);

@@ -364,7 +364,7 @@ internal class NugetService([NotNull] ISnapFilesystem snapFilesystem, [NotNull] 
             var sourceDirectory = packageSource.SourceUri.AbsolutePath;
             if (!_snapFilesystem.DirectoryExists(sourceDirectory))
             {
-                return Enumerable.Empty<NuGetPackageSearchMedatadata>();
+                return [];
             }
 
             localPackageMetadataResource = new LocalPackageMetadataResource(await BuildFindLocalPackagesResourceAsync(packageSource, cancellationToken));

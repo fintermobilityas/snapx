@@ -8,11 +8,9 @@
 
 #include "rcedit.hpp"
 
-#pragma warning(disable : 4244 4267)  
+#pragma warning(disable : 4244 4267)
 
-namespace snap::rcedit
-{
-
+namespace snap::rcedit {
     namespace {
 #pragma pack(push,2)
         typedef struct _GRPICONENTRY {
@@ -56,7 +54,7 @@ namespace snap::rcedit
 #pragma pack(push,1)
         typedef struct _VS_VERSION_ROOT_INFO {
             WCHAR szKey[16];
-            WORD  Padding1[1];
+            WORD Padding1[1];
             VS_FIXEDFILEINFO Info;
         } VS_VERSION_ROOT_INFO;
 #pragma pack(pop)
@@ -79,8 +77,11 @@ namespace snap::rcedit
 
         class ScopedFile {
         public:
-            ScopedFile(const WCHAR* path)
-                : file_(CreateFile(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr)) {}
+            ScopedFile(const WCHAR *path)
+                : file_(CreateFile(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                                   nullptr)) {
+            }
+
             ~ScopedFile() { CloseHandle(file_); }
 
             operator HANDLE() const { return file_; }
@@ -100,8 +101,8 @@ namespace snap::rcedit
         }
     }
 
-    bool ResourceUpdater::Load(const WCHAR* filename) {
-        wchar_t abspath[MAX_PATH] = { 0 };
+    bool ResourceUpdater::Load(const WCHAR *filename) {
+        wchar_t abspath[MAX_PATH] = {0};
         if (_wfullpath(abspath, filename, MAX_PATH)) {
             module_ = LoadLibraryEx(abspath, nullptr, DONT_RESOLVE_DLL_REFERENCES | LOAD_LIBRARY_AS_DATAFILE);
         } else {
@@ -120,13 +121,13 @@ namespace snap::rcedit
         return true;
     }
 
-    bool ResourceUpdater::SetIcon(const WCHAR* path, const LANGID& langId, UINT iconBundle) {
-        auto& pIcon = iconBundleMap_[langId].iconBundles[iconBundle];
+    bool ResourceUpdater::SetIcon(const WCHAR *path, const LANGID &langId, UINT iconBundle) {
+        auto &pIcon = iconBundleMap_[langId].iconBundles[iconBundle];
         if (!pIcon) {
             pIcon = std::make_unique<IconsValue>();
         }
 
-        auto& icon = *pIcon;
+        auto &icon = *pIcon;
         DWORD bytes;
 
         const ScopedFile file(path);
@@ -134,7 +135,7 @@ namespace snap::rcedit
             return false;
         }
 
-        auto& header = icon.header;
+        auto &header = icon.header;
         if (!ReadFile(file, &header, 3 * sizeof(WORD), &bytes, nullptr)) {
             return false;
         }
@@ -158,12 +159,12 @@ namespace snap::rcedit
         }
 
         icon.grpHeader.resize(3 * sizeof(WORD) + header.count * sizeof(GRPICONENTRY));
-        auto* pGrpHeader = reinterpret_cast<GRPICONHEADER*>(icon.grpHeader.data());
+        auto *pGrpHeader = reinterpret_cast<GRPICONHEADER *>(icon.grpHeader.data());
         pGrpHeader->reserved = 0;
         pGrpHeader->type = 1;
         pGrpHeader->count = header.count;
         for (size_t i = 0; i < header.count; ++i) {
-            auto* const entry = pGrpHeader->entries + i;
+            auto *const entry = pGrpHeader->entries + i;
             entry->bitCount = 0;
             entry->bytesInRes = header.entries[i].bitCount;
             entry->bytesInRes2 = header.entries[i].bytesInRes;
@@ -179,19 +180,19 @@ namespace snap::rcedit
         return true;
     }
 
-    bool ResourceUpdater::SetIcon(const WCHAR* path, const LANGID& langId) {
+    bool ResourceUpdater::SetIcon(const WCHAR *path, const LANGID &langId) {
         const auto iconBundle = iconBundleMap_.count(langId) ? iconBundleMap_[langId].iconBundles.begin()->first : 0u;
         return SetIcon(path, langId, iconBundle);
     }
 
-    bool ResourceUpdater::SetIcon(const WCHAR* path) {
-        const auto langId = iconBundleMap_.empty() ? kLangEnUs
+    bool ResourceUpdater::SetIcon(const WCHAR *path) {
+        const auto langId = iconBundleMap_.empty()
+                                ? kLangEnUs
                                 : iconBundleMap_.begin()->first;
         return SetIcon(path, langId);
     }
 
-    bool ResourceUpdater::HasIcon() const
-    {
+    bool ResourceUpdater::HasIcon() const {
         return !iconBundleMap_.empty();
     }
 
@@ -207,35 +208,34 @@ namespace snap::rcedit
             return false;
         }
 
-        for (const auto& iLangIconInfoPair : iconBundleMap_) {
+        for (const auto &iLangIconInfoPair: iconBundleMap_) {
             const auto langId = iLangIconInfoPair.first;
             const auto maxIconId = iLangIconInfoPair.second.maxIconId;
-            for (const auto& iNameBundlePair : iLangIconInfoPair.second.iconBundles) {
+            for (const auto &iNameBundlePair: iLangIconInfoPair.second.iconBundles) {
                 const auto bundleId = iNameBundlePair.first;
-                const auto& pIcon = iNameBundlePair.second;
+                const auto &pIcon = iNameBundlePair.second;
                 if (!pIcon) {
                     continue;
                 }
 
-                auto& icon = *pIcon;
+                auto &icon = *pIcon;
                 // update icon.
                 if (!icon.grpHeader.empty()) {
                     if (!UpdateResource(ru.Get(), RT_GROUP_ICON, MAKEINTRESOURCE(bundleId),
-                        langId, icon.grpHeader.data(), icon.grpHeader.size())) {
+                                        langId, icon.grpHeader.data(), icon.grpHeader.size())) {
                         return false;
                     }
 
                     for (size_t i = 0; i < icon.header.count; ++i) {
                         if (!UpdateResource(ru.Get(), RT_ICON, MAKEINTRESOURCE(i + 1),
-                            langId, icon.images[i].data(), icon.images[i].size())) {
-
+                                            langId, icon.images[i].data(), icon.images[i].size())) {
                             return false;
                         }
                     }
 
                     for (size_t i = icon.header.count; i < maxIconId; ++i) {
                         if (!UpdateResource(ru.Get(), RT_ICON, MAKEINTRESOURCE(i + 1),
-                            langId, nullptr, 0)) {
+                                            langId, nullptr, 0)) {
                             return false;
                         }
                     }
@@ -247,21 +247,19 @@ namespace snap::rcedit
     }
 
     // static
-    BOOL CALLBACK ResourceUpdater::OnEnumResourceLanguage(HANDLE hModule, LPCWSTR lpszType, LPCWSTR lpszName, WORD wIDLanguage, LONG_PTR lParam) {
-        auto* instance = reinterpret_cast<ResourceUpdater*>(lParam);
+    BOOL CALLBACK ResourceUpdater::OnEnumResourceLanguage(HANDLE hModule, LPCWSTR lpszType, LPCWSTR lpszName,
+                                                          WORD wIDLanguage, LONG_PTR lParam) {
+        auto *instance = reinterpret_cast<ResourceUpdater *>(lParam);
         auto iconId = 0u;
         auto maxIconId = 0u;
         if (IS_INTRESOURCE(lpszName) && IS_INTRESOURCE(lpszType)) {
-            if (lpszType == RT_ICON)
-            {
+            if (lpszType == RT_ICON) {
                 iconId = reinterpret_cast<ptrdiff_t>(lpszName);
                 maxIconId = instance->iconBundleMap_[wIDLanguage].maxIconId;
                 if (iconId > maxIconId) {
                     maxIconId = iconId;
                 }
-            }
-            else if (lpszType == RT_GROUP_ICON)
-            {
+            } else if (lpszType == RT_GROUP_ICON) {
                 iconId = reinterpret_cast<ptrdiff_t>(lpszName);
                 instance->iconBundleMap_[wIDLanguage].iconBundles[iconId] = nullptr;
             }
@@ -270,12 +268,14 @@ namespace snap::rcedit
     }
 
     // static
-    BOOL CALLBACK ResourceUpdater::OnEnumResourceName(HMODULE hModule, LPCWSTR lpszType, LPWSTR lpszName, LONG_PTR lParam) {
-        EnumResourceLanguages(hModule, lpszType, lpszName, reinterpret_cast<ENUMRESLANGPROCW>(OnEnumResourceLanguage), lParam);
+    BOOL CALLBACK ResourceUpdater::OnEnumResourceName(HMODULE hModule, LPCWSTR lpszType, LPWSTR lpszName,
+                                                      LONG_PTR lParam) {
+        EnumResourceLanguages(hModule, lpszType, lpszName, reinterpret_cast<ENUMRESLANGPROCW>(OnEnumResourceLanguage),
+                              lParam);
         return TRUE;
     }
 
-    ScopedResourceUpdater::ScopedResourceUpdater(const WCHAR* filename, bool deleteOld)
+    ScopedResourceUpdater::ScopedResourceUpdater(const WCHAR *filename, bool deleteOld)
         : handle_(BeginUpdateResource(filename, deleteOld)) {
     }
 
@@ -294,13 +294,11 @@ namespace snap::rcedit
         return EndUpdate(true);
     }
 
-    bool ScopedResourceUpdater::EndUpdate(bool doesCommit) const
-    {
+    bool ScopedResourceUpdater::EndUpdate(bool doesCommit) const {
         const auto fDiscard = doesCommit ? FALSE : TRUE;
         const auto bResult = EndUpdateResource(handle_, fDiscard);
         auto e = GetLastError();
         return bResult ? true : false;
     }
-
 }
 #endif

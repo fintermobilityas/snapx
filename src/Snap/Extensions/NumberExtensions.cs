@@ -5,7 +5,7 @@ namespace Snap.Extensions;
 
 internal static class NumberExtensions
 {
-    static readonly string[] ByteSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+    static readonly string[] ByteSuffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
 
     internal static string BytesAsHumanReadable(this long byteCount)
     {

@@ -40,7 +40,7 @@ public class SnapxTests : IClassFixture<BaseFixture>
         snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
         Snapx.SnapOs = snapOsMock.Object;
 
-        var shouldExit = Snapx.ProcessEvents(Array.Empty<string>());
+        var shouldExit = Snapx.ProcessEvents([]);
         Assert.False(shouldExit);
 
         snapOsMock.Verify(x => x.Exit(It.IsAny<int>()), Times.Never);
@@ -61,12 +61,11 @@ public class SnapxTests : IClassFixture<BaseFixture>
         snapOsMock.Setup(x => x.Exit(It.IsAny<int>()));
         Snapx.SnapOs = snapOsMock.Object;
 
-        var shouldExit = Snapx.ProcessEvents(new[]
-        {
+        var shouldExit = Snapx.ProcessEvents([
             "--a",
             "--b",
             "--c"
-        });
+        ]);
 
         Assert.False(shouldExit);
 
@@ -87,11 +86,10 @@ public class SnapxTests : IClassFixture<BaseFixture>
 
         var expectedVersion = SemanticVersion.Parse("21212.0.0");
             
-        Snapx.ProcessEvents(new[]
-        {
+        Snapx.ProcessEvents([
             actionName,
             expectedVersion.ToNormalizedString()
-        });
+        ]);
     }
         
     [Fact]
@@ -105,11 +103,11 @@ public class SnapxTests : IClassFixture<BaseFixture>
         var wasInvoked = false;
         SemanticVersion currentVersion = null;
         var expectedVersion = SemanticVersion.Parse("21212.0.0");
-        var shouldExit = Snapx.ProcessEvents(arguments: new[]
-        {
+        var shouldExit = Snapx.ProcessEvents(arguments:
+        [
             "--snapx-first-run",
             expectedVersion.ToNormalizedString()
-        }, onFirstRun: version =>
+        ], onFirstRun: version =>
         {
             wasInvoked = true;
             currentVersion = version;
@@ -133,11 +131,11 @@ public class SnapxTests : IClassFixture<BaseFixture>
         var wasInvoked = false;
         SemanticVersion currentVersion = null;
         var expectedVersion = SemanticVersion.Parse("21212.0.0");
-        var shouldExit = Snapx.ProcessEvents(arguments: new[]
-        {
+        var shouldExit = Snapx.ProcessEvents(arguments:
+        [
             "--snapx-installed",
             expectedVersion.ToNormalizedString()
-        }, onInstalled: version =>
+        ], onInstalled: version =>
         {
             wasInvoked = true;
             currentVersion = version;
@@ -159,11 +157,10 @@ public class SnapxTests : IClassFixture<BaseFixture>
         Snapx.SnapOs = snapOsMock.Object;
 
         var wasInvoked = false;
-        var shouldExit = Snapx.ProcessEvents(new[]
-        {
+        var shouldExit = Snapx.ProcessEvents([
             "--snapx-installed",
             "..."
-        }, onInstalled: _ =>
+        ], onInstalled: _ =>
         {
             wasInvoked = true;
         });
@@ -185,11 +182,11 @@ public class SnapxTests : IClassFixture<BaseFixture>
         var wasInvoked = false;
         SemanticVersion currentVersion = null;
         var expectedVersion = SemanticVersion.Parse("21212.0.0");
-        var shouldExit = Snapx.ProcessEvents(arguments: new[]
-        {
+        var shouldExit = Snapx.ProcessEvents(arguments:
+        [
             "--snapx-updated",
             expectedVersion.ToNormalizedString()
-        }, onUpdated: version =>
+        ], onUpdated: version =>
         {
             wasInvoked = true;
             currentVersion = version;
@@ -211,11 +208,11 @@ public class SnapxTests : IClassFixture<BaseFixture>
         Snapx.SnapOs = snapOsMock.Object;
 
         var wasInvoked = false;
-        var shouldExit = Snapx.ProcessEvents(arguments: new[]
-        {
+        var shouldExit = Snapx.ProcessEvents(arguments:
+        [
             "--snapx-updated",
             "..."
-        }, onInstalled: _ =>
+        ], onInstalled: _ =>
         {
             wasInvoked = true;
         });
@@ -237,11 +234,10 @@ public class SnapxTests : IClassFixture<BaseFixture>
         var wasInvoked = false;
         SemanticVersion currentVersion = null;
         var expectedVersion = SemanticVersion.Parse("21212.0.0");
-        var shouldExit = Snapx.ProcessEvents(new[]
-        {
+        var shouldExit = Snapx.ProcessEvents([
             "--snapx-updated",
             expectedVersion.ToNormalizedString()
-        }, onUpdated: version =>
+        ], onUpdated: version =>
         {
             wasInvoked = true;
             currentVersion = version;

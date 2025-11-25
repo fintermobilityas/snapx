@@ -79,8 +79,8 @@ public class NugetServiceV2Tests : IClassFixture<BaseFixture>
         var packages = await _nugetService
             .GetMetadatasAsync("Nuget.Packaging", packageSources, true, cancellationToken: CancellationToken.None);
 
-        Assert.NotEmpty(packages.Where(x => x.Identity.Version.IsPrerelease));
-        Assert.NotEmpty(packages.Where(x => !x.Identity.Version.IsPrerelease));
+        Assert.Contains(packages, x => x.Identity.Version.IsPrerelease);
+        Assert.Contains(packages, x => !x.Identity.Version.IsPrerelease);
     }
 
     [Fact]

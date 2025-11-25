@@ -12,16 +12,19 @@
 
 class pal_semaphore_machine_wide final {
 private:
-#if defined(PAL_PLATFORM_WINDOWS) 
+#if defined(PAL_PLATFORM_WINDOWS)
     HANDLE m_semaphore;
 #elif defined(PAL_PLATFORM_LINUX)
-    sem_t* m_semaphore;
+    sem_t *m_semaphore;
 #endif
     std::string m_semaphore_name;
 
 public:
-    explicit pal_semaphore_machine_wide(const std::string& name);
+    explicit pal_semaphore_machine_wide(const std::string &name);
+
     bool try_create();
+
     bool release();
+
     ~pal_semaphore_machine_wide();
 };

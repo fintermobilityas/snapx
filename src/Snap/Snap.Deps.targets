@@ -5,7 +5,7 @@
         <PackageReference Include="YamlDotNet" />
         <PackageReference Include="SharpCompress" />
         <PackageReference Include="MessagePack" />
-        <PackageReference Include="NuGet.Packaging.Core" />
+        <PackageReference Include="NuGet.Packaging" />
         <PackageReference Include="NuGet.Protocol" />
     </ItemGroup>
 </Project>

@@ -254,10 +254,10 @@ internal class SnapReleaseBuilder : IDisposable, IEnumerable<string>
             }
         }
 
-        AssertDeltaChangesetSnapReleaseImpl(newNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.New);
-        AssertDeltaChangesetNuspecTargetPathImpl(deletedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Deleted);
-        AssertDeltaChangesetSnapReleaseImpl(modifiedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Modified);
-        AssertDeltaChangesetNuspecTargetPathImpl(unmodifiedNuspecTargetPaths ?? Array.Empty<string>(), snapRelease.Unmodified);            
+        AssertDeltaChangesetSnapReleaseImpl(newNuspecTargetPaths ?? [], snapRelease.New);
+        AssertDeltaChangesetNuspecTargetPathImpl(deletedNuspecTargetPaths ?? [], snapRelease.Deleted);
+        AssertDeltaChangesetSnapReleaseImpl(modifiedNuspecTargetPaths ?? [], snapRelease.Modified);
+        AssertDeltaChangesetNuspecTargetPathImpl(unmodifiedNuspecTargetPaths ?? [], snapRelease.Unmodified);            
     }
 
     internal void AssertChannels([NotNull] SnapApp snapApp, [NotNull] params string[] channels)

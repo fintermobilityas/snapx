@@ -66,7 +66,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
             SpecialFolders = specialFoldersAnyOs
         };
 
-        var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
+        var (exitCode, installerType) = await Program.MainImplAsync(["--headless"], LogLevel.Info, cts, _snapOsMock.Object, x =>
         {
             x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
             return (ISnapInstallerEnvironment)x.GetInstance(typeof(ISnapInstallerEnvironment));
@@ -117,7 +117,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         using var snapAppDllAssemblyDefinition = _snapAppWriter.BuildSnapAppAssembly(genesisSnapApp);
         snapAppDllAssemblyDefinition.Write(snapAppDllFilename);
 
-        var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
+        var (exitCode, installerType) = await Program.MainImplAsync(["--headless"], LogLevel.Info, cts, _snapOsMock.Object, x =>
         {
             x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
             return (ISnapInstallerEnvironment) x.GetInstance(typeof(ISnapInstallerEnvironment));
@@ -216,7 +216,7 @@ public class ProgramTests : IClassFixture<BaseFixture>, IClassFixture<BaseFixtur
         var releasesFilename = _snapFilesystem.PathCombine(packagesDirectory, update2PackageContext.FullPackageSnapApp.BuildNugetReleasesFilename());
         await _snapFilesystem.FileWriteAsync(releasePackageMemoryStream, releasesFilename, cts.Token);
 
-        var (exitCode, installerType) = await Program.MainImplAsync(new[] { "--headless" }, LogLevel.Info, cts, _snapOsMock.Object, x =>
+        var (exitCode, installerType) = await Program.MainImplAsync(["--headless"], LogLevel.Info, cts, _snapOsMock.Object, x =>
         {
             x.Register<ISnapInstallerIoEnvironment>(_ => snapInstallerIoEnvironment);
             return (ISnapInstallerEnvironment)x.GetInstance(typeof(ISnapInstallerEnvironment));

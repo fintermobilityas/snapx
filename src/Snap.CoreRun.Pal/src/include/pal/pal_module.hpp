@@ -2,26 +2,32 @@
 
 #include <string>
 
-class pal_module final
-{
-    void* m_module;
+class pal_module final {
+    void *m_module;
     std::string m_filename;
 
 public:
-    explicit pal_module(const std::string& filename);
-    pal_module(const pal_module&) noexcept = delete;
-    pal_module& operator=(const pal_module&) noexcept = delete;
-    pal_module(pal_module&&) noexcept = delete;
-    pal_module& operator=(pal_module&&) noexcept = delete;
+    explicit pal_module(const std::string &filename);
+
+    pal_module(const pal_module &) noexcept = delete;
+
+    pal_module &operator=(const pal_module &) noexcept = delete;
+
+    pal_module(pal_module &&) noexcept = delete;
+
+    pal_module &operator=(pal_module &&) noexcept = delete;
+
     ~pal_module();
 
     [[nodiscard]] bool is_loaded() const;
-    [[nodiscard]] const std::string& get_filename() const;
+
+    [[nodiscard]] const std::string &get_filename() const;
+
     template<typename T>
-    T bind(const std::string& fn)
-    {
+    T bind(const std::string &fn) {
         return reinterpret_cast<T>(_bind(fn));
     }
+
 private:
-    [[nodiscard]] void* _bind(const std::string& fn) const;
+    [[nodiscard]] void *_bind(const std::string &fn) const;
 };

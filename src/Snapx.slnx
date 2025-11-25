@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Solution>
+  <Project Path="Snap/Snap.csproj" />
+  <Project Path="Snapx/Snapx.csproj" />
+  <Project Path="Snap.Installer/Snap.Installer.csproj" />
+  <Folder Name="/tests/">
+    <Project Path="Snap.Tests/Snap.Tests.csproj" />
+    <Project Path="Snap.Shared.Tests/Snap.Shared.Tests.csproj" />
+    <Project Path="Snapx.Tests/Snapx.Tests.csproj" />
+    <Project Path="Snap.Installer.Tests/Snap.Installer.Tests.csproj" />
+  </Folder>
+</Solution>

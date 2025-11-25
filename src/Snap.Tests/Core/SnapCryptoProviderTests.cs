@@ -43,7 +43,7 @@ public class SnapCryptoProviderTests : IClassFixture<BaseFixturePackaging>
     [Fact]
     public void TestSha256_Empty_Array()
     {
-        Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256(Array.Empty<byte>()));
+        Assert.Equal(SnapConstants.Sha256EmptyFileChecksum, _snapCryptoProvider.Sha256([]));
     }
 
     [Fact]

@@ -121,7 +121,7 @@ public class BaseFixture
             ],
             Target = new SnapTarget
             {
-                Framework = "net8.0",
+                Framework = "net10.0",
                 Shortcuts =
                 [
                     SnapShortcutLocation.Desktop,
@@ -225,7 +225,7 @@ public class BaseFixture
 
         var il = ctor.Body.GetILProcessor();
         il.Append(il.Create(OpCodes.Ldarg_0));
-        il.Append(il.Create(OpCodes.Call, mainModule.ImportReference(typeof(object).GetConstructor(Array.Empty<Type>()))));
+        il.Append(il.Create(OpCodes.Call, mainModule.ImportReference(typeof(object).GetConstructor([]))));
         il.Append(il.Create(OpCodes.Nop));
         il.Append(il.Create(OpCodes.Ret));
         programType.Methods.Add(ctor);
@@ -239,19 +239,17 @@ public class BaseFixture
         mainMethod.Parameters.Add(argsParameter);
 
         var stringJoinMethodReference = mainModule.ImportReference(
-            typeof(string).GetMethod(nameof(string.Join), new[]
-            {
+            typeof(string).GetMethod(nameof(string.Join), [
                 typeof(string),
                 typeof(object[])
-            }));
+            ]));
 
         var systemConsoleWriteLineMethodReference = mainModule.ImportReference(
-            typeof(Console).GetMethod(nameof(Console.WriteLine), new[]
-            {
+            typeof(Console).GetMethod(nameof(Console.WriteLine), [
                 typeof(string),
                 typeof(object),
                 typeof(object)
-            }));
+            ]));
 
         il = mainMethod.Body.GetILProcessor();
         // Console.WriteLine("Arguments({0}):{1}", args.Length, string.Join(",", args));
@@ -298,7 +296,7 @@ public class BaseFixture
         var mainModule = assemblyDefinition.MainModule;
             
         var assemblyInformationalVersionAttributeMethodReference = mainModule.ImportReference(
-            typeof(AssemblyInformationalVersionAttribute).GetConstructor(new []{ typeof(string) }));
+            typeof(AssemblyInformationalVersionAttribute).GetConstructor([typeof(string)]));
         var assemblyInformationVersionCustomAttribute = new CustomAttribute(assemblyInformationalVersionAttributeMethodReference);
         assemblyInformationVersionCustomAttribute.ConstructorArguments.Add(new CustomAttributeArgument(mainModule.TypeSystem.String, semanticVersion.ToString()));            
         assemblyDefinition.CustomAttributes.Add(assemblyInformationVersionCustomAttribute);

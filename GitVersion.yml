@@ -1,8 +1,7 @@
-next-version: 5.2.100
+next-version: 10.0.0
 mode: ContinuousDeployment
-continuous-delivery-fallback-tag: ''
 branches:
   develop:
     regex: ^develop
     increment: Patch
-    tag: 'prerelease'
+    label: 'prerelease'

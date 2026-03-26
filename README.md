@@ -11,6 +11,11 @@
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. Updates can delivered via NuGet or network share (UNC).
 
+> [!WARNING]
+> Snapx is now considered deprecated and should be treated as maintenance-only.
+> New projects should prefer [Surge](https://github.com/fintermobilityas/surge), and existing Snapx users should consider planning a migration to Surge over time.
+> New feature investment is expected to happen in Surge rather than Snapx.
+
 ## Sponsors
 
 [![Finter As](https://static.wixstatic.com/media/c40fc8_f72c1de227614b2cbd30085f7c31abe7~mv2.png/v1/crop/x_0,y_34,w_1020,h_470/fill/w_162,h_71,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Finter%20AS%20Logo.png)](https://finter.no)

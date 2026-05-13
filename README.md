@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> Snapx is archived and deprecated. New work has moved to [Surge](https://github.com/fintermobilityas/surge#readme).
+> Existing Snapx packages remain available for old consumers, but future development and publishing automation are disabled.
+> For migration guidance, see the [Surge README](https://github.com/fintermobilityas/surge#readme) and [Surge integration guide](https://github.com/fintermobilityas/surge/blob/main/docs/integrating-surge.md).
+
 # 📖 About Snapx
 
 [![Gitter](https://badges.gitter.im/fintermobilityas-snapx/community.svg)](https://gitter.im/fintermobilityas-snapx/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) ![License](https://img.shields.io/github/license/fintermobilityas/snapx.svg)
@@ -10,11 +15,6 @@
 | Github Actions | linux-x64, linux-arm64, win-x86, win-x64 | Branch: master ![snapx](https://github.com/fintermobilityas/snapx/workflows/snapx/badge.svg?branch=master)   |
 
 **snapx** is a powerful xplat .NET application with built-in support for delta updates, release channels (test, staging, production) and automatic deployment using GitHub Actions. Updates can delivered via NuGet or network share (UNC).
-
-> [!WARNING]
-> Snapx is now considered deprecated and should be treated as maintenance-only.
-> New projects should prefer [Surge](https://github.com/fintermobilityas/surge), and existing Snapx users should consider planning a migration to Surge over time.
-> New feature investment is expected to happen in Surge rather than Snapx.
 
 ## Sponsors
 
